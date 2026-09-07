@@ -139,6 +139,33 @@ If a pause source arrives during a mid-fade song switch (e.g., `GameStarting` fi
 
 Configurable via `VizFftSize` setting. Set at construction, immutable thereafter.
 
+### Bar Count and the Tuning Tables — v1.8.7+
+
+`SpectrumVisualizerControl` draws `VizBarCount` bars (1–12, default 12); the control's width follows
+(3px per bar on a 1px gap, so 47px at 12 and 23px at 6). Added for Desktop themes whose top panel is
+styled with short or circular buttons the full-width visualizer will not sit beside.
+
+The catch is that **four tables in that control are hand-calibrated for exactly twelve bars**: the
+band edges (`BandEdges`), `BarGain`, `BleedFraction` and `BarGravityScale`. `BuildBars(count)`
+resamples all four, and the mapping (`i * ReferenceBarCount / count`) is the **identity at 12**, so
+the default visualizer is unchanged rather than merely close.
+
+Two things about that resampling are deliberate and easy to get wrong:
+
+- **Band edges interpolate in log-frequency space, resampling the existing curve rather than
+  recomputing one.** The reference edges are *not* evenly log-spaced — the low end is deliberately
+  compressed, by up to 47% against a pure log split — so generating fresh logarithmic bands would
+  visibly change the default. Taking the first N entries instead would leave a 4-bar visualizer
+  showing bass only, with the top of the spectrum invisible.
+- **The per-bar tables sample at each bar's LOW frequency edge, not its centre.** RMS across a band
+  is dominated by its lowest frequencies, so a wide bar behaves like the bass inside it.
+  Centre-sampling would hand a one-bar visualizer a treble gain near 5.0 and peg it at full height
+  permanently. The bass/treble gain split follows the count (`i * 2 < _barCount`) rather than the
+  old fixed index 6.
+
+The count is applied **live** by a per-frame comparison in the render loop — the same dirty-check
+pattern the colour theme uses — so no restart is needed while fitting the bars to a theme.
+
 ### Per-Bin Smoothing
 
 Temporal smoothing uses asymmetric rise/fall alphas that vary by frequency:

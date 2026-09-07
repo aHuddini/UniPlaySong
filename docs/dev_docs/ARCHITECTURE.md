@@ -660,57 +660,46 @@ The architecture supports testing through:
 - **Functional Delegates**: Coordinator uses `Func<>` delegates for testability
 - **Event-Driven**: State changes via events can be tested
 
-## Settings Tab Structure
+## Settings Structure
 
-The settings UI (`UniPlaySongSettingsView.xaml`) is organized into the following tabs:
+The settings window (`UniPlaySongSettingsView.xaml`) is a **two-level rail**, not a flat tab strip:
+an outer group down the left, and a page strip (`NavStrip`) inside each group. Every page is its own
+`UserControl` under `src/Controls/Settings/`, so a page is edited without touching the others.
 
-### General Tab
-- Enable Music toggle
-- Music State (Never/Desktop/Fullscreen/Always)
-- Volume slider
-- Randomization options
-- Skip first selection behavior
-- Theme compatibility options
-- Pause on trailer/focus loss/minimize/system tray settings
+Each outer group's `Tag` is also its **reset key** — the per-group Reset button clears exactly the
+properties `SettingsGroups.Map` files under that key. A setting whose reset group disagrees with the
+page it appears on will be cleared by a button the user never associated with it, and
+`SettingsResetCoverageTests` will NOT catch that (it only checks a setting is filed *somewhere*). See
+[SETTINGS_DESIGN.md](SETTINGS_DESIGN.md).
 
-### Default Music Tab
-- Enable default music
-- Default music path
-- Use Playnite native music as default
-- Suppress Playnite background music
+| Group | Pages |
+|---|---|
+| **About** | Overview (What's New, Troubleshooting), Credits, Links, Donate |
+| **Quick Start** | Profiles |
+| **Setup** | Tools, Downloads, Automations |
+| **General** | Media Controls, Tagging, Performance, Miscellaneous |
+| **Playback** | Startup, Music Mode, Default Music, Randomization, Trigger Methods, Global Override |
+| **Pauses** | Common Events, External Audio |
+| **Live Effects** | Volume, Fade Transitions, Live Effects, Calm Down, Visualizers |
+| **Gamification** | Library Events, PlayniteAchievements, ControlUp, Miscellaneous |
+| **Library** | Statistics, Audio Editing, Audio Management |
+| **Advanced** | Theme Support, Backup, Migration, Cleanup, Debug, Experimental |
 
-### Audio Normalization Tab
-- Target loudness (LUFS)
-- True peak limit (dBTP)
-- Loudness range (LU)
-- Audio codec selection
-- Suffix settings (normalization, trim)
-- Preserve originals toggle
-- Bulk operations (Normalize All, Restore, Delete Preserved)
+Notes worth knowing before moving anything:
 
-### Downloads Tab
-- yt-dlp and FFmpeg path configuration
-- Firefox cookies support toggle
-- Search cache settings
-- Auto-normalize after download
-- Auto-download on library update
-- Bulk download button
-
-### Migration Tab
-- PlayniteSound status display
-- UniPlaySong status display
-- Import from PlayniteSound
-- Export to PlayniteSound
-- Directory location info
-
-### Cleanup Tab (v1.1.2+)
-- Storage usage statistics
-- Delete All Music button
-- Reset Settings button
-- Factory Reset button
-
-### Debug Tab
-- Enable debug logging toggle
+- **Graduating a feature out of Experimental is a three-part move**: the XAML block, the reset-group
+  entry (`Advanced` → the new group), and the description. Miss the second and the setting resets
+  from the wrong button.
+- **Runtime-only state goes in `SettingsGroups.NeverReset`**, not a group — `[JsonIgnore]` properties
+  are false at every launch, so there is nothing for a reset to restore.
+- **Sidebar and top-panel items are not settings pages.** Playnite calls `GetSidebarItems` once at
+  startup, so a sidebar entry gated on a setting needs a restart prompt; top-panel items yielded
+  unconditionally with `Visible` toggled update live, and `OnSettingsServiceChanged` refreshes them.
+- **`StaticResource` and `ControlTemplate` faults are runtime, not build, errors.** A green build
+  proves nothing about a page. Settings pages can be rendered headlessly to check —
+  `Assembly.LoadFrom` the built DLL, `CreateInstance` the page type, then Measure/Arrange (and
+  `RenderTargetBitmap` for a PNG). Pages render with no DataContext, so binding-driven content is
+  empty, but resource and template faults surface immediately.
 
 ## Related Documentation
 

@@ -129,6 +129,12 @@
 
                     <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
                                Foreground="{StaticResource UpsWarn}"
+                               Text="Idle settings trigger while you are browsing with a controller"/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="10,0,0,10"
+                               Text="Windows counts only keyboard and mouse as activity, so a controller-only session looks idle to it. If Pause on Idle, the idle volume drop or Calm Down on Idle keeps firing while you browse with a gamepad, that is why &#8212; raise the timeout, or turn that option off in Fullscreen. On the list to fix."/>
+
+                    <TextBlock Style="{StaticResource UpsBody}" FontWeight="SemiBold" Margin="0,0,0,2"
+                               Foreground="{StaticResource UpsWarn}"
                                Text="Windows may not auto-sleep while Playnite is running"/>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="10,0,0,10"
                                Text="UPS holds the audio device open between songs to avoid stutter, and Windows can read that as active audio, which may prevent sleep. If your PC doesn't sleep on its own, exit Playnite when you step away."/>

@@ -1,4 +1,4 @@
-# UniPlaySong Feature Ideas
+﻿# UniPlaySong Feature Ideas
 
 Comprehensive collection of potential features, ranging from basic QoL improvements to ambitious experimental concepts. Organized by category with rough effort/impact estimates.
 
@@ -206,6 +206,7 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 |---------|-------------|--------|--------|
 | **Gapless Playback** | Eliminate silence between tracks for continuous-mix soundtracks. Pre-buffer next track via `PreLoad()` infrastructure that already exists. Industry standard in 2026. | Low | High |
 | ~~**Crossfade Between Games**~~ ✅ | ~~Overlap fade-out/fade-in when switching games instead of silence gap. PS Store and Spotify do this. Existing MusicFader infrastructure supports this.~~ **Shipped v1.4.3 — `EnableTrueCrossfade` setting + dedicated `CrossfadeCoordinator` service in `src/Services/CrossfadeCoordinator.cs` handle smooth overlap transitions between songs/games via the NAudio backend.** | Medium | High |
+| **Count gamepad input as activity for idle features** | `GetLastInputInfo` sees keyboard and mouse only, so a controller-only Fullscreen session reads as idle while in use — pausing, fading the volume, or engaging Calm Down mid-browse. Playnite's controller-to-key translation does not help: it uses `SendMessage(WM_KEYDOWN)`, which bypasses the OS input stack, and only covers D-pad directions by default. Fix: poll `XINPUT_STATE.dwPacketNumber` (already declared in `ControllerDetectionService`, unused) inside `OnIdlePollTick` and treat a change as input. Gate on a connected controller so idle machines are not polled forever. Affects all three idle features at once. See TECHNICAL_REFERENCE.md, Idle Detection. | Low | Medium |
 | **Sleep Timer** | Auto-stop music after configurable minutes. Common in Spotify/podcasts. Simple countdown calling `Stop()`. | Low | Medium |
 | **Playback Queue / Up Next** | Queue specific songs across games. "Add to queue" from right-click or dashboard. Persists across game selection. | Medium | High |
 | **Song Bookmarking / Favorites** | Star songs across your library. Saved as a flat JSON manifest `favorites.json` (cross-game, filename-keyed). "Favorites" appears as a new pool-based default music source alongside Custom Folder / Random Game. Users build their personal greatest-hits playlist without leaving UPS. Context menu on any song row. Like FFXIV's jukebox. | Low | High |

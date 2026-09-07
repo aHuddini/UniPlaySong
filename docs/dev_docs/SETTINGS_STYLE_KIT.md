@@ -1,4 +1,4 @@
-# UniPlaySong Settings Style Kit
+﻿# UniPlaySong Settings Style Kit
 
 A drop-in WPF style set — dark slate palette, a panel-switch toggle, section headings and a
 two-level navigation rail. Copy what you want; it has no dependency on UniPlaySong.
@@ -114,6 +114,28 @@ colour that means "caution".
 | `UpsBody` | 12 | — | `UpsText` |
 | `UpsHint` | 10 | — | `UpsTextMuted` |
 | `UpsWarning` / `UpsDangerNote` | 10 | SemiBold | `UpsWarn` / `UpsDanger` |
+
+### "Restart required" notices
+
+A setting that needs a Playnite restart says so in its **own `<Run>`**, coloured and weighted, not
+buried in the body sentence:
+
+```xml
+<TextBlock Style="{StaticResource UpsHint}">
+    <Run Text="Displays the play/pause and skip buttons on Playnite's Top Panel."/>
+    <Run Text="Requires a Playnite restart to take effect."
+         Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
+</TextBlock>
+```
+
+Style, margins and wrapping stay exactly as the surrounding hints — only the notice sentence is
+repainted. Five hints stated it in plain body text until 1.8.7, which meant the one thing the reader
+had to notice looked like the rest of the sentence.
+
+Whether a restart is genuinely needed depends on how the item reaches Playnite, and it is worth
+checking rather than assuming: `GetSidebarItems` is called once at startup, so a sidebar entry gated
+on a setting *does* need one; a top-panel item yielded unconditionally with `Visible` toggled does
+**not**, provided something refreshes it when settings change.
 
 **If you take one idea from this section:** headings differentiate by *treatment*, not size. Our
 first attempt stepped `18 / 13.5 / 13`, and 13.5 → 13 is a **4% step** — not a hierarchy level, so

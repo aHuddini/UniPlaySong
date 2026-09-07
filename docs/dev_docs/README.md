@@ -50,9 +50,10 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](Theme%
 
 - **Code comments** are single-line `//`. XML doc comments only for public APIs that genuinely need param/returns; drop them when the signature is self-documenting.
 - **Two loggers**: `Logger.*` goes to Playnite's `extension.log`; `_fileLogger?.*` goes to `UniPlaySong.log` and is gated behind the Enable Debug Logging setting. Prefer the file logger for anything high-frequency.
-- **Changing a setting's default** means editing the backing field, and nothing else. Reset copies from a pristine `UniPlaySongSettings`, so the initialiser is the single source of truth. **Adding** a setting means filing it in `SettingsGroups.Map` (or `NeverReset`); `SettingsResetCoverageTests` fails by name if you forget. See [SETTINGS_DESIGN.md](SETTINGS_DESIGN.md).
+- **Changing a setting's default** means editing the backing field, and nothing else. Reset copies from a pristine `UniPlaySongSettings`, so the initialiser is the single source of truth. **Adding** a setting means filing it in `SettingsGroups.Map` (or `NeverReset`); `SettingsResetCoverageTests` fails by name if you forget. That test does **not** check the group matches the page the setting appears on — a distinct trap, covered in [SETTINGS_DESIGN.md](SETTINGS_DESIGN.md).
+- **Settings pages are runtime-verifiable without Playnite.** `StaticResource` and `ControlTemplate` faults never fail the build. Render the page headlessly (`Assembly.LoadFrom` → `CreateInstance` → Measure/Arrange) — see [SETTINGS_STYLE_KIT.md](SETTINGS_STYLE_KIT.md).
 - **Update the doc alongside the code.** A doc that describes last release's behaviour is worse than no doc; this index exists because several didn't get that treatment.
 
 ---
 
-**Last updated**: 2026-09-05 · **Covers**: v1.8.6
+**Last updated**: 2026-09-06 · **Covers**: v1.8.7

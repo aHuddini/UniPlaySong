@@ -1,4 +1,4 @@
-# Settings Window — Design System
+﻿# Settings Window — Design System
 
 Everything the settings window looks like lives in one file:
 `src/Controls/Settings/SettingsResources.xaml`. Change a token there and every page follows.
@@ -243,6 +243,29 @@ could not be reset. They had also drifted from the real defaults in three places
 
 **When adding a setting:** add the property, then file it in `SettingsGroups.Map` (or `NeverReset`
 for machine-specific paths and live runtime state). The test tells you if you forget.
+
+**The group must match the page the setting appears on — and the test will NOT tell you that.**
+`SettingsResetCoverageTests` only proves a setting is filed *somewhere*. File a General-page setting
+under `Advanced` and everything passes, but the user's Advanced reset clears a setting they only
+ever saw on a General page, and their General reset leaves it alone. This has been got wrong
+repeatedly, most often when **moving** a setting: graduating a feature out of Experimental is a
+three-part change — the XAML block, the reset-group entry, and the description — and the group is
+the part that gets forgotten. Settings that move pages should carry a test asserting their group
+explicitly.
+
+### The settings object the dialog edits
+
+`GetSettings()` returns a view model **cached for the life of the plugin**, and its settings object
+is the one loaded at startup. Anything that changes settings from outside the dialog *replaces* that
+object rather than mutating it — `UpdateSettingsFromMenu` (the Fullscreen quick menu, the Desktop
+Calm Down button) and theme `{PluginSettings}` bindings all route through
+`SettingsService.UpdateSettings`.
+
+So `BeginEdit` **must adopt `SettingsService.Current`** before showing the dialog, assigned through
+the `Settings` property so the `PropertyChanged` subscription moves off the stale object. Without
+it, `EndEdit` saves the startup copy back over the newer one and silently reverts every
+out-of-dialog change. Reported in 1.8.7 as "saving any setting turns Calm Down off" — Calm Down was
+simply the one you could hear.
 
 ---
 

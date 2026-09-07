@@ -1,4 +1,4 @@
-# UniPlaySong Theme Integration Guide
+﻿# UniPlaySong Theme Integration Guide
 
 How to wire your Playnite Fullscreen theme into UniPlaySong's music playback.
 
@@ -224,9 +224,23 @@ For an in-theme audio quick-settings menu (Enable Game Music, Radio Mode, Calm D
 >
 > **Read-only status (for gating your own triggers):** `RadioModeEnabled` also reads back the current state, and the derived read-only `SpotifyRadioMode` is `true` only when Radio Mode is on *and* the source is Spotify. Both update live — use them to keep an overlay from pausing Radio Mode music (see [Don't pause Radio Mode music for your overlay](#dont-pause-radio-mode-music-for-your-overlay--gate-the-tag-on-radiomodeenabled)).
 | `PlayOnlyOnGameSelect` | bool | When false, music plays while browsing too |
-| `CalmDownModeEnabled` | bool | v1.5.0+ — gentle muffle + dim over 1.5s (great for late-night browsing toggles) |
+| `CalmDownModeEnabled` | bool | v1.5.0+ — gentle muffle + dim (great for late-night browsing toggles) |
 
 Any property on `UniPlaySongSettings` is bindable this way — these five are just the most useful for a quick-options menu.
+
+> **Calm Down, v1.8.7 onward.** Two things changed that a theme binding should know about.
+>
+> The **strength is now the user's** to choose: Live Effects → Calm Down offers presets (Subtle,
+> Warm, Muffled, Distant, Whisper) plus manual sliders for high cut, level and transition time. Your
+> toggle still just turns it on and off — but do not describe it in your theme as a fixed "1500 Hz,
+> half volume, 1.5s" effect, because it may not be.
+>
+> There is also an **idle option** (`CalmDownOnIdle`) that engages Calm Down by itself after a set
+> time with no keyboard or mouse input. It deliberately does **not** write `CalmDownModeEnabled` —
+> so when idle has engaged it, your bound checkbox stays *unticked* even though the music is
+> softened. That is intentional: it means idle can never switch off a Calm Down the user turned on
+> through your toggle. If you want to reflect the audible state rather than the user's switch,
+> `CalmDownIdleActive` is readable too (runtime-only, never persisted).
 
 ### Quick-options panel example
 

@@ -535,11 +535,11 @@ public bool ShouldPlayMusic(Game game)
         return false;
     }
     
-    // Mode-based checks
-    var state = _settings.MusicState;
-    if (_isFullscreen() && state != AudioState.Fullscreen && state != AudioState.Always)
+    // Mode-based checks — the rule itself lives on the settings object (v1.8.7+) so the
+    // Random Game Picker can apply the same one without inheriting the skip logic below.
+    if (_isFullscreen() && !_settings.AllowsMusicInMode(isFullscreen: true))
         return false;
-    if (_isDesktop() && state != AudioState.Desktop && state != AudioState.Always)
+    if (_isDesktop() && !_settings.AllowsMusicInMode(isFullscreen: false))
         return false;
 
     // Session auto-play lock (Desktop) — v1.4.3+
@@ -567,9 +567,20 @@ A session-scoped flag on `MusicPlaybackService` (`_userHasManuallyStartedThisSes
 Automatic paths (coordinator, `HandleGameSelected`, Radio auto-advance, pause-source removal timers, post-download restores, NSF Track Manager post-commit, theme events) deliberately do NOT call `NotifyManualStart()`. Flag resets only on `MusicPlaybackService` disposal (Playnite restart). Sticky-on: manual Pause does NOT re-lock.
 
 **HandleGameSelected() Processing:**
+
+> **The Random Game Picker guard must stay the first statement.** While the picker dialog is open it
+> owns playback, but Playnite keeps raising selection events — so any branch that runs before the
+> guard acts on playback underneath it. Until 1.8.7 the guard sat *after* `ShouldPlayMusic`, which
+> left the `EnableMusic=off` route into `PlayGameMusic`, the null-game fade-out, and
+> `ShouldPlayMusic`'s own `Stop()` all free to fire mid-picker: heard as the picker's track and the
+> library's track playing at once. Anything added to this method goes *after* the guard.
+
 ```csharp
 public void HandleGameSelected(Game game, bool isFullscreen)
 {
+    // Picker owns all playback while its dialog is open — must be first
+    if (RandomPickerMonitor.IsActive) { _firstSelect = false; return; }
+
     // Reset skip state when entering fullscreen for first time
     if (isFullscreen && !_hasSeenFullscreen && 
         _settings?.SkipFirstSelectionAfterModeSwitch == true)
@@ -1283,6 +1294,13 @@ If a theme's `{PluginSettings}` binding doesn't work:
 
 **Critical line**: `MusicPlaybackService.cs:744` — the pre-default-fallback `songs.Clear()` block. Without this, a game with its own music folder would swallow `EnableMusic=off` (the EnableMusic check at line ~850 sees `songs` non-empty + `hasDefaultMusic=false` → stops). The clear lets the default-source switch (Bundled / Native / Pool / CustomFile) populate `songs` with the right fallback.
 
+**`UniPlaySongSettings.AllowsMusicInMode(bool)` is the single mode-state rule.** `ShouldPlayMusic`
+and `RandomPickerMonitor` both read it, so "Where Music Plays" cannot come to mean different things
+in different places — which is exactly how the picker came to ignore it before 1.8.7. Only the
+mode-state half is shared: the rest of `ShouldPlayMusic` (first-select skip, login skip, the Desktop
+auto-play lock) describes how a library *selection* arrived and does not apply to a modal dialog the
+user opened deliberately.
+
 **Don't call `Stop()` directly from settings or game-selection handlers** — always go through `PlayGameMusic`. `Stop()` is for "no playback should be happening at all" (e.g., MusicState=Never, theme overlay active, `EnableMusic + EnableDefaultMusic` both off with no game music). The handler doesn't know that combination of facts; only `PlayGameMusic` does.
 
 **Same rule applies to `HandleGameSelected`**: don't branch on `EnableMusic` to decide whether to play. The `EnableMusic=off` case should still call `PlayGameMusic(game, ...)` so the default-music fallback can fire — game music being off doesn't mean no audio should play. Only the `game == null` case justifies a direct fade-out path.
@@ -1490,20 +1508,49 @@ Polls Windows audio sessions via NAudio `CoreAudioApi` to detect when other appl
 
 ### Idle / AFK Detection
 
-Polls keyboard/mouse inactivity via Win32 `GetLastInputInfo()` P/Invoke to pause music when the user walks away. Implementation in `UniPlaySong.OnIdlePollTick()`.
+Polls keyboard/mouse inactivity via Win32 `GetLastInputInfo()` P/Invoke. One timer,
+`UniPlaySong.OnIdlePollTick()`, drives **three independent features**; each has its own toggle and
+its own timeout, and each is evaluated from the same `idleMs` reading.
 
 **Detection flow** (per poll tick, every 10 seconds):
 1. `GetLastInputInfo()` → returns `LASTINPUTINFO.dwTime` (tick count of last input event)
 2. `(uint)Environment.TickCount - dwTime` → milliseconds since last input (unsigned arithmetic handles 24.8-day wrap)
-3. Compare against `IdleTimeoutMinutes * 60 * 1000` threshold
-4. If idle exceeded: `AddPauseSource(Idle)` with faded transition
-5. If input detected after idle: `RemovePauseSource(Idle)` with faded resume
+3. Compare against each enabled feature's own `* 60 * 1000` threshold
+4. Fast-exits before any of this when all three toggles are off, clearing anything it had applied
 
-**Settings** (Experimental → Idle Detection):
-- `PauseOnIdle` (bool, default false) — master toggle
-- `IdleTimeoutMinutes` (int, default 15) — 1-60 minutes
+**The three features and how each acts:**
 
-**Known limitation**: `GetLastInputInfo` only tracks keyboard and mouse input. Gamepad input is not detected. `XInputWrapper` exists in the codebase for potential future enhancement.
+| Feature | Settings | Page | What it does when idle |
+|---|---|---|---|
+| Pause | `PauseOnIdle`, `IdleTimeoutMinutes` (15) | Pauses → Common Events | `AddPauseSource(Idle)` / `RemovePauseSource(Idle)`, faded |
+| Lower volume | `LowerVolumeOnIdle`, `IdleVolumeTimeoutMinutes` (10) | Live Effects → Volume | Steps a multiplier to 0.25 over ~2.5s via `_idleVolumeFadeTimer`; `RestoreIdleVolume()` on input |
+| Calm Down | `CalmDownOnIdle`, `CalmDownIdleTimeoutMinutes` (10) | Live Effects → Calm Down | Sets `CalmDownIdleActive`; `CalmDownProcessor` ramps on the audio thread |
+
+All three default **off**.
+
+**Calm Down on idle does not touch `CalmDownModeEnabled`.** That is a persisted setting; writing it
+would save to disk, tick the settings checkbox, and — the real hazard — releasing on input would
+switch off a Calm Down the user had turned on themselves. Idle instead sets the runtime-only
+`CalmDownIdleActive`, and `CalmDownProcessor` reads `CalmDownModeEnabled || CalmDownIdleActive`, so
+the two are independent routes to the same ramp.
+
+That flag is `[JsonIgnore]`, which means a settings save — which round-trips through a JSON clone —
+drops it. The poll therefore **re-asserts it every tick** rather than setting it once on the
+transition; otherwise an unrelated save during an idle stretch would quietly lift Calm Down until
+the next keypress. The write is guarded on a value change so it does not raise `PropertyChanged`
+every 10 seconds. The flag is filed in `SettingsGroups.NeverReset`, not a reset group.
+
+Enabling `CalmDownOnIdle` also forces the NAudio backend in `CreateMusicPlayer()`, the same way
+`CalmDownModeEnabled` does — deciding it at idle time would mean swapping the player mid-idle, which
+restarts the song.
+
+**Known limitation — gamepad input does not count as activity.** `GetLastInputInfo` tracks only keyboard and mouse, so a controller-only session reads as idle while the user is actively browsing. This affects **all three** features that share `OnIdlePollTick`: `PauseOnIdle`, `LowerVolumeOnIdle` and `CalmDownOnIdle`.
+
+*Why the key-simulation does not save us.* Playnite does translate some controller input into key presses, but via `User32.SendMessage(hwnd, WM_KEYDOWN, ...)` — see `Playnite/Input/GameController.cs`, `SendKeyInput`. `SendMessage` posts straight to one window's message queue and bypasses the raw input stack, so the OS input timer never sees it; only `SendInput`/`keybd_event` would update `GetLastInputInfo`. The translation is also conditional (`SimulateAllKeys`, or `SimulateNavigationKeys` for D-pad directions only), so face buttons produce no key at all. This matches Windows' general behaviour — gamepads do not hold off the screensaver either.
+
+*Already observed once.* The v1.6.x fix for the audio device being torn down mid-game notes it was "worst with controller-only sessions, which read as idle to Windows' keyboard/mouse-only idle detection". That was patched by holding the device open while a game runs — a workaround for one symptom, not for the blindness itself.
+
+*Fix path when it is picked up.* `ControllerDetectionService` already carries the XInput P/Invoke with multi-DLL fallback, and `XINPUT_STATE.dwPacketNumber` — declared but currently unused — increments on every state change. Polling it in `OnIdlePollTick` and treating a changed packet number as input would clear all three features at once. Worth gating on a connected controller (or on Fullscreen) so unconnected slots are not polled 1–2×/sec forever. Note this changes behaviour for the two existing features, not just Calm Down.
 
 ### Integration Points
 
