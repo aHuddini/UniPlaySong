@@ -47,7 +47,7 @@
                         Added: a Calm Down page with presets (Live Effects), a Calm Down button for the Desktop panel, and a bar count for the visualizer.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Improved: opening Spotify on startup is no longer experimental (General &#8594; Miscellaneous).
+                        Graduated: opening Spotify on startup (General &#8594; Miscellaneous) and fade curves (Live Effects &#8594; Fade Transitions) are no longer experimental.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:

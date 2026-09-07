@@ -127,40 +127,6 @@
                      Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
             </TextBlock>
 
-            <!-- NAudio Fade Curve Tuning -->
-            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="NAudio Fade Curves" Style="{StaticResource UpsSectionTitle}"/></Border>
-            <TextBlock Text="Only applies when Live Effects or Visualizer is enabled (NAudio pipeline)"
-                       Style="{StaticResource UpsHintFlush}" FontStyle="Italic" Margin="0,0,0,8"/>
-
-            <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
-                <TextBlock Style="{StaticResource UpsLabel}" Text="Fade-in curve:" VerticalAlignment="Center" Width="110"/>
-                <ComboBox Style="{StaticResource UpsComboBox}" SelectedIndex="{Binding Settings.NaudioFadeInCurve, Converter={StaticResource FadeCurveTypeConverter}}"
-                          Width="150">
-                    <ComboBoxItem Content="Linear"/>
-                    <ComboBoxItem Content="Quadratic"/>
-                    <ComboBoxItem Content="Cubic"/>
-                    <ComboBoxItem Content="S-Curve"/>
-                    <ComboBoxItem Content="Logarithmic"/>
-                </ComboBox>
-            </StackPanel>
-
-            <StackPanel Orientation="Horizontal" Margin="0,5,0,5">
-                <TextBlock Style="{StaticResource UpsLabel}" Text="Fade-out curve:" VerticalAlignment="Center" Width="110"/>
-                <ComboBox Style="{StaticResource UpsComboBox}" SelectedIndex="{Binding Settings.NaudioFadeOutCurve, Converter={StaticResource FadeCurveTypeConverter}}"
-                          Width="150">
-                    <ComboBoxItem Content="Linear"/>
-                    <ComboBoxItem Content="Quadratic"/>
-                    <ComboBoxItem Content="Cubic"/>
-                    <ComboBoxItem Content="S-Curve"/>
-                    <ComboBoxItem Content="Logarithmic"/>
-                </ComboBox>
-            </StackPanel>
-
-            <TextBlock Text="Linear: constant rate. Quadratic: moderate curve. Cubic: aggressive perceptual decay (default fade-out). S-Curve: gentle start/end, fast middle. Logarithmic: fast initial change, slow tail."
-                       Style="{StaticResource UpsHintFlush}"
-                       TextWrapping="Wrap"
-                       Margin="0,0,0,10"/>
-
             <!-- Music Dashboard -->
             <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Music Dashboard" Style="{StaticResource UpsSectionTitle}"/></Border>
 

@@ -35,6 +35,7 @@ Built with the help of Claude Code and Cursor IDE
 - Jingle volume is now its own setting rather than a share of your music volume, so turning the music down no longer silences achievement sounds.
 - Turning the Music Dashboard on or off now prompts for the restart it needs.
 - Opening Spotify on startup is no longer experimental — now in General → Miscellaneous, still off by default.
+- Fade curves are no longer experimental — now in Live Effects → Fade Transitions, under Advanced.
 - Every "restart required" note in the settings is highlighted the same way, so they are easy to spot.
 
 ### Previous Version
