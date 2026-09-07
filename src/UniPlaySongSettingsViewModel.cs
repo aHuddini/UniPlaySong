@@ -3377,6 +3377,27 @@ namespace UniPlaySong
 
         public void BeginEdit()
         {
+            // Adopt whatever settings are actually in effect before showing them.
+            //
+            // Playnite calls GetSettings once and this view model is cached for the life of the
+            // plugin, so its settings object is the one loaded at startup. Anything that changes
+            // settings from OUTSIDE the dialog replaces that object rather than mutating it - the
+            // Fullscreen quick menu, a theme's {PluginSettings} binding, the Desktop Calm Down
+            // button - and the view model went on holding the startup copy. EndEdit then saved that
+            // copy over the newer one, reverting every such change.
+            //
+            // Reported as "saving any setting turns Calm Down off": the moon lit, the audio dimmed,
+            // and the next unrelated save in the dialog quietly put it back. Not specific to Calm
+            // Down - that is just the change you can hear.
+            //
+            // Assigned through the Settings PROPERTY so the setter moves the PropertyChanged
+            // subscription off the stale object, as CancelEdit already does.
+            var live = plugin.GetSettingsService()?.Current;
+            if (live != null && !ReferenceEquals(settings, live))
+            {
+                Settings = live;
+            }
+
             // Called when settings view is opened
             ScanLibraryStats();
             UpdateCacheStats();
