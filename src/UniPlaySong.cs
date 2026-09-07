@@ -2198,7 +2198,12 @@ namespace UniPlaySong
                 // backend swap when the toggle would actually flip the SDL2/NAudio choice — i.e. when no other
                 // NAudio-requiring feature is already on. If Live Effects is already on, the player is already NAudio and the
                 // processor activates simply by reading CalmDownModeEnabled in its Read() — no rebuild needed.
-                bool calmDownChanged = e.OldSettings.CalmDownModeEnabled != e.NewSettings.CalmDownModeEnabled;
+                // CalmDownOnIdle counts too. It needs the processor to exist BEFORE idle engages, and
+                // enabling it mid-session used to leave an SDL2 player in place with nothing to host
+                // the effect — so the feature did nothing at all until the next Playnite restart.
+                // CreateMusicPlayer already includes it, which is why it worked from a cold start.
+                bool calmDownChanged = e.OldSettings.CalmDownModeEnabled != e.NewSettings.CalmDownModeEnabled
+                    || e.OldSettings.CalmDownOnIdle != e.NewSettings.CalmDownOnIdle;
                 bool calmDownForcesBackendSwap = calmDownChanged && !e.NewSettings.LiveEffectsEnabled
                     && !e.NewSettings.ShowSpectrumVisualizer && !e.NewSettings.ShowPeakMeter
                     && !e.NewSettings.EnableTrueCrossfade;
@@ -3076,6 +3081,17 @@ namespace UniPlaySong
                         _fileLogger?.Debug(wantCalm
                             ? $"Idle Calm Down: engaging ({_settings.CalmDownIdleTimeoutMinutes}min)"
                             : "Input detected, releasing idle Calm Down");
+
+                        // The flag alone does nothing on SDL2 — CalmDownProcessor only exists in the
+                        // NAudio pipeline. Both routes into that pipeline are covered (startup via
+                        // CreateMusicPlayer, mid-session via the backend swap), so this should not
+                        // fire; say so loudly if it ever does, because the symptom is silence and
+                        // nothing else in the log would explain it.
+                        if (wantCalm && !_isUsingLiveEffectsPlayer)
+                        {
+                            _fileLogger?.Warn("Idle Calm Down engaged but the active player cannot host the effect "
+                                + "(SDL2). Restart Playnite, or toggle any Live Effects setting, to rebuild on NAudio.");
+                        }
                     }
                 }
             }

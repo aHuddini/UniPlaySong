@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -85,6 +85,25 @@ namespace UniPlaySong.Tests.Services
 
             StringAssert.Contains("CalmDownOnIdle ?? false", text,
                 "the player choice must account for idle Calm Down, not just the manual toggle");
+        }
+
+        [Test]
+        public void EnablingItMidSessionRebuildsOntoAPlayerThatCanHostIt()
+        {
+            // CreateMusicPlayer includes CalmDownOnIdle, so a cold start lands on NAudio and the
+            // feature works. Enabling it in the settings dialog is the other route in, and it used
+            // to leave an SDL2 player in place with no CalmDownProcessor — the flag flipped on
+            // schedule and absolutely nothing happened, with nothing in the log to say why.
+            // Reported as "set it to 1 minute and nothing happens".
+            var text = ReadSource("src", "UniPlaySong.cs");
+
+            var handler = text.IndexOf("private void OnSettingsServiceChanged(");
+            Assert.Greater(handler, -1);
+
+            // OnSettingsServiceChanged is long; the backend-swap block sits well into it.
+            var body = text.Substring(handler, System.Math.Min(16000, text.Length - handler));
+            StringAssert.Contains("CalmDownOnIdle != e.NewSettings.CalmDownOnIdle", body,
+                "toggling the idle setting must be able to trigger the backend swap, like the manual toggle");
         }
 
         [Test]
