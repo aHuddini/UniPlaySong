@@ -973,7 +973,7 @@ namespace UniPlaySong
             _idlePollTimer.Interval = TimeSpan.FromSeconds(10);
             _idlePollTimer.Tick += OnIdlePollTick;
             _idlePollTimer.Start();
-            Monitors.RandomPickerMonitor.Attach(_playbackService, _settings, _fileLogger);
+            Monitors.RandomPickerMonitor.Attach(_playbackService, _settings, _fileLogger, () => IsFullscreen);
 
             // Media key control (experimental)
             if (_settings?.EnableMediaKeyControl == true)
@@ -2358,7 +2358,7 @@ namespace UniPlaySong
 
                     // Attach is idempotent - it reassigns state and guards its class-handler
                     // registration - so this refreshes the captured settings without re-hooking.
-                    Monitors.RandomPickerMonitor.Attach(_playbackService, e.NewSettings, _fileLogger);
+                    Monitors.RandomPickerMonitor.Attach(_playbackService, e.NewSettings, _fileLogger, () => IsFullscreen);
                 }
                 catch (Exception ex)
                 {
@@ -3822,7 +3822,7 @@ namespace UniPlaySong
                 _libraryViewModel?.ResubscribeToEvents(_playbackService);
 
                 // Re-attach picker monitor to the new playback service
-                Monitors.RandomPickerMonitor.Attach(_playbackService, _settings, _fileLogger);
+                Monitors.RandomPickerMonitor.Attach(_playbackService, _settings, _fileLogger, () => IsFullscreen);
 
                 // Restart music for the current game if music was playing before the switch
                 if (wasPlaying && currentGame != null && _coordinator.ShouldPlayMusic(currentGame))
@@ -3891,7 +3891,7 @@ namespace UniPlaySong
 
                 _topPanelMediaControl?.ResubscribeToEvents(_playbackService);
                 _libraryViewModel?.ResubscribeToEvents(_playbackService);
-                Monitors.RandomPickerMonitor.Attach(_playbackService, _settings, _fileLogger);
+                Monitors.RandomPickerMonitor.Attach(_playbackService, _settings, _fileLogger, () => IsFullscreen);
 
                 // Now load and play the GME file on the new NAudio player
                 _playbackService.LoadAndPlayFile(filePath);
@@ -5619,15 +5619,13 @@ namespace UniPlaySong
                         }
                     };
 
-                    // Toggle visibility when setting changes
-                    if (_settingsService != null)
-                    {
-                        _settingsService.Current.PropertyChanged += (s, e) =>
-                        {
-                            if (e.PropertyName == nameof(UniPlaySongSettings.ShowMusicDashboard))
-                                _dashboardSidebarItem.Visible = _settings?.ShowMusicDashboard ?? false;
-                        };
-                    }
+                    // No live PropertyChanged handler here, deliberately. Playnite calls
+                    // GetSidebarItems once at startup and builds its sidebar from what it returns,
+                    // so flipping Visible later cannot produce an item that was never returned -
+                    // the settings page raises the restart prompt instead. The handler that used to
+                    // sit here also subscribed to _settingsService.Current by reference, which a
+                    // settings save replaces wholesale, so it stopped firing after the first save
+                    // and leaked onto the discarded object.
                 }
                 catch (Exception ex)
                 {

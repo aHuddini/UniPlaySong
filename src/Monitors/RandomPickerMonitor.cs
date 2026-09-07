@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.ComponentModel;
 using System.Reflection;
 using System.Windows;
@@ -16,6 +16,7 @@ namespace UniPlaySong.Monitors
         private static IMusicPlaybackService _playbackService;
         private static UniPlaySongSettings _settings;
         private static FileLogger _fileLogger;
+        private static Func<bool> _isFullscreen;
 
         // True while the picker dialog is open and this monitor is handling playback
         public static bool IsActive => _hookedViewModel != null;
@@ -26,11 +27,12 @@ namespace UniPlaySong.Monitors
         private static PropertyInfo _selectedActionProperty;
         private static Game _gameBeforePicker;
 
-        public static void Attach(IMusicPlaybackService playbackService, UniPlaySongSettings settings, FileLogger fileLogger = null)
+        public static void Attach(IMusicPlaybackService playbackService, UniPlaySongSettings settings, FileLogger fileLogger = null, Func<bool> isFullscreen = null)
         {
             _playbackService = playbackService;
             _settings = settings;
             _fileLogger = fileLogger;
+            _isFullscreen = isFullscreen ?? _isFullscreen;
 
             // RegisterClassHandler is permanent (no unregister API) — only call once
             if (!_classHandlerRegistered)
@@ -49,12 +51,28 @@ namespace UniPlaySong.Monitors
             _playbackService = null;
             _settings = null;
             _fileLogger = null;
+            _isFullscreen = null;
+        }
+
+        // The picker plays music only where the user allows music at all. Without this it ran in
+        // whichever mode the dialog happened to open in, ignoring Where Music Plays entirely -
+        // reported on the Fullscreen side, where the picker sang with the setting on Desktop only.
+        //
+        // Only the mode-state rule applies. The rest of the coordinator's gating is about how a
+        // library selection arrived (first-select skip, login skip, the Desktop auto-play lock) and
+        // says nothing about a dialog the user opened on purpose.
+        private static bool MusicAllowedHere()
+        {
+            if (_settings?.EnableMusic != true) return false;
+            if (_isFullscreen == null) return true;   // mode unknown: behave as before
+            return _settings.AllowsMusicInMode(_isFullscreen());
         }
 
         private static void OnWindowLoaded(object sender, RoutedEventArgs e)
         {
             if (!(sender is Window window)) return;
             if (_settings?.EnableRandomPickerMusic != true) return;
+            if (!MusicAllowedHere()) return;
             if (_hookedViewModel != null) return;
 
             // DataContext may not be set yet when Loaded fires (Playnite sets it via CreateAndOpenDialog)
@@ -71,6 +89,7 @@ namespace UniPlaySong.Monitors
             window.DataContextChanged -= OnWindowDataContextChanged;
 
             if (_settings?.EnableRandomPickerMusic != true) return;
+            if (!MusicAllowedHere()) return;
             if (_hookedViewModel != null) return;
 
             TryHookViewModel(window);

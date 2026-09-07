@@ -481,6 +481,20 @@ namespace UniPlaySong
             set { musicState = value; OnPropertyChanged(); }
         }
 
+        // Does MusicState permit music in the mode we are currently in?
+        //
+        // Just the mode-state half of MusicPlaybackCoordinator.ShouldPlayMusic, pulled out so the
+        // Random Game Picker can honour the same setting. The rest of ShouldPlayMusic - first-select
+        // skips, login skip, the Desktop auto-play lock - is about how a library SELECTION arrived
+        // and means nothing to a modal dialog the user opened deliberately, so the picker asks only
+        // this. Reported as the picker playing music with Where Music Plays set to another mode.
+        public bool AllowsMusicInMode(bool isFullscreen)
+        {
+            return isFullscreen
+                ? (MusicState == AudioState.Fullscreen || MusicState == AudioState.Always)
+                : (MusicState == AudioState.Desktop || MusicState == AudioState.Always);
+        }
+
         // Auto-play music on first launch in desktop mode
         public bool AutoPlayOnFirstLaunchDesktop
         {

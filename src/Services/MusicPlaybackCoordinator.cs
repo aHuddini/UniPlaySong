@@ -119,14 +119,16 @@ namespace UniPlaySong.Services
                 return false;
             }
 
+            // Mode state lives on the settings object so the Random Game Picker can apply the same
+            // rule without inheriting the selection-skip logic below, which does not apply to it.
             var state = _settings.MusicState;
-            if (_isFullscreen() && state != AudioState.Fullscreen && state != AudioState.Always)
+            if (_isFullscreen() && !_settings.AllowsMusicInMode(isFullscreen: true))
             {
                 _fileLogger?.Debug($"ShouldPlayMusic: Returning false - fullscreen mode but state is {state}");
                 return false;
             }
 
-            if (_isDesktop() && state != AudioState.Desktop && state != AudioState.Always)
+            if (_isDesktop() && !_settings.AllowsMusicInMode(isFullscreen: false))
             {
                 _fileLogger?.Debug($"ShouldPlayMusic: Returning false - desktop mode but state is {state}");
                 return false;
@@ -150,6 +152,23 @@ namespace UniPlaySong.Services
         // Handles game selection: coordinates skip logic and initiates playback if appropriate
         public void HandleGameSelected(Game game, bool isFullscreen)
         {
+            // Picker owns all playback while its dialog is open - don't interfere.
+            //
+            // This has to be the FIRST check in the method. It used to sit after the ShouldPlayMusic
+            // gate, which left every branch above it free to act on playback while the picker was
+            // running: the EnableMusic=off route into PlayGameMusic, the null-game fade, and
+            // ShouldPlayMusic's own _playbackService.Stop() on a MusicState mismatch. Reported as
+            // the picker's music and the library's music playing at the same time in Fullscreen,
+            // and as the picker ignoring Where Music Plays - both are this one ordering fault, since
+            // Playnite raises selection events while the dialog is open and each of those paths
+            // started or stopped a track underneath the picker's own.
+            if (RandomPickerMonitor.IsActive)
+            {
+                _fileLogger?.Debug($"HandleGameSelected: Random Picker active, skipping normal playback for {game?.Name ?? "(none)"}");
+                _firstSelect = false;
+                return;
+            }
+
             // Reset skip state when entering fullscreen for first time (matches PNS "Skip on startup" behavior)
             if (isFullscreen && !_hasSeenFullscreen && _settings?.SkipFirstSelectionAfterModeSwitch == true)
             {
@@ -258,14 +277,6 @@ namespace UniPlaySong.Services
 
                 // Stop any currently playing music (including default music)
                 _playbackService?.Stop();
-                _firstSelect = false;
-                return;
-            }
-
-            // Picker owns all playback while its dialog is open — don't interfere
-            if (RandomPickerMonitor.IsActive)
-            {
-                _fileLogger?.Debug($"HandleGameSelected: Random Picker active, skipping normal playback for {game.Name}");
                 _firstSelect = false;
                 return;
             }
