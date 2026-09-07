@@ -12,6 +12,7 @@ Packages:
       - '[New Setting] A Calm Down Mode button for the Desktop top panel, matching the one Fullscreen already has. Media Controls.'
       - '[New Page] Live Effects -> Calm Down: presets for how pronounced Calm Down is (Subtle, Warm, Muffled, Distant, Whisper), plus sliders for high cut, volume and transition time.'
       - '[Critical Fix] Saving settings reverted anything changed outside the settings dialog - Calm Down, and any toggle from the Fullscreen quick menu or a theme.'
+      - '[Improved] Every "restart required" note in the settings is highlighted the same way, so they are easy to spot.'
   - Version: 1.8.6
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-09-05

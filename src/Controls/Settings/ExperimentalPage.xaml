@@ -119,10 +119,13 @@
             <CheckBox Style="{StaticResource UpsToggle}" Content="Control music with keyboard media keys"
                       IsChecked="{Binding Settings.EnableMediaKeyControl}"
                       Margin="0,5,0,5"/>
-            <TextBlock Text="Control music playback using your keyboard's media keys (Play/Pause, Next Track, etc) if your keyboard has them. If another application (e.g. Spotify) has already claimed the media keys, some keys may not register. Requires Playnite restart to take effect."
-                       Style="{StaticResource UpsHint}"
+            <TextBlock Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
-                       Margin="32,0,0,10"/>
+                       Margin="32,0,0,10">
+                <Run Text="Control music playback using your keyboard's media keys (Play/Pause, Next Track, etc) if your keyboard has them. If another application (e.g. Spotify) has already claimed the media keys, some keys may not register."/>
+                <Run Text="Requires a Playnite restart to take effect."
+                     Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
+            </TextBlock>
 
             <!-- NAudio Fade Curve Tuning -->
             <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="NAudio Fade Curves" Style="{StaticResource UpsSectionTitle}"/></Border>
@@ -184,7 +187,9 @@
                       CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
                       Margin="0,5,0,5"/>
             <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="32,0,0,10">
-                A dedicated sidebar panel with spectrum visualizer, now playing display, playback controls, song list for the selected game, and music library stats. Restart required.
+                <Run Text="A dedicated sidebar panel with spectrum visualizer, now playing display, playback controls, song list for the selected game, and music library stats."/>
+                <Run Text="Restart required."
+                     Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
             </TextBlock>
 
         </StackPanel>

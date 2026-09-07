@@ -264,8 +264,11 @@
                     </StackPanel>
                 </RadioButton>
                 <StackPanel Margin="24,2,0,0">
-                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,6"
-                               Text="For games with no music available, Spotify app music is used as fallback. Spotify must be open on Desktop. Playnite Restart required."/>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,6">
+                        <Run Text="For games with no music available, Spotify app music is used as fallback. Spotify must be open on Desktop."/>
+                        <Run Text="Playnite restart required."
+                             Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
+                    </TextBlock>
                     <CheckBox Content="Skip to a new Spotify track on each no-music game (Switch Mode)"
                               Style="{StaticResource UpsToggleChildFlush}"
                               IsChecked="{Binding Settings.SpotifySkipOnGap}"

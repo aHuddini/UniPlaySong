@@ -116,8 +116,11 @@
                         <TextBlock Text="Spotify Desktop App" VerticalAlignment="Center" FontSize="12.5"/>
                     </StackPanel>
                 </RadioButton>
-                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10"
-                           Text="Uses Spotify as continuous background music instead of a UPS pool. UPS pauses and resumes it on game launch, video, focus loss and lock. Restart required for this option to take effect."/>
+                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10">
+                    <Run Text="Uses Spotify as continuous background music instead of a UPS pool. UPS pauses and resumes it on game launch, video, focus loss and lock."/>
+                    <Run Text="Restart required for this option to take effect."
+                         Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
+                </TextBlock>
 
             </StackPanel>
 

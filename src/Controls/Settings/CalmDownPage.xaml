@@ -20,7 +20,7 @@
 
             <TextBlock Text="Calm Down" Style="{StaticResource UpsPageTitle}"/>
             <TextBlock Style="{StaticResource UpsPageSubtitle}"
-                       Text="Softens the music instead of stopping it — rolls off the treble and eases the volume down, then back up when you turn it off."/>
+                       Text="Softens the music to be more friendly for late night browsing sessions."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Mode" Style="{StaticResource UpsSectionTitle}"/>
@@ -29,7 +29,7 @@
             <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Calm Down Mode"
                       IsChecked="{Binding Settings.CalmDownModeEnabled}"/>
             <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,10"
-                       Text="Shared by Desktop and Fullscreen — turning it on in one turns it on in both. In Fullscreen you can switch it on and off as you browse from Extensions menu → [UPS] Calm Down Mode."/>
+                       Text="Default: Off. Synced between Desktop and Fullscreen. Turning this on will turn it on in both modes. In Fullscreen you can switch Calm Down Mode on and off as you browse from Extensions menu → [UPS] Calm Down Mode."/>
 
             <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                 <TextBlock Text="Preset" Style="{StaticResource UpsLabel}" Width="140"/>

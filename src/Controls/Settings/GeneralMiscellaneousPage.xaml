@@ -33,8 +33,11 @@
                       IsChecked="{Binding Settings.ShowSettingsSidebarButton}"
                       Command="{Binding SetRestartRequired}"
                       CommandParameter="{Binding RelativeSource={RelativeSource Self}}"/>
-            <TextBlock Style="{StaticResource UpsHint}"
-                       Text="Puts a UniPlaySong icon in the Desktop sidebar for quick access to these settings. Restart required."/>
+            <TextBlock Style="{StaticResource UpsHint}">
+                <Run Text="Puts a UniPlaySong icon in the Desktop sidebar for quick access to these settings."/>
+                <Run Text="Restart required."
+                     Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
+            </TextBlock>
 
         </StackPanel>
     </ScrollViewer>

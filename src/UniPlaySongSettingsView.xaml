@@ -281,11 +281,11 @@
                 <TabItem Header="Live Effects">
                     <settings:EffectsPage/>
                 </TabItem>
-                <TabItem Header="Visualizers">
-                    <settings:VisualizersPage/>
-                </TabItem>
                 <TabItem Header="Calm Down">
                     <settings:CalmDownPage/>
+                </TabItem>
+                <TabItem Header="Visualizers">
+                    <settings:VisualizersPage/>
                 </TabItem>
             </TabControl>
         </TabItem>
