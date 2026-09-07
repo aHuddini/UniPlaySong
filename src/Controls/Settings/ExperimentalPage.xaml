@@ -180,9 +180,11 @@
 
             <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Music Dashboard sidebar panel (Desktop only)"
                       IsChecked="{Binding Settings.ShowMusicDashboard}"
+                      Command="{Binding SetRestartRequired}"
+                      CommandParameter="{Binding RelativeSource={RelativeSource Self}}"
                       Margin="0,5,0,5"/>
             <TextBlock TextWrapping="Wrap" Style="{StaticResource UpsHint}" Margin="32,0,0,10">
-                A dedicated sidebar panel with spectrum visualizer, now playing display, playback controls, song list for the selected game, and music library stats.
+                A dedicated sidebar panel with spectrum visualizer, now playing display, playback controls, song list for the selected game, and music library stats. Restart required.
             </TextBlock>
 
         </StackPanel>
