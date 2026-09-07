@@ -16,6 +16,7 @@ Packages:
       - '[Graduated] Fade curves are no longer experimental and have moved to Live Effects -> Fade Transitions, under a folded Advanced section.'
       - '[New Setting] Calm Down can switch itself on after a set time with no input, and off again on your next keypress. In Live Effects -> Calm Down.'
       - '[Improved] Every "restart required" note in the settings is highlighted the same way, so they are easy to spot.'
+      - '[Docs] The documentation on GitHub has been brought up to date with UPS''s current architecture and features, including the theme integration guide.'
   - Version: 1.8.6
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-09-05
