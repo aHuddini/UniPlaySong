@@ -8,6 +8,7 @@ Packages:
       - '[Improved] Jingle volume is now its own setting instead of a share of your Music Volume, so lowering the music no longer makes achievement and jingle sounds inaudible. Default is 50%.'
       - '[Fix] The Random Game Picker played music on top of your library music, and played it regardless of the Where Music Plays setting.'
       - '[Improved] Enabling or disabling the Music Dashboard now prompts for the Playnite restart it needs.'
+      - '[New Setting] Number of bars for the spectrum visualizer (1-12), for themes whose top panel is short on room. Live Effects -> Visualizers.'
   - Version: 1.8.6
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-09-05

@@ -220,6 +220,7 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.VizFftSize),
                     nameof(UniPlaySongSettings.VizFftTimerMode),
                     nameof(UniPlaySongSettings.VizGradientEnabled),
+                    nameof(UniPlaySongSettings.VizBarCount),
                     nameof(UniPlaySongSettings.VizGravity),
                     nameof(UniPlaySongSettings.VizOpacityMin),
                     nameof(UniPlaySongSettings.VizPeakHoldMs),

@@ -2789,6 +2789,19 @@ namespace UniPlaySong
             set { vizGradientEnabled = value; OnPropertyChanged(); }
         }
 
+        // How many bars the spectrum visualizer draws (1-12). Fewer bars means a narrower control:
+        // each bar is 3px plus a 1px gap, so 12 bars span 47px and 6 span 23px.
+        //
+        // This exists for Desktop themes whose top panel is styled with short or circular buttons,
+        // where the full-width visualizer does not fit. The visualizer still covers the whole
+        // frequency range at any count - the bands are resampled, not truncated - so it stays a
+        // spectrum rather than becoming a zoomed-in view of the bass.
+        public int VizBarCount
+        {
+            get => vizBarCount;
+            set { vizBarCount = Math.Max(1, Math.Min(12, value)); OnPropertyChanged(); }
+        }
+
         // Dynamic theme colors — extracted from game background image at runtime.
         // Defaults to Classic white; updated by GameColorExtractor on game selection.
         [JsonIgnore]
@@ -2859,6 +2872,7 @@ namespace UniPlaySong
         private VizPreset selectedVizPreset = VizPreset.Punchy; // Current visualizer preset
         private int vizColorTheme = 0;               // VizColorTheme enum — bar color theme (0=Dynamic)
         private bool vizGradientEnabled = true;      // true = gradient bars, false = solid color
+        private int vizBarCount = 12;                // 1-12 — how many bars are drawn (12 = full width)
         private int dynMinBrightnessBottom = 200;    // 0-255 — min brightness floor for bottom (gradient base) color
         private int dynMinBrightnessTop = 150;       // 0-255 — min brightness floor for top (gradient tip) color
         private int dynMinSatBottom = 30;            // 0-100 (%) — min saturation for bottom color

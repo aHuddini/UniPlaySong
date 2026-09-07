@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,35 +17,49 @@ namespace UniPlaySong.DeskMediaControl
     {
         // Visualization data
         private float[] _spectrumData;
-        private readonly float[] _barHeights; // current display height (0..1)
+        private float[] _barHeights; // current display height (0..1)
         private int _currentFftSize; // tracks which FFT size the bin ranges are configured for
 
         // Peak hold + gravity drop state
-        private readonly float[] _peakHoldTimer; // seconds remaining at peak before falling
-        private readonly float[] _fallVelocity;  // current fall speed (accelerates via gravity)
+        private float[] _peakHoldTimer; // seconds remaining at peak before falling
+        private float[] _fallVelocity;  // current fall speed (accelerates via gravity)
 
         // Bar elements
-        private readonly Rectangle[] _bars;
-        private readonly ScaleTransform[] _barScales;
+        private Rectangle[] _bars;
+        private ScaleTransform[] _barScales;
 
         // Dirty checking — last committed pixel values
-        private readonly float[] _lastScaleY;
-        private readonly float[] _lastOpacity;
+        private float[] _lastScaleY;
+        private float[] _lastOpacity;
 
-        // ISO octave band bin boundaries — hardcoded for 44100Hz/2048-point FFT
-        private readonly int[] _binStarts;
-        private readonly int[] _binEnds;
+        // Band bin boundaries, resampled from the reference table for the current bar count
+        private int[] _binStarts;
+        private int[] _binEnds;
+
+        // Per-bar tuning, resampled from the reference tables for the current bar count.
+        // At the reference count these are copies of the tables themselves.
+        private float[] _barGain;
+        private float[] _bleedFraction;
+        private float[] _barGravityScale;
 
         // Settings accessor (optional — uses defaults if null)
         private Func<UniPlaySongSettings> _getSettings;
 
         // Layout constants
-        private const int BarCount = 12;
+        //
+        // ReferenceBarCount is what every tuning table below is calibrated for - the band
+        // boundaries, the per-bar gains, the bleed fractions and the gravity scales all have
+        // exactly this many entries. Any other bar count resamples them (see BuildBars), and the
+        // resampling is the identity at this count, so the default visualizer is unchanged.
+        private const int ReferenceBarCount = 12;
+        private const int MinBarCount = 1;
         private const double BarWidth = 3;
         private const double BarGap = 1;
         private const double BarMaxHeight = 18;
-        private const double ControlWidth = (BarWidth + BarGap) * BarCount - BarGap;
         private const double ControlHeight = 20;
+
+        // How many bars this instance is currently drawing.
+        private int _barCount = ReferenceBarCount;
 
         // Animation defaults
         private const float PeakHoldTime = 0.08f;   // seconds to hold at peak before falling (~5 frames)
@@ -89,13 +103,13 @@ namespace UniPlaySong.DeskMediaControl
         };
 
         // Scratch buffers for bleed computation (avoids allocation per frame)
-        private readonly float[] _bleedBuffer = new float[BarCount];
-        private readonly float[] _bleedOrig = new float[BarCount];
+        private float[] _bleedBuffer;
+        private float[] _bleedOrig;
 
         // UI-side smoothing — second pass of asymmetric EMA (fast rise, smooth fall). This smooths the post-bleed
         // signal before the peak-hold animation, removing frame-to-frame jitter while preserving sharp beat attacks.
         // Rise/fall alphas are configurable via VizSmoothRise / VizSmoothFall settings.
-        private readonly float[] _smoothedTarget = new float[BarCount];
+        private float[] _smoothedTarget;
 
         // Per-bar direct gain — calibrated for -80dB FFT range with squared curve.
         // Bass has naturally very high FFT energy after squaring (~0.2-0.4 RMS),
@@ -180,7 +194,7 @@ namespace UniPlaySong.DeskMediaControl
 
         public SpectrumVisualizerControl()
         {
-            Width = ControlWidth;
+            // Width follows the bar count and is set by BuildBars.
             Height = ControlHeight;
             ClipToBounds = true;
             Margin = new Thickness(4, 0, 4, 0);
@@ -188,23 +202,60 @@ namespace UniPlaySong.DeskMediaControl
 
             BarBrush.Freeze();
 
-            _barHeights = new float[BarCount];
-            _peakHoldTimer = new float[BarCount];
-            _fallVelocity = new float[BarCount];
-            _lastScaleY = new float[BarCount];
-            _lastOpacity = new float[BarCount];
-            _bars = new Rectangle[BarCount];
-            _barScales = new ScaleTransform[BarCount];
-            _binStarts = new int[BarCount];
-            _binEnds = new int[BarCount];
+            BuildBars(ReferenceBarCount);
 
-            // Initialize bin ranges for default FFT size (will auto-reconfigure if provider differs)
-            ConfigureBinRanges(1024);
+            Visibility = Visibility.Collapsed;
+        }
+
+        // (Re)creates the bar rectangles and every per-bar buffer for a given count, and resamples
+        // the reference tuning tables onto it. Cheap - a handful of Rectangles - and only runs when
+        // the count actually changes, so it can be driven straight from the setting.
+        private void BuildBars(int count)
+        {
+            count = Math.Max(MinBarCount, Math.Min(ReferenceBarCount, count));
+            _barCount = count;
+
+            Children.Clear();
+
+            _barHeights = new float[count];
+            _peakHoldTimer = new float[count];
+            _fallVelocity = new float[count];
+            _lastScaleY = new float[count];
+            _lastOpacity = new float[count];
+            _bars = new Rectangle[count];
+            _barScales = new ScaleTransform[count];
+            _binStarts = new int[count];
+            _binEnds = new int[count];
+            _bleedBuffer = new float[count];
+            _bleedOrig = new float[count];
+            _smoothedTarget = new float[count];
+
+            // Resample the per-bar tuning. Each bar samples the reference tables at its own LOW
+            // frequency edge rather than its centre: RMS across a band is dominated by its lowest
+            // frequencies, so a wide bar behaves like the bass it contains. Centre-sampling would
+            // hand a 1-bar visualizer a treble gain of ~5 and peg it solid forever.
+            _barGain = new float[count];
+            _bleedFraction = new float[count];
+            _barGravityScale = new float[count];
+            for (int i = 0; i < count; i++)
+            {
+                double pos = i * (double)ReferenceBarCount / count;
+                _barGain[i] = SampleTable(BarGain, pos);
+                _bleedFraction[i] = SampleTable(BleedFraction, pos);
+                _barGravityScale[i] = SampleTable(BarGravityScale, pos);
+            }
+
+            // Bin ranges depend on the count, so force a reconfigure at the size already in use.
+            int fftSize = _currentFftSize > 0 ? _currentFftSize : 1024;
+            _currentFftSize = 0;
+            ConfigureBinRanges(fftSize);
+
+            Width = (BarWidth + BarGap) * count - BarGap;
 
             // Vertical offset to center the bars in the control
             double yOffset = (ControlHeight - BarMaxHeight) / 2.0;
 
-            for (int i = 0; i < BarCount; i++)
+            for (int i = 0; i < count; i++)
             {
                 // ScaleTransform with origin at bottom of the bar
                 var scale = new ScaleTransform(1.0, MinBarScale, 0, BarMaxHeight);
@@ -225,7 +276,18 @@ namespace UniPlaySong.DeskMediaControl
                 _bars[i] = bar;
             }
 
-            Visibility = Visibility.Collapsed;
+            // Brushes are applied by the per-frame dirty check; force it to run for the new bars.
+            _lastThemeIndex = -1;
+        }
+
+        // Linear interpolation into a reference table at a fractional index. Exact at whole
+        // positions, so at ReferenceBarCount every bar reads its own original entry.
+        private static float SampleTable(float[] table, double pos)
+        {
+            int lo = (int)Math.Floor(pos);
+            if (lo >= table.Length - 1) return table[table.Length - 1];
+            if (lo < 0) return table[0];
+            return table[lo] + (float)((table[lo + 1] - table[lo]) * (pos - lo));
         }
 
         // Provide a settings accessor so the visualizer can read tuning parameters live
@@ -269,7 +331,7 @@ namespace UniPlaySong.DeskMediaControl
             // Classic theme — always use the original static frozen brush
             if (themeIndex == (int)VizColorTheme.Classic)
             {
-                for (int i = 0; i < BarCount; i++)
+                for (int i = 0; i < _barCount; i++)
                     _bars[i].Fill = BarBrush;
                 return;
             }
@@ -298,7 +360,7 @@ namespace UniPlaySong.DeskMediaControl
                 brush = solid;
             }
 
-            for (int i = 0; i < BarCount; i++)
+            for (int i = 0; i < _barCount; i++)
                 _bars[i].Fill = brush;
         }
 
@@ -328,18 +390,44 @@ namespace UniPlaySong.DeskMediaControl
             // Using 44100 as reference — other sample rates will shift slightly but 12 bars is forgiving.
             double scale = fftSize / 44100.0;
 
-            // Target frequency boundaries for 12 bars (Hz)
-            // These are the same regardless of FFT size
-            int[] freqStarts = { 40, 108, 194, 301, 452, 732, 1034, 1421, 2024, 2821, 4214, 7024 };
-            int[] freqEnds   = { 108, 194, 301, 452, 732, 1034, 1421, 2024, 2821, 4214, 7024, 11310 };
-
-            for (int i = 0; i < BarCount; i++)
+            // The reference band edges (Hz), same regardless of FFT size. Thirteen edges for the
+            // twelve reference bars. Hand-tuned rather than evenly spaced - the low end is
+            // deliberately compressed relative to a pure logarithmic split, so the bass bars stay
+            // readable - which is why other counts interpolate THIS curve instead of recomputing
+            // one. Interpolating in log-frequency space keeps the ratio between neighbouring bands
+            // constant, which is what makes a band split look even to the ear.
+            for (int i = 0; i < _barCount; i++)
             {
-                _binStarts[i] = Math.Max(1, (int)(freqStarts[i] * scale));
-                _binEnds[i] = Math.Min(spectrumSize, (int)(freqEnds[i] * scale) + 1);
+                double startHz = EdgeAt(i * (double)ReferenceBarCount / _barCount);
+                double endHz = EdgeAt((i + 1) * (double)ReferenceBarCount / _barCount);
+
+                _binStarts[i] = Math.Max(1, (int)(startHz * scale));
+                _binEnds[i] = Math.Min(spectrumSize, (int)(endHz * scale) + 1);
                 // Ensure at least 1 bin per bar
                 if (_binEnds[i] <= _binStarts[i]) _binEnds[i] = _binStarts[i] + 1;
             }
+        }
+
+        // Band edges for the reference layout: BandEdges[i] is where reference bar i starts, and
+        // the final entry closes the last band.
+        private static readonly double[] BandEdges =
+        { 40, 108, 194, 301, 452, 732, 1034, 1421, 2024, 2821, 4214, 7024, 11310 };
+
+        // Interpolates the reference edge curve at a fractional position, in log-frequency space so
+        // the spacing stays musically even. Exact at whole positions, so at ReferenceBarCount the
+        // bands come out as the table's own numbers.
+        private static double EdgeAt(double pos)
+        {
+            int lo = (int)Math.Floor(pos);
+            if (lo >= BandEdges.Length - 1) return BandEdges[BandEdges.Length - 1];
+            if (lo < 0) return BandEdges[0];
+
+            double frac = pos - lo;
+            if (frac <= 0) return BandEdges[lo];
+
+            double a = Math.Log(BandEdges[lo]);
+            double b = Math.Log(BandEdges[lo + 1]);
+            return Math.Exp(a + (b - a) * frac);
         }
 
         private void StartRendering()
@@ -376,6 +464,13 @@ namespace UniPlaySong.DeskMediaControl
             // Read tuning from settings (cached per frame, no allocation)
             var settings = _getSettings?.Invoke();
 
+            // Rebuild if the user changed how many bars they want (cheap int compare per frame).
+            // Live rather than restart-gated: the whole point of the setting is fitting the bars to
+            // a theme's top panel, which is a look-and-adjust job.
+            int wantBars = settings?.VizBarCount ?? ReferenceBarCount;
+            if (wantBars != _barCount)
+                BuildBars(wantBars);
+
             // Update bar brushes if color theme changed (cheap dirty check)
             UpdateBarBrushes(settings);
 
@@ -406,7 +501,7 @@ namespace UniPlaySong.DeskMediaControl
             bool anyBarVisible = false;
 
             // === Pass 1: Compute raw bar targets ===
-            for (int i = 0; i < BarCount; i++)
+            for (int i = 0; i < _barCount; i++)
             {
                 _bleedBuffer[i] = 0f;
 
@@ -425,9 +520,10 @@ namespace UniPlaySong.DeskMediaControl
                     float rms = binCount > 0 ? (float)Math.Sqrt(sumSq / binCount) : 0f;
 
                     // Apply per-bar gain with bass/treble scaling
-                    // Bars 0-5 use bassGainMult, bars 6-11 use trebleGainMult
-                    float regionMult = i < 6 ? bassGainMult : trebleGainMult;
-                    float value = rms * BarGain[i] * gainMult * regionMult;
+                    // Lower half bass, upper half treble - i * 2 < count is the reference split
+                    // (bars 0-5 of 12) generalised to any count.
+                    float regionMult = i * 2 < _barCount ? bassGainMult : trebleGainMult;
+                    float value = rms * _barGain[i] * gainMult * regionMult;
 
                     // Noise floor gate
                     if (rms < NoiseFloor) value = 0f;
@@ -461,17 +557,17 @@ namespace UniPlaySong.DeskMediaControl
             if (hasData && bleedScale > 0f)
             {
                 // Copy pre-bleed values to avoid feedback within the same pass
-                Array.Copy(_bleedBuffer, _bleedOrig, BarCount);
+                Array.Copy(_bleedBuffer, _bleedOrig, _barCount);
 
-                for (int i = 0; i < BarCount; i++)
+                for (int i = 0; i < _barCount; i++)
                 {
                     float bleed = 0f;
                     // Receive bleed from left neighbor
                     if (i > 0)
-                        bleed += _bleedOrig[i - 1] * BleedFraction[i - 1];
+                        bleed += _bleedOrig[i - 1] * _bleedFraction[i - 1];
                     // Receive bleed from right neighbor
-                    if (i < BarCount - 1)
-                        bleed += _bleedOrig[i + 1] * BleedFraction[i + 1];
+                    if (i < _barCount - 1)
+                        bleed += _bleedOrig[i + 1] * _bleedFraction[i + 1];
 
                     _bleedBuffer[i] = Math.Min(1f, _bleedBuffer[i] + bleed * bleedScale);
                 }
@@ -480,7 +576,7 @@ namespace UniPlaySong.DeskMediaControl
             // === Pass 3: UI-side asymmetric smoothing ===
             // Fast rise (beats punch through), slow fall (smooth trailing).
             // This runs at display rate (~60fps) so it smooths the ~43fps FFT output.
-            for (int i = 0; i < BarCount; i++)
+            for (int i = 0; i < _barCount; i++)
             {
                 float raw = _bleedBuffer[i];
                 float prev = _smoothedTarget[i];
@@ -489,7 +585,7 @@ namespace UniPlaySong.DeskMediaControl
             }
 
             // === Pass 4: Animation (peak hold + gravity drop) ===
-            for (int i = 0; i < BarCount; i++)
+            for (int i = 0; i < _barCount; i++)
             {
                 float target = _smoothedTarget[i];
 
@@ -513,7 +609,7 @@ namespace UniPlaySong.DeskMediaControl
                 {
                     // Gravity-accelerated fall (per-bar: bass snappy, treble floaty)
                     // Lerp between uniform (1.0) and full contrast (BarGravityScale) based on bias setting
-                    float barScale = 1f + (BarGravityScale[i] - 1f) * biasPct;
+                    float barScale = 1f + (_barGravityScale[i] - 1f) * biasPct;
                     float barGravity = gravity * barScale;
                     _fallVelocity[i] += barGravity * dt;
                     current -= _fallVelocity[i] * dt;

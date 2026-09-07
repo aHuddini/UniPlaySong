@@ -25,6 +25,9 @@ Built with the help of Claude Code and Cursor IDE
 ### Fixed
 - The Random Game Picker played over your library music, and played regardless of the Where Music Plays setting.
 
+### Added
+- Number of bars for the spectrum visualizer (1-12), so it fits top panels styled with short or circular buttons.
+
 ### Improved
 - Jingle volume is now its own setting rather than a share of your music volume, so turning the music down no longer silences achievement sounds.
 - Turning the Music Dashboard on or off now prompts for the restart it needs.

@@ -112,6 +112,17 @@
                                       IsChecked="{Binding Settings.VizGradientEnabled}"/>
                             <TextBlock Style="{StaticResource UpsHintFlush}"
                                        Text="On, a theme runs its two-tone gradient up each bar. Off, bars use a single flat colour. Classic is solid either way."/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,2">
+                                <TextBlock Text="Number of bars" Style="{StaticResource UpsLabel}" Width="140"/>
+                                <Slider Minimum="1" Maximum="12" Width="200" VerticalAlignment="Center"
+                                        Value="{Binding Settings.VizBarCount}"
+                                        TickFrequency="1" IsSnapToTickEnabled="True"/>
+                                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                           Text="{Binding Settings.VizBarCount}"/>
+                            </StackPanel>
+                            <TextBlock Style="{StaticResource UpsHintFlush}"
+                                       Text="Default 12. Fewer bars make the visualizer narrower, for themes whose top panel is short on room. Every count still covers the full frequency range."/>
                         </StackPanel>
                     </Border>
 

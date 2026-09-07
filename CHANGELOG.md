@@ -6,6 +6,14 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.8.7] - 2026-09-06
 
+### Added
+
+- **`VizBarCount` (Live Effects -> Visualizers, 1-12, default 12).** How many bars the spectrum visualizer draws. Each bar is 3px on a 1px gap, so the control spans 47px at 12 and 23px at 6 — asked for by a user whose Desktop theme styles the top panel with short, circular buttons the full-width visualizer will not sit beside.
+  - Every tuning table in `SpectrumVisualizerControl` is calibrated for 12 bars: the band edges, `BarGain`, `BleedFraction` and `BarGravityScale`. `BuildBars` resamples all four onto the chosen count, and the mapping (`i * 12 / count`) is the identity at 12, so the default visualizer is unchanged rather than merely close.
+  - Band edges interpolate in **log-frequency** space, which keeps the ratio between neighbouring bands constant. The reference edges are not evenly log-spaced — the low end is deliberately compressed, by up to 47% against a pure log split — so the curve is resampled rather than recomputed, preserving the hand-tuning at any count. Taking the first N entries instead would have left a 4-bar visualizer showing bass only, with the top of the spectrum invisible.
+  - The per-bar tables sample at each bar's **low** frequency edge, not its centre: RMS across a band is dominated by its lowest frequencies, so a wide bar behaves like the bass inside it. Centre-sampling would give a 1-bar visualizer a treble gain near 5.0 and peg it at full height permanently. The bass/treble gain split follows the count (`i * 2 < count`) rather than the fixed index 6.
+  - Applied live via a per-frame count comparison — the same dirty-check pattern the colour theme already uses — so no restart is needed; the setting exists to be eyeballed against a theme.
+
 ### Changed
 
 - **`JingleVolume` is an independent level, no longer a share of `MusicVolume`.** `JingleService.JingleLevel` was `music * jingle`, which made Music Volume a *ceiling*: with music at 20% a jingle could not exceed 0.20 at any slider position. Users who game with the music turned down reported achievement sounds were inaudible and that nothing they changed helped — correctly, since the only lever they had could attenuate but never lift. The level is now the setting alone.
