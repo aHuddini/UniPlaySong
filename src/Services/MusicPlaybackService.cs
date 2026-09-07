@@ -2898,12 +2898,30 @@ namespace UniPlaySong.Services
                     }
 
                     // PNS PATTERN: Check for randomization on song end (similar to PlayniteSound)
+                    //
+                    // Four things have to hold, and when any of them does not the track simply loops
+                    // with nothing said about why - which is indistinguishable from the setting
+                    // being broken. Reported as "Pick a new song when the current one ends does
+                    // nothing". State the reason instead.
+                    if (_currentSettings?.RandomizeOnMusicEnd != true || _currentGame == null || _isCurrentSongDefaultMusic)
+                    {
+                        _fileLogger?.Debug($"[LoopMode] Not picking a new song: RandomizeOnMusicEnd={_currentSettings?.RandomizeOnMusicEnd}, "
+                            + $"game={_currentGame?.Name ?? "(none)"}, isDefaultMusic={_isCurrentSongDefaultMusic} "
+                            + $"(default music never randomizes as game music; no game means the selection was cleared, "
+                            + $"which PlayOnlyOnGameSelect does in Fullscreen List view)");
+                    }
+
                     if (_currentSettings?.RandomizeOnMusicEnd == true && _currentGame != null)
                     {
                         // Only randomize for game music (not default music)
                         if (!_isCurrentSongDefaultMusic)
                         {
                             var songs = _fileService.GetAvailableSongs(_currentGame);
+                            if (songs.Count <= 1)
+                            {
+                                _fileLogger?.Debug($"[LoopMode] Not picking a new song: {_currentGame.Name} has {songs.Count} song(s) - "
+                                    + "there has to be more than one to pick a different one, so it loops");
+                            }
                             if (songs.Count > 1)
                             {
                                 // Select random song (avoiding immediate repeat, max 10 attempts)
