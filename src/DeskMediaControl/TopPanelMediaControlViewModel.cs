@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Windows;
@@ -24,14 +24,25 @@ namespace UniPlaySong.DeskMediaControl
         private readonly Action<Exception, string> _handleError;
         private readonly Func<SpotifyControlService> _getSpotifyService;
 
+        // Applies a settings change the way the Fullscreen quick menu does: clone, mutate, push
+        // through SettingsService so the diff event fires, and persist. Toggling CalmDownModeEnabled
+        // can force an SDL2 -> NAudio backend swap, which only the diff event triggers.
+        private readonly Action<Action<UniPlaySongSettings>> _updateSettings;
+
         private TopPanelItem _playPauseItem;
         private TopPanelItem _skipItem;
         private TopPanelItem _nowPlayingItem;
         private TopPanelItem _spectrumItem;
         private TopPanelItem _peakMeterItem;
         private TopPanelItem _progressItem;
+        private TopPanelItem _calmDownItem;
         private TextBlock _playPauseIcon;
         private TextBlock _skipIcon;
+        private TextBlock _calmDownIcon;
+
+        // Matches the skip button's dimming, so an inactive control reads the same way across the panel.
+        private const double CalmDownOffOpacity = 0.3;
+        private const double CalmDownOnOpacity = 1.0;
         private NowPlayingPanel _nowPlayingPanel;
         private SpectrumVisualizerControl _spectrumVisualizer;
         private PeakMeterControl _peakMeter;
@@ -51,6 +62,16 @@ namespace UniPlaySong.DeskMediaControl
             {
                 yield return _playPauseItem;
                 yield return _skipItem;
+            }
+
+            // Always yielded, shown via Visible. Playnite builds the panel from what this returns at
+            // startup, so an item yielded conditionally could not be turned on again without a
+            // restart - the same constraint the sidebar items have. Toggling Visible on an item that
+            // is always returned works live, which is how the visualizer and peak meter do it.
+            if (_calmDownItem != null)
+            {
+                _calmDownItem.Visible = settings?.ShowCalmDownButton == true;
+                yield return _calmDownItem;
             }
 
             // Progress bar — position depends on setting (BelowNowPlaying is embedded, not a separate item)
@@ -85,7 +106,8 @@ namespace UniPlaySong.DeskMediaControl
             Func<Game> getCurrentGame,
             Action<string> log = null,
             Action<Exception, string> handleError = null,
-            Func<SpotifyControlService> getSpotifyService = null)
+            Func<SpotifyControlService> getSpotifyService = null,
+            Action<Action<UniPlaySongSettings>> updateSettings = null)
         {
             _getPlaybackService = getPlaybackService ?? throw new ArgumentNullException(nameof(getPlaybackService));
             _getSettings = getSettings ?? throw new ArgumentNullException(nameof(getSettings));
@@ -93,6 +115,7 @@ namespace UniPlaySong.DeskMediaControl
             _log = log;
             _handleError = handleError;
             _getSpotifyService = getSpotifyService;
+            _updateSettings = updateSettings;
 
             InitializeTopPanelItems();
             InitializeSpectrumVisualizer();
@@ -141,6 +164,31 @@ namespace UniPlaySong.DeskMediaControl
                 Title = "UniPlaySong: Skip to Next Song (No additional songs)",
                 Visible = true,
                 Activated = OnSkipActivated
+            };
+
+            // Calm Down Mode — a moon that dims the music (low-pass + volume drop) rather than
+            // stopping it. Fullscreen has had this on its quick menu since 1.5.0; on Desktop it was
+            // buried in the settings dialog, which is the wrong place for something you reach for
+            // because the music is too much right now.
+            //
+            // Dimmed when off, full opacity when on: the glyph is the same either way, so opacity
+            // is what says whether it is engaged.
+            _calmDownIcon = new TextBlock
+            {
+                Text = MediaControlIcons.Moon,
+                FontSize = 18,
+                FontFamily = icoFont,
+                Opacity = CalmDownOffOpacity,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+
+            _calmDownItem = new TopPanelItem
+            {
+                Icon = _calmDownIcon,
+                Title = "UniPlaySong: Calm Down Mode",
+                Visible = false,   // set from the setting on every refresh
+                Activated = OnCalmDownActivated
             };
 
             // Reduce the gap between play/pause and skip so they look grouped.
@@ -423,6 +471,45 @@ namespace UniPlaySong.DeskMediaControl
             UpdateIcons();
         }
 
+        // Toggles Calm Down Mode. Routed through the same settings writer the Fullscreen quick menu
+        // uses rather than mutating the settings object directly: turning Calm Down on while the
+        // player is SDL2 has to swap the backend to NAudio (SDL2 has no post-mixer hook to host the
+        // processor), and that swap hangs off the diff event which only a real UpdateSettings fires.
+        // Direct mutation would leave the moon lit with nothing dimming the audio.
+        private void OnCalmDownActivated()
+        {
+            try
+            {
+                if (_updateSettings == null)
+                {
+                    _log?.Invoke("TopPanel: Calm Down button has no settings writer");
+                    return;
+                }
+
+                bool turningOn = _getSettings?.Invoke()?.CalmDownModeEnabled != true;
+                _updateSettings(s => s.CalmDownModeEnabled = turningOn);
+                _log?.Invoke($"TopPanel: Calm Down Mode {(turningOn ? "on" : "off")}");
+
+                UpdateCalmDownVisual(turningOn);
+            }
+            catch (Exception ex)
+            {
+                _handleError?.Invoke(ex, "toggling Calm Down Mode");
+            }
+        }
+
+        // The glyph never changes - only how lit it is - so this is the whole visual state.
+        private void UpdateCalmDownVisual(bool isOn)
+        {
+            if (_calmDownIcon == null) return;
+
+            _calmDownIcon.Opacity = isOn ? CalmDownOnOpacity : CalmDownOffOpacity;
+            if (_calmDownItem != null)
+                _calmDownItem.Title = isOn
+                    ? "UniPlaySong: Calm Down Mode (on)"
+                    : "UniPlaySong: Calm Down Mode";
+        }
+
         private void OnPlayPauseActivated()
         {
             try
@@ -569,6 +656,15 @@ namespace UniPlaySong.DeskMediaControl
                     UpdateSkipState(playbackService);
 
                     var settings = _getSettings?.Invoke();
+
+                    // Calm Down can also be toggled from the settings dialog, a theme, or the
+                    // Fullscreen menu, so the button reflects the setting rather than trusting its
+                    // own last click.
+                    if (_calmDownItem != null)
+                    {
+                        _calmDownItem.Visible = settings?.ShowCalmDownButton == true;
+                        UpdateCalmDownVisual(settings?.CalmDownModeEnabled == true);
+                    }
                     bool vizEnabled = settings?.ShowSpectrumVisualizer == true;
                     if (_spectrumItem != null)
                         _spectrumItem.Visible = vizEnabled;

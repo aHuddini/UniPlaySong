@@ -30,6 +30,11 @@
                          Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
                 </TextBlock>
     
+                <CheckBox Style="{StaticResource UpsToggle}" Content="Show Calm Down button on Panel (Desktop)"
+                          IsChecked="{Binding Settings.ShowCalmDownButton}"/>
+                <TextBlock Style="{StaticResource UpsHint}"
+                           Text="Adds a moon button to the Top Panel that turns Calm Down Mode on and off. Fullscreen already has this on its quick menu."/>
+
                 <CheckBox Style="{StaticResource UpsToggle}" Content="Show Media Controls in Windows Taskbar's Thumbnail Preview."
                           IsChecked="{Binding Settings.ShowTaskbarMediaControls}"
                           Command="{Binding SetRestartRequired}"

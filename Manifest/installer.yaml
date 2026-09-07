@@ -9,6 +9,7 @@ Packages:
       - '[Fix] The Random Game Picker played music on top of your library music, and played it regardless of the Where Music Plays setting.'
       - '[Improved] Enabling or disabling the Music Dashboard now prompts for the Playnite restart it needs.'
       - '[New Setting] Number of bars for the spectrum visualizer (1-12), for themes whose top panel is short on room. Live Effects -> Visualizers.'
+      - '[New Setting] A Calm Down Mode button for the Desktop top panel, matching the one Fullscreen already has. Media Controls.'
   - Version: 1.8.6
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-09-05

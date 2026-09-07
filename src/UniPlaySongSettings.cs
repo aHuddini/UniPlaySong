@@ -407,6 +407,7 @@ namespace UniPlaySong
         private bool showDesktopMediaControls = true;
         private bool showSpectrumVisualizer = true;
         private bool showPeakMeter = false;
+        private bool showCalmDownButton = false; // moon button on the Desktop top panel
         private bool autoDeleteMusicOnGameRemoval = true;
 
         // NAudio fade curve experimentation
@@ -1155,6 +1156,18 @@ namespace UniPlaySong
         {
             get => showPeakMeter;
             set { showPeakMeter = value; OnPropertyChanged(); }
+        }
+
+        // Show a moon button on the Desktop top panel that toggles Calm Down Mode.
+        //
+        // Fullscreen has had this on its quick menu since 1.5.0; Desktop only had the settings
+        // checkbox, which is a poor fit for something you reach for when the music is too much
+        // right now. Off by default: it adds a button to a top panel that themes and other
+        // extensions also compete for, so it is opt-in rather than imposed.
+        public bool ShowCalmDownButton
+        {
+            get => showCalmDownButton;
+            set { showCalmDownButton = value; OnPropertyChanged(); }
         }
 
         // NAudio fade-in curve shape (only applies when Live Effects or Visualizer enabled)

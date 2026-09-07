@@ -1,4 +1,4 @@
-namespace UniPlaySong.DeskMediaControl
+﻿namespace UniPlaySong.DeskMediaControl
 {
     // IcoFont icon constants for Desktop media controls
     public static class MediaControlIcons
@@ -16,5 +16,6 @@ namespace UniPlaySong.DeskMediaControl
         public const string MusicNote = "\uECA1";  // music-note
         public const string SoundWave = "\uECB0"; // sound-wave
         public const string Headphone = "\uEA37"; // headphone
+        public const string Moon = "\uEF9E";      // moon (icofont glyph name: moon)
     }
 }

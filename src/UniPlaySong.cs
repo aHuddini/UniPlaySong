@@ -3579,7 +3579,8 @@ namespace UniPlaySong
                     () => SelectedGames?.FirstOrDefault(),
                     msg => _fileLogger?.Debug(msg),
                     (ex, context) => _errorHandler?.HandleError(ex, context, showUserMessage: false),
-                    () => _spotifyControlService
+                    () => _spotifyControlService,
+                    mutate => UpdateSettingsFromMenu(mutate, "DesktopTopPanel")
                 );
                 _fileLogger?.Debug("TopPanelMediaControlViewModel initialized");
 
@@ -5506,6 +5507,13 @@ namespace UniPlaySong
         // toggled from the menu.
         private void UpdateSettingsFromMenu(Action<UniPlaySongSettings> mutate)
         {
+            UpdateSettingsFromMenu(mutate, "FullscreenQuickMenu");
+        }
+
+        // Shared by the Fullscreen quick menu and the Desktop top panel's Calm Down button. Source is
+        // only a log label, but a wrong one sends the next person reading the log to the wrong mode.
+        private void UpdateSettingsFromMenu(Action<UniPlaySongSettings> mutate, string source)
+        {
             try
             {
                 if (_settings == null || _settingsService == null) return;
@@ -5517,7 +5525,7 @@ namespace UniPlaySong
                 // Push the clone through SettingsService so the diff-based SettingsChanged
                 // event fires (downstream handlers like RecreateMusicPlayerForLiveEffects
                 // and the default-music reload logic depend on it).
-                _settingsService.UpdateSettings(clone, source: "FullscreenQuickMenu");
+                _settingsService.UpdateSettings(clone, source: source);
 
                 // Also persist to disk — the settings dialog's EndEdit does this via plugin.SavePluginSettings, but there's
                 // no EndEdit gate from the Fullscreen menu. Without this, the change propagates in-memory but is lost on next
