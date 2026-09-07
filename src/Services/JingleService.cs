@@ -89,7 +89,7 @@ namespace UniPlaySong.Services
         //
         // Deliberately NOT scaled by Playnite's fullscreen Background Volume either. Music is;
         // jingles are not, so they still cut through in Fullscreen.
-        private static double JingleLevel(UniPlaySongSettings settings)
+        internal static double JingleLevel(UniPlaySongSettings settings)
         {
             double jingle = (settings?.JingleVolume ?? Constants.DefaultJingleVolume) / Constants.VolumeDivisor;
             return Math.Max(0.0, Math.Min(1.0, jingle));

@@ -423,7 +423,11 @@ namespace UniPlaySong
         // the next Open cold again) — we Stop() and re-Open the new source instead.
         private void PlayPreview(string filePath)
         {
-            _previewVolume = Settings.MusicVolume / 100.0;
+            // Same level the sound will actually play at, from the one rule both playback paths
+            // use. It read MusicVolume until 1.8.7 decoupled jingles from it — after which the
+            // preview and the real thing could differ by any amount, and did. Reported as "the
+            // volume slider doesn't apply when clicking Preview, but works when one pops for real".
+            _previewVolume = Services.JingleService.JingleLevel(Settings);
             ++_previewGen;
 
             // Handler registered once and reused; it reads the fields (_previewGen/_previewVolume),

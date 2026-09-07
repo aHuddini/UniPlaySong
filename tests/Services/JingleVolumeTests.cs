@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Reflection;
 using NUnit.Framework;
 using UniPlaySong;
@@ -98,6 +99,25 @@ namespace UniPlaySong.Tests.Services
 
             Assert.NotNull(level, "both playback paths must share one level calculation");
             Assert.AreEqual(typeof(double), level.ReturnType);
+        }
+
+        [Test]
+        public void TheSettingsPreviewUsesTheSameLevelAsTheRealThing()
+        {
+            // The Preview buttons on the settings pages played at Music Volume while the real sound
+            // played at Jingle Volume. Harmless while the two were multiplied together; once 1.8.7
+            // decoupled them the preview could be wildly off, which is exactly what someone
+            // testing the new slider would notice first. Reported as "the volume slider doesn't
+            // apply when clicking Preview, but works when one pops for real".
+            var path = Path.Combine(TestContext.CurrentContext.TestDirectory,
+                "..", "..", "..", "..", "src", "UniPlaySongSettingsViewModel.cs");
+            if (!File.Exists(path)) Assert.Ignore("view model source not reachable from the test output directory");
+
+            var text = File.ReadAllText(path);
+            StringAssert.Contains("JingleService.JingleLevel(Settings)", text,
+                "the preview must read the shared level, not compute its own");
+            Assert.IsFalse(text.Contains("_previewVolume = Settings.MusicVolume"),
+                "the preview must not fall back to Music Volume");
         }
 
         [Test]

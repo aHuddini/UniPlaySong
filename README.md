@@ -23,7 +23,9 @@ Built with the help of Claude Code and Cursor IDE
 ## What's New - v1.8.7
 
 ### Fixed
+- Playnite's own Fullscreen background music could cut out shortly after startup, if you keep it on and use UniPlaySong only for jingles.
 - Saving settings undid anything you had changed outside the settings dialog, including Calm Down.
+- The Preview buttons in the settings played at your music volume instead of your jingle volume.
 - The Random Game Picker played over your library music, and played regardless of the Where Music Plays setting.
 
 ### Added

@@ -449,11 +449,34 @@ namespace UniPlaySong.Services
             onReady?.Invoke();
         }
 
+        // Mix_HaltMusic is PROCESS-GLOBAL. SDL_mixer has a single music stream, and it is shared with
+        // Playnite's own Fullscreen background music, which runs on the same library. So this only
+        // halts when THIS instance is the one using the stream — otherwise stopping a UniPlaySong
+        // player silences whatever else happened to be playing.
+        //
+        // Reported via Solaris issue #137: with "Suppress Playnite Vanilla Theme Music" off (so the
+        // user wants Playnite's own music and UniPlaySong only for jingles), Playnite's music
+        // started at Fullscreen launch and then cut out a few seconds later. The culprit was the
+        // jingle device prewarm: it loads a warm-up file, never plays it, and its cleanup called
+        // Close() -> Stop() -> Mix_HaltMusic(), stopping Playnite mid-track. Nobody with the default
+        // suppression on could see it, because that music was not playing to begin with.
+        //
+        // _isActive is set only by Play(), and _isPausedMidPlayback marks a player that paused the
+        // stream and still owns it — together they are "this instance is using the music stream".
+        // Same shape as the per-instance gate on the process-global Mix_HookMusicFinished above
+        // (issue #89). Deliberate suppression of Playnite's music is a separate, explicit
+        // Mix_HaltMusic call in UniPlaySong.cs and is unaffected.
         public void Stop()
         {
+            bool ownsMusicStream = _isActive || _isPausedMidPlayback;
+
             _isActive = false;
             _isPausedMidPlayback = false;
-            SDL2Mixer.Mix_HaltMusic();
+
+            if (ownsMusicStream)
+            {
+                SDL2Mixer.Mix_HaltMusic();
+            }
         }
 
         public void Close()
