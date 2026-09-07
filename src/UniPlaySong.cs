@@ -2057,6 +2057,15 @@ namespace UniPlaySong
             if (_settings != null)
                 Services.SDL2MusicPlayer.SetAudioBufferSamples(_settings.AudioBufferSamples);
 
+            // Refresh the top panel so items whose visibility is a setting appear or disappear now.
+            // TopPanelItem.Visible is observable, so flipping it updates Playnite's panel live - but
+            // nothing was calling UpdateIcons on a settings change, only on playback events. The
+            // visualizer and peak meter got away with it because their toggles force a player
+            // rebuild, which raises music events as a side effect; the Calm Down button changes no
+            // audio state, so its toggle produced nothing visible until the next song change and
+            // read as "needs a restart".
+            _topPanelMediaControl?.UpdateIcons();
+
             // Coordinator subscribes directly to SettingsService - no manual update needed
 
             // Resolve the game to re-react against. Prefer Playnite's current selection (covers the typical "user is

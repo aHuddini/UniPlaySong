@@ -62,6 +62,29 @@ namespace UniPlaySong.Tests.Services
         }
 
         [Test]
+        public void EnablingTheButtonRefreshesTheTopPanelImmediately()
+        {
+            // TopPanelItem.Visible is observable, so flipping it updates Playnite's panel live - but
+            // only if something flips it. UpdateIcons ran on playback events alone, so enabling the
+            // setting did nothing visible until the next song change, and the button looked like it
+            // needed a restart. Reported as exactly that.
+            //
+            // The visualizer and peak meter never hit this because their toggles force a player
+            // rebuild, which raises music events as a side effect. Calm Down changes no audio state,
+            // so it needs the settings-change path to refresh the panel itself.
+            var path = Src("UniPlaySong.cs");
+            if (!File.Exists(path)) Assert.Ignore("plugin source not reachable from the test output directory");
+
+            var text = File.ReadAllText(path);
+            var handler = text.IndexOf("private void OnSettingsServiceChanged(");
+            Assert.Greater(handler, -1, "settings changes are handled here");
+
+            var body = text.Substring(handler, 2000);
+            StringAssert.Contains("_topPanelMediaControl?.UpdateIcons()", body,
+                "a settings change must refresh the top panel, or setting-gated items need a restart");
+        }
+
+        [Test]
         public void TogglingGoesThroughTheSettingsWriterNotADirectMutation()
         {
             // Turning Calm Down on while the player is SDL2 has to swap the backend to NAudio - SDL2
