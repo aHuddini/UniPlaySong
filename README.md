@@ -30,6 +30,7 @@ Built with the help of Claude Code and Cursor IDE
 - Number of bars for the spectrum visualizer (1-12), so it fits top panels styled with short or circular buttons.
 - A Calm Down Mode button for the Desktop top panel, matching the one Fullscreen already has.
 - A Calm Down settings page with presets for how strong the effect is, plus manual sliders.
+- Calm Down can turn itself on after a set time with no input, like the idle volume option does.
 
 ### Improved
 - Jingle volume is now its own setting rather than a share of your music volume, so turning the music down no longer silences achievement sounds.

@@ -2194,6 +2194,9 @@ namespace UniPlaySong
         private float calmDownFadeLengthMultiplier = 2.0f;
         private float calmDownTransitionDurationSeconds = 1.5f;
         private CalmDownPreset selectedCalmDownPreset = CalmDownPreset.Default;
+        private bool calmDownOnIdle = false;
+        private int calmDownIdleTimeoutMinutes = 10;
+        private bool calmDownIdleActive = false;  // runtime only, never persisted
 
         private bool liveEffectsEnabled = true;
         private bool lowPassEnabled = false;
@@ -2273,6 +2276,38 @@ namespace UniPlaySong
         {
             get => calmDownVolumeMultiplier;
             set { calmDownVolumeMultiplier = Math.Max(0.05f, Math.Min(1f, value)); OnPropertyChanged(); }
+        }
+
+        // Turn Calm Down on by itself after a stretch with no keyboard or mouse input, and turn it
+        // back off on the next input. Mirrors LowerVolumeOnIdle, which shares the same poll.
+        public bool CalmDownOnIdle
+        {
+            get => calmDownOnIdle;
+            set { calmDownOnIdle = value; OnPropertyChanged(); }
+        }
+
+        // Minutes of inactivity before Calm Down engages (1-60). Only used when CalmDownOnIdle is on.
+        public int CalmDownIdleTimeoutMinutes
+        {
+            get => calmDownIdleTimeoutMinutes;
+            set { calmDownIdleTimeoutMinutes = Math.Max(1, Math.Min(60, value)); OnPropertyChanged(); }
+        }
+
+        // Runtime-only: idle has engaged Calm Down right now. CalmDownProcessor ORs this with
+        // CalmDownModeEnabled, so idle can soften the music WITHOUT touching the user's own setting.
+        //
+        // This has to be separate. Writing CalmDownModeEnabled would persist to disk, tick the
+        // checkbox on the settings page, and — worse — turning it back off on input would clobber
+        // the state of someone who had deliberately switched Calm Down on themselves.
+        //
+        // [JsonIgnore] so it always starts false each launch, and so a settings save (which clones
+        // through JSON) drops it rather than baking a transient state into the file. The idle poll
+        // re-asserts it every tick while idle, so a save mid-idle self-corrects within a second.
+        [JsonIgnore]
+        public bool CalmDownIdleActive
+        {
+            get => calmDownIdleActive;
+            set { calmDownIdleActive = value; OnPropertyChanged(); }
         }
 
         // Which preset the three values above came from. Custom means the user moved a slider.

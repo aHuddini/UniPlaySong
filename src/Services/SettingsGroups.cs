@@ -138,6 +138,8 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.BitcrusherDownsample),
                     nameof(UniPlaySongSettings.BitcrusherEnabled),
                     nameof(UniPlaySongSettings.CalmDownFadeLengthMultiplier),
+                    nameof(UniPlaySongSettings.CalmDownIdleTimeoutMinutes),
+                    nameof(UniPlaySongSettings.CalmDownOnIdle),
                     nameof(UniPlaySongSettings.SelectedCalmDownPreset),
                     nameof(UniPlaySongSettings.CalmDownLowPassCutoffHz),
                     nameof(UniPlaySongSettings.CalmDownModeEnabled),
@@ -333,6 +335,9 @@ namespace UniPlaySong.Services
             nameof(UniPlaySongSettings.ActiveMediaVolume),
             nameof(UniPlaySongSettings.ActiveQuickStartProfile),
             nameof(UniPlaySongSettings.BundledPresetMigrated),
+            // Live state, not a preference: idle has Calm Down engaged right now. [JsonIgnore],
+            // so it is false at every launch and there is nothing for a reset to restore.
+            nameof(UniPlaySongSettings.CalmDownIdleActive),
             nameof(UniPlaySongSettings.FFmpegPath),
             nameof(UniPlaySongSettings.IsMusicChanged),
             nameof(UniPlaySongSettings.LastAutoLibUpdateAssetsDownload),

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using NAudio.Dsp;
 using NAudio.Wave;
 using UniPlaySong.Services;
@@ -55,7 +55,7 @@ namespace UniPlaySong.Audio
             _channels = source.WaveFormat.Channels;
 
             var s = _settingsService.Current;
-            _lastSeenEnabled = s?.CalmDownModeEnabled ?? false;
+            _lastSeenEnabled = (s?.CalmDownModeEnabled ?? false) || (s?.CalmDownIdleActive ?? false);
             // Initialize at the steady-state strength matching the persisted toggle
             // so reopening Playnite with the setting on doesn't fade in audibly.
             _currentStrength = _lastSeenEnabled ? 1f : 0f;
@@ -76,7 +76,11 @@ namespace UniPlaySong.Audio
             if (s == null) return read;
 
             // --- Detect toggle flip and arm a ramp ----------------------------
-            bool wantEnabled = s.CalmDownModeEnabled;
+            // Either reason engages it: the user's own toggle, or idle having engaged it for them.
+            // Idle deliberately does NOT write CalmDownModeEnabled - that is a persisted setting, and
+            // turning it back off on input would clobber the state of someone who had switched Calm
+            // Down on themselves. Both routes ramp identically from here.
+            bool wantEnabled = s.CalmDownModeEnabled || s.CalmDownIdleActive;
             if (wantEnabled != _lastSeenEnabled)
             {
                 _lastSeenEnabled = wantEnabled;

@@ -14,6 +14,7 @@ Packages:
       - '[Critical Fix] Saving settings sometimes reverted any UPS functions changed outside the settings dialog - Calm Down, and any toggle from the Fullscreen quick menu or a theme.'
       - '[Graduated] Opening Spotify on Playnite startup is no longer experimental and has moved to General -> Miscellaneous. Off by default.'
       - '[Graduated] Fade curves are no longer experimental and have moved to Live Effects -> Fade Transitions, under a folded Advanced section.'
+      - '[New Setting] Calm Down can switch itself on after a set time with no input, and off again on your next keypress. In Live Effects -> Calm Down.'
       - '[Improved] Every "restart required" note in the settings is highlighted the same way, so they are easy to spot.'
   - Version: 1.8.6
     RequiredApiVersion: 6.16.0

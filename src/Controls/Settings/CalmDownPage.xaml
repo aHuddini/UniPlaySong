@@ -47,6 +47,24 @@
             </StackPanel>
 
             <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="When Idle" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Turn Calm Down on by itself after a period of no input"
+                      IsChecked="{Binding Settings.CalmDownOnIdle}"/>
+            <TextBlock Style="{StaticResource UpsHint}" TextWrapping="Wrap"
+                       Text="Softens the music while you are away and brings it back on the next keypress. Leaves the switch above alone — if you turned Calm Down on yourself, it stays on."/>
+            <StackPanel Orientation="Horizontal" Margin="32,0,0,14"
+                        IsEnabled="{Binding Settings.CalmDownOnIdle}">
+                <TextBlock Text="Idle timeout" Style="{StaticResource UpsLabel}" Margin="0,0,12,0"/>
+                <Slider Minimum="1" Maximum="60" Width="220" VerticalAlignment="Center"
+                        Value="{Binding Settings.CalmDownIdleTimeoutMinutes}"
+                        TickFrequency="5" IsSnapToTickEnabled="False"/>
+                <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                           Text="{Binding Settings.CalmDownIdleTimeoutMinutes, StringFormat='{}{0} min'}"/>
+            </StackPanel>
+
+            <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Fine Tuning" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 

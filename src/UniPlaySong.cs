@@ -2971,9 +2971,10 @@ namespace UniPlaySong
         {
             bool pauseEnabled = _settings?.PauseOnIdle == true;
             bool volumeEnabled = _settings?.LowerVolumeOnIdle == true;
+            bool calmDownEnabled = _settings?.CalmDownOnIdle == true;
 
-            // Fast exit: neither idle feature enabled
-            if (!pauseEnabled && !volumeEnabled)
+            // Fast exit: no idle feature enabled
+            if (!pauseEnabled && !volumeEnabled && !calmDownEnabled)
             {
                 if (_idleDetected)
                 {
@@ -2984,6 +2985,10 @@ namespace UniPlaySong
                 {
                     _idleVolumeLowered = false;
                     RestoreIdleVolume();
+                }
+                if (_settings != null && _settings.CalmDownIdleActive)
+                {
+                    _settings.CalmDownIdleActive = false;
                 }
                 return;
             }
@@ -3047,6 +3052,31 @@ namespace UniPlaySong
                 {
                     _idleVolumeLowered = false;
                     RestoreIdleVolume();
+                }
+
+                // Calm Down on Idle
+                //
+                // Sets the runtime-only CalmDownIdleActive rather than CalmDownModeEnabled, so the
+                // user's own toggle is left alone and idle cannot switch off a Calm Down they turned
+                // on themselves. CalmDownProcessor ORs the two and ramps on the audio thread, which
+                // is why there is no fade timer here to match the volume feature's.
+                //
+                // Re-asserted every tick rather than only on the transition: a settings save clones
+                // through JSON and drops this [JsonIgnore] flag, so without the re-assert an
+                // unrelated save during an idle stretch would quietly lift Calm Down until the next
+                // input. The write is guarded so it only fires when the value actually differs.
+                if (_settings != null)
+                {
+                    bool wantCalm = calmDownEnabled
+                        && idleMs >= (uint)(_settings.CalmDownIdleTimeoutMinutes * 60 * 1000);
+
+                    if (_settings.CalmDownIdleActive != wantCalm)
+                    {
+                        _settings.CalmDownIdleActive = wantCalm;
+                        _fileLogger?.Debug(wantCalm
+                            ? $"Idle Calm Down: engaging ({_settings.CalmDownIdleTimeoutMinutes}min)"
+                            : "Input detected, releasing idle Calm Down");
+                    }
                 }
             }
             catch (Exception ex)
@@ -3709,7 +3739,9 @@ namespace UniPlaySong
         private IMusicPlayer CreateMusicPlayer()
         {
             bool useLiveEffects = _settings?.LiveEffectsEnabled ?? false;
-            bool useCalmDown = _settings?.CalmDownModeEnabled ?? false;
+            // CalmDownOnIdle counts too: the processor has to already exist when idle engages,
+            // because swapping the backend at that moment would restart the song mid-idle.
+            bool useCalmDown = (_settings?.CalmDownModeEnabled ?? false) || (_settings?.CalmDownOnIdle ?? false);
             bool needsNAudio = useLiveEffects || useCalmDown || (_settings?.ShowSpectrumVisualizer ?? false) || (_settings?.ShowPeakMeter ?? false) || (_settings?.EnableTrueCrossfade ?? false) || _needsNAudioForFormat;
 
             if (needsNAudio)
