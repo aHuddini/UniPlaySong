@@ -130,17 +130,15 @@ Download or update directly from the Playnite add-on database, or browse Generic
 4. Use controller in fullscreen mode: **Menu → Extensions → UniPlaySong**
 
 ### Settings Tabs
-- **General**: Music behavior, top panel media controls, taskbar thumbnail controls, now playing display, tags, troubleshooting
-- **Playback**: Volume, fade effects, preview mode, song randomization, default music (6 sources including custom folder/random game/rotation pool), random game picker music, game property filter, filter mode, radio mode
-- **Gamification**: Completion celebration (fanfare + toast), achievement unlock sounds, ControlUp controller-detected sound, abandoned-status sound + toast
+- **Quick Start**: Pick a profile and you're done — covers the basics without touching anything else
+- **Setup**: Tool paths (yt-dlp, FFmpeg), YouTube search and downloading, automations
+- **General**: Top panel media controls, taskbar thumbnail controls, now playing display, tags, performance, the Desktop sidebar button
+- **Playback**: Startup behaviour, where music plays, default music (6 sources including custom folder / random game / rotation pool), randomization, radio mode, trigger methods, global overrides
 - **Pauses**: Pause on play, system lock, focus loss, minimize, system tray, external audio, idle/AFK
-- **Live Effects**: Real-time audio effects, reverb presets, spectrum visualizer
-- **Audio Editing**: EBU R128 volume normalization and silence trimming
-- **Theme Support**: Compatibility options for theme developers (overlay/video pause opt-outs, PS5-Experience mode)
-- **Downloads**: Tool paths, cookie source, YouTube search and download, search caching and hints database
-- **Migration**: Import/export from PlayniteSound
-- **Cleanup**: Storage management, reset options, factory reset
-- **Experimental**: Media key control, song progress bar, peak meter, library statistics with audio metrics, icon glow
+- **Live Effects**: Volume, fade transitions, real-time effects and reverb presets, Calm Down, spectrum visualizer
+- **Gamification**: Completion celebration (fanfare + toast), achievement unlock sounds, ControlUp controller-detected sound, abandoned-status sound + toast, jingle volume
+- **Library**: Statistics with audio metrics, EBU R128 normalization and silence trimming, audio management
+- **Advanced**: Theme support (overlay/video pause opt-outs, PS5-Experience mode), backup, migration from PlayniteSound, cleanup and factory reset, debug logging, experimental features
 
 **Music Location**: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`
 **Supported Formats**: MP3, WAV, OGG, FLAC, M4A, WMA — plus chiptune: VGM/VGZ (Sega Genesis / Mega Drive), NSF (NES / Famicom), SPC (SNES / Super Famicom), HES (NEC TurboGrafx-16 / PC Engine — requires sibling `.m3u` for multi-track playback or splitting).

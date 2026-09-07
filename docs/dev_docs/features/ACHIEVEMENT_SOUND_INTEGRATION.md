@@ -1,4 +1,4 @@
-# Achievement Sound Integration (URI) — Technical Reference
+﻿# Achievement Sound Integration (URI) — Technical Reference
 
 **Status:** shipped v1.5.10. **Audience:** UniPlaySong maintainers and the Playnite Achievements dev (and any other plugin/theme that wants to reuse it).
 
@@ -119,7 +119,7 @@ Windows sleep. See `docs/dev_docs/` issue-#81 notes and `src/Services/SleepCoord
 - No-op if `EnableAchievementSound` is off.
 - No-op (no crash) if UPS isn't installed — the URI just routes nowhere on the caller's side.
 - Plays over a running game (UPS music is already paused; no ducking needed).
-- Volume follows `MusicVolume` for now.
+- Volume is `JingleVolume` (Gamification → Miscellaneous), an **independent** level — not a share of `MusicVolume`. Turning the music down does not quieten achievement sounds with it. Deliberately not scaled by Playnite's fullscreen Background Volume either, so they still cut through in Fullscreen. See `JingleService.JingleLevel`, which both the jingle and external-sound paths read so they cannot drift.
 
 ## Per-rarity sound resolution (sound-pack model)
 
@@ -224,8 +224,9 @@ and `apiVersion` gives the caller something to refuse on.
 
 ## Extending
 
-- **Dedicated achievement volume.** Change the one line in `PlayExternalSound` that reads
-  `settings.MusicVolume` to a new `AchievementVolume` setting (default = current behavior). Non-breaking.
+- ~~**Dedicated achievement volume.**~~ **Shipped in 1.8.7** as `JingleVolume` — one level for every
+  non-music sound rather than one per event, because the request was always "the notification sounds
+  are too loud", never "the completion jingle should differ from an achievement".
 - **Trophy name / metadata.** The path can carry an extra segment
   (`.../playniteachievements/{tier}/{urlEncodedName}`) that today's code ignores — parse it when needed.
 - **Typed channel (optional, later).** If richer data + a return value is ever wanted, add a shared

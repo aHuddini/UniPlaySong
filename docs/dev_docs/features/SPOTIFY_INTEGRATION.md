@@ -86,11 +86,32 @@ Without this, pressing menu Play/Pause while Spotify is the active music is self
 - The hold **auto-clears** on the `!active` transition, so the next time Spotify becomes the active music it plays fresh rather than inheriting a stale held-pause.
 - Manual **Skip** clears the hold (skipping implies "play this").
 
-## Settings (three-site rule)
+## Settings
 
-`SpotifyRadioMode`, `SpotifySkipOnGap` — backing field default in `UniPlaySongSettings.cs`, property with `OnPropertyChanged()`, and the Playback-tab `Reset*Tab_Click` handler. Global reset is auto-covered by the JSON deep-clone of backing-field defaults.
+Two sites, not three: the backing-field default in `UniPlaySongSettings.cs` (with
+`OnPropertyChanged()`), and an entry in `SettingsGroups.Map` under the group whose page the setting
+appears on. Reset copies from a pristine `UniPlaySongSettings`, so **no handler writes a default
+value down** — the hand-written `Reset*Tab_Click` handlers this doc used to describe are gone. See
+[SETTINGS_DESIGN.md](../SETTINGS_DESIGN.md).
 
 - `SpotifyRadioMode` checkbox and the `DefaultMusicSource.Spotify` radio button both bind `SetRestartRequired` (Playnite's native restart prompt) — toggling them mid-session can race the live drive state; a restart cleanly resets all flags. `SpotifySkipOnGap` is behavior-only and needs no restart.
+
+## Auto-launch on startup (`AutoLaunchSpotifyOnStartup`)
+
+Opens the Spotify desktop app at Playnite startup when it is not already running **and** Spotify is
+the active Radio Mode / Default Music source. Off by default. Graduated out of Experimental in
+1.8.7; the setting and its optional `SpotifyExePath` live on **General → Miscellaneous**.
+
+- The launch decision is a **process check, not an SMTC check.** SMTC reports nothing at all when
+  Spotify is closed, which is indistinguishable from "open but idle" at the moment UPS has to
+  decide.
+- Launch and the subsequent ~10s poll run **off the UI thread**, and the whole thing is gated on
+  `OnApplicationStarted` — both deliberate, and both required by the deadlock guardrails in
+  `SpotifyControlService` (never raise `NowPlayingChanged` inside `_recomputeLock`, never block the
+  UI thread on a Spotify call).
+- `SpotifyExePath` is an optional override for Microsoft Store and custom installs; empty means
+  auto-detect at `%APPDATA%\Spotify\Spotify.exe`. It accepts a `.lnk` shortcut as well as an `.exe`.
+- Implementation: `SpotifyLauncher` + `UniPlaySong.TryAutoLaunchSpotify()`.
 
 ## Now-playing
 
