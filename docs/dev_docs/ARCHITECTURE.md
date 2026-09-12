@@ -681,7 +681,7 @@ page it appears on will be cleared by a button the user never associated with it
 | **Playback** | Startup, Music Mode, Default Music, Randomization, Trigger Methods, Global Override |
 | **Pauses** | Common Events, External Audio |
 | **Live Effects** | Volume, Fade Transitions, Live Effects, Calm Down, Visualizers |
-| **Gamification** | Library Events, PlayniteAchievements, ControlUp, Miscellaneous |
+| **Gamification** | Library Events, Achievements (Legacy), ControlUp, Miscellaneous |
 | **Library** | Statistics, Audio Editing, Audio Management |
 | **Advanced** | Theme Support, Backup, Migration, Cleanup, Debug, Experimental |
 

@@ -20,29 +20,13 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.8.7
-
-### Fixed
-- Playnite's own Fullscreen background music could cut out shortly after startup, if you keep it on and use UniPlaySong only for jingles.
-- Saving settings undid anything you had changed outside the settings dialog, including Calm Down.
-- The Preview buttons in the settings played at your music volume instead of your jingle volume.
-- The Random Game Picker played over your library music, and played regardless of the Where Music Plays setting.
-
-### Added
-- Number of bars for the spectrum visualizer (1-12), so it fits top panels styled with short or circular buttons.
-- A Calm Down Mode button for the Desktop top panel, matching the one Fullscreen already has.
-- A Calm Down settings page with presets for how strong the effect is, plus manual sliders.
-- Calm Down can turn itself on after a set time with no input, like the idle volume option does.
+## What's New - v1.8.8
 
 ### Improved
-- Jingle volume is now its own setting rather than a share of your music volume, so turning the music down no longer silences achievement sounds.
-- Turning the Music Dashboard on or off now prompts for the restart it needs.
-- Opening Spotify on startup is no longer experimental — now in General → Miscellaneous, still off by default.
-- Fade curves are no longer experimental — now in Live Effects → Fade Transitions, under Advanced.
-- Every "restart required" note in the settings is highlighted the same way, so they are easy to spot.
+- PlayniteAchievements plays its own unlock sounds now, so UniPlaySong's page for them is marked Legacy. It still works — but turn on one or the other, not both.
 
 ### Previous Version
-- **v1.8.6**: Fixed a crash reported on every achievement unlock, added a jingle volume setting, and added a UniPlaySong icon to Playnite's Desktop sidebar.
+- **v1.8.7**: Fixed Playnite's own Fullscreen music cutting out at startup, added a Calm Down page with presets and an idle timer, and made jingle volume its own setting.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
@@ -138,7 +122,7 @@ Download or update directly from the Playnite add-on database, or browse Generic
 - **Playback**: Startup behaviour, where music plays, default music (6 sources including custom folder / random game / rotation pool), randomization, radio mode, trigger methods, global overrides
 - **Pauses**: Pause on play, system lock, focus loss, minimize, system tray, external audio, idle/AFK
 - **Live Effects**: Volume, fade transitions, real-time effects and reverb presets, Calm Down, spectrum visualizer
-- **Gamification**: Completion celebration (fanfare + toast), achievement unlock sounds, ControlUp controller-detected sound, abandoned-status sound + toast, jingle volume
+- **Gamification**: Completion celebration (fanfare + toast), achievement unlock sounds (legacy — PlayniteAchievements plays its own now), ControlUp controller-detected sound, abandoned-status sound + toast, jingle volume
 - **Library**: Statistics with audio metrics, EBU R128 normalization and silence trimming, audio management
 - **Advanced**: Theme support (overlay/video pause opt-outs, PS5-Experience mode), backup, migration from PlayniteSound, cleanup and factory reset, debug logging, experimental features
 

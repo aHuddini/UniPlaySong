@@ -4,6 +4,12 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.8.8] - 2026-09-12
+
+### Changed
+
+- Relabelled the Gamification -> PlayniteAchievements page to Achievements (Legacy) and added a notice that PlayniteAchievements now plays unlock sounds natively; leaving both enabled plays two sounds per unlock, which UniPlaySong cannot detect
+
 ## [1.8.7] - 2026-09-06
 
 ### Added
