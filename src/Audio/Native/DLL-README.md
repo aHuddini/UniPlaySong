@@ -1,4 +1,4 @@
-﻿# `src/Audio/Native/` — native audio libraries
+# `src/Audio/Native/` — native audio libraries
 
 Loaded via P/Invoke at runtime. Copied into the build output by `src/UniPlaySong.csproj` and then
 into the `.pext`.
@@ -30,7 +30,7 @@ called from `src/Common/SpotifyLoopbackClient.cs`.
 
 ## ⚠️ Unsigned and self-built
 
-No Authenticode signature. [VirusTotal report](https://www.virustotal.com/gui/file/2244f2f9df8c61b66d3145aeaf69c9e10a959b94266c1e6dd2f747ec16993a28). Most likely
+No Authenticode signature. Most likely
 binary here to be flagged: reading another process's audio by PID is also spyware behaviour, and a
 heuristic engine cannot separate the two.
 
@@ -43,3 +43,12 @@ Verify independently: hash it against the manifest and rescan it yourself, rebui
 | Path | Contents |
 |---|---|
 | [`RetroChiptune/`](RetroChiptune/) | `gme.dll` + `z.dll` — retro chiptune playback. Both built from source; see its README. |
+
+## Scan reports
+
+| File | SHA-256 | Report |
+|---|---|---|
+| `SpotifyLoopback.dll` | `2244f2f9df8c61b66d3145aeaf69c9e10a959b94266c1e6dd2f747ec16993a28` | [VirusTotal](https://www.virustotal.com/gui/file/2244f2f9df8c61b66d3145aeaf69c9e10a959b94266c1e6dd2f747ec16993a28) |
+
+Addressed by SHA-256, so each link shows current engine results. Hash your copy (`sha256sum`)
+and compare — a different hash means the report does not describe the file you have.

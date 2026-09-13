@@ -59,37 +59,42 @@ namespace UniPlaySong.Tests.Services
                 + "is fixed - a plain README.md does not satisfy this.");
         }
 
-        // The audit records a SHA-256 per committed DLL. Rebuild one and its hash changes, so the
-        // recorded report then describes a binary that is no longer shipped - and it still reads as
-        // current, which is the worst kind of wrong for a provenance record.
+        // Each DLL-README records a SHA-256 and scan report for the binaries beside it. Rebuild one
+        // and its hash changes, so the recorded report then describes a file that is no longer
+        // shipped - while still reading as current, which is the worst kind of wrong for a
+        // provenance record. Checked against the README in the DLL's OWN folder, so the record
+        // cannot drift to somewhere nobody looks.
         [Test]
-        public void VirusTotalAuditMatchesTheCommittedBinaries()
+        public void ScanReportsMatchTheCommittedBinaries()
         {
             var root = RepoRoot();
             Assert.IsNotNull(root, "could not locate the repository root from the test directory");
 
-            var auditPath = Path.Combine(root.FullName, "docs", "dev_docs", "VIRUSTOTAL_AUDIT.md");
-            Assert.IsTrue(File.Exists(auditPath), "VIRUSTOTAL_AUDIT.md is missing");
-
-            var audit = File.ReadAllText(auditPath);
             var stale = new System.Collections.Generic.List<string>();
 
             foreach (var dll in CommittedDlls(root))
             {
-                var actual = Sha256(dll);
-                var name = Path.GetFileName(dll);
+                var readme = Path.Combine(Path.GetDirectoryName(dll), DllReadme);
 
-                if (!audit.Contains(actual))
+                // A missing README is EveryFolderContainingADllIsDocumented's failure, not this one.
+                if (!File.Exists(readme))
                 {
-                    stale.Add($"{name}: {actual}");
+                    continue;
+                }
+
+                var actual = Sha256(dll);
+
+                if (!File.ReadAllText(readme).Contains(actual))
+                {
+                    stale.Add($"{Path.GetFileName(dll)}: {actual}");
                 }
             }
 
             Assert.IsEmpty(stale,
-                "these committed DLLs have no matching SHA-256 in VIRUSTOTAL_AUDIT.md:\n  "
+                "these committed DLLs have no matching SHA-256 in the " + DllReadme + " beside them:\n  "
                 + string.Join("\n  ", stale)
                 + "\n\nThe binary changed since it was scanned. Re-submit it to VirusTotal, then "
-                + "update the hash and link in VIRUSTOTAL_AUDIT.md and docs/dev_docs/SHIPPED_BINARIES.md.");
+                + "update the hash and link in that " + DllReadme + ".");
         }
 
         private static string Sha256(string path)

@@ -12,7 +12,6 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](Theme%
 | [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md) | You're building or packaging. `version.txt` is the version single source of truth. |
 | [DEPENDENCIES.md](DEPENDENCIES.md) | You hit a missing DLL or external tool (SDL2, NAudio, yt-dlp, FFmpeg, the native Spotify loopback shim). |
 | [SHIPPED_BINARIES.md](SHIPPED_BINARIES.md) | You need to know what is inside the `.pext` and where each binary came from — every shipped `.dll` with its SHA-256, provenance and licence, which natives are unsigned or self-built, and the SDL2 sourcing hazard at package time. |
-| [VIRUSTOTAL_AUDIT.md](VIRUSTOTAL_AUDIT.md) | You need the scan report for a `.dll` in this repository — SHA-256 and VirusTotal link for each. |
 
 ## Audio pipeline
 

@@ -30,9 +30,7 @@ Game Music Emu is LGPL v2.1+. UniPlaySong is MIT. The combination is legal becau
 ## Build Source
 
 Built from source, not downloaded, to guarantee x86, the Nuked OPN2 core (LGPL-safe) and zlib
-integration for VGZ. Both are **unsigned**. VirusTotal reports:
-[`gme.dll`](https://www.virustotal.com/gui/file/187ab395972797f5629f4a9e61e88e75c31f6c5640776ca1b1bbc00f273f432a),
-[`z.dll`](https://www.virustotal.com/gui/file/b1f8e01096a7a0585a7a3738e3f371e332d8de4ddd88d8dab1ab51dfd8432560).
+integration for VGZ. Both are **unsigned**.
 Reproduce from the respective repo roots:
 
 ```bash
@@ -62,3 +60,13 @@ cmake --build . --config Release
 - [GmeReader.cs](../../GmeReader.cs) — `WaveStream + ISampleProvider` wrapper
 - [SUPPORTED_FILE_FORMATS.md](../../../../docs/dev_docs/SUPPORTED_FILE_FORMATS.md) — All supported audio formats
 - [DEPENDENCIES.md](../../../../docs/dev_docs/DEPENDENCIES.md) — Full dependency reference
+
+## Scan reports
+
+| File | SHA-256 | Report |
+|---|---|---|
+| `gme.dll` | `187ab395972797f5629f4a9e61e88e75c31f6c5640776ca1b1bbc00f273f432a` | [VirusTotal](https://www.virustotal.com/gui/file/187ab395972797f5629f4a9e61e88e75c31f6c5640776ca1b1bbc00f273f432a) |
+| `z.dll` | `b1f8e01096a7a0585a7a3738e3f371e332d8de4ddd88d8dab1ab51dfd8432560` | [VirusTotal](https://www.virustotal.com/gui/file/b1f8e01096a7a0585a7a3738e3f371e332d8de4ddd88d8dab1ab51dfd8432560) |
+
+Addressed by SHA-256, so each link shows current engine results. Hash your copy (`sha256sum`)
+and compare — a different hash means the report does not describe the file you have.

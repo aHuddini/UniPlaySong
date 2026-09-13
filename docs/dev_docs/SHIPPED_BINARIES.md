@@ -114,8 +114,9 @@ shipped by that project.
 
 ### Scan reports
 
-All five natives have VirusTotal reports: [`VIRUSTOTAL_AUDIT.md`](VIRUSTOTAL_AUDIT.md). If a signing
-certificate is ever obtained, record it there too.
+All five natives have VirusTotal reports, recorded with their SHA-256 in the `DLL-README.md` beside
+each binary (see the per-folder table below). If a signing certificate is ever obtained, record it
+there too.
 
 `SpotifyLoopback.dll` is the likeliest to be flagged. It calls `ActivateAudioInterfaceAsync` to
 capture another process's audio by PID, which is also spyware behaviour; a heuristic engine cannot
