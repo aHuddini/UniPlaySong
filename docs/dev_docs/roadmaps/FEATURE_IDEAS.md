@@ -6,6 +6,13 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 
 ---
 
+## Shipped in v1.8.8 (in development)
+
+| Feature | Category | Version |
+|---------|----------|---------|
+| ~~Listening history — time listened, play counts, most-played track, top games by time~~ | Dashboard & Statistics | v1.8.8 |
+| ~~Achievements page marked Legacy now PlayniteAchievements plays its own unlock sounds~~ | Gamification / UX | v1.8.8 |
+
 ## Shipped in v1.5.0 (in development)
 
 | Feature | Category | Version |
@@ -194,9 +201,10 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 | Feature | Description | Effort | Impact |
 |---------|-------------|--------|--------|
 | ~~**Music Dashboard**~~ ✅ | ~~Central hub showing library overview: total songs, soundtracks, storage used, most-played games, recently played. Tabbed interface (Games, Tracks, Artists, Genres, Stats). Game card grid, game detail view, Radio Mode, expanded Now Playing, audio-reactive cards. Own decoupled `DashboardPlaybackService`.~~ **Shipped v1.3.6** (Experimental) | Medium | High |
-| **Personal Top Charts** | "Top 10 Most Played Games", "Top 25 Songs", filterable by week/month/all-time. Requires play count tracking. Surface in dashboard. | Low | Medium |
+| ~~**Listening History**~~ ✅ | ~~Record what is actually played — time listened, play counts, per-track and per-game totals — as opposed to what is on disk.~~ **Shipped v1.8.8.** Aggregates in `listening-history.json`; `ListeningTracker` accumulates audible time from pause/resume transitions, `ListeningHistoryStore` persists, `ListeningInsights` computes the metrics as pure functions of a snapshot. Surfaced on Library → Statistics and the dashboard Stats tab. | Medium | High |
+| **Personal Top Charts** | "Top 10 Most Played Games", "Top 25 Songs", filterable by **week/month/all-time**. The play counts now exist (v1.8.8); what is missing is *time-bucketed* history — the store keeps running totals, not dated events, so "this month" cannot be answered without adding a capped event log beside the aggregates. `ListeningInsights.TopTracks(snapshot, n)` already answers the all-time half. | Low | Medium |
 | ~~**Library Statistics Page**~~ ✅ | ~~Detailed breakdown: file format distribution (MP3 vs FLAC %), bitrate stats, total duration, storage analysis. "50 GB of FLAC could be 12 GB as 320kbps MP3." Like foobar2000's aggregate Properties.~~ **Shipped v1.3.0** (**Enhanced v1.3.1:** avg song length, total playtime, ID3 tag count, bitrate distribution card, reducible track size card) | Low | Medium |
-| **Listening Trends Graph** | Line/bar chart showing listening hours per day/week/month over time. Visual analytics similar to Last.fm or Spotify Wrapped year-round. | Medium | Medium |
+| **Listening Trends Graph** | Line/bar chart showing listening hours per day/week/month over time. Visual analytics similar to Last.fm or Spotify Wrapped year-round. **Blocked on the same gap as Personal Top Charts:** v1.8.8 stores aggregates, not dated events. A trends graph needs a time-bucketed log — the deliberate next step if this area is picked up again, and the reason `ListeningSnapshot` was kept a plain record rather than a sealed summary. | Medium | Medium |
 
 ---
 
@@ -397,6 +405,7 @@ SDL2_mixer requires file paths (`Mix_LoadMUS()`) and doesn't accept raw PCM stre
 | **DMCA-Safe Mode** | Flag/skip DMCA-problematic songs. Tag as "stream-safe" or "DMCA risk." Only play safe tracks in this mode. | Low | High |
 | **Scrobbling (Last.fm / ListenBrainz)** | Submit played tracks to a scrobbling service. Two destinations to consider: **Last.fm** — broadest user base, OAuth handshake, but game-music tracks often aren't in their catalog and get rejected. **ListenBrainz** — open-source MIT-friendly alternative, no OAuth complications, simple `POST /1/submit-listens`, accepts any track metadata. ListenBrainz is the more practical target for game music; Last.fm for users who already use it. | Low | Medium |
 | **Music-Reactive Desktop Wallpaper** | Pipe FFT data to Wallpaper Engine / Lively Wallpaper. Audio-reactive desktop backgrounds. Uses existing `VisualizationDataProvider`. Could also write a dynamic image (current game's cover + subtle visualizer overlay) that wallpaper engines watch via file-watch, avoiding any injection/interop. | Medium | Medium |
+| **YouTube Music via pear-desktop** 🎯 **CHOSEN DIRECTION** | Control and read YouTube Music through [pear-desktop](https://github.com/pear-devs/pear-desktop)'s `api-server`. **Decided target** (2026-09-12) after comparing the two YT Music desktop clients; YTMDesktop is kept below as the fallback behind the same internal interface. **Control-only** — neither client hands out an audio stream, so this is a *source of what is playing*, not a source of audio.<br><br>**[pear-desktop](https://github.com/pear-devs/pear-desktop)** (v3.12.0, Jun 2026; the releases record a rename from `youtube-music`). **MIT**, which is the deciding factor. Its `api-server` plugin: REST + WebSocket, default port **26538**, `enabled: false` by default, `authStrategy` of `AUTH_AT_FIRST` or `NONE`, a generated `secret` and an `authorizedClients` list, optional HTTPS. Endpoints include `/api/v1/queue/next`, `/api/v1/seek-to`, `/api/v1/search`. Also has a real plugin system (backend/renderer/preload hooks over IPC), so a UPS-side plugin could live *inside* it if deeper integration were ever wanted. ⚠️ Its default `hostname` is `0.0.0.0`, i.e. bound to every interface — worth telling users to set `127.0.0.1` if UPS ever asks them to switch it on.<br><br>**Fallback: [YTMDesktop](https://github.com/ytmdesktop/ytmdesktop)**. **GPL-3.0** — fine over HTTP (no linking, so its licence does not reach UPS), but not the first target. Companion Server API v1: REST at `http://localhost:9863/api/v1` plus Socket.IO at `/api/v1/realtime`; auth is request-a-code then exchange-for-token bound to an `appId`. `/state` returns title, artist, album, artwork, **position and duration**, like status and the full queue; commands cover play/pause/toggle, next, previous, seek, volume, mute, repeat, shuffle and queue navigation, with `state-update` events instead of polling.<br><br>**Why this is cheaper than it looks:** it is the Spotify integration's shape again, and UPS has already built that shape — `SpotifyControlService`, a `RadioMusicSource`, `SpotifyNowPlaying`, and the suppression rules that stop UPS and an external player both sounding at once. It is arguably *easier* than Spotify was: Spotify needed SMTC for control plus the Web API for playlists and still cannot report reliable position, whereas either of these is one documented local API returning position, duration and queue directly.<br><br>**Decision:** build against pear-desktop first — MIT, a richer plugin story, and an auth mode (`NONE`) simple enough for a first spike. Put it behind an internal interface from the start so YTMDesktop can be added later without disturbing the caller; both speak REST plus a live channel and differ only in shape, so the seam costs almost nothing now and saves a rewrite if the second client is ever wanted. Live Effects cannot apply to either without the process-loopback capture already proven for Spotify (`SpotifyLoopbackClient`) pointed at the client's process. | Medium | High |
 | **Network Streaming Output** | Stream audio via HTTP/Icecast. Listen on phone while PC plays Playnite on TV. NAudio output duplication. | High | Low |
 | **Headphone Detection Auto-Pause** | Auto-pause on headphone unplug, resume on plug. Like smartphones. `MMDeviceEnumerator` device change events. | Medium | Medium |
 | **Audio Output Device Selection** | Choose audio output device independent of Windows default. Game music through speakers, game through headphones. NAudio `WaveOutEvent(deviceNumber)`. | Medium | Medium |
@@ -676,7 +685,14 @@ Technical improvements and library integrations identified through research. The
 
 ## Priority Recommendations
 
-### Quick Wins (Low effort, ship fast) — Top Picks Post-v1.4.6
+### Quick Wins (Low effort, ship fast)
+
+> **Reviewed at v1.8.8.** This list was last ordered just after v1.4.6, four minor versions ago.
+> Seven of its top picks were re-checked against the code at v1.8.8 — settings search, sleep timer,
+> song favourites, scrobbling, Discord Rich Presence, gapless playback and listening stats — and
+> all seven were still unshipped, so the ordering below still stands on its content even though its
+> heading did not. Listening stats has since shipped; the rest have not.
+
 
 1. ~~**Settings Import/Export (JSON)**~~ ✅ — **Shipped v1.5.0** as Settings Backup tab (JSON + Markdown snapshot)
 2. **Song Bookmarking / Favorites** — cross-game starring via flat JSON manifest, pairs with existing default-music-source picker
@@ -695,8 +711,8 @@ Technical improvements and library integrations identified through research. The
 15. Playback memory across sessions
 16. Quick mute toggle
 17. Copy song info to clipboard
-18. Total listening time tracker
-19. Personal top charts (most-played games/songs)
+18. ~~Total listening time tracker~~ ✅ — **Shipped v1.8.8** as listening history (Library → Statistics)
+19. **Personal top charts (most-played games/songs)** — *all-time* shipped v1.8.8 (most-played track, top games by time listened). The week/month filtering is NOT shipped and needs dated events; see the Dashboard & Statistics row.
 20. Auto-skip short files
 21. ~~"Calm Down" mode~~ ✅ — **Shipped v1.5.0**
 22. Audio ducking during game selection
@@ -723,24 +739,25 @@ Technical improvements and library integrations identified through research. The
 
 ### High-Value Features (Medium effort, big impact)
 
-1. **Settings Search Box** — with 10 tabs, this is the biggest UX win remaining
-2. **GME Expansion: GBS / SPC / HES / KSS / SAP / AY Track Managers** — leverage NSF Track Manager infrastructure
-3. **Multi-Track Manager Generalization** — refactor NsfTrackManager → ChiptuneTrackManager for format-agnostic reuse
-4. Windows SMTC (Win+G overlay + Bluetooth — media keys already shipped v1.3.2)
-5. Per-game effects presets (Low effort, High impact)
-6. Crossfade between games
-7. Context-aware playlists from game metadata
-8. DMCA-safe mode
-9. Discord Rich Presence
-10. Cross-game volume normalization
-11. Category-based default music
-12. Developer/publisher playlist
-13. Auto-pause on game audio detected
-14. Auto-pause on screen off/display sleep
-15. Reduce startup scan cost for large libraries
-16. Warm up NAudio mixer at startup
-17. Onboarding Welcome Tour
-18. "What's New" popup on first launch after update
+1. **YouTube Music via pear-desktop** 🎯 — the decided direction for YT Music (2026-09-12). MIT, one documented local API returning position/duration/queue, and it reuses the Spotify integration's whole shape. See Integration & Streaming.
+2. **Settings Search Box** — with 10 tabs, this is the biggest UX win remaining
+3. **GME Expansion: GBS / SPC / HES / KSS / SAP / AY Track Managers** — leverage NSF Track Manager infrastructure
+4. **Multi-Track Manager Generalization** — refactor NsfTrackManager → ChiptuneTrackManager for format-agnostic reuse
+5. Windows SMTC (Win+G overlay + Bluetooth — media keys already shipped v1.3.2)
+6. Per-game effects presets (Low effort, High impact)
+7. Crossfade between games
+8. Context-aware playlists from game metadata
+9. DMCA-safe mode
+10. Discord Rich Presence
+11. Cross-game volume normalization
+12. Category-based default music
+13. Developer/publisher playlist
+14. Auto-pause on game audio detected
+15. Auto-pause on screen off/display sleep
+16. Reduce startup scan cost for large libraries
+17. Warm up NAudio mixer at startup
+18. Onboarding Welcome Tour
+19. "What's New" popup on first launch after update
 
 ### Architecture / Technical Debt
 
@@ -764,7 +781,9 @@ Technical improvements and library integrations identified through research. The
 9. Visualizer as Fullscreen screensaver
 10. Game cover reactive wallpaper
 
-### Recently Shipped (v1.4 series — see full Shipped tables above)
+### Recently Shipped (see full Shipped tables above)
+
+- **v1.8.8:** Listening history (time listened, play counts, most-played track, top games by time listened), achievements page marked Legacy now PlayniteAchievements plays its own unlock sounds
 
 - **v1.4.6:** PC Engine (.hes) chiptune support, "Split HES Tracks" menu action, two new Bundled Ambient tracks from Mike Aniki (Hub OST, Login OST), `{PluginSettings}` quick-options framework for theme integration (validated against Aniki ReMake), LGPL §6 paperwork for bundled GME, `Enable Game Music` + `Enable Default Music` toggles in Fullscreen Extensions menu
 - **v1.4.5:** YouTube download performance overhaul (~30-50% faster), cookie-mode + Deno = ~2x faster downloads, yt-dlp version display in Settings, Fullscreen search-variant buttons (OST/Soundtrack/Music/Theme), FINISH button in download dialog, several download-dialog reliability fixes

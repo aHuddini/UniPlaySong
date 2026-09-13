@@ -405,10 +405,18 @@
 <p class="subtitle">Comprehensive collection of potential features, ranging from basic QoL improvements to ambitious experimental concepts. Check features you want to explore, then copy your selection to clipboard.</p>
 
 <div class="stats">
-  <div class="stat-card"><div class="number">187+</div><div class="label">Total Ideas</div></div>
-  <div class="stat-card"><div class="number" style="color: var(--low);">84+</div><div class="label">Shipped</div></div>
+  <div class="stat-card"><div class="number">158</div><div class="label">Ideas Tracked</div></div>
+  <div class="stat-card"><div class="number" style="color: var(--low);">91</div><div class="label">Shipped</div></div>
   <div class="stat-card"><div class="number">37</div><div class="label">Quick Wins Left</div></div>
   <div class="stat-card"><div class="number">18</div><div class="label">High Value</div></div>
+</div>
+
+<div class="shipped-section">
+  <h3>&#10003; Shipped in v1.8.8 (in development)</h3>
+  <div class="shipped-list">
+    <span class="shipped-chip">Listening history &#8212; time listened, play counts, most-played track, top games by time <span class="version">v1.8.8</span></span>
+    <span class="shipped-chip">Achievements page marked Legacy now PlayniteAchievements plays its own unlock sounds <span class="version">v1.8.8</span></span>
+  </div>
 </div>
 
 <div class="shipped-section">
@@ -598,19 +606,20 @@
 </div>
 
 <!-- ============================================ -->
-<h2><span class="category-icon">&#128202;</span> Dashboard & Statistics <span class="count">(4 ideas)</span></h2>
+<h2><span class="category-icon">&#128202;</span> Dashboard & Statistics <span class="count">(5 ideas)</span></h2>
 <table data-category="Dashboard & Statistics">
 <thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
 <tbody>
 <tr class="shipped"><td class="cb-cell"><input type="checkbox" checked disabled></td><td class="feature-name"><s>Music Dashboard</s> <span class="badge badge-shipped">Shipped v1.3.6</span></td><td class="feature-desc"><s>Central hub showing library overview. Tabbed interface (Games, Tracks, Artists, Genres, Stats), game card grid, Radio Mode, expanded Now Playing, audio-reactive cards. Own decoupled DashboardPlaybackService.</s></td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
-<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Personal Top Charts</td><td class="feature-desc">"Top 10 Most Played Games", "Top 25 Songs", filterable by week/month/all-time. Requires play count tracking. Surface in dashboard.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr class="shipped"><td class="cb-cell"><input type="checkbox" checked disabled></td><td class="feature-name"><s>Listening History</s> <span class="badge badge-shipped">Shipped v1.8.8</span></td><td class="feature-desc"><s>Record what is actually played &#8212; time listened, play counts, per-track and per-game totals &#8212; as opposed to what is on disk.</s> <strong>Shipped v1.8.8.</strong> Aggregates in <code>listening-history.json</code>; <code>ListeningTracker</code> accumulates audible time from pause/resume transitions, <code>ListeningHistoryStore</code> persists, <code>ListeningInsights</code> computes the metrics as pure functions of a snapshot. Surfaced on Library &#8594; Statistics and the dashboard Stats tab.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Personal Top Charts <span class="badge badge-shipped">Partial</span></td><td class="feature-desc">"Top 10 Most Played Games", "Top 25 Songs", filterable by <strong>week/month/all-time</strong>. All-time shipped v1.8.8 &#8212; <code>ListeningInsights.TopTracks(snapshot, n)</code> answers that half. The time filtering is <strong>not</strong> shipped: the store keeps running totals, not dated events, so "this month" needs a capped event log beside the aggregates.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
 <tr class="shipped"><td class="cb-cell"><input type="checkbox" checked disabled></td><td class="feature-name"><s>Library Statistics Page</s> <span class="badge badge-shipped">Shipped</span></td><td class="feature-desc"><s>Detailed breakdown: file format distribution (MP3 vs FLAC %), bitrate stats, total duration, storage analysis. Like foobar2000's aggregate Properties view.</s></td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
-<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Listening Trends Graph</td><td class="feature-desc">Line/bar chart showing listening hours per day/week/month over time. Visual analytics similar to Last.fm or Spotify Wrapped year-round.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Listening Trends Graph</td><td class="feature-desc">Line/bar chart showing listening hours per day/week/month over time. Visual analytics similar to Last.fm or Spotify Wrapped year-round. <strong>Blocked on the same gap as Personal Top Charts:</strong> v1.8.8 stores aggregates, not dated events &#8212; a trends graph needs a time-bucketed log.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
 </tbody>
 </table>
 
 <!-- ============================================ -->
-<h2><span class="category-icon">&#127925;</span> Playback & Listening Experience <span class="count">(29 ideas)</span></h2>
+<h2><span class="category-icon">&#127925;</span> Playback & Listening Experience <span class="count">(36 ideas)</span></h2>
 <table data-category="Playback & Listening Experience">
 <thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
 <tbody>
@@ -654,7 +663,7 @@
 </table>
 
 <!-- ============================================ -->
-<h2><span class="category-icon">&#128269;</span> Discovery & Smart Features <span class="count">(20 ideas)</span></h2>
+<h2><span class="category-icon">&#128269;</span> Discovery & Smart Features <span class="count">(19 ideas)</span></h2>
 <table data-category="Discovery & Smart Features">
 <thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
 <tbody>
@@ -717,7 +726,7 @@
 </table>
 
 <!-- ============================================ -->
-<h2><span class="category-icon">&#128279;</span> Integration & Streaming <span class="count">(15 ideas)</span></h2>
+<h2><span class="category-icon">&#128279;</span> Integration & Streaming <span class="count">(16 ideas)</span></h2>
 <table data-category="Integration & Streaming">
 <thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
 <tbody>
@@ -729,6 +738,7 @@
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">DMCA-Safe Mode</td><td class="feature-desc">Flag/skip DMCA-problematic songs. Tag as "stream-safe" or "DMCA risk."</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Scrobbling (Last.fm / ListenBrainz)</td><td class="feature-desc">Submit played tracks to a scrobbling service. <strong>Last.fm</strong> — broadest user base, OAuth handshake, but game-music tracks often aren't in their catalog. <strong>ListenBrainz</strong> — open-source MIT-friendly alternative, no OAuth, simple <code>POST /1/submit-listens</code>, accepts any track metadata. ListenBrainz is the more practical target for game music; Last.fm for users who already use it.</td><td class="feature-effort"><span class="badge badge-low">Low</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Reactive Wallpaper</td><td class="feature-desc">Pipe FFT data to Wallpaper Engine/Lively Wallpaper for audio-reactive desktop backgrounds.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
+<tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">YouTube Music via pear-desktop <span class="badge badge-high">Chosen</span></td><td class="feature-desc"><strong>&#127919; Decided direction (2026-09-12)</strong> &#8212; build against <a href="https://github.com/pear-devs/pear-desktop">pear-desktop</a>'s <code>api-server</code>; YTMDesktop kept below as the fallback behind the same internal interface. <strong>Control-only</strong> &#8212; neither client hands out an audio stream, so this is a source of <em>what is playing</em>, not a source of audio.<br><br><strong><a href="https://github.com/pear-devs/pear-desktop">pear-desktop</a></strong> (v3.12.0, Jun 2026; releases record a rename from <code>youtube-music</code>). <strong>MIT</strong>, the deciding factor. Its <code>api-server</code> plugin: REST + WebSocket, default port <strong>26538</strong>, <code>enabled: false</code> by default, <code>authStrategy</code> of <code>AUTH_AT_FIRST</code> or <code>NONE</code>, generated <code>secret</code> + <code>authorizedClients</code>, optional HTTPS. Endpoints include <code>/api/v1/queue/next</code>, <code>/api/v1/seek-to</code>, <code>/api/v1/search</code>. Has a real plugin system (backend/renderer/preload over IPC). &#9888; Default <code>hostname</code> is <code>0.0.0.0</code> &#8212; bound to every interface; tell users to set <code>127.0.0.1</code>.<br><br><strong>Fallback: <a href="https://github.com/ytmdesktop/ytmdesktop">YTMDesktop</a></strong>. <strong>GPL-3.0</strong> &#8212; fine over HTTP (no linking), but not the first target. Companion Server API v1: REST at <code>localhost:9863/api/v1</code> + Socket.IO at <code>/api/v1/realtime</code>; request-a-code then exchange-for-token bound to an <code>appId</code>. <code>/state</code> returns title, artist, album, artwork, <strong>position and duration</strong>, like status and queue; commands cover play/pause, next, previous, seek, volume, mute, repeat, shuffle, queue nav, with <code>state-update</code> events instead of polling.<br><br><strong>Cheaper than it looks:</strong> it is the Spotify integration's shape again and UPS has already built that shape (<code>SpotifyControlService</code>, a <code>RadioMusicSource</code>, <code>SpotifyNowPlaying</code>, the both-playing suppression rules). Arguably <em>easier</em> than Spotify, which needed SMTC plus the Web API and still cannot report reliable position.<br><br><strong>Decision:</strong> pear-desktop first (MIT, richer plugin story, <code>NONE</code> auth mode simple enough for a spike). Put it behind an internal interface from the start so YTMDesktop can be added later without disturbing the caller &#8212; both speak REST plus a live channel and differ only in shape, so the seam costs almost nothing now and saves a rewrite later. Live Effects need the process-loopback capture already proven for Spotify.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-high">High</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Network Streaming</td><td class="feature-desc">Stream audio via HTTP/Icecast. Listen on phone while PC plays Playnite on TV.</td><td class="feature-effort"><span class="badge badge-high">High</span></td><td class="feature-impact"><span class="badge badge-low">Low</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Headphone Detection</td><td class="feature-desc">Auto-pause on headphone unplug, resume on plug. Like smartphones.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
 <tr><td class="cb-cell"><input type="checkbox"></td><td class="feature-name">Audio Output Device Selection</td><td class="feature-desc">Choose output device independent of Windows default. Music through speakers, game through headphones.</td><td class="feature-effort"><span class="badge badge-medium">Medium</span></td><td class="feature-impact"><span class="badge badge-medium">Medium</span></td></tr>
@@ -940,7 +950,7 @@
 </table>
 
 <!-- ============================================ -->
-<h2><span class="category-icon">&#129514;</span> Experimental / Labs <span class="count">(13 ideas)</span></h2>
+<h2><span class="category-icon">&#129514;</span> Experimental / Labs <span class="count">(14 ideas)</span></h2>
 <table data-category="Experimental / Labs">
 <thead><tr><th style="width:36px"></th><th>Feature</th><th>Description</th><th class="sortable" data-sort="effort">Effort</th><th class="sortable" data-sort="impact">Impact</th></tr></thead>
 <tbody>
@@ -1017,7 +1027,8 @@
 <h2 style="border-bottom-color: var(--low);">&#9733; Priority Recommendations</h2>
 
 <div class="priority-section quick-wins">
-<h3>&#9889; Quick Wins (Low effort, ship fast) &mdash; 37 remaining</h3>
+<h3>&#9889; Quick Wins (Low effort, ship fast) &mdash; 36 remaining</h3>
+<p style="margin:0 0 10px;font-size:13px;opacity:.8;">Reviewed at <strong>v1.8.8</strong>. This list was last ordered just after v1.4.6, four minor versions earlier. Seven of its top picks were re-checked against the code at v1.8.8 &#8212; settings search, sleep timer, song favourites, scrobbling, Discord Rich Presence, gapless playback and listening stats &#8212; and all seven were still unshipped, so the ordering below stands on its content even though its heading did not. Listening stats has since shipped; the rest have not.</p>
 <ol>
 <li><s>Settings Import/Export (JSON)</s> <span class="badge badge-shipped">Shipped v1.5.0</span> — as Settings Backup tab with both JSON + Markdown export</li>
 <li>Song Bookmarking / Favorites (cross-game starring)</li>
@@ -1041,8 +1052,8 @@
 <li>Quick mute toggle</li>
 <li>Copy song info to clipboard</li>
 <li><s>Open on KHInsider context menu</s> ❌ N/A — removed in v1.3.4</li>
-<li>Total listening time tracker</li>
-<li>Personal top charts (most-played games/songs)</li>
+<li><s>Total listening time tracker</s> <span class="badge badge-shipped">Shipped v1.8.8</span> &#8212; as listening history (Library &#8594; Statistics)</li>
+<li>Personal top charts (most-played games/songs) <span class="badge badge-shipped">Partial</span> &#8212; all-time shipped v1.8.8; week/month filtering needs dated events</li>
 <li>Auto-skip short files</li>
 <li>"Calm Down" mode</li>
 <li>Audio ducking during game selection</li>
@@ -1074,6 +1085,7 @@
 <div class="priority-section high-value">
 <h3>&#128640; High-Value Features (Medium effort, big impact)</h3>
 <ol>
+<li><strong>YouTube Music via pear-desktop</strong> <span class="badge badge-high">Chosen</span> &#8212; the decided direction for YT Music (2026-09-12). MIT, one documented local API returning position/duration/queue, and it reuses the Spotify integration's whole shape. See Integration &amp; Streaming.</li>
 <li>Music Dashboard (central stats/library hub)</li>
 <li>Windows SMTC (Win+G overlay + Bluetooth &mdash; media keys already shipped v1.3.2)</li>
 <li>Per-game effects presets (Low effort but High impact)</li>
