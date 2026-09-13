@@ -112,11 +112,15 @@ to a publisher. Three are compiled by the maintainer:
 `SDL2.dll` and `SDL2_mixer.dll` are upstream libsdl-org release builds (2.30.5 / 2.8.0), unsigned as
 shipped by that project.
 
-### Not scanned
+### Scan reports
 
-No scan report accompanies this project. These binaries have not been uploaded to VirusTotal or any
-equivalent by the maintainer. If a scan report or signing certificate is ever produced, record it
-here.
+| File | Report |
+|---|---|
+| `SpotifyLoopback.dll` | [VirusTotal](https://www.virustotal.com/gui/file/2244f2f9df8c61b66d3145aeaf69c9e10a959b94266c1e6dd2f747ec16993a28) |
+| `gme.dll`, `z.dll`, `SDL2.dll`, `SDL2_mixer.dll` | not submitted |
+
+Reports are addressed by SHA-256, so a link always shows current engine results and can be matched
+against the hashes above. If a signing certificate is ever obtained, record it here.
 
 `SpotifyLoopback.dll` is the likeliest to be flagged. It calls `ActivateAudioInterfaceAsync` to
 capture another process's audio by PID, which is also spyware behaviour; a heuristic engine cannot

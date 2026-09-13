@@ -28,13 +28,13 @@ the `__stdcall` exports undecorated so P/Invoke-by-name resolves on x86. Output 
 Exports three functions — `SpotifyLoopback_Start(pid, callback, user)`, `_Stop()`, `_IsCapturing()` —
 called from `src/Common/SpotifyLoopbackClient.cs`.
 
-## ⚠️ Unsigned, self-built, not scanned
+## ⚠️ Unsigned and self-built
 
-No Authenticode signature, and not submitted to a malware scanner by the maintainer. Most likely
+No Authenticode signature. [VirusTotal report](https://www.virustotal.com/gui/file/2244f2f9df8c61b66d3145aeaf69c9e10a959b94266c1e6dd2f747ec16993a28). Most likely
 binary here to be flagged: reading another process's audio by PID is also spyware behaviour, and a
 heuristic engine cannot separate the two.
 
-Verify: check the hash in the manifest and scan it, rebuild from the source above, read
+Verify independently: hash it against the manifest and rescan it yourself, rebuild from the source above, read
 `SpotifyLoopbackCapture.cpp`, or delete it — that disables Spotify live effects only (gated on
 `OsCapabilities.SupportsProcessLoopback`, fails soft to dry audio).
 

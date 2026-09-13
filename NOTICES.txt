@@ -18,8 +18,13 @@ Three were compiled by the maintainer rather than obtained as upstream builds:
   z.dll                zlib @ tag v1.3.2, CMake, Win32
   SpotifyLoopback.dll  first-party, from native/SpotifyLoopback/
 
-None has been submitted to a malware scanner. No scan report accompanies this
-release.
+SpotifyLoopback.dll has been submitted to VirusTotal. The report is addressed by
+the file's SHA-256, so it always shows current engine results and can be matched
+against your own copy:
+
+  https://www.virustotal.com/gui/file/2244f2f9df8c61b66d3145aeaf69c9e10a959b94266c1e6dd2f747ec16993a28
+
+gme.dll, z.dll, SDL2.dll and SDL2_mixer.dll have not been submitted.
 
 SpotifyLoopback.dll captures another process's audio by process id (Windows
 Process Loopback Capture). That is how Live Effects, Calm Down and the
