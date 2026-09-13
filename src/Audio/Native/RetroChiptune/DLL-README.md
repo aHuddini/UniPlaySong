@@ -2,7 +2,7 @@
 
 These DLLs enable UniPlaySong to play **retro game music** (chiptune formats like `.vgm` from Sega Genesis / Mega Drive) inside Playnite. They are bundled into the `.pext` package during build and loaded via P/Invoke at runtime by [GmeNative.cs](../../GmeNative.cs).
 
-> **This folder is the only copy.** Duplicates in `lib/` were deleted in v1.8.8 — they were picked up by nothing and would have drifted out of step with the ones that ship. Provenance and SHA-256 for every bundled binary: [`SHIPPED_BINARIES.md`](../../../../docs/dev_docs/SHIPPED_BINARIES.md).
+> Provenance and SHA-256 for every bundled binary: [`SHIPPED_BINARIES.md`](../../../../docs/dev_docs/SHIPPED_BINARIES.md).
 
 ## What's In This Folder
 
