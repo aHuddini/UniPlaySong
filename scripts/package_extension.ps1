@@ -1,4 +1,4 @@
-# UniPlaySong Extension Packaging Script
+﻿# UniPlaySong Extension Packaging Script
 # Creates a .pext package for Playnite installation
 # 
 # Usage: .\package_extension.ps1 [-Configuration Release|Debug]
@@ -245,9 +245,13 @@ if (Test-Path $spotifyLoopbackPath) {
     Write-Host "  WARNING: SpotifyLoopback.dll not found in build output. Spotify live effects will not work." -ForegroundColor Yellow
 }
 
-# Copy dependencies - Use lib\dll as primary source, fallback to build output
+# Copy dependencies from the build output - i.e. the assemblies NuGet actually restored.
+#
+# There used to be a lib\dll folder checked in, and this preferred it over the build output. That
+# meant bumping a PackageReference did not change what shipped: the .pext kept the old assembly and
+# the build stayed green. Removed in v1.8.8 after confirming the package is byte-identical without
+# it. Do not reintroduce a checked-in copy of a NuGet assembly - restore is the source of truth.
 Write-Host "Copying dependencies..." -ForegroundColor Yellow
-$dllLibDir = Join-Path $projectRoot "lib\dll"
 
 # Required DLLs for the extension (explicit list to ensure nothing is missed)
 $requiredDlls = @(
@@ -266,26 +270,12 @@ $excludedDlls = @(
 )
 
 foreach ($dllName in $requiredDlls) {
-    $copied = $false
-    
-    # Try lib\dll first (one-stop-shop for all DLLs)
-    $libDllPath = Join-Path $dllLibDir $dllName
-    if (Test-Path $libDllPath) {
-        Copy-Item $libDllPath -Destination $packageDir -Force
-        Write-Host "  Copied: $dllName from lib\dll" -ForegroundColor Gray
-        $copied = $true
+    $outputDllPath = Join-Path $outputDir $dllName
+    if (Test-Path $outputDllPath) {
+        Copy-Item $outputDllPath -Destination $packageDir -Force
+        Write-Host "  Copied: $dllName from build output" -ForegroundColor Gray
     } else {
-        # Fallback to build output
-        $outputDllPath = Join-Path $outputDir $dllName
-        if (Test-Path $outputDllPath) {
-            Copy-Item $outputDllPath -Destination $packageDir -Force
-            Write-Host "  Copied: $dllName from build output" -ForegroundColor Gray
-            $copied = $true
-        }
-    }
-    
-    if (-not $copied) {
-        Write-Host "  WARNING: $dllName not found in lib\dll or build output" -ForegroundColor Yellow
+        Write-Host "  WARNING: $dllName not found in build output" -ForegroundColor Yellow
     }
 }
 

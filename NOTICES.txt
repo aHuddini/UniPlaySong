@@ -6,6 +6,38 @@ UPS source license. The .pext distribution bundles the following third-party
 components, each under its own license:
 
 
+Binary transparency
+-------------------
+All five native DLLs bundled here (SDL2.dll, SDL2_mixer.dll, gme.dll, z.dll and
+SpotifyLoopback.dll) are UNSIGNED - they carry no Authenticode certificate, so
+Windows cannot attribute them to a publisher.
+
+Two were compiled by the UniPlaySong maintainer rather than downloaded from the
+projects that wrote the source:
+
+  gme.dll              built from libgme @ 1815b97 (CMake, GME_YM2612_EMU=Nuked).
+                       Source archived at lib/source/gme-source-1815b97.tar.gz.
+  SpotifyLoopback.dll  first-party, built from native/SpotifyLoopback/ in the
+                       UniPlaySong repository.
+
+These binaries have NOT been submitted to a malware scanner by the maintainer,
+and no scan report accompanies this release. That is stated plainly rather than
+left unsaid, because silence invites the assumption that a check happened.
+
+SpotifyLoopback.dll is the one most likely to be flagged by a heuristic engine:
+it captures another process's audio output by process id, via the Windows
+Process Loopback Capture API. That is how UniPlaySong applies Live Effects, Calm
+Down and the visualizer to Spotify audio, and it is also a behaviour some spyware
+exhibits - a scanner cannot tell the two apart from behaviour alone.
+
+To verify independently: hash the DLL and upload it to VirusTotal yourself,
+rebuild it from the committed source, or simply delete it - removing it disables
+Spotify live effects and nothing else.
+
+Full manifest with SHA-256 for every bundled binary:
+https://github.com/aHuddini/UniPlaySong/blob/main/docs/dev_docs/SHIPPED_BINARIES.md
+
+
 Game Music Emu (gme.dll)
 ------------------------
 Purpose:    Retro chiptune playback (.vgm, .vgz, .nsf, .spc, .hes, .gbs, .kss, .sap, .ay, etc.)
@@ -85,11 +117,21 @@ Linkage:    Dynamic (NuGet package)
 Modifications: NONE.
 
 
-TagLibSharp (taglib-sharp.dll)
+TagLibSharp (TagLibSharp.dll)
 -------------------------------
 Purpose:    Audio file metadata reading/writing (incl. embedded album art for Now Playing)
 License:    GNU Lesser General Public License v2.1 (LGPL-2.1)
 Upstream:   https://github.com/mono/taglib-sharp
+Linkage:    Dynamic (NuGet package)
+Modifications: NONE.
+
+
+SkiaSharp (SkiaSharp.dll)
+-------------------------
+Purpose:    2D graphics rendering used by the waveform / trim editor UI
+License:    MIT
+Upstream:   https://github.com/mono/SkiaSharp
+            (NuGet package: SkiaSharp 2.88.9)
 Linkage:    Dynamic (NuGet package)
 Modifications: NONE.
 
@@ -104,6 +146,19 @@ License:    MIT
 Upstream:   https://github.com/DubyaDude/WindowsMediaController
             (NuGet package: Dubya.WindowsMediaController 2.5.6)
 Linkage:    Dynamic (NuGet package)
+Modifications: NONE.
+
+
+.NET Framework compatibility assemblies
+---------------------------------------
+Files:      netstandard.dll, System.Buffers.dll, System.Memory.dll,
+            System.Numerics.Vectors.dll, System.Runtime.CompilerServices.Unsafe.dll,
+            Microsoft.Win32.Primitives.dll, Microsoft.Extensions.Logging.Abstractions.dll
+Purpose:    Base-class-library shims and facades pulled in transitively by the
+            packages above so they run on .NET Framework 4.6.2.
+License:    MIT (.NET Foundation)
+Upstream:   https://github.com/dotnet/runtime
+Linkage:    Dynamic (NuGet packages, restored transitively)
 Modifications: NONE.
 
 
@@ -134,7 +189,8 @@ Linkage:    Dynamic (NuGet package)
 Modifications: NONE.
 
 
-MaterialDesignThemes (MaterialDesignThemes.Wpf.dll, etc.)
+MaterialDesignThemes (MaterialDesignThemes.Wpf.dll, MaterialDesignColors.dll,
+                      Microsoft.Xaml.Behaviors.dll)
 ----------------------------------------------------------
 Purpose:    WPF UI components and themes
 License:    MIT

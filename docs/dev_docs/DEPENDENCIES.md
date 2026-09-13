@@ -104,9 +104,18 @@ All NuGet packages are defined in `UniPlaySong.csproj` and automatically restore
 
 Native DLLs power SDL2 audio playback, retro chiptune decoding (GME), and Spotify live-effects capture. They are bundled with the extension package.
 
+> **Full shipped-binary manifest:** [`SHIPPED_BINARIES.md`](SHIPPED_BINARIES.md) lists every `.dll`
+> in the `.pext` with its SHA-256, provenance and licence — including the 18 managed assemblies that
+> arrive via NuGet and are not described here. It also records which committed DLLs are **not**
+> shipped, and a sourcing hazard in how SDL2 is picked up at package time.
+
 ### SDL2.dll
 - **Purpose**: SDL2 core library for audio initialization
-- **Version**: 2.30.5 (or latest stable)
+- **Version**: 2.30.5 (confirmed from the shipped binary's file version, v1.8.8)
+- **⚠️ Sourcing**: `package_extension.ps1` searches a sibling PlayniteSound build output and other
+  installed Playnite extensions **before** falling back to `lib/`. The shipped binary is therefore
+  not guaranteed to be the committed one. See
+  [`SHIPPED_BINARIES.md`](SHIPPED_BINARIES.md#warning-sdl2-is-sourced-from-the-build-machine-not-from-this-repository).
 - **Architecture**: x64 (64-bit Windows)
 - **Location**: `lib/SDL2.dll`
 - **Usage**: 
@@ -118,7 +127,8 @@ Native DLLs power SDL2 audio playback, retro chiptune decoding (GME), and Spotif
 
 ### SDL2_mixer.dll
 - **Purpose**: SDL2 audio mixer library for music playback
-- **Version**: 2.8.0 (or latest stable)
+- **Version**: 2.8.0 (confirmed from the shipped binary's file version, v1.8.8)
+- **⚠️ Sourcing**: same three-path search as `SDL2.dll` above.
 - **Architecture**: x64 (64-bit Windows)
 - **Location**: `lib/SDL2_mixer.dll`
 - **Usage**: 
@@ -134,7 +144,7 @@ Native DLLs power SDL2 audio playback, retro chiptune decoding (GME), and Spotif
 - **Purpose**: Game Music Emu — retro chiptune playback (`.vgm` Sega Genesis verified, `.nsf`/`.spc`/`.hes` verified working v1.4.3+; `.gbs`/`.kss`/`.sap`/`.ay` pipeline-ready)
 - **Version**: Built from `libgme/game-music-emu` at commit `1815b97e01e68b16a8f07daef8c71bd52f36d307` (last code commit before the 0.6.5 release tag)
 - **Architecture**: x86 (32-bit, required for Playnite's plugin host)
-- **Location**: `src/Audio/Native/RetroChiptune/gme.dll` (~221 KB) — folder name documents purpose
+- **Location**: `src/Audio/Native/RetroChiptune/gme.dll` (226,304 bytes) — folder name documents purpose. Note `lib/gme.dll` is a byte-identical **duplicate that does not ship**; the csproj copies the `RetroChiptune` one.
 - **Build**: Compiled via CMake with `GME_YM2612_EMU=Nuked` (LGPL-safe core, NOT MAME)
 - **Source repo**: [github.com/libgme/game-music-emu](https://github.com/libgme/game-music-emu)
 - **Source archive**: `lib/source/gme-source-1815b97.tar.gz` (committed in this repo for LGPL §6 compliance — guarantees source remains available even if upstream becomes unreachable). SHA-256: `db3aa7842fa8a7b738b8b04acb37327c3daedaa55dcb36a5096205f048b91cc9`.
@@ -148,7 +158,7 @@ Native DLLs power SDL2 audio playback, retro chiptune decoding (GME), and Spotif
 - **Purpose**: zlib decompression — required by GME for VGZ (gzip-compressed VGM) support
 - **Version**: zlib 1.3.2
 - **Architecture**: x86 (32-bit)
-- **Location**: `src/Audio/Native/RetroChiptune/z.dll` (~77 KB)
+- **Location**: `src/Audio/Native/RetroChiptune/z.dll` (78,336 bytes). Note `lib/z.dll` is a byte-identical **duplicate that does not ship**.
 - **Source repo**: [github.com/madler/zlib](https://github.com/madler/zlib)
 - **Copy to build output**: Automatic via `<None CopyToOutputDirectory>` in `UniPlaySong.csproj`
 - **License**: zlib license (compatible with commercial use)
@@ -284,7 +294,7 @@ Process.Start(new ProcessStartInfo
 
 **Included in Repository:**
 - SDL2 DLLs are committed to `lib/` directory
-- Version information in `lib/README_SDL2_DLLs.md`
+- Version information in `lib/DLL-README.md`
 
 **Packaging:**
 - `package_extension.ps1` checks for DLLs and includes them automatically
