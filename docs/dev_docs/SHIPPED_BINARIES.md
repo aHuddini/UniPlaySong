@@ -2,11 +2,9 @@
 
 Every `.dll` inside the UniPlaySong `.pext`, where it comes from, and under what licence.
 
-**Why this file exists.** The `.pext` is a zip of binaries that users install into Playnite. Five of
-them are checked into this repository rather than restored from a package feed - and those five are
-exactly the native ones, **all unsigned**, three built by hand by the maintainer. Without a
-manifest there is no way to answer "where did this DLL come from" without reverse-engineering the
-packaging script, and no way to tell a tampered artefact from a genuine one.
+The `.pext` ships 24 DLLs. Five are committed to this repository rather than restored from a package
+feed; those five are the native ones, all unsigned, three built by the maintainer. This file records
+where each came from, with hashes to check an artefact against.
 
 Verified against `UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890_1_8_8.pext` (**v1.8.8**).
 
@@ -34,16 +32,15 @@ takes the first hit. This repository's own copy is checked **last**:
 2. `<AppData>/Playnite/Extensions/*Sound*` or `*9c960604*` - **another installed extension's folder**
 3. `lib/` - this repository
 
-So on a machine where Playnite Sound (or a fork of it) is installed, the SDL2 that ships is
-**whatever that other extension carries**, not what is committed here. Two people building the same
-commit can produce `.pext` files containing different SDL2 binaries, and neither would be told.
+With Playnite Sound installed, the SDL2 that ships is whatever *that* extension carries. Two builds
+of the same commit can contain different SDL2 binaries with no warning.
 
-**State as of v1.8.8:** paths 1 and 2 held no SDL2 on the maintainer's machine, so `lib/` won and the
-shipped bytes match the committed ones (hashes below). That is luck, not design.
+As of v1.8.8, paths 1 and 2 held no SDL2, so `lib/` won and the shipped bytes match the committed
+ones (hashes below).
 
-**Recommended fix:** make `lib/` the only search path and fail the build when it is missing. The
-other two paths are historical, from when UPS was developed alongside PlayniteSound. Until that
-changes, **verify the SDL2 hashes below before publishing a release.**
+**Fix:** make `lib/` the only search path and fail when it is missing. The other two are historical,
+from when UPS was developed alongside PlayniteSound. Until then, verify the SDL2 hashes before each
+release.
 
 ---
 
@@ -78,13 +75,9 @@ changes, **verify the SDL2 hashes below before publishing a release.**
 
 ### SHA-256
 
-`UniPlaySong.dll` is **excluded** — the C# compiler embeds a fresh MVID and timestamp on every
-build, so its hash changes even when no source does. Verified: two consecutive `dotnet build -c
-Release` runs with an unchanged tree produced `5905376a...` then `a687b643...`. Checking it would
-fail every time, and a check that always fails is a check nobody runs. Its provenance is the commit
-it was built from, not a digest.
-
-The remaining 23 are third-party or native binaries that do not change unless deliberately updated.
+`UniPlaySong.dll` is excluded: the compiler embeds a fresh MVID per build, so its hash changes with
+no source change (two consecutive builds of an unchanged tree gave `5905376a...` then `a687b643...`).
+Its provenance is the commit it was built from. The other 23 change only when updated.
 
 ```
 d2212dbf28f2553525d8aac5579914928a62a8896ccf6242182511170a7b6f34  FuzzySharp.dll
@@ -126,14 +119,12 @@ Confirmed from a live `package_extension.ps1` run, not from reading the script:
 
 ### Removed in v1.8.8: two unused duplicates
 
-`lib/gme.dll` and `lib/z.dll` were byte-identical copies of the `RetroChiptune` ones and were picked
-up by nothing. Deleted. A duplicate that agrees today is a duplicate nobody checks tomorrow: update
-one and forget the other, and the repository would *show* a new GME while *shipping* the old one -
-with the LGPL source archive in `lib/source/` then matching neither.
+`lib/gme.dll` and `lib/z.dll` were byte-identical copies of the `RetroChiptune` ones, picked up by
+nothing. Deleted. Had one been updated and the other not, the repository would show a GME it does not
+ship, and the LGPL source archive would match neither.
 
-Not guarded by a test. Re-adding one would be a deliberate act, and the `DLL-README.md` rule below
-would make whoever did it document the file anyway - a test asserting that a past cleanup stays done
-is not testing a behaviour.
+Not guarded by a test: re-adding one is a deliberate act, and the `DLL-README.md` rule would require
+documenting it anyway.
 
 ### Removed in v1.8.8: `lib/dll/`
 
@@ -143,14 +134,11 @@ there **in preference to the build output**. They were present in the very first
 csproj that already used `PackageReference`, so they were never a pre-NuGet fallback; the folder's
 own README described it as a "one-stop-shop" for eyeballing that dependencies were present.
 
-The cost of that convenience was real: **bumping a `PackageReference` did not change what shipped.**
-Raise MaterialDesignThemes to 5.x, rebuild, package - and the `.pext` still carried 4.7.0, silently,
-because the committed copy won.
+The cost: **bumping a `PackageReference` did not change what shipped.** Raise MaterialDesignThemes
+to 5.x, rebuild, package, and the `.pext` still carried 4.7.0 because the committed copy won.
 
 Deleted, along with the `lib\dll`-first branch in `scripts/package_extension.ps1`. Verified by
-packaging with and without the folder and diffing every hash: **byte-identical, all 24 DLLs.** The
-restore was always producing the same assemblies; the committed copies did nothing but create a
-second answer to the same question.
+packaging with and without the folder and diffing every hash: byte-identical, all 24 DLLs.
 
 Guarded by `tests/Services/DllDocumentationTests.cs`, which fails if an assembly restored from NuGet
 is also found committed anywhere in the tree.
@@ -174,19 +162,15 @@ source. Only the two SDL2 libraries are upstream release builds:
 | `z.dll` | Maintainer | zlib @ tag `v1.3.2`, CMake, Win32 | Yes - commands in [`../../src/Audio/Native/RetroChiptune/DLL-README.md`](../../src/Audio/Native/RetroChiptune/DLL-README.md). **No source archive is kept for zlib** (its licence does not require one), so reproduction depends on the upstream tag remaining available. |
 | `SDL2.dll`, `SDL2_mixer.dll` | *Upstream* | Official libsdl-org release builds (2.30.5 / 2.8.0) | n/a - downloaded, not built |
 
-### These have not been submitted to a malware scanner by the maintainer
+### Not scanned
 
-No scan report accompanies this project. Nobody has uploaded these binaries to VirusTotal or any
-equivalent and published the result. That is stated plainly because the alternative - saying nothing -
-lets a user assume a check happened that did not.
+No scan report accompanies this project. These binaries have not been uploaded to VirusTotal or any
+equivalent by the maintainer.
 
-**What this means in practice.** `SpotifyLoopback.dll` is the one most likely to alarm a scanner, and
-for a reason worth understanding rather than dismissing: it calls `ActivateAudioInterfaceAsync` to
-capture another process's audio output by PID. Reading audio out of a named process is genuinely
-what some spyware does. Here it exists because Live Effects, Calm Down and the visualizer cannot run
-on Spotify audio otherwise, and managed .NET cannot perform the async COM handshake the API requires.
-A heuristic engine cannot tell those apart, so a flag is plausible and would not necessarily be wrong
-about the *behaviour* - only about the intent.
+`SpotifyLoopback.dll` is the likeliest to be flagged. It calls `ActivateAudioInterfaceAsync` to
+capture another process's audio by PID, which is also spyware behaviour. It exists because Live
+Effects, Calm Down and the visualizer cannot reach Spotify audio otherwise, and managed .NET cannot
+do the async COM handshake the API requires. A heuristic engine cannot separate the two.
 
 **How to verify any of this yourself, without trusting the maintainer:**
 
@@ -202,28 +186,25 @@ about the *behaviour* - only about the intent.
    live effects and nothing else - the feature is gated on `OsCapabilities.SupportsProcessLoopback`
    and fails soft to dry Spotify audio.
 
-**If this project ever ships a scan report or a signing certificate, this section is where it goes.**
-Until then it says no, because it is no.
+If a scan report or signing certificate is ever produced, record it here.
 
 ---
 
 ## Licences
 
-Licence texts and attributions live in [`NOTICES.txt`](../../NOTICES.txt), bundled into the `.pext`.
-Two components carry copyleft terms; both are dynamically linked, which is what keeps them
-compatible with UniPlaySong's MIT licence:
+Licence texts live in [`NOTICES.txt`](../../NOTICES.txt), bundled into the `.pext`. Every shipped
+third-party DLL is named there; `UniPlaySong.dll` and `SpotifyLoopback.dll` are first-party and
+covered by `LICENSE`.
 
-- **`gme.dll`** - LGPL-2.1-or-later. Corresponding source archived at
-  `lib/source/gme-source-1815b97.tar.gz` for LGPL section 6. Build instructions:
-  [`features/CHIPTUNE_GME_DLL_BUILD.md`](features/CHIPTUNE_GME_DLL_BUILD.md).
-- **`TagLibSharp.dll`** - LGPL-2.1, consumed unmodified as a NuGet package.
+Two components are copyleft. Both are dynamically linked, which is what keeps them compatible with
+UniPlaySong's MIT licence:
 
-Gaps in `NOTICES.txt` as of v1.8.8:
+- **`gme.dll`** - LGPL-2.1-or-later. Source archived at `lib/source/gme-source-1815b97.tar.gz` for
+  LGPL section 6. Build steps: [`features/CHIPTUNE_GME_DLL_BUILD.md`](features/CHIPTUNE_GME_DLL_BUILD.md).
+- **`TagLibSharp.dll`** - LGPL-2.1, unmodified NuGet package.
 
-- **SkiaSharp is not listed.** It ships (`SkiaSharp.dll`, MIT, Microsoft) and needs an entry.
-- The TagLib entry names the file `taglib-sharp.dll`; the shipped file is `TagLibSharp.dll`.
-- The `System.*` / `Microsoft.*` BCL shims are not listed individually. All are MIT under the
-  .NET Foundation; one covering line would be more honest than silence.
+Fixed in v1.8.8: SkiaSharp was shipping unattributed (MIT requires the notice travel with the
+binary), the TagLib entry named a file that is not the one shipped, and the BCL shims were unlisted.
 
 ---
 
@@ -232,10 +213,7 @@ Gaps in `NOTICES.txt` as of v1.8.8:
 Every folder in the repository that contains a `.dll` carries a **`DLL-README.md`** naming each
 file, what it is for, and where it came from.
 
-The filename is deliberate. A folder's `README.md` is about the folder; `DLL-README.md` is
-specifically the provenance record for binaries in it — so a diff touching a binary's paperwork is
-identifiable without opening anything, and a folder can still gain an ordinary README later without
-the two colliding.
+Separate from `README.md` so a folder can carry both, and so a diff shows which one changed.
 
 | Folder | Contents | Doc |
 |---|---|---|

@@ -1,4 +1,4 @@
-# `src/Audio/Native/` — native audio libraries
+﻿# `src/Audio/Native/` — native audio libraries
 
 Loaded via P/Invoke at runtime. Copied into the build output by `src/UniPlaySong.csproj` and then
 into the `.pext`.
@@ -30,15 +30,13 @@ called from `src/Common/SpotifyLoopbackClient.cs`.
 
 ## ⚠️ Unsigned, self-built, not scanned
 
-This DLL carries **no Authenticode signature** and has **not** been submitted to a malware scanner by
-the maintainer. It is the binary in this project most likely to be flagged, because reading another
-process's audio by PID is also something spyware does — a heuristic engine cannot tell intent from
-behaviour. Here it exists solely so effects can apply to Spotify.
+No Authenticode signature, and not submitted to a malware scanner by the maintainer. Most likely
+binary here to be flagged: reading another process's audio by PID is also spyware behaviour, and a
+heuristic engine cannot separate the two.
 
-Verify it yourself: check the hash in the manifest and scan it, rebuild from the source above, read
-the few hundred lines in `SpotifyLoopbackCapture.cpp`, or delete it — removing it disables Spotify
-live effects and nothing else (the feature is gated on `OsCapabilities.SupportsProcessLoopback` and
-fails soft to dry audio).
+Verify: check the hash in the manifest and scan it, rebuild from the source above, read
+`SpotifyLoopbackCapture.cpp`, or delete it — that disables Spotify live effects only (gated on
+`OsCapabilities.SupportsProcessLoopback`, fails soft to dry audio).
 
 ## Subfolder
 

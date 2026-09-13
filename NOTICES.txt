@@ -8,33 +8,26 @@ components, each under its own license:
 
 Binary transparency
 -------------------
-All five native DLLs bundled here (SDL2.dll, SDL2_mixer.dll, gme.dll, z.dll and
-SpotifyLoopback.dll) are UNSIGNED - they carry no Authenticode certificate, so
-Windows cannot attribute them to a publisher.
+All five bundled native DLLs are UNSIGNED (no Authenticode certificate):
+SDL2.dll, SDL2_mixer.dll, gme.dll, z.dll, SpotifyLoopback.dll.
 
-Two were compiled by the UniPlaySong maintainer rather than downloaded from the
-projects that wrote the source:
+Three were compiled by the maintainer rather than obtained as upstream builds:
 
-  gme.dll              built from libgme @ 1815b97 (CMake, GME_YM2612_EMU=Nuked).
-                       Source archived at lib/source/gme-source-1815b97.tar.gz.
-  SpotifyLoopback.dll  first-party, built from native/SpotifyLoopback/ in the
-                       UniPlaySong repository.
+  gme.dll              libgme @ 1815b97, CMake, GME_YM2612_EMU=Nuked.
+                       Source: lib/source/gme-source-1815b97.tar.gz
+  z.dll                zlib @ tag v1.3.2, CMake, Win32
+  SpotifyLoopback.dll  first-party, from native/SpotifyLoopback/
 
-These binaries have NOT been submitted to a malware scanner by the maintainer,
-and no scan report accompanies this release. That is stated plainly rather than
-left unsaid, because silence invites the assumption that a check happened.
+None has been submitted to a malware scanner. No scan report accompanies this
+release.
 
-SpotifyLoopback.dll is the one most likely to be flagged by a heuristic engine:
-it captures another process's audio output by process id, via the Windows
-Process Loopback Capture API. That is how UniPlaySong applies Live Effects, Calm
-Down and the visualizer to Spotify audio, and it is also a behaviour some spyware
-exhibits - a scanner cannot tell the two apart from behaviour alone.
+SpotifyLoopback.dll captures another process's audio by process id (Windows
+Process Loopback Capture). That is how Live Effects, Calm Down and the
+visualizer apply to Spotify audio; it is also spyware behaviour, and a heuristic
+scanner cannot distinguish the two. To verify: scan it yourself, rebuild from
+source, or delete it - that disables Spotify live effects and nothing else.
 
-To verify independently: hash the DLL and upload it to VirusTotal yourself,
-rebuild it from the committed source, or simply delete it - removing it disables
-Spotify live effects and nothing else.
-
-Full manifest with SHA-256 for every bundled binary:
+SHA-256 for every bundled binary:
 https://github.com/aHuddini/UniPlaySong/blob/main/docs/dev_docs/SHIPPED_BINARIES.md
 
 

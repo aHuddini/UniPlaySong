@@ -29,12 +29,8 @@ Game Music Emu is LGPL v2.1+. UniPlaySong is MIT. The combination is legal becau
 
 ## Build Source
 
-These DLLs were built from source (not downloaded pre-compiled) to guarantee:
-- x86 architecture (matches Playnite)
-- Nuked OPN2 core (LGPL-safe)
-- zlib integration enabled (VGZ support)
-
-Build commands for reproducing (from the respective repo roots):
+Built from source, not downloaded, to guarantee x86, the Nuked OPN2 core (LGPL-safe) and zlib
+integration for VGZ. Both are **unsigned**. Reproduce from the respective repo roots:
 
 ```bash
 # zlib (from C:/Projects/zlib-build, checked out to tag v1.3.2)
