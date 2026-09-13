@@ -45,14 +45,12 @@
                  double-sound case can only be described, never detected. -->
             <Border Style="{StaticResource UpsCardInfo}">
                 <StackPanel>
-                    <TextBlock Text="PlayniteAchievements handles this itself now"
+                    <TextBlock Text="Set achievement sounds up in PlayniteAchievements"
                                Style="{StaticResource UpsCardTitle}"/>
                     <TextBlock Style="{StaticResource UpsBody}"
-                               Text="PlayniteAchievements plays its own unlock sounds. That is the better place to set them up, and new setups should use it."/>
-                    <TextBlock Style="{StaticResource UpsBody}"
-                               Text="This page still works and nothing here has changed. Use it if you already have sounds set up this way, or if you want UniPlaySong's rarity packs and volume to apply."/>
+                               Text="PlayniteAchievements plays unlock sounds itself, and that is the place to set them up. Use this page only for theme sound packs, or when a theme's author recommends it."/>
                     <TextBlock Style="{StaticResource UpsWarningFlush}"
-                               Text="Use one or the other. With both turned on you will hear two sounds for every unlock."/>
+                               Text="Turn on one or the other. Both together plays two sounds for every unlock."/>
                 </StackPanel>
             </Border>
 
