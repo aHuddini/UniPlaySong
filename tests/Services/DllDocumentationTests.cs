@@ -59,6 +59,60 @@ namespace UniPlaySong.Tests.Services
                 + "is fixed - a plain README.md does not satisfy this.");
         }
 
+        // The audit records a SHA-256 per committed DLL. Rebuild one and its hash changes, so the
+        // recorded report then describes a binary that is no longer shipped - and it still reads as
+        // current, which is the worst kind of wrong for a provenance record.
+        [Test]
+        public void VirusTotalAuditMatchesTheCommittedBinaries()
+        {
+            var root = RepoRoot();
+            Assert.IsNotNull(root, "could not locate the repository root from the test directory");
+
+            var auditPath = Path.Combine(root.FullName, "docs", "dev_docs", "VIRUSTOTAL_AUDIT.md");
+            Assert.IsTrue(File.Exists(auditPath), "VIRUSTOTAL_AUDIT.md is missing");
+
+            var audit = File.ReadAllText(auditPath);
+            var stale = new System.Collections.Generic.List<string>();
+
+            foreach (var dll in CommittedDlls(root))
+            {
+                var actual = Sha256(dll);
+                var name = Path.GetFileName(dll);
+
+                if (!audit.Contains(actual))
+                {
+                    stale.Add($"{name}: {actual}");
+                }
+            }
+
+            Assert.IsEmpty(stale,
+                "these committed DLLs have no matching SHA-256 in VIRUSTOTAL_AUDIT.md:\n  "
+                + string.Join("\n  ", stale)
+                + "\n\nThe binary changed since it was scanned. Re-submit it to VirusTotal, then "
+                + "update the hash and link in VIRUSTOTAL_AUDIT.md and docs/dev_docs/SHIPPED_BINARIES.md.");
+        }
+
+        private static string Sha256(string path)
+        {
+            using (var sha = System.Security.Cryptography.SHA256.Create())
+            using (var stream = File.OpenRead(path))
+            {
+                return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", string.Empty).ToLowerInvariant();
+            }
+        }
+
+        private static System.Collections.Generic.IEnumerable<string> CommittedDlls(DirectoryInfo root)
+        {
+            var skip = new[] { "bin", "obj", ".git", "packages", "pext", "package", "Release" }
+                .Select(d => Path.DirectorySeparatorChar + d + Path.DirectorySeparatorChar)
+                .ToArray();
+
+            return Directory
+                .GetFiles(root.FullName, "*.dll", SearchOption.AllDirectories)
+                .Where(f => !skip.Any(s => f.IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0))
+                .OrderBy(f => f);
+        }
+
         // A checked-in copy of an assembly NuGet already restores is not a backup, it is a second
         // answer to the same question. lib/dll was exactly that: the packaging script preferred it,
         // so bumping a PackageReference did not change what shipped. Removed in v1.8.8 after
