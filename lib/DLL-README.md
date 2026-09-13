@@ -1,4 +1,4 @@
-# `lib/` — committed binaries
+﻿# `lib/` — committed binaries
 
 Binaries checked into the repository rather than restored from a package feed. Copied verbatim into
 the `.pext`.
@@ -11,7 +11,10 @@ Full manifest with SHA-256 and licences:
 | `SDL2.dll` | SDL2 core — audio init for `SDL2MusicPlayer`, the default backend | Official x64 release build 2.30.5, [libsdl-org/SDL](https://github.com/libsdl-org/SDL/releases) | zlib |
 | `SDL2_mixer.dll` | SDL2_mixer — music loading, volume, position, end-of-track callback | Official release build 2.8.0, [libsdl-org/SDL_mixer](https://github.com/libsdl-org/SDL_mixer/releases) | zlib |
 
-Both **unsigned**, as shipped by the SDL project. P/Invoke declarations in `src/Players/SDL/`.
+Both **unsigned**, as shipped by the SDL project. VirusTotal reports:
+[`SDL2.dll`](https://www.virustotal.com/gui/file/ed9bb11fb27ba61c04d0165f299e053626665e9ab2b51afb74ae2c1dcff7ddef),
+[`SDL2_mixer.dll`](https://www.virustotal.com/gui/file/077d3426e56715fea53c8231343aa61ed47f36d6fb6800d54b0b449e37d2c79a).
+P/Invoke declarations in `src/Players/SDL/`.
 
 > ⚠️ **Not guaranteed to be what ships.** `scripts/package_extension.ps1` searches a sibling
 > PlayniteSound build output and other installed Playnite extensions before falling back here.

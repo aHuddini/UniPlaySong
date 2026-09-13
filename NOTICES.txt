@@ -18,13 +18,23 @@ Three were compiled by the maintainer rather than obtained as upstream builds:
   z.dll                zlib @ tag v1.3.2, CMake, Win32
   SpotifyLoopback.dll  first-party, from native/SpotifyLoopback/
 
-SpotifyLoopback.dll has been submitted to VirusTotal. The report is addressed by
-the file's SHA-256, so it always shows current engine results and can be matched
-against your own copy:
+All five have VirusTotal reports, addressed by each file's SHA-256 so they always
+show current engine results and can be matched against your own copy:
 
-  https://www.virustotal.com/gui/file/2244f2f9df8c61b66d3145aeaf69c9e10a959b94266c1e6dd2f747ec16993a28
+  SpotifyLoopback.dll
+    https://www.virustotal.com/gui/file/2244f2f9df8c61b66d3145aeaf69c9e10a959b94266c1e6dd2f747ec16993a28
 
-gme.dll, z.dll, SDL2.dll and SDL2_mixer.dll have not been submitted.
+  gme.dll
+    https://www.virustotal.com/gui/file/187ab395972797f5629f4a9e61e88e75c31f6c5640776ca1b1bbc00f273f432a
+
+  z.dll
+    https://www.virustotal.com/gui/file/b1f8e01096a7a0585a7a3738e3f371e332d8de4ddd88d8dab1ab51dfd8432560
+
+  SDL2.dll
+    https://www.virustotal.com/gui/file/ed9bb11fb27ba61c04d0165f299e053626665e9ab2b51afb74ae2c1dcff7ddef
+
+  SDL2_mixer.dll
+    https://www.virustotal.com/gui/file/077d3426e56715fea53c8231343aa61ed47f36d6fb6800d54b0b449e37d2c79a
 
 SpotifyLoopback.dll captures another process's audio by process id (Windows
 Process Loopback Capture). That is how Live Effects, Calm Down and the

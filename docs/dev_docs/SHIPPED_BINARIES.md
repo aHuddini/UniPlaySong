@@ -117,7 +117,10 @@ shipped by that project.
 | File | Report |
 |---|---|
 | `SpotifyLoopback.dll` | [VirusTotal](https://www.virustotal.com/gui/file/2244f2f9df8c61b66d3145aeaf69c9e10a959b94266c1e6dd2f747ec16993a28) |
-| `gme.dll`, `z.dll`, `SDL2.dll`, `SDL2_mixer.dll` | not submitted |
+| `gme.dll` | [VirusTotal](https://www.virustotal.com/gui/file/187ab395972797f5629f4a9e61e88e75c31f6c5640776ca1b1bbc00f273f432a) |
+| `z.dll` | [VirusTotal](https://www.virustotal.com/gui/file/b1f8e01096a7a0585a7a3738e3f371e332d8de4ddd88d8dab1ab51dfd8432560) |
+| `SDL2.dll` | [VirusTotal](https://www.virustotal.com/gui/file/ed9bb11fb27ba61c04d0165f299e053626665e9ab2b51afb74ae2c1dcff7ddef) |
+| `SDL2_mixer.dll` | [VirusTotal](https://www.virustotal.com/gui/file/077d3426e56715fea53c8231343aa61ed47f36d6fb6800d54b0b449e37d2c79a) |
 
 Reports are addressed by SHA-256, so a link always shows current engine results and can be matched
 against the hashes above. If a signing certificate is ever obtained, record it here.

@@ -1,4 +1,4 @@
-﻿# Retro Chiptune Native Libraries
+# Retro Chiptune Native Libraries
 
 These DLLs enable UniPlaySong to play **retro game music** (chiptune formats like `.vgm` from Sega Genesis / Mega Drive) inside Playnite. They are bundled into the `.pext` package during build and loaded via P/Invoke at runtime by [GmeNative.cs](../../GmeNative.cs).
 
@@ -30,7 +30,10 @@ Game Music Emu is LGPL v2.1+. UniPlaySong is MIT. The combination is legal becau
 ## Build Source
 
 Built from source, not downloaded, to guarantee x86, the Nuked OPN2 core (LGPL-safe) and zlib
-integration for VGZ. Both are **unsigned**. Reproduce from the respective repo roots:
+integration for VGZ. Both are **unsigned**. VirusTotal reports:
+[`gme.dll`](https://www.virustotal.com/gui/file/187ab395972797f5629f4a9e61e88e75c31f6c5640776ca1b1bbc00f273f432a),
+[`z.dll`](https://www.virustotal.com/gui/file/b1f8e01096a7a0585a7a3738e3f371e332d8de4ddd88d8dab1ab51dfd8432560).
+Reproduce from the respective repo roots:
 
 ```bash
 # zlib (from C:/Projects/zlib-build, checked out to tag v1.3.2)
