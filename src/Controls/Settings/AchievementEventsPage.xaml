@@ -45,7 +45,7 @@
                  double-sound case can only be described, never detected. -->
             <Border Style="{StaticResource UpsCardInfo}">
                 <StackPanel>
-                    <TextBlock Text="Set achievement sounds up in PlayniteAchievements"
+                    <TextBlock Text="Legacy feature: PlayniteAchievements handles this now"
                                Style="{StaticResource UpsCardTitle}"/>
                     <TextBlock Style="{StaticResource UpsBody}"
                                Text="PlayniteAchievements plays unlock sounds itself, and that is the place to set them up. Use this page only for theme sound packs, or when a theme's author recommends it."/>
