@@ -46,9 +46,4 @@ Verify independently: hash it against the manifest and rescan it yourself, rebui
 
 ## Scan reports
 
-| File | SHA-256 | Report |
-|---|---|---|
-| `SpotifyLoopback.dll` | `2244f2f9df8c61b66d3145aeaf69c9e10a959b94266c1e6dd2f747ec16993a28` | [VirusTotal](https://www.virustotal.com/gui/file/2244f2f9df8c61b66d3145aeaf69c9e10a959b94266c1e6dd2f747ec16993a28) |
-
-Addressed by SHA-256, so each link shows current engine results. Hash your copy (`sha256sum`)
-and compare — a different hash means the report does not describe the file you have.
+[`VIRUSTOTAL-AUDIT.md`](VIRUSTOTAL-AUDIT.md) — SHA-256 and VirusTotal report for each file here.

@@ -114,9 +114,8 @@ shipped by that project.
 
 ### Scan reports
 
-All five natives have VirusTotal reports, recorded with their SHA-256 in the `DLL-README.md` beside
-each binary (see the per-folder table below). If a signing certificate is ever obtained, record it
-there too.
+All five natives have VirusTotal reports, recorded in a `VIRUSTOTAL-AUDIT.md` beside the binaries
+(see the per-folder table below). If a signing certificate is ever obtained, record it there too.
 
 `SpotifyLoopback.dll` is the likeliest to be flagged. It calls `ActivateAudioInterfaceAsync` to
 capture another process's audio by PID, which is also spyware behaviour; a heuristic engine cannot
@@ -144,11 +143,11 @@ UniPlaySong's MIT licence:
 Every folder containing a `.dll` carries a **`DLL-README.md`** naming each file, its purpose, source
 and licence. Separate from `README.md` so a folder can carry both, and so a diff shows which changed.
 
-| Folder | Contents |
-|---|---|
-| [`lib/`](../../lib/DLL-README.md) | `SDL2.dll`, `SDL2_mixer.dll` |
-| [`src/Audio/Native/`](../../src/Audio/Native/DLL-README.md) | `SpotifyLoopback.dll` |
-| [`src/Audio/Native/RetroChiptune/`](../../src/Audio/Native/RetroChiptune/DLL-README.md) | `gme.dll`, `z.dll` |
+| Folder | Contents | Docs |
+|---|---|---|
+| `lib/` | `SDL2.dll`, `SDL2_mixer.dll` | [`DLL-README`](../../lib/DLL-README.md) · [`VIRUSTOTAL-AUDIT`](../../lib/VIRUSTOTAL-AUDIT.md) |
+| `src/Audio/Native/` | `SpotifyLoopback.dll` | [`DLL-README`](../../src/Audio/Native/DLL-README.md) · [`VIRUSTOTAL-AUDIT`](../../src/Audio/Native/VIRUSTOTAL-AUDIT.md) |
+| `src/Audio/Native/RetroChiptune/` | `gme.dll`, `z.dll` | [`DLL-README`](../../src/Audio/Native/RetroChiptune/DLL-README.md) · [`VIRUSTOTAL-AUDIT`](../../src/Audio/Native/RetroChiptune/VIRUSTOTAL-AUDIT.md) |
 
 `DllDocumentationTests` fails if a folder gains a `.dll` without one. A plain `README.md` does not
 satisfy it.

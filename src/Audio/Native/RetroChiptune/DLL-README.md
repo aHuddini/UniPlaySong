@@ -63,10 +63,4 @@ cmake --build . --config Release
 
 ## Scan reports
 
-| File | SHA-256 | Report |
-|---|---|---|
-| `gme.dll` | `187ab395972797f5629f4a9e61e88e75c31f6c5640776ca1b1bbc00f273f432a` | [VirusTotal](https://www.virustotal.com/gui/file/187ab395972797f5629f4a9e61e88e75c31f6c5640776ca1b1bbc00f273f432a) |
-| `z.dll` | `b1f8e01096a7a0585a7a3738e3f371e332d8de4ddd88d8dab1ab51dfd8432560` | [VirusTotal](https://www.virustotal.com/gui/file/b1f8e01096a7a0585a7a3738e3f371e332d8de4ddd88d8dab1ab51dfd8432560) |
-
-Addressed by SHA-256, so each link shows current engine results. Hash your copy (`sha256sum`)
-and compare — a different hash means the report does not describe the file you have.
+[`VIRUSTOTAL-AUDIT.md`](VIRUSTOTAL-AUDIT.md) — SHA-256 and VirusTotal report for each file here.

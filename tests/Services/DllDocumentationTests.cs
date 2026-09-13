@@ -17,6 +17,9 @@ namespace UniPlaySong.Tests.Services
         // binaries in it. Separate names so both can exist and a diff shows which changed.
         private const string DllReadme = "DLL-README.md";
 
+        // The scan record: SHA-256 plus VirusTotal report for the binaries in that folder.
+        private const string AuditDoc = "VIRUSTOTAL-AUDIT.md";
+
         private static DirectoryInfo RepoRoot()
         {
             var dir = new DirectoryInfo(TestContext.CurrentContext.TestDirectory);
@@ -59,10 +62,10 @@ namespace UniPlaySong.Tests.Services
                 + "is fixed - a plain README.md does not satisfy this.");
         }
 
-        // Each DLL-README records a SHA-256 and scan report for the binaries beside it. Rebuild one
-        // and its hash changes, so the recorded report then describes a file that is no longer
-        // shipped - while still reading as current, which is the worst kind of wrong for a
-        // provenance record. Checked against the README in the DLL's OWN folder, so the record
+        // Each VIRUSTOTAL-AUDIT.md records a SHA-256 and scan report for the binaries beside it.
+        // Rebuild one and its hash changes, so the recorded report then describes a file that is no
+        // longer shipped - while still reading as current, which is the worst kind of wrong for a
+        // provenance record. Checked against the audit in the DLL's OWN folder, so the record
         // cannot drift to somewhere nobody looks.
         [Test]
         public void ScanReportsMatchTheCommittedBinaries()
@@ -74,27 +77,21 @@ namespace UniPlaySong.Tests.Services
 
             foreach (var dll in CommittedDlls(root))
             {
-                var readme = Path.Combine(Path.GetDirectoryName(dll), DllReadme);
-
-                // A missing README is EveryFolderContainingADllIsDocumented's failure, not this one.
-                if (!File.Exists(readme))
-                {
-                    continue;
-                }
+                var audit = Path.Combine(Path.GetDirectoryName(dll), AuditDoc);
 
                 var actual = Sha256(dll);
 
-                if (!File.ReadAllText(readme).Contains(actual))
+                if (!File.Exists(audit) || !File.ReadAllText(audit).Contains(actual))
                 {
                     stale.Add($"{Path.GetFileName(dll)}: {actual}");
                 }
             }
 
             Assert.IsEmpty(stale,
-                "these committed DLLs have no matching SHA-256 in the " + DllReadme + " beside them:\n  "
+                "these committed DLLs have no matching SHA-256 in the " + AuditDoc + " beside them:\n  "
                 + string.Join("\n  ", stale)
                 + "\n\nThe binary changed since it was scanned. Re-submit it to VirusTotal, then "
-                + "update the hash and link in that " + DllReadme + ".");
+                + "update the hash and link in that " + AuditDoc + ".");
         }
 
         private static string Sha256(string path)
@@ -119,9 +116,8 @@ namespace UniPlaySong.Tests.Services
         }
 
         // A checked-in copy of an assembly NuGet already restores is not a backup, it is a second
-        // answer to the same question. lib/dll was exactly that: the packaging script preferred it,
-        // so bumping a PackageReference did not change what shipped. Removed in v1.8.8 after
-        // confirming the package is byte-identical without it.
+        // answer to the same question - and the packaging script would prefer it, so bumping a
+        // PackageReference would not change what ships.
         [Test]
         public void NuGetAssembliesAreNotAlsoCheckedIn()
         {

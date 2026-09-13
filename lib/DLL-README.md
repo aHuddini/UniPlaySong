@@ -36,10 +36,4 @@ Managed dependencies are restored from NuGet and must not be committed here; a t
 
 ## Scan reports
 
-| File | SHA-256 | Report |
-|---|---|---|
-| `SDL2.dll` | `ed9bb11fb27ba61c04d0165f299e053626665e9ab2b51afb74ae2c1dcff7ddef` | [VirusTotal](https://www.virustotal.com/gui/file/ed9bb11fb27ba61c04d0165f299e053626665e9ab2b51afb74ae2c1dcff7ddef) |
-| `SDL2_mixer.dll` | `077d3426e56715fea53c8231343aa61ed47f36d6fb6800d54b0b449e37d2c79a` | [VirusTotal](https://www.virustotal.com/gui/file/077d3426e56715fea53c8231343aa61ed47f36d6fb6800d54b0b449e37d2c79a) |
-
-Addressed by SHA-256, so each link shows current engine results. Hash your copy (`sha256sum`)
-and compare — a different hash means the report does not describe the file you have.
+[`VIRUSTOTAL-AUDIT.md`](VIRUSTOTAL-AUDIT.md) — SHA-256 and VirusTotal report for each file here.
