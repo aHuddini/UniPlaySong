@@ -273,13 +273,19 @@ namespace UniPlaySong.Services
             _fileLogger?.Debug("NotifyManualStart: session auto-play lock unlocked");
         }
 
-        public MusicPlaybackService(IMusicPlayer musicPlayer, GameMusicFileService fileService, FileLogger fileLogger = null, ErrorHandlerService errorHandler = null, ITrailerAudioService trailerAudioService = null)
+        // Optional, and null in most tests. The service is recreated whenever the backend swaps
+        // (Live Effects on or off), so the tracker is owned by the plugin and passed in rather than
+        // constructed here - otherwise the in-flight track would be lost on every swap.
+        private readonly ListeningTracker _listening;
+
+        public MusicPlaybackService(IMusicPlayer musicPlayer, GameMusicFileService fileService, FileLogger fileLogger = null, ErrorHandlerService errorHandler = null, ITrailerAudioService trailerAudioService = null, ListeningTracker listeningTracker = null)
         {
             _musicPlayer = musicPlayer ?? throw new ArgumentNullException(nameof(musicPlayer));
             _fileService = fileService ?? throw new ArgumentNullException(nameof(fileService));
             _fileLogger = fileLogger;
             _errorHandler = errorHandler;
             _trailerAudioService = trailerAudioService;
+            _listening = listeningTracker;
 
             _fader = new MusicFader(
                 _musicPlayer,
@@ -328,6 +334,9 @@ namespace UniPlaySong.Services
             if (wasPlaying && _isPaused)
             {
                 _fileLogger?.Debug($"Pause: {source} (fading out)");
+                // Stops the listening clock. Pause sources stack, but only the first one is a real
+                // transition - this branch is already gated on that.
+                _listening?.Suspend();
                 _fader?.Pause();
                 OnPlaybackStateChanged?.Invoke();
             }
@@ -368,6 +377,9 @@ namespace UniPlaySong.Services
                 {
                     // Player is loaded and actively playing (was paused mid-playback) — resume via fader
                     _fileLogger?.Debug($"Resume: {source} removed (no pause sources remaining)");
+                    // Restarts the listening clock on the SAME track. The other two branches below
+                    // reach MarkSongStart instead, which begins a fresh span of its own.
+                    _listening?.Resume();
                     _fader.Resume();
                     OnPlaybackStateChanged?.Invoke();
                 }
@@ -404,6 +416,7 @@ namespace UniPlaySong.Services
             if (wasPlaying && _isPaused)
             {
                 _fileLogger?.Debug($"Pause (instant): {source}");
+                _listening?.Suspend();
                 _fader?.CancelFade();
                 if (_musicPlayer?.IsLoaded == true && _musicPlayer.IsActive)
                 {
@@ -430,6 +443,7 @@ namespace UniPlaySong.Services
                 else if (_musicPlayer?.IsLoaded == true && _musicPlayer.IsActive)
                 {
                     _fileLogger?.Debug($"Resume (instant): {source} removed (no pause sources remaining)");
+                    _listening?.Resume();
                     // A faded pause may have left the fader in its paused state; clear it so it
                     // doesn't later report a stale HasPendingPlayAction (we resume without it here).
                     _fader?.CancelFade();
@@ -1682,6 +1696,12 @@ namespace UniPlaySong.Services
             {
                 System.Threading.Interlocked.Increment(ref _playbackGeneration);
 
+                // Banks whatever was playing. This runs both at application exit and whenever the
+                // backend is swapped (Live Effects toggled), so a song playing across a swap is
+                // recorded as two spans rather than one - the total time stays right, which is the
+                // figure that matters.
+                _listening?.Abandon();
+
                 StopPreviewTimer();
                 CancelSongEndFade();
                 _crossfadeCoordinator?.Cancel();
@@ -1700,6 +1720,9 @@ namespace UniPlaySong.Services
             try
             {
                 System.Threading.Interlocked.Increment(ref _playbackGeneration);
+                // Banked before Close() below wipes the player's Source - and as an early exit,
+                // because nothing about a stop says the track had finished.
+                _listening?.Abandon();
                 _crossfadeCoordinator?.Cancel();
                 StopPreviewTimer();
                 CancelSongEndFade();
@@ -1736,6 +1759,9 @@ namespace UniPlaySong.Services
             {
                 StopPreviewTimer();
                 CancelSongEndFade();
+                // Banked at the START of the fade, not in the callback below. The callback runs a
+                // second or more later, after Close() has already wiped the track it belonged to.
+                _listening?.Abandon();
                 _fader.FadeOutAndStop(() =>
                 {
                     _musicPlayer?.Close();
@@ -2502,6 +2528,21 @@ namespace UniPlaySong.Services
         {
             _songStartTime = DateTime.Now;
 
+            /* The one hook the listening history needs.
+
+               Every path in this service that actually begins audible playback calls MarkSongStart
+               immediately after Play() - fourteen of them, across all three backends - so this is
+               the single place that sees every start. Begin() banks whatever was in flight, which
+               is why a track change needs no separate call.
+
+               Deliberately NOT hooked lower down: the backends raise their end-of-song events on
+               the SDL2 audio callback thread and the NAudio mixer thread respectively, and both
+               marshal to the dispatcher before anything here runs. */
+            _listening?.Begin(
+                _currentSongPath,
+                _isPlayingDefaultMusic ? null : _currentGame?.Id.ToString(),
+                _isPlayingDefaultMusic ? null : _currentGame?.Name);
+
             if (_currentSettings?.EnablePreviewMode == true &&
                 !_isPlayingDefaultMusic &&
                 !_isCurrentSongDefaultMusic)
@@ -2832,6 +2873,15 @@ namespace UniPlaySong.Services
                         : (DateTime.Now - _songEndFadeScheduledAt).TotalSeconds;
                     _fileLogger?.Debug($"[SongEndFade/EOF] {Path.GetFileName(_currentSongPath)}: EOF fired at pos={posAtEof:F2}s / total={totalAtEof:F2}s, fadeFired={_songEndFadeHasFired}, elapsedSinceSchedule={elapsedSinceSchedule:F2}s, expectedFireAt={_songEndFadeExpectedFireSeconds:F2}s");
 
+                    /* The track reached its own end. Banked as a COMPLETED play, which is the only
+                       way a short track can ever count as one - a twelve-second chiptune loop heard
+                       in full is a play, and a twelve-second skip out of a long track is not.
+
+                       After the switch-in-flight guard above on purpose: that EOF belongs to the
+                       outgoing song dying inside a fade window, and the incoming Begin() will bank
+                       it as the early exit it actually was. */
+                    _listening?.Complete();
+
                     // Fire OnSongEnded event before handling looping/randomization
                     OnSongEnded?.Invoke();
 
@@ -2964,6 +3014,22 @@ namespace UniPlaySong.Services
                     {
                         _musicPlayer.Play();
                         _fader.FadeIn();
+                        /* Begin(), NOT MarkSongStart().
+
+                           This start path has never marked, and a track left looping all evening
+                           would otherwise bank as one span that only closes when something else
+                           finally stops it. But MarkSongStart also starts the preview timer and
+                           SCHEDULES A CROSSFADE, and scheduling a crossfade on a track that is
+                           looping would move playback to a different song - it would fix the
+                           bookkeeping by breaking the playback. The listening clock is the only
+                           part of it this path wants.
+
+                           Complete() has already banked the finished loop just above, so this
+                           opens a fresh span for the repeat. */
+                        _listening?.Begin(
+                            _currentSongPath,
+                            _isPlayingDefaultMusic ? null : _currentGame?.Id.ToString(),
+                            _isPlayingDefaultMusic ? null : _currentGame?.Name);
                         _fileLogger?.Info($"Looping music: {Path.GetFileName(_currentSongPath)}");
                     }
                 }

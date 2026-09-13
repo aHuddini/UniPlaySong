@@ -278,6 +278,10 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.ConversionKeepOriginals),
                     nameof(UniPlaySongSettings.ConversionTargetFormat),
                     nameof(UniPlaySongSettings.DoNotPreserveOriginals),
+                    // Filed in Library because the toggle lives on Library -> Statistics. The
+                    // coverage test checks only that a setting is filed SOMEWHERE, not that the
+                    // group matches the page it appears on, so this pairing is on us to keep.
+                    nameof(UniPlaySongSettings.EnableListeningHistory),
                     nameof(UniPlaySongSettings.NormalizationCodec),
                     nameof(UniPlaySongSettings.NormalizationLoudnessRange),
                     nameof(UniPlaySongSettings.NormalizationSuffix),

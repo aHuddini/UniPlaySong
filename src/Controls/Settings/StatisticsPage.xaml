@@ -64,7 +64,10 @@
                 <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,5,0">
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock Text="{Binding StatsTotalPlaytime}" FontSize="14" FontWeight="Bold" Foreground="#88BBDD" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Total Playtime" FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
+                        <!-- "Total Playtime" until a real listening figure appeared below, at which
+                             point the old label was actively wrong: this is the summed length of
+                             the files on disk, and nobody has sat through all of it. -->
+                        <TextBlock Text="Total Track Length" FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>
                 <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10">
@@ -106,6 +109,66 @@
                     <TextBlock Text="{Binding StatsReducibleSpace}" FontSize="11" Foreground="#4AABAB" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
+
+            <!-- ==== Listening ====================================================
+                 Everything above counts what is ON DISK. This counts what has been
+                 PLAYED, which is the question people actually ask of a music plugin
+                 and which nothing in the plugin could answer until now. -->
+            <TextBlock Text="Listening" FontSize="13" FontWeight="SemiBold" Foreground="#88BBDD" Margin="0,10,0,6"/>
+
+            <UniformGrid Columns="3" Margin="0,0,0,10">
+                <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,5,0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding StatsListeningTime}" FontSize="14" FontWeight="Bold" Foreground="#9ED89E" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Time Listened" FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,5,0">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding StatsListeningPlays}" FontSize="14" FontWeight="Bold" Foreground="#9ED89E" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Tracks Played" FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+                <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding StatsListeningDistinct}" FontSize="14" FontWeight="Bold" Foreground="#9ED89E" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Different Tracks" FontSize="10" Foreground="Gray" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+
+            <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+                <StackPanel>
+                    <TextBlock Text="Most Played Track" FontSize="11" FontWeight="SemiBold" Foreground="#88BBDD" Margin="0,0,0,4"/>
+                    <TextBlock Text="{Binding StatsListeningTopTrack}" FontSize="11" Foreground="#6699AA" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- The counterpart to "Top Games by Song Count" above: that one says which game you
+                 have the most music FOR, this one says which you have actually listened to. They
+                 are rarely the same game, which is the point of showing both. -->
+            <Border Background="#E6111F2B" BorderBrush="#2E6A82" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+                <StackPanel>
+                    <TextBlock Text="Top Games by Time Listened" FontSize="11" FontWeight="SemiBold" Foreground="#88BBDD" Margin="0,0,0,4"/>
+                    <TextBlock Text="{Binding StatsListeningTopGames}" FontSize="11" Foreground="#6699AA" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <CheckBox Content="Record listening history"
+                      IsChecked="{Binding Settings.EnableListeningHistory}"
+                      Foreground="{DynamicResource TextBrush}" Margin="0,4,0,0"/>
+            <TextBlock Text="Counts how long each track is played, so the figures above have something to report. Stays on this machine."
+                       FontSize="10" Foreground="Gray" TextWrapping="Wrap" Margin="0,3,0,8"/>
+
+            <!-- The clear button lives here rather than on Advanced -> Cleanup, which is where
+                 every other destructive action lives. Cleanup deals in music files and caches;
+                 this is the page that shows the data, and a delete button three tabs away from
+                 the thing it deletes is a delete button nobody finds. -->
+            <Button Content="Clear Listening History"
+                    Command="{Binding ClearListeningHistoryCommand}"
+                    HorizontalAlignment="Left" Padding="12,4" Margin="0,0,0,20"
+                    Background="#5A1F1F" Foreground="#FFD6D6" BorderBrush="#8B2E2E"/>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

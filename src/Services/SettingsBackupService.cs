@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
@@ -223,6 +223,7 @@ namespace UniPlaySong.Services
             // These are placeholders for Features 5 & 6; the property names may not exist yet
             // when this code runs against the v1.4.6 settings class. Use reflection so the
             // section degrades gracefully if a field isn't present.
+            AppendSettingRow(sb, "Listening History", settings.EnableListeningHistory ? "On" : "Off");
             AppendOptionalSettingRow(sb, settings, "EnableDiscordRichPresence", "Discord Rich Presence");
             AppendOptionalSettingRow(sb, settings, "EnableLastfmScrobbling", "Last.fm Scrobbling");
             AppendOptionalSettingRow(sb, settings, "LastfmUsername", "Last.fm Username");

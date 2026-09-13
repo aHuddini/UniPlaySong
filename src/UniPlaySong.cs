@@ -101,6 +101,8 @@ namespace UniPlaySong
         private DownloadDialogService _downloadDialogService;
         private SettingsService _settingsService;
         private SearchCacheService _cacheService;
+        private Services.ListeningHistoryStore _listeningStore;
+        private Services.ListeningTracker _listeningTracker;
         private SearchHintsService _hintsService;
         private Services.INormalizationService _normalizationService;
         private Services.ITrimService _trimService;
@@ -1552,6 +1554,11 @@ namespace UniPlaySong
 
             _dynamicColorCache?.Save();
 
+            // Bank the track that was playing when Playnite closed, then write. Without the
+            // Abandon the final stretch of the session - often the longest one - is simply lost.
+            _listeningTracker?.Abandon();
+            _listeningStore?.Flush();
+
             _fileLogger?.Debug("Application stopped");
         }
 
@@ -2056,6 +2063,12 @@ namespace UniPlaySong
             // teardown — no reason to make that case wait.
             if (_settings != null)
                 Services.SDL2MusicPlayer.SetAudioBufferSamples(_settings.AudioBufferSamples);
+
+            // Read live rather than captured, so turning listening history off stops recording at
+            // once instead of at the next restart. A settings save swaps the whole settings object,
+            // so anything holding the old one by reference would keep the old answer forever.
+            if (_listeningStore != null && _settings != null)
+                _listeningStore.Enabled = _settings.EnableListeningHistory;
 
             // Refresh the top panel so items whose visibility is a setting appear or disappear now.
             // TopPanelItem.Visible is observable, so flipping it updates Playnite's panel live - but
@@ -3351,10 +3364,19 @@ namespace UniPlaySong
             // basePath is <Config>\ExtraMetadata\UniPlaySong — the cache lives under it.
             _trailerAudioService = new Services.TrailerAudioService(_settings, emlGamesPath, basePath, _fileLogger);
 
+            // Listening history. Owned here rather than by the playback service because that
+            // service is thrown away and rebuilt whenever the backend swaps (Live Effects on or
+            // off) - the totals have to outlive it.
+            _listeningStore = new Services.ListeningHistoryStore(
+                basePath,
+                enabled: _settings?.EnableListeningHistory ?? true,
+                fileLogger: _fileLogger);
+            _listeningTracker = new Services.ListeningTracker(_listeningStore);
+
             // Create the appropriate music player based on LiveEffectsEnabled setting
             _currentMusicPlayer = CreateMusicPlayer();
 
-            _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService);
+            _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService, _listeningTracker);
             _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
             _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
             _playbackService.SetUserWarningHandler(ShowOneTimeWarning);
@@ -3656,7 +3678,10 @@ namespace UniPlaySong
                     () => _api,
                     _gamesPath,
                     _dashboardPlaybackService,
-                    msg => _fileLogger?.Debug(msg)
+                    msg => _fileLogger?.Debug(msg),
+                    // Through a lambda, not a captured reference: the dashboard outlives any single
+                    // playback service, and reading the field live keeps it right across a rebuild.
+                    () => _listeningStore
                 );
                 _fileLogger?.Debug("MusicLibraryViewModel initialized");
             }
@@ -3829,7 +3854,7 @@ namespace UniPlaySong
                 // is rooted by the Dispatcher, so an un-shut-down orphan stays alive and keeps
                 // ticking against the player disposed just above.
                 oldService?.Shutdown();
-                _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService);
+                _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService, _listeningTracker);
                 _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
                 _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
                 _playbackService.SetUserWarningHandler(ShowOneTimeWarning);
@@ -3926,7 +3951,7 @@ namespace UniPlaySong
                 // Recreate playback service
                 var oldService = _playbackService;
                 oldService?.Shutdown(); // see the sibling swap above — orphaned timers root the instance
-                _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService);
+                _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService, _listeningTracker);
                 _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
                 _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
                 _playbackService.SetUserWarningHandler(ShowOneTimeWarning);
@@ -6089,6 +6114,10 @@ namespace UniPlaySong
 
         // Gets the error handler service.
         public ErrorHandlerService GetErrorHandlerService() => _errorHandler;
+
+        // Gets the listening history store. Null until services are initialized, and the settings
+        // dialog can open before that on a slow start - callers must null-check.
+        public Services.ListeningHistoryStore GetListeningHistoryStore() => _listeningStore;
 
         // Gets the audio normalization service.
         public Services.INormalizationService GetNormalizationService() => _normalizationService;

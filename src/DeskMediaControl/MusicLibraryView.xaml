@@ -1,4 +1,4 @@
-<UserControl x:Class="UniPlaySong.DeskMediaControl.MusicLibraryView"
+﻿<UserControl x:Class="UniPlaySong.DeskMediaControl.MusicLibraryView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -796,6 +796,56 @@
                                 </StackPanel>
                             </Border>
                         </Grid>
+
+                        <!-- ==== Listening ========================================
+                             Everything above counts what is ON DISK. This counts
+                             what has actually been played.
+
+                             A section in this tab rather than a sixth tab: the
+                             code-behind's panel array is indexed by each
+                             RadioButton's Tag, so adding a tab is five edits across
+                             three files to say something this StackPanel already had
+                             room for. -->
+                        <TextBlock Text="Listening" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextBrush}" Margin="0,20,0,10"/>
+
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource StatCard}">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding ListeningTime}" FontSize="24" FontWeight="Bold"
+                                               Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock Text="Time Listened" FontSize="11" Foreground="#88FFFFFF" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="2" Style="{StaticResource StatCard}">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding ListeningPlays}" FontSize="24" FontWeight="Bold"
+                                               Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock Text="Tracks Played" FontSize="11" Foreground="#88FFFFFF" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Border Style="{StaticResource StatCard}" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="Most Played" FontSize="11" Foreground="#88FFFFFF"/>
+                                <TextBlock Text="{Binding ListeningTopTrack}" FontSize="13" Margin="0,4,0,0"
+                                           TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource StatCard}">
+                            <StackPanel>
+                                <TextBlock Text="Top Games by Time Listened" FontSize="11" Foreground="#88FFFFFF"/>
+                                <TextBlock Text="{Binding ListeningTopGames}" FontSize="13" Margin="0,4,0,0"
+                                           TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}"/>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
             </Grid>

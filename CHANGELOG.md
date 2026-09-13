@@ -6,8 +6,14 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.8.8] - 2026-09-12
 
+### Added
+
+- Added listening history (Library -> Statistics, on by default) recording time listened, play counts and top games; audible time is accumulated from pause and resume transitions, never from wall clock or player position
+- Added `EnableListeningHistory` and a Clear button; history persists to `listening-history.json` beside the other side-files, versioned and written atomically
+
 ### Changed
 
+- Renamed the Statistics page's "Total Playtime" card to "Total Track Length", which is what the figure has always been: summed file duration, not time played
 - Relabelled the Gamification -> PlayniteAchievements page to Achievements (Legacy) and added a notice that PlayniteAchievements now plays unlock sounds natively; leaving both enabled plays two sounds per unlock, which UniPlaySong cannot detect
 
 ## [1.8.7] - 2026-09-06

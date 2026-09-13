@@ -1835,6 +1835,7 @@ namespace UniPlaySong
 
         // Search Cache Settings
         private bool enableSearchCache = true;
+        private bool enableListeningHistory = true;
         private int searchCacheDurationDays = 7;
         private bool autoCheckHintsOnStartup = true;
 
@@ -1848,6 +1849,15 @@ namespace UniPlaySong
         {
             get => enableSearchCache;
             set { enableSearchCache = value; OnPropertyChanged(); }
+        }
+
+        // Records how long each track is actually listened to, for the figures on the Statistics
+        // page. On by default: the data never leaves this machine, and a history that only starts
+        // the day someone finds the toggle has nothing to show on the day they look.
+        public bool EnableListeningHistory
+        {
+            get => enableListeningHistory;
+            set { enableListeningHistory = value; OnPropertyChanged(); }
         }
 
         // Search cache duration in days (1-30) Controls how long search results are cached before expiring

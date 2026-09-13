@@ -3043,6 +3043,95 @@ namespace UniPlaySong
         private string _statsBitrateDistribution = AudioScanPlaceholder;
         public string StatsBitrateDistribution { get => _statsBitrateDistribution; set { _statsBitrateDistribution = value; OnPropertyChanged(); } }
 
+        // Listening stats — read straight from the store, which is already aggregated. No scan, no
+        // placeholder: unlike everything above these cost nothing to produce.
+        private string _statsListeningTime = "—";
+        public string StatsListeningTime { get => _statsListeningTime; set { _statsListeningTime = value; OnPropertyChanged(); } }
+
+        private string _statsListeningPlays = "—";
+        public string StatsListeningPlays { get => _statsListeningPlays; set { _statsListeningPlays = value; OnPropertyChanged(); } }
+
+        private string _statsListeningDistinct = "—";
+        public string StatsListeningDistinct { get => _statsListeningDistinct; set { _statsListeningDistinct = value; OnPropertyChanged(); } }
+
+        private string _statsListeningTopTrack = "Nothing played yet.";
+        public string StatsListeningTopTrack { get => _statsListeningTopTrack; set { _statsListeningTopTrack = value; OnPropertyChanged(); } }
+
+        private string _statsListeningTopGames = "Nothing played yet.";
+        public string StatsListeningTopGames { get => _statsListeningTopGames; set { _statsListeningTopGames = value; OnPropertyChanged(); } }
+
+        private void LoadListeningStats()
+        {
+            try
+            {
+                var store = plugin?.GetListeningHistoryStore();
+                if (store == null)
+                {
+                    return;
+                }
+
+                var summary = Services.ListeningInsights.Summarize(
+                    store.Snapshot(), topGameCount: 5);
+
+                StatsListeningTime = Common.DurationFormatter.Humanize(summary.TotalTime);
+                StatsListeningPlays = summary.TotalPlays.ToString("N0");
+                StatsListeningDistinct = summary.DistinctTracks.ToString("N0");
+
+                StatsListeningTopTrack = summary.TopTrack == null
+                    ? "Nothing played yet."
+                    : $"{summary.TopTrack.Title} — {Common.DurationFormatter.Humanize(TimeSpan.FromSeconds(summary.TopTrack.TotalSeconds))}"
+                      + $" over {summary.TopTrack.PlayCount} {(summary.TopTrack.PlayCount == 1 ? "play" : "plays")}";
+
+                // Default and radio music carries no game, so a library that has only ever played
+                // those has listening time but no games to rank - say so rather than showing blank.
+                var games = summary.TopGames;
+                StatsListeningTopGames = (games == null || games.Count == 0)
+                    ? "No game music played yet."
+                    : string.Join("   ", games.Select(g =>
+                        $"{g.GameName ?? "Unknown"} ({Common.DurationFormatter.Humanize(TimeSpan.FromSeconds(g.TotalSeconds))})"));
+            }
+            catch (Exception ex)
+            {
+                // A statistics readout is never worth taking the settings dialog down for.
+                plugin?.GetErrorHandlerService()?.HandleError(
+                    ex, context: "reading listening history for the statistics page", showUserMessage: false);
+            }
+        }
+
+        // Deliberately two-step, matching DeleteAllMusicCommand: the figures are small but they are
+        // the only record of months of listening, and there is no undo.
+        public ICommand ClearListeningHistoryCommand => new Common.RelayCommand<object>((a) =>
+        {
+            var store = plugin?.GetListeningHistoryStore();
+            if (store == null)
+            {
+                return;
+            }
+
+            var summary = Services.ListeningInsights.Summarize(store.Snapshot());
+            if (summary.TotalPlays == 0 && summary.DistinctTracks == 0)
+            {
+                PlayniteApi.Dialogs.ShowMessage("There is no listening history to clear.", "UniPlaySong");
+                return;
+            }
+
+            var answer = PlayniteApi.Dialogs.ShowMessage(
+                $"Clear listening history?\n\n"
+                + $"{Common.DurationFormatter.Humanize(summary.TotalTime)} across {summary.DistinctTracks} tracks will be forgotten.\n\n"
+                + "This action cannot be undone.",
+                "UniPlaySong",
+                System.Windows.MessageBoxButton.YesNo);
+
+            if (answer != System.Windows.MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            store.Clear();
+            LoadListeningStats();
+            PlayniteApi.Dialogs.ShowMessage("Listening history cleared.", "UniPlaySong");
+        });
+
         private void ScanLibraryStats()
         {
             try
@@ -3271,19 +3360,12 @@ namespace UniPlaySong
             });
         }
 
+        // Moved to Common.DurationFormatter once the dashboard needed the same figure. Kept as a
+        // forwarder rather than updating every call site, which would have been a bigger diff than
+        // the change it serves.
         private static string FormatLargePlaytime(TimeSpan duration)
         {
-            if (duration.TotalMinutes < 1) return "< 1m";
-
-            int days = (int)duration.TotalDays;
-            int hours = duration.Hours;
-            int minutes = duration.Minutes;
-
-            if (days > 0)
-                return $"{days}d {hours}h {minutes}m";
-            if (hours > 0)
-                return $"{hours}h {minutes}m";
-            return $"{minutes}m";
+            return Common.DurationFormatter.Humanize(duration);
         }
 
         private static string FormatBytes(long bytes)
@@ -3404,6 +3486,9 @@ namespace UniPlaySong
 
             // Called when settings view is opened
             ScanLibraryStats();
+            // Cheap and synchronous - the store is already aggregated, so unlike the library scan
+            // above there is nothing to defer.
+            LoadListeningStats();
             UpdateCacheStats();
             UpdateHintsDatabaseStatus();
             RefreshMigrationStatus();

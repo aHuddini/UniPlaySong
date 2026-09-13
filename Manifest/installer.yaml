@@ -5,6 +5,7 @@ Packages:
     ReleaseDate: 2026-09-12
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.8/UniPlaySong-1_8_8.pext'
     Changelog:
+      - '[New Feature] Listening history: how long you''ve actually listened, your most played tracks, and your top games by time listened. In Library -> Statistics, and on the Music Dashboard. On by default, with a Clear button.'
       - '[Improved] Gamification -> Achievements (Legacy): PlayniteAchievements plays its own unlock sounds now. The page says so, and warns that leaving both switched on plays two sounds per unlock.'
   - Version: 1.8.7
     RequiredApiVersion: 6.16.0

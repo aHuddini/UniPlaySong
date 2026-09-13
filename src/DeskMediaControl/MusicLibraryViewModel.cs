@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -230,6 +230,38 @@ namespace UniPlaySong.DeskMediaControl
             set { _gamesWithoutMusic = value; OnPropertyChanged(); }
         }
 
+        // Listening figures. Strings rather than numbers because every one of them is formatted -
+        // a raw TimeSpan on a card reads "01:47:32.4210000".
+        private string _listeningTime = "—";
+        public string ListeningTime
+        {
+            get => _listeningTime;
+            set { _listeningTime = value; OnPropertyChanged(); }
+        }
+
+        private string _listeningPlays = "—";
+        public string ListeningPlays
+        {
+            get => _listeningPlays;
+            set { _listeningPlays = value; OnPropertyChanged(); }
+        }
+
+        private string _listeningTopTrack = "Nothing played yet.";
+        public string ListeningTopTrack
+        {
+            get => _listeningTopTrack;
+            set { _listeningTopTrack = value; OnPropertyChanged(); }
+        }
+
+        private string _listeningTopGames = "Nothing played yet.";
+        public string ListeningTopGames
+        {
+            get => _listeningTopGames;
+            set { _listeningTopGames = value; OnPropertyChanged(); }
+        }
+
+        private readonly Func<Services.ListeningHistoryStore> _getListeningStore;
+
         private bool _statsLoaded;
 
         #endregion
@@ -257,8 +289,12 @@ namespace UniPlaySong.DeskMediaControl
             Func<IPlayniteAPI> getApi,
             string gamesPath,
             IDashboardPlaybackService dashboardService,
-            Action<string> log = null)
+            Action<string> log = null,
+            Func<Services.ListeningHistoryStore> getListeningStore = null)
         {
+            // Optional and last: the dashboard is constructed on Desktop regardless of whether the
+            // store exists yet, and every consumer below null-checks.
+            _getListeningStore = getListeningStore;
             _getPlaybackService = getPlaybackService ?? throw new ArgumentNullException(nameof(getPlaybackService));
             _getSettings = getSettings ?? throw new ArgumentNullException(nameof(getSettings));
             _getCurrentGame = getCurrentGame ?? throw new ArgumentNullException(nameof(getCurrentGame));
@@ -1180,6 +1216,9 @@ namespace UniPlaySong.DeskMediaControl
                         TotalSongs = totalSongs;
                         StorageUsed = storage;
                         GamesWithoutMusic = Math.Max(0, totalGames - gamesWithMusic);
+                        // Folded in here rather than given its own loader, so the Refresh link
+                        // above the cards keeps covering everything on the tab.
+                        LoadListeningStats();
                         _statsLoaded = true;
                     }));
 
@@ -1214,6 +1253,43 @@ namespace UniPlaySong.DeskMediaControl
         {
             if (SelectedTabIndex == 1 && !_allTracksLoaded) LoadAllTracks();
             if (SelectedTabIndex == 4 && !_statsLoaded) LoadLibraryStats();
+        }
+
+        // Reads the already-aggregated store. No scan, no dispatcher hop - the caller is on the UI
+        // thread and this is a dictionary lookup and a sort of at most a few hundred entries.
+        private void LoadListeningStats()
+        {
+            try
+            {
+                var store = _getListeningStore?.Invoke();
+                if (store == null)
+                {
+                    return;
+                }
+
+                var summary = Services.ListeningInsights.Summarize(
+                    store.Snapshot(), topGameCount: 3);
+
+                ListeningTime = Common.DurationFormatter.Humanize(summary.TotalTime);
+                ListeningPlays = summary.TotalPlays.ToString("N0");
+
+                ListeningTopTrack = summary.TopTrack == null
+                    ? "Nothing played yet."
+                    : $"{summary.TopTrack.Title} ({summary.TopTrack.PlayCount} "
+                      + $"{(summary.TopTrack.PlayCount == 1 ? "play" : "plays")})";
+
+                // Default and radio music carries no game, so a session of nothing but those has
+                // listening time and no games to rank.
+                var games = summary.TopGames;
+                ListeningTopGames = (games == null || games.Count == 0)
+                    ? "No game music played yet."
+                    : string.Join("\n", games.Select(g =>
+                        $"{g.GameName ?? "Unknown"} — {Common.DurationFormatter.Humanize(TimeSpan.FromSeconds(g.TotalSeconds))}"));
+            }
+            catch (Exception ex)
+            {
+                _log?.Invoke($"MusicLibrary: Error loading listening stats: {ex.Message}");
+            }
         }
 
         #endregion
