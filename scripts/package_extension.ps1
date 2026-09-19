@@ -169,45 +169,21 @@ Copy-Item $dllPath -Destination $packageDir -Force
 Write-Host "  Copied: UniPlaySong.dll" -ForegroundColor Gray
 
 # Copy SDL2 native DLLs (required for SDL2MusicPlayer)
+#
+# From lib\ and nowhere else. The committed copy is the one documented in lib\DLL-README.md and
+# lib\VIRUSTOTAL-AUDIT.md, and the only way the shipped bytes can be matched against those
+# records is if they come from here. A missing file is a hard failure, not a warning: a package
+# without SDL2 has no default audio backend.
 Write-Host "Copying SDL2 native DLLs..." -ForegroundColor Yellow
-$sdl2Dlls = @("SDL2.dll", "SDL2_mixer.dll")
-$sdl2Found = $false
-
-# Try multiple locations
-$searchPaths = @(
-    # PlayniteSound output directory
-    (Join-Path (Join-Path (Split-Path -Parent $projectRoot) "src\PlayniteSound") "bin\Release\net4.6.2"),
-    # PlayniteSound installed extension
-    (Get-ChildItem -Path "$env:APPDATA\Playnite\Extensions" -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -like "*Sound*" -or $_.Name -like "*9c960604*" } | Select-Object -First 1 | ForEach-Object { $_.FullName }),
-    # Local lib directory
-    (Join-Path $projectRoot "lib")
-)
-
-foreach ($dll in $sdl2Dlls) {
-    $copied = $false
-    foreach ($searchPath in $searchPaths) {
-        if ($searchPath -and (Test-Path $searchPath)) {
-            $sourcePath = Join-Path $searchPath $dll
-            if (Test-Path $sourcePath) {
-                Copy-Item $sourcePath -Destination $packageDir -Force
-                Write-Host "  Copied: $dll from $sourcePath" -ForegroundColor Gray
-                $sdl2Found = $true
-                $copied = $true
-                break
-            }
-        }
+$sdl2Dir = Join-Path $projectRoot "lib"
+foreach ($dll in @("SDL2.dll", "SDL2_mixer.dll")) {
+    $sourcePath = Join-Path $sdl2Dir $dll
+    if (-not (Test-Path $sourcePath)) {
+        Write-Host "  ERROR: $dll not found at $sourcePath" -ForegroundColor Red
+        exit 1
     }
-    
-    if (-not $copied) {
-        Write-Host "  WARNING: $dll not found in any search location" -ForegroundColor Yellow
-    }
-}
-
-if ($sdl2Found) {
-    Write-Host "  SDL2 DLLs copied successfully" -ForegroundColor Green
-} else {
-    Write-Host "  ERROR: SDL2 DLLs not found. SDL2MusicPlayer will fail to initialize." -ForegroundColor Red
-    Write-Host "    Please copy SDL2.dll and SDL2_mixer.dll to lib\ directory" -ForegroundColor Yellow
+    Copy-Item $sourcePath -Destination $packageDir -Force
+    Write-Host "  Copied: $dll from lib\" -ForegroundColor Gray
 }
 
 # Copy retro chiptune native DLLs (required for .vgm and other retro game music playback)

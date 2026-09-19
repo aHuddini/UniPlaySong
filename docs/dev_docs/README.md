@@ -11,7 +11,7 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](Theme%
 | [TECHNICAL_REFERENCE.md](TECHNICAL_REFERENCE.md) | You're chasing a specific behaviour — playback state variables, song selection, default-music fallback, skip logic, preview mode, fades, constants. The debugging tips at the end are the fastest way in. |
 | [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md) | You're building or packaging. `version.txt` is the version single source of truth. |
 | [DEPENDENCIES.md](DEPENDENCIES.md) | You hit a missing DLL or external tool (SDL2, NAudio, yt-dlp, FFmpeg, the native Spotify loopback shim). |
-| [SHIPPED_BINARIES.md](SHIPPED_BINARIES.md) | You need to know what is inside the `.pext` and where each binary came from — every shipped `.dll` with its SHA-256, provenance and licence, which natives are unsigned or self-built, and the SDL2 sourcing hazard at package time. |
+| [SHIPPED_BINARIES.md](SHIPPED_BINARIES.md) | You need to know what is inside the `.pext` and where each binary came from — every shipped `.dll` with its SHA-256, provenance and licence, and which natives are unsigned or self-built. |
 
 ## Audio pipeline
 

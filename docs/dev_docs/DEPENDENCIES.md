@@ -106,16 +106,13 @@ Native DLLs power SDL2 audio playback, retro chiptune decoding (GME), and Spotif
 
 > **Full shipped-binary manifest:** [`SHIPPED_BINARIES.md`](SHIPPED_BINARIES.md) lists every `.dll`
 > in the `.pext` with its SHA-256, provenance and licence — including the 18 managed assemblies that
-> arrive via NuGet and are not described here. It also records which committed DLLs are **not**
-> shipped, and a sourcing hazard in how SDL2 is picked up at package time.
+> arrive via NuGet and are not described here. It also records where each committed DLL is
+> picked up at package time.
 
 ### SDL2.dll
 - **Purpose**: SDL2 core library for audio initialization
 - **Version**: 2.30.5 (confirmed from the shipped binary's file version, v1.8.8)
-- **⚠️ Sourcing**: `package_extension.ps1` searches a sibling PlayniteSound build output and other
-  installed Playnite extensions **before** falling back to `lib/`. The shipped binary is therefore
-  not guaranteed to be the committed one. See
-  [`SHIPPED_BINARIES.md`](SHIPPED_BINARIES.md#warning-sdl2-is-sourced-from-the-build-machine-not-from-this-repository).
+- **Sourcing**: `package_extension.ps1` copies it from `lib/` only and fails if it is missing.
 - **Architecture**: x64 (64-bit Windows)
 - **Location**: `lib/SDL2.dll`
 - **Usage**: 
@@ -128,7 +125,7 @@ Native DLLs power SDL2 audio playback, retro chiptune decoding (GME), and Spotif
 ### SDL2_mixer.dll
 - **Purpose**: SDL2 audio mixer library for music playback
 - **Version**: 2.8.0 (confirmed from the shipped binary's file version, v1.8.8)
-- **⚠️ Sourcing**: same three-path search as `SDL2.dll` above.
+- **Sourcing**: `lib/` only, as `SDL2.dll` above.
 - **Architecture**: x64 (64-bit Windows)
 - **Location**: `lib/SDL2_mixer.dll`
 - **Usage**: 

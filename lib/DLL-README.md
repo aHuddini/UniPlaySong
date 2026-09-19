@@ -14,11 +14,6 @@ Full manifest with SHA-256 and licences:
 Both **unsigned**, as shipped by the SDL project.
 P/Invoke declarations in `src/Players/SDL/`.
 
-> ⚠️ **Not guaranteed to be what ships.** `scripts/package_extension.ps1` searches a sibling
-> PlayniteSound build output and other installed Playnite extensions before falling back here.
-> Verify the SDL2 hashes before publishing a release — see
-> [`SHIPPED_BINARIES.md`](../docs/dev_docs/SHIPPED_BINARIES.md).
-
 Managed dependencies are restored from NuGet and must not be committed here; a test enforces it.
 
 ## Subfolder

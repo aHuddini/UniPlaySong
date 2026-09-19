@@ -15,20 +15,11 @@ Current for **v1.8.8**.
 Nothing is fetched at runtime. Managed dependencies come from the NuGet restore only — do not commit
 a copy of a restored assembly; `tests/Services/DllDocumentationTests.cs` fails if one appears.
 
-## WARNING: SDL2 is taken from the build machine
+## Where SDL2 comes from
 
-`scripts/package_extension.ps1` searches three locations for `SDL2.dll` and `SDL2_mixer.dll` and uses
-the first hit. This repository is checked **last**:
-
-1. `../src/PlayniteSound/bin/Release/net4.6.2` — a sibling project's build output
-2. `<AppData>/Playnite/Extensions/*Sound*` or `*9c960604*` — another installed extension
-3. `lib/`
-
-With Playnite Sound installed, the SDL2 that ships is whatever that extension carries. Two builds of
-the same commit can contain different SDL2 binaries with no warning.
-
-**Verify the SDL2 hashes below before publishing a release.** The fix is to make `lib/` the only
-search path and fail when it is missing.
+`scripts/package_extension.ps1` copies `SDL2.dll` and `SDL2_mixer.dll` from `lib/` and nowhere else,
+and fails the build if either is missing. The shipped bytes therefore always match the committed
+copies and the hashes below.
 
 ## Manifest
 
@@ -94,7 +85,7 @@ b1f8e01096a7a0585a7a3738e3f371e332d8de4ddd88d8dab1ab51dfd8432560  z.dll
 
 | Path | Picked up by |
 |---|---|
-| `lib/SDL2.dll`, `lib/SDL2_mixer.dll` | packaging script — third in the three-path search above |
+| `lib/SDL2.dll`, `lib/SDL2_mixer.dll` | packaging script, direct path — fails if missing |
 | `src/Audio/Native/RetroChiptune/{gme,z}.dll` | packaging script, direct path |
 | `src/Audio/Native/SpotifyLoopback.dll` | csproj copy to build output, then packaged |
 
@@ -159,7 +150,6 @@ unzip -o -d /tmp/pext pext/UniPlaySong.*_1_8_8.pext
 cd /tmp/pext && sha256sum *.dll | grep -v ' UniPlaySong.dll$' | sort -k2
 ```
 
-Compare against the SHA-256 block above. A mismatch on SDL2 means the packaging script took it from
-another extension on the build machine.
+Compare against the SHA-256 block above.
 
 After a release, regenerate the hash block and bump the version at the top of this file.
