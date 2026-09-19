@@ -6,7 +6,9 @@ Packages:
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.8/UniPlaySong-1_8_8.pext'
     Changelog:
       - '[New Feature] Listening history: how long you''ve actually listened, your most played tracks, and your top games by time listened. In Library -> Statistics, and on the Music Dashboard. On by default, with a Clear button.'
+      - '[Fix] Turning on "Calm Down after a stretch with no input" in the settings dialog now takes effect immediately. It previously did nothing until Playnite was restarted.'
       - '[Improved] Gamification -> Achievements (Legacy): PlayniteAchievements plays its own unlock sounds now. The page says so, and warns that leaving both switched on plays two sounds per unlock.'
+      - '[Docs] NOTICES.txt now attributes every bundled third-party library, and each native DLL in the repository has a SHA-256 and VirusTotal report beside it.'
   - Version: 1.8.7
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-09-06

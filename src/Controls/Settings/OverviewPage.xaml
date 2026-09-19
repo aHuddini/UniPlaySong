@@ -38,6 +38,9 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
+                        Fixed: idle Calm Down now takes effect as soon as it is switched on, not after a restart.
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}">
                         Added: listening history &#8212; how long you&#8217;ve actually listened, your most played tracks, and your top games by time (Library &#8594; Statistics).
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">

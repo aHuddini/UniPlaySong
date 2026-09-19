@@ -11,6 +11,10 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added listening history (Library -> Statistics, on by default) recording time listened, play counts and top games; audible time is accumulated from pause and resume transitions, never from wall clock or player position
 - Added `EnableListeningHistory` and a Clear button; history persists to `listening-history.json` beside the other side-files, versioned and written atomically
 
+### Fixed
+
+- Fixed idle Calm Down doing nothing when enabled from the settings dialog without a restart; the backend-swap check watched only `CalmDownModeEnabled`, so the player stayed on SDL2, which cannot host the effect
+
 ### Changed
 
 - Renamed the Statistics page's "Total Playtime" card to "Total Track Length", which is what the figure has always been: summed file duration, not time played
