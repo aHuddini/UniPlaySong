@@ -97,9 +97,30 @@ If UPS can detect an unsupported-chip VGM at load time and fail gracefully inste
 
 Documented as a v1.5+ investigation. For now, the GME feature set is our chiptune ceiling.
 
+## PlayStation (PSF) (v1.8.8+)
+
+`.psf` `.minipsf` (+ `.psflib`)
+
+Played through `psf.dll`, a first-party engine built from the ares R3000 and SPU cores and
+aopsf's HLE BIOS glue — requires NAudio backend (auto-switches on load). Build and source pin:
+[`PSF_ENGINE_BUILD.md`](features/PSF_ENGINE_BUILD.md).
+
+| Extension | Role |
+|-----------|------|
+| `.psf` | A complete song: driver and sequence data in one file |
+| `.minipsf` | A song that names its shared driver in a `_lib` tag |
+| `.psflib` | The shared driver a `.minipsf` set needs. Keep it in the same folder; it is never listed as a track |
+
+Rips carry `title`, `artist`, `game`, `length` and `fade` tags; Now Playing shows the tag title
+and the track ends at length + fade, faded by the reader. Missing length falls back to 2.5 minutes,
+like GME. No seeking: a PSF has no position to seek to, so tracks always start from the beginning
+and are never resumed.
+
+Verified on the Breath of Fire IV set (59 tracks, standalone `.psf`).
+
 ## Implementation
 
 - Extensions registered in [Constants.cs](../../src/Common/Constants.cs)
-- Native DLLs: `gme.dll` (~221 KB, LGPL v2.1+), `z.dll` (~77 KB, zlib license) — both x86, stored in [`src/Audio/Native/RetroChiptune/`](../../src/Audio/Native/RetroChiptune/). Source pin and reproducible build for `gme.dll`: [`GME_BUILD.md`](features/CHIPTUNE_GME_DLL_BUILD.md). Per-component license notices: [`NOTICES.txt`](../../NOTICES.txt).
+- Native DLLs: `gme.dll` (~221 KB, LGPL v2.1+), `z.dll` (~77 KB, zlib license), `psf.dll` (~185 KB, ISC + BSD-2) — all x86, stored in [`src/Audio/Native/RetroChiptune/`](../../src/Audio/Native/RetroChiptune/). Source pins and reproducible builds: [`CHIPTUNE_GME_DLL_BUILD.md`](features/CHIPTUNE_GME_DLL_BUILD.md), [`PSF_ENGINE_BUILD.md`](features/PSF_ENGINE_BUILD.md). Per-component license notices: [`NOTICES.txt`](../../NOTICES.txt).
 
 See [POTENTIAL_ISSUES.md](../archive/POTENTIAL_ISSUES.md) (archived) for the GME 1.5x gain boost rollback info.

@@ -1,6 +1,6 @@
 # Retro Chiptune Native Libraries
 
-These DLLs enable UniPlaySong to play **retro game music** (chiptune formats like `.vgm` from Sega Genesis / Mega Drive) inside Playnite. They are bundled into the `.pext` package during build and loaded via P/Invoke at runtime by [GmeNative.cs](../../GmeNative.cs).
+These DLLs enable UniPlaySong to play **retro game music** (chiptune formats like `.vgm` from Sega Genesis / Mega Drive, and PlayStation `.psf`) inside Playnite. They are bundled into the `.pext` package during build and loaded via P/Invoke at runtime by [GmeNative.cs](../../GmeNative.cs) and [PsfNative.cs](../../PsfNative.cs).
 
 > Provenance and SHA-256 for every bundled binary: [`SHIPPED_BINARIES.md`](../../../../docs/dev_docs/SHIPPED_BINARIES.md).
 
@@ -10,6 +10,7 @@ These DLLs enable UniPlaySong to play **retro game music** (chiptune formats lik
 |------|---------|--------------|---------|
 | `gme.dll` | [Game Music Emu](https://github.com/libgme/game-music-emu) — emulates retro sound chips (YM2612, SN76489, SPC700, NES APU, etc.) | x86 (32-bit) | LGPL v2.1+ |
 | `z.dll` | [zlib](https://github.com/madler/zlib) 1.3.2 — decompression for `.vgz` (gzip-compressed VGM) | x86 (32-bit) | zlib license |
+| `psf.dll` | PlayStation PSF engine, first-party: [ares](https://github.com/ares-emulator/ares) R3000 CPU + SPU (ISC) driven by [aopsf](https://github.com/kode54/aopsf)'s HLE BIOS glue (BSD-2), built from [`native/psf/`](../../../../native/psf/) | x86 (32-bit) | ISC + BSD-2 |
 
 ## Why x86?
 
@@ -30,8 +31,12 @@ Game Music Emu is LGPL v2.1+. UniPlaySong is MIT. The combination is legal becau
 ## Build Source
 
 Built from source, not downloaded, to guarantee x86, the Nuked OPN2 core (LGPL-safe) and zlib
-integration for VGZ. Both are **unsigned**.
-Reproduce from the respective repo roots:
+integration for VGZ. All three are **unsigned**.
+
+`psf.dll`: `native/psf/build.cmd` — see
+[PSF_ENGINE_BUILD.md](../../../../docs/dev_docs/features/PSF_ENGINE_BUILD.md).
+
+`gme.dll` and `z.dll`, from the respective repo roots:
 
 ```bash
 # zlib (from C:/Projects/zlib-build, checked out to tag v1.3.2)
@@ -58,6 +63,7 @@ cmake --build . --config Release
 
 - [GmeNative.cs](../../GmeNative.cs) — P/Invoke declarations for `gme.dll`
 - [GmeReader.cs](../../GmeReader.cs) — `WaveStream + ISampleProvider` wrapper
+- [PsfNative.cs](../../PsfNative.cs), [PsfReader.cs](../../PsfReader.cs), [PsfFile.cs](../../PsfFile.cs) — the same for `psf.dll`
 - [SUPPORTED_FILE_FORMATS.md](../../../../docs/dev_docs/SUPPORTED_FILE_FORMATS.md) — All supported audio formats
 - [DEPENDENCIES.md](../../../../docs/dev_docs/DEPENDENCIES.md) — Full dependency reference
 

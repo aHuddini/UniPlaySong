@@ -23,12 +23,13 @@ namespace UniPlaySong.Features.MusicInfoCard.Services
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
-        // Extensions that the GME backend handles. These have to be probed via GmeReader (not TagLib) for duration.
-        // Matches the chiptune entries in Constants.SupportedAudioExtensionsLowercase but is duplicated here so the
-        // module stays self-contained — changing the global list won't silently break stats.
+        // Extensions the emulated backends handle. These have to be probed via GmeReader or PsfFile (not TagLib) for
+        // duration. Matches the chiptune entries in Constants.SupportedAudioExtensionsLowercase but is duplicated here
+        // so the module stays self-contained — changing the global list won't silently break stats.
         private static readonly HashSet<string> ChiptuneExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            ".vgm", ".vgz", ".spc", ".nsf", ".nsfe", ".gbs", ".gym", ".hes", ".kss", ".sap", ".ay"
+            ".vgm", ".vgz", ".spc", ".nsf", ".nsfe", ".gbs", ".gym", ".hes", ".kss", ".sap", ".ay",
+            ".psf", ".minipsf"
         };
 
         private readonly GameMusicFileService _fileService;
@@ -209,6 +210,27 @@ namespace UniPlaySong.Features.MusicInfoCard.Services
                     }
                     return;
                 }
+            }
+
+            // PSF rips carry their length and title in the tag block: no engine needed.
+            if (PsfFile.IsPsfExtension(ext))
+            {
+                var psf = PsfFile.ReadTags(filePath);
+                var duration = psf.Duration ?? TimeSpan.Zero;
+                stats.TotalDuration += duration;
+
+                var title = string.IsNullOrWhiteSpace(psf.Title) ? Path.GetFileNameWithoutExtension(filePath) : psf.Title;
+                CompareTrack(title, duration, ref longest, ref shortest);
+
+                stats.Songs.Add(new SongEntry
+                {
+                    Title = title,
+                    Extension = ext,
+                    Duration = duration,
+                    FileSizeBytes = fileSize,
+                    IsPlaylistTrack = false
+                });
+                return;
             }
 
             // No sidecar (or non-HES chiptune): probe duration via GmeReader.

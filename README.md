@@ -27,6 +27,7 @@ Built with the help of Claude Code and Cursor IDE
 
 ### Added
 - Listening history: how long you have actually listened, your most played tracks, and your top games by time. In Settings → Library → Statistics, and on the Music Dashboard.
+- PlayStation 1 music: `.psf` and `.minipsf` files play like any other track, with titles from the rip itself.
 
 ### Improved
 - PlayniteAchievements plays its own unlock sounds now, so UniPlaySong's page for them is marked Legacy. It still works — but turn on one or the other, not both.

@@ -1403,6 +1403,15 @@ namespace UniPlaySong.Services
                     return;
                 }
 
+                // Emulated formats have no SDL2 decoder. The switch replaces this service with one on
+                // the NAudio player and plays the file there; it is sticky, so later songs ride it too.
+                if (Audio.EmulatedFormats.Contains(Path.GetExtension(songToPlay)) && !(_musicPlayer is NAudioMusicPlayer))
+                {
+                    _fileLogger?.Info($"Emulated format ({Path.GetExtension(songToPlay)}), requesting NAudio player switch");
+                    OnNeedsPlayerSwitch?.Invoke(songToPlay);
+                    return;
+                }
+
                 // PNS PATTERN: Check if this is default music (native or custom).
                 // UseNativeMusicAsDefault and DefaultMusicPath are mutually exclusive at playback time.
                 bool isDefaultMusic = IsDefaultMusicPath(songToPlay, settings);
@@ -2265,11 +2274,11 @@ namespace UniPlaySong.Services
 
             try
             {
-                // GME retro formats require NAudio — SDL2 can't decode them
+                // Emulated formats require NAudio — SDL2 can't decode them
                 var ext = Path.GetExtension(filePath);
-                if (Audio.GmeNative.IsGmeExtension(ext) && !(_musicPlayer is NAudioMusicPlayer))
+                if (Audio.EmulatedFormats.Contains(ext) && !(_musicPlayer is NAudioMusicPlayer))
                 {
-                    _fileLogger?.Info($"GME file detected ({ext}), requesting NAudio player switch");
+                    _fileLogger?.Info($"Emulated format ({ext}), requesting NAudio player switch");
                     OnNeedsPlayerSwitch?.Invoke(filePath);
                     return;
                 }

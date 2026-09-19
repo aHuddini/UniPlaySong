@@ -190,7 +190,7 @@ foreach ($dll in @("SDL2.dll", "SDL2_mixer.dll")) {
 # Source: src/Audio/Native/RetroChiptune/ — folder name documents purpose alongside the code that uses it
 Write-Host "Copying retro chiptune native DLLs..." -ForegroundColor Yellow
 $retroChiptuneDir = Join-Path $projectRoot "src\Audio\Native\RetroChiptune"
-$retroChiptuneDlls = @("gme.dll", "z.dll")
+$retroChiptuneDlls = @("gme.dll", "z.dll", "psf.dll")
 $retroChiptuneFound = $false
 
 foreach ($dll in $retroChiptuneDlls) {

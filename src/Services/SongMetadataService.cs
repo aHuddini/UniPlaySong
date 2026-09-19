@@ -212,6 +212,22 @@ namespace UniPlaySong.Services
                 return SongInfo.Empty;
             }
 
+            // TagLib knows nothing about PSF, but the rip's own tag block carries title, artist and
+            // length - the one chiptune format that can put a real title on Now Playing.
+            if (Audio.PsfFile.IsPsfExtension(Path.GetExtension(filePath)))
+            {
+                try
+                {
+                    var psf = Audio.PsfFile.ReadTags(filePath);
+                    if (!string.IsNullOrWhiteSpace(psf.Title))
+                        return new SongInfo(filePath, psf.Title, psf.Artist, psf.Duration ?? TimeSpan.Zero);
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Warn($"[SongMetadata] Failed to read PSF tags from {Path.GetFileName(filePath)}: {ex.Message}");
+                }
+            }
+
             try
             {
                 using (var file = TagLib.File.Create(filePath))

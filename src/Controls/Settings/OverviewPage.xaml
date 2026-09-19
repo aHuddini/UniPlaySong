@@ -44,6 +44,9 @@
                         Added: listening history &#8212; how long you&#8217;ve actually listened, your most played tracks, and your top games by time (Library &#8594; Statistics).
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
+                        Added: PlayStation 1 music &#8212; .psf and .minipsf files play like any other track, with titles from the rip itself.
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}">
                         Improved: PlayniteAchievements plays its own unlock sounds now, so UniPlaySong&#8217;s page for them (Gamification &#8594; Achievements) is marked Legacy.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">

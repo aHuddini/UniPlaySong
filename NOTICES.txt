@@ -8,17 +8,18 @@ components, each under its own license:
 
 Binary transparency
 -------------------
-All five bundled native DLLs are UNSIGNED (no Authenticode certificate):
-SDL2.dll, SDL2_mixer.dll, gme.dll, z.dll, SpotifyLoopback.dll.
+All six bundled native DLLs are UNSIGNED (no Authenticode certificate):
+SDL2.dll, SDL2_mixer.dll, gme.dll, z.dll, psf.dll, SpotifyLoopback.dll.
 
-Three were compiled by the maintainer rather than obtained as upstream builds:
+Four were compiled by the maintainer rather than obtained as upstream builds:
 
   gme.dll              libgme @ 1815b97, CMake, GME_YM2612_EMU=Nuked.
                        Source: lib/source/gme-source-1815b97.tar.gz
   z.dll                zlib @ tag v1.3.2, CMake, Win32
+  psf.dll              first-party, from native/psf/ (ares cores + aopsf glue)
   SpotifyLoopback.dll  first-party, from native/SpotifyLoopback/
 
-All five have VirusTotal reports, addressed by each file's SHA-256 so they always
+All six have VirusTotal reports, addressed by each file's SHA-256 so they always
 show current engine results and can be matched against your own copy:
 
   SpotifyLoopback.dll
@@ -29,6 +30,9 @@ show current engine results and can be matched against your own copy:
 
   z.dll
     https://www.virustotal.com/gui/file/b1f8e01096a7a0585a7a3738e3f371e332d8de4ddd88d8dab1ab51dfd8432560
+
+  psf.dll
+    https://www.virustotal.com/gui/file/ddddfe7a7f87c87f29419f493d83ccf679bf9e1c276532a268a3687509f62875
 
   SDL2.dll
     https://www.virustotal.com/gui/file/ed9bb11fb27ba61c04d0165f299e053626665e9ab2b51afb74ae2c1dcff7ddef
@@ -96,6 +100,71 @@ Upstream:   https://github.com/madler/zlib
 Version:    1.3.2
 Linkage:    Dynamic (DLL alongside gme.dll)
 Modifications: NONE.
+
+
+ares (psf.dll)
+--------------
+Purpose:    PlayStation music playback (.psf, .minipsf): the R3000 CPU and SPU
+            emulation cores inside psf.dll
+License:    ISC License
+Upstream:   https://github.com/ares-emulator/ares
+Pinned at:  commit 17813a3ccda21ab9bd45f09bfc2f91196dbf50ff
+Linkage:    Compiled into psf.dll (native/psf/cpu, native/psf/spu)
+Modifications: reverb.cpp, two lines (native/psf/spu.patch); the cores are
+            otherwise verbatim and run against a stand-in for ares' framework
+            (native/psf/include/ps1/ps1.hpp).
+
+Copyright (c) 2004-2025 ares team, Near et al
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+
+
+aopsf (psf.dll)
+---------------
+Purpose:    The PSF driver and HLE BIOS glue inside psf.dll (psx_hw.c,
+            eng_psf.c) that runs a PSF's program without Sony firmware
+License:    BSD 2-Clause
+Upstream:   https://github.com/kode54/aopsf
+Pinned at:  commit f0371dba5bd7a371fd71e7d914a3ad093c399afa
+Linkage:    Compiled into psf.dll (native/psf/glue)
+Modifications: NONE. aopsf's own SPU (GPL) and R3000 (MAME licence) are not
+            used; psf.dll implements their interfaces over the ares cores.
+
+Copyright (c) 2007-2009, R. Belmont and Richard Bannister.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the names of R. Belmont and Richard Bannister nor the names of its
+  contributors may be used to endorse or promote products derived from this
+  software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 SDL2 / SDL2_mixer (SDL2.dll, SDL2_mixer.dll)

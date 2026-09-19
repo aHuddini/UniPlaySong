@@ -44,3 +44,4 @@ scripts/build_unlocked_pext.ps1
 # Settings-view design explorations (Mike Aniki mockups, scratch layouts) — reference
 # material for the settings revamp, not part of the build
 src/DesignReworkIdea/
+__pycache__/

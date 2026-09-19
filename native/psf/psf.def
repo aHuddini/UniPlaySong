@@ -1,0 +1,9 @@
+LIBRARY psf
+EXPORTS
+  psx_get_state_size
+  psx_set_refresh
+  psx_get_last_error
+  psf_load_section
+  psf_start
+  psf_gen
+  psf_stop

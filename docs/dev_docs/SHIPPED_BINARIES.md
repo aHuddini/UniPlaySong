@@ -31,6 +31,7 @@ copies and the hashes below.
 | `SDL2.dll` | 2,531,840 | Committed | `lib/SDL2.dll` — see the sourcing warning below | zlib |
 | `SDL2_mixer.dll` | 306,688 | Committed | `lib/SDL2_mixer.dll` — see the sourcing warning below | zlib |
 | `z.dll` | 78,336 | Committed | `src/Audio/Native/RetroChiptune/z.dll` | zlib |
+| `psf.dll` | 185,344 | Committed (first-party) | `src/Audio/Native/RetroChiptune/psf.dll`, built from `native/psf/` | ISC + BSD-2 |
 | `FuzzySharp.dll` | 39,936 | NuGet | `FuzzySharp` 2.0.2 | MIT |
 | `HtmlAgilityPack.dll` | 169,472 | NuGet | `HtmlAgilityPack` 1.11.46 (`lib/Net45/`) | MIT |
 | `MaterialDesignColors.dll` | 302,592 | NuGet | `MaterialDesignColors` 2.1.0 | MIT |
@@ -78,6 +79,7 @@ bf3fb84664f4097f1a8a9bc71a51dcf8cf1a905d4080a4d290da1730866e856f  System.Memory.
 66409f670315afe8610f17a4d3a1ee52d72b6a46c544cec97544e8385f90ad74  System.Runtime.CompilerServices.Unsafe.dll
 b1833a41ab1e933f7b006e5db15300b7223bfccc2c3b6689d49a9171dd27de1d  TagLibSharp.dll
 f50a551e39e7714e1662ccf78f4e03b9be49e2704860fcbc4513d3d0d1879866  WindowsMediaController.dll
+ddddfe7a7f87c87f29419f493d83ccf679bf9e1c276532a268a3687509f62875  psf.dll
 b1f8e01096a7a0585a7a3738e3f371e332d8de4ddd88d8dab1ab51dfd8432560  z.dll
 ```
 
@@ -86,26 +88,27 @@ b1f8e01096a7a0585a7a3738e3f371e332d8de4ddd88d8dab1ab51dfd8432560  z.dll
 | Path | Picked up by |
 |---|---|
 | `lib/SDL2.dll`, `lib/SDL2_mixer.dll` | packaging script, direct path — fails if missing |
-| `src/Audio/Native/RetroChiptune/{gme,z}.dll` | packaging script, direct path |
+| `src/Audio/Native/RetroChiptune/{gme,z,psf}.dll` | packaging script, direct path |
 | `src/Audio/Native/SpotifyLoopback.dll` | csproj copy to build output, then packaged |
 
 ## Binary transparency
 
-**All five native DLLs are unsigned** — no Authenticode certificate, so Windows cannot attribute them
-to a publisher. Three are compiled by the maintainer:
+**All six native DLLs are unsigned** — no Authenticode certificate, so Windows cannot attribute them
+to a publisher. Four are compiled by the maintainer:
 
 | File | From | Reproduce |
 |---|---|---|
 | `SpotifyLoopback.dll` | `native/SpotifyLoopback/` (C++/WinRT, first-party) | `msbuild native/SpotifyLoopback/SpotifyLoopback.vcxproj /p:Configuration=Release /p:Platform=Win32` |
 | `gme.dll` | libgme @ `1815b97`, CMake, `GME_YM2612_EMU=Nuked` | [`features/CHIPTUNE_GME_DLL_BUILD.md`](features/CHIPTUNE_GME_DLL_BUILD.md); source at `lib/source/gme-source-1815b97.tar.gz` |
 | `z.dll` | zlib @ tag `v1.3.2`, CMake, Win32 | [`RetroChiptune/DLL-README.md`](../../src/Audio/Native/RetroChiptune/DLL-README.md). No source archive is kept — zlib's licence does not require one. |
+| `psf.dll` | `native/psf/` (first-party bridges over ares @ `17813a3` and aopsf @ `f0371db`) | [`features/PSF_ENGINE_BUILD.md`](features/PSF_ENGINE_BUILD.md); `native/psf/build.cmd` |
 
 `SDL2.dll` and `SDL2_mixer.dll` are upstream libsdl-org release builds (2.30.5 / 2.8.0), unsigned as
 shipped by that project.
 
 ### Scan reports
 
-All five natives have VirusTotal reports, recorded in a `VIRUSTOTAL-AUDIT.md` beside the binaries
+All six natives have VirusTotal reports, recorded in a `VIRUSTOTAL-AUDIT.md` beside the binaries
 (see the per-folder table below). If a signing certificate is ever obtained, record it there too.
 
 `SpotifyLoopback.dll` is the likeliest to be flagged. It calls `ActivateAudioInterfaceAsync` to
@@ -138,7 +141,7 @@ and licence. Separate from `README.md` so a folder can carry both, and so a diff
 |---|---|---|
 | `lib/` | `SDL2.dll`, `SDL2_mixer.dll` | [`DLL-README`](../../lib/DLL-README.md) · [`VIRUSTOTAL-AUDIT`](../../lib/VIRUSTOTAL-AUDIT.md) |
 | `src/Audio/Native/` | `SpotifyLoopback.dll` | [`DLL-README`](../../src/Audio/Native/DLL-README.md) · [`VIRUSTOTAL-AUDIT`](../../src/Audio/Native/VIRUSTOTAL-AUDIT.md) |
-| `src/Audio/Native/RetroChiptune/` | `gme.dll`, `z.dll` | [`DLL-README`](../../src/Audio/Native/RetroChiptune/DLL-README.md) · [`VIRUSTOTAL-AUDIT`](../../src/Audio/Native/RetroChiptune/VIRUSTOTAL-AUDIT.md) |
+| `src/Audio/Native/RetroChiptune/` | `gme.dll`, `z.dll`, `psf.dll` | [`DLL-README`](../../src/Audio/Native/RetroChiptune/DLL-README.md) · [`VIRUSTOTAL-AUDIT`](../../src/Audio/Native/RetroChiptune/VIRUSTOTAL-AUDIT.md) |
 
 `DllDocumentationTests` fails if a folder gains a `.dll` without one. A plain `README.md` does not
 satisfy it.

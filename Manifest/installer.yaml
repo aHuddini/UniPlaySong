@@ -6,6 +6,7 @@ Packages:
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.8/UniPlaySong-1_8_8.pext'
     Changelog:
       - '[New Feature] Listening history: how long you''ve actually listened, your most played tracks, and your top games by time listened. In Library -> Statistics, and on the Music Dashboard. On by default, with a Clear button.'
+      - '[New Feature] PlayStation 1 music: drop .psf or .minipsf files (with their .psflib) into a game''s music folder. Track titles come from the rip itself.'
       - '[Fix] In Live Effects -> Calm Down setttings, turning on "Turn Calm Down on by itself after a period with no input" in the settings dialog now takes effect immediately. It previously did nothing until Playnite was restarted.'
       - '[Improved] Gamification -> Achievements (Legacy): PlayniteAchievements plays its own unlock sounds now. UPS version of the feature is deprecated and kept only for backwards compatibility. Keep it off unless you want to use theme packs.'
       - '[Docs] NOTICES.txt now attributes every bundled third-party library, and each native DLL in the repository has a SHA-256 and VirusTotal report beside it.'

@@ -200,7 +200,7 @@ namespace UniPlaySong.Services
         }
 
         // Creates the appropriate WaveStream reader based on file extension.
-        // OGG uses OggFileReader (NVorbis); GME formats use GmeReader; all others use AudioFileReader.
+        // OGG uses OggFileReader (NVorbis); GME formats use GmeReader; PSF uses PsfReader; all others use AudioFileReader.
         private static WaveStream CreateAudioReader(string filePath)
         {
             var ext = Path.GetExtension(filePath);
@@ -208,7 +208,16 @@ namespace UniPlaySong.Services
                 return new OggFileReader(filePath);
             if (GmeNative.IsGmeExtension(ext))
                 return new GmeReader(filePath);
+            if (PsfFile.IsPsfExtension(ext))
+                return new PsfReader(filePath);
             return new AudioFileReader(filePath);
+        }
+
+        // Readers that run an emulator rather than decode a stream. They advance in real time while
+        // in the mixer and cannot seek back cheaply, so pause detaches them and resume re-attaches.
+        private static bool IsEmulatedReader(WaveStream reader)
+        {
+            return reader is GmeReader || reader is PsfReader;
         }
 
         public void PreLoad(string filePath)
@@ -434,7 +443,7 @@ namespace UniPlaySong.Services
             // expensive backward-seek (rewind to track start + fast-forward — 6+ seconds on long tracks). Detaching
             // freezes the emu at _pausedPosition so Resume can re-add the input with no seek required (or a trivial no-op
             // seek).
-            if (_audioFile is GmeReader)
+            if (IsEmulatedReader(_audioFile))
             {
                 RemoveSongFromMixer();
             }
@@ -442,7 +451,7 @@ namespace UniPlaySong.Services
             // If crossfading and secondary is also a GME reader, detach it too so its emulator freezes at the current
             // position rather than advancing during pause. Non-GME secondaries don't need this — NAudio's mixer just
             // stops reading them when logically paused (they'll resume naturally on Resume).
-            if (IsCrossfading && _secondaryAudioFile is GmeReader && _secondaryMixerInput != null && _mixer != null)
+            if (IsCrossfading && IsEmulatedReader(_secondaryAudioFile) && _secondaryMixerInput != null && _mixer != null)
             {
                 try { _mixer.RemoveMixerInput(_secondaryMixerInput); }
                 catch (Exception ex)
@@ -495,7 +504,7 @@ namespace UniPlaySong.Services
             }
 
             // Fast path: non-GME readers seek instantly (buffer pointer update).
-            if (!(_audioFile is GmeReader))
+            if (!IsEmulatedReader(_audioFile))
             {
                 _audioFile.CurrentTime = _pausedPosition;
 
@@ -508,7 +517,7 @@ namespace UniPlaySong.Services
                 }
 
                 // If crossfading and secondary is GME, it was detached in Pause — re-attach.
-                if (IsCrossfading && _secondaryAudioFile is GmeReader && _secondaryMixerInput != null && _mixer != null)
+                if (IsCrossfading && IsEmulatedReader(_secondaryAudioFile) && _secondaryMixerInput != null && _mixer != null)
                 {
                     try { _mixer.AddMixerInput(_secondaryMixerInput); }
                     catch (Exception ex)
@@ -525,7 +534,7 @@ namespace UniPlaySong.Services
             }
 
             // GME path.
-            var gmeReader = (GmeReader)_audioFile;
+            var gmeReader = _audioFile;
             var targetPosition = _pausedPosition;
             var dispatcher = System.Windows.Application.Current?.Dispatcher;
 
@@ -647,7 +656,7 @@ namespace UniPlaySong.Services
                         }
 
                         // If crossfading and secondary is GME, it was detached in Pause — re-attach.
-                        if (IsCrossfading && _secondaryAudioFile is GmeReader && _secondaryMixerInput != null && _mixer != null)
+                        if (IsCrossfading && IsEmulatedReader(_secondaryAudioFile) && _secondaryMixerInput != null && _mixer != null)
                         {
                             try { _mixer.AddMixerInput(_secondaryMixerInput); }
                             catch (Exception ex)

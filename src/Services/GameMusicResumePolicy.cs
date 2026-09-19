@@ -34,7 +34,7 @@ namespace UniPlaySong.Services
             if (!enabled) return false;
             if (string.IsNullOrEmpty(songPath)) return false;
             if (position <= TimeSpan.Zero) return false;
-            if (GmeNative.IsGmeExtension(Path.GetExtension(songPath))) return false;
+            if (EmulatedFormats.Contains(Path.GetExtension(songPath))) return false;
 
             if (totalTime.HasValue &&
                 (totalTime.Value - position).TotalSeconds < MinRemainingSeconds)

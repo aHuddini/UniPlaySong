@@ -10,6 +10,8 @@ All notable changes to UniPlaySong will be documented in this file.
 
 - Added listening history (Library -> Statistics, on by default) recording time listened, play counts and top games; audible time is accumulated from pause and resume transitions, never from wall clock or player position
 - Added `EnableListeningHistory` and a Clear button; history persists to `listening-history.json` beside the other side-files, versioned and written atomically
+- Added PlayStation music playback (`.psf`, `.minipsf` + `.psflib`) through `psf.dll`, a first-party engine: ares' ISC R3000 and SPU cores behind aopsf's BSD HLE BIOS glue, built from `native/psf/`; Now Playing shows the rip's own title and artist
+- Added `PsfFile` (container, tags, `_lib` chain, CRC) with tests; PSF files route to the NAudio player from the main hover path as well as the radio path, which was the only place GME files had been gated
 
 ### Fixed
 
