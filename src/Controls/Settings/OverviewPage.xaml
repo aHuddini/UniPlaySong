@@ -38,19 +38,13 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: idle Calm Down now takes effect as soon as it is switched on, not after a restart.
+                        Added: PlayStation 1 music (.psf, .minipsf) with titles from the rip itself, and listening history &#8212; time listened, most played tracks, top games (Library &#8594; Statistics).
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: listening history &#8212; how long you&#8217;ve actually listened, your most played tracks, and your top games by time (Library &#8594; Statistics).
+                        Fixed: idle Calm Down takes effect as soon as it is switched on, and hovered chiptune tracks no longer fail silently without Live Effects.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: PlayStation 1 music &#8212; .psf and .minipsf files play like any other track, with titles from the rip itself.
-                    </TextBlock>
-                    <TextBlock Style="{StaticResource UpsBody}">
-                        Improved: PlayniteAchievements plays its own unlock sounds now, so UniPlaySong&#8217;s page for them (Gamification &#8594; Achievements) is marked Legacy.
-                    </TextBlock>
-                    <TextBlock Style="{StaticResource UpsBody}">
-                        It still works and nothing there has changed — but switch on one or the other, not both, or every unlock plays two sounds.
+                        Improved: PlayniteAchievements plays its own unlock sounds now, so UniPlaySong&#8217;s page (Gamification &#8594; Achievements) is marked Legacy &#8212; switch on one or the other, not both.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:

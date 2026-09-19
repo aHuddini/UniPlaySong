@@ -4,23 +4,30 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
-## [1.8.8] - 2026-09-12
+## [1.8.8] - 2026-09-19
 
 ### Added
 
 - Added listening history (Library -> Statistics, on by default) recording time listened, play counts and top games; audible time is accumulated from pause and resume transitions, never from wall clock or player position
 - Added `EnableListeningHistory` and a Clear button; history persists to `listening-history.json` beside the other side-files, versioned and written atomically
-- Added PlayStation music playback (`.psf`, `.minipsf` + `.psflib`) through `psf.dll`, a first-party engine: ares' ISC R3000 and SPU cores behind aopsf's BSD HLE BIOS glue, built from `native/psf/`; Now Playing shows the rip's own title and artist
-- Added `PsfFile` (container, tags, `_lib` chain, CRC) with tests; PSF files route to the NAudio player from the main hover path as well as the radio path, which was the only place GME files had been gated
+- Added PlayStation music playback (`.psf`, `.minipsf` + `.psflib`) through `psf.dll`, a first-party engine built from ares' ISC R3000 and SPU cores and aopsf's BSD HLE BIOS glue (`native/psf/`); Now Playing shows the rip's title and artist
+- Added `PsfFile` (container, tags, `_lib` chain, CRC-32) with tests; the rip's `volume` tag is not applied, since it is written against Highly Experimental's half-level voice stage and would clip at hardware level
 
 ### Fixed
 
 - Fixed idle Calm Down doing nothing when enabled from the settings dialog without a restart; the backend-swap check watched only `CalmDownModeEnabled`, so the player stayed on SDL2, which cannot host the effect
+- Fixed emulated formats (chiptune, PSF) failing silently when played from a hover on the SDL2 backend; only the radio path requested the NAudio switch, so `PlayGameMusic` now requests it too
 
 ### Changed
 
 - Renamed the Statistics page's "Total Playtime" card to "Total Track Length", which is what the figure has always been: summed file duration, not time played
 - Relabelled the Gamification -> PlayniteAchievements page to Achievements (Legacy) and added a notice that PlayniteAchievements now plays unlock sounds natively; leaving both enabled plays two sounds per unlock, which UniPlaySong cannot detect
+- Packaging takes `SDL2.dll` and `SDL2_mixer.dll` from `lib/` only and fails when either is missing; it used to search sibling Playnite Sound builds and other installed extensions first
+- Documented every shipped DLL: `DLL-README.md` and `VIRUSTOTAL-AUDIT-<dlls>.md` beside each binary, `SHIPPED_BINARIES.md` as the package manifest, `NOTICES.txt` attributing every bundled library; `DllDocumentationTests` enforces all three
+
+### Removed
+
+- Removed `lib/dll/` and `lib/gme.dll`, `lib/z.dll`: copies of assemblies NuGet restores and of the RetroChiptune natives, which the packaging script no longer reads
 
 ## [1.8.7] - 2026-09-06
 

@@ -24,6 +24,7 @@ Built with the help of Claude Code and Cursor IDE
 
 ### Fixed
 - Turning on "Calm Down after a stretch with no input" in the settings now takes effect immediately, instead of after a restart.
+- Retro chiptune tracks played by hovering a game no longer fail silently when Live Effects and the Visualizer are off.
 
 ### Added
 - Listening history: how long you have actually listened, your most played tracks, and your top games by time. In Settings → Library → Statistics, and on the Music Dashboard.
