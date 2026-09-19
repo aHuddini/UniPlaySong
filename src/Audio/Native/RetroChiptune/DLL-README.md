@@ -69,4 +69,4 @@ cmake --build . --config Release
 
 ## Scan reports
 
-[`VIRUSTOTAL-AUDIT.md`](VIRUSTOTAL-AUDIT.md) — SHA-256 and VirusTotal report for each file here.
+[`VIRUSTOTAL-AUDIT-gme-z-psf.md`](VIRUSTOTAL-AUDIT-gme-z-psf.md) — SHA-256 and VirusTotal report for each file here.

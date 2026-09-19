@@ -46,4 +46,4 @@ Verify independently: hash it against the manifest and rescan it yourself, rebui
 
 ## Scan reports
 
-[`VIRUSTOTAL-AUDIT.md`](VIRUSTOTAL-AUDIT.md) — SHA-256 and VirusTotal report for each file here.
+[`VIRUSTOTAL-AUDIT-SpotifyLoopback.md`](VIRUSTOTAL-AUDIT-SpotifyLoopback.md) — SHA-256 and VirusTotal report for each file here.

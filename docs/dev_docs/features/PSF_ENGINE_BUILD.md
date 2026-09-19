@@ -58,7 +58,7 @@ test\run.cmd
 through the harness and asserts the output. `obj\harness.exe <file.psf> <out.wav> [seconds]`
 renders any PSF to WAV for listening.
 
-After a rebuild: new hash in `src/Audio/Native/RetroChiptune/VIRUSTOTAL-AUDIT.md` and
+After a rebuild: new hash in `src/Audio/Native/RetroChiptune/VIRUSTOTAL-AUDIT-gme-z-psf.md` and
 [`SHIPPED_BINARIES.md`](../SHIPPED_BINARIES.md) (`DllDocumentationTests` fails until then), and a
 fresh VirusTotal submission.
 

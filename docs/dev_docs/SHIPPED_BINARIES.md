@@ -108,7 +108,7 @@ shipped by that project.
 
 ### Scan reports
 
-All six natives have VirusTotal reports, recorded in a `VIRUSTOTAL-AUDIT.md` beside the binaries
+All six natives have VirusTotal reports, recorded in a `VIRUSTOTAL-AUDIT-<dlls>.md` beside the binaries
 (see the per-folder table below). If a signing certificate is ever obtained, record it there too.
 
 `SpotifyLoopback.dll` is the likeliest to be flagged. It calls `ActivateAudioInterfaceAsync` to
@@ -139,9 +139,9 @@ and licence. Separate from `README.md` so a folder can carry both, and so a diff
 
 | Folder | Contents | Docs |
 |---|---|---|
-| `lib/` | `SDL2.dll`, `SDL2_mixer.dll` | [`DLL-README`](../../lib/DLL-README.md) · [`VIRUSTOTAL-AUDIT`](../../lib/VIRUSTOTAL-AUDIT.md) |
-| `src/Audio/Native/` | `SpotifyLoopback.dll` | [`DLL-README`](../../src/Audio/Native/DLL-README.md) · [`VIRUSTOTAL-AUDIT`](../../src/Audio/Native/VIRUSTOTAL-AUDIT.md) |
-| `src/Audio/Native/RetroChiptune/` | `gme.dll`, `z.dll`, `psf.dll` | [`DLL-README`](../../src/Audio/Native/RetroChiptune/DLL-README.md) · [`VIRUSTOTAL-AUDIT`](../../src/Audio/Native/RetroChiptune/VIRUSTOTAL-AUDIT.md) |
+| `lib/` | `SDL2.dll`, `SDL2_mixer.dll` | [`DLL-README`](../../lib/DLL-README.md) · [`VIRUSTOTAL-AUDIT-SDL2`](../../lib/VIRUSTOTAL-AUDIT-SDL2.md) |
+| `src/Audio/Native/` | `SpotifyLoopback.dll` | [`DLL-README`](../../src/Audio/Native/DLL-README.md) · [`VIRUSTOTAL-AUDIT-SpotifyLoopback`](../../src/Audio/Native/VIRUSTOTAL-AUDIT-SpotifyLoopback.md) |
+| `src/Audio/Native/RetroChiptune/` | `gme.dll`, `z.dll`, `psf.dll` | [`DLL-README`](../../src/Audio/Native/RetroChiptune/DLL-README.md) · [`VIRUSTOTAL-AUDIT-gme-z-psf`](../../src/Audio/Native/RetroChiptune/VIRUSTOTAL-AUDIT-gme-z-psf.md) |
 
 `DllDocumentationTests` fails if a folder gains a `.dll` without one. A plain `README.md` does not
 satisfy it.

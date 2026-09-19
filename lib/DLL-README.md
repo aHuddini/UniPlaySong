@@ -31,4 +31,4 @@ Managed dependencies are restored from NuGet and must not be committed here; a t
 
 ## Scan reports
 
-[`VIRUSTOTAL-AUDIT.md`](VIRUSTOTAL-AUDIT.md) — SHA-256 and VirusTotal report for each file here.
+[`VIRUSTOTAL-AUDIT-SDL2.md`](VIRUSTOTAL-AUDIT-SDL2.md) — SHA-256 and VirusTotal report for each file here.
