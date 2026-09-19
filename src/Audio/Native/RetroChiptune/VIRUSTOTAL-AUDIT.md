@@ -1,6 +1,6 @@
 # VirusTotal Audit
 
-Scan reports for the `.dll` files in this folder. Audited **2026-09-13**.
+Scan reports for the `.dll` files in this folder. Audited **2026-09-13**; `psf.dll` **2026-09-19**.
 
 | File | SHA-256 | Report |
 |---|---|---|
