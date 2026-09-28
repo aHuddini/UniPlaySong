@@ -29,6 +29,10 @@ namespace UniPlaySong.Services
         // called from. Injected so tests can run it inline.
         private readonly Action<Action> _runInBackground;
 
+        // Where the settings object is changed: the UI thread, via BeginInvoke (inline when already on it).
+        // Injected so tests can prove nothing is published from anywhere else.
+        private readonly Action<Action> _runOnUi;
+
         // Bumped by every Refresh. A background art step publishes only if it is still the latest, so a
         // slow read for the previous song can never overwrite the current one.
         private int _publishGeneration;
@@ -66,9 +70,11 @@ namespace UniPlaySong.Services
             Func<UniPlaySongSettings> getSettings,
             FileLogger fileLogger,
             Func<string, string> getGameCoverArtPath = null,
-            Action<Action> runInBackground = null)
+            Action<Action> runInBackground = null,
+            Action<Action> runOnUi = null)
         {
             _runInBackground = runInBackground ?? (work => Task.Run(work));
+            _runOnUi = runOnUi ?? OnUi;
             _metadata = metadata;
             _spotify = spotify;
             _spotifyClient = spotifyClient;
@@ -118,45 +124,41 @@ namespace UniPlaySong.Services
                             _spotifyClient?.RequestAlbumArt(artBytes =>
                             {
                                 if (_disposed) return;
+                                // Only publish if Spotify is still the active source (state may
+                                // have changed while the async fetch was in flight).
+                                if (_spotify == null || !_spotify.IsSpotifyActive) return;
+
+                                var title = np.IsEmpty ? string.Empty : (np.Title ?? string.Empty);
+                                var artist = np.IsEmpty ? string.Empty : (np.Artist ?? string.Empty);
+                                var album = np.IsEmpty ? string.Empty : (np.Album ?? string.Empty);
+                                var genre = np.IsEmpty ? string.Empty : (np.Genre ?? string.Empty);
+                                var duration = (np.IsEmpty || np.Duration <= TimeSpan.Zero)
+                                    ? string.Empty
+                                    : DeskMediaControl.SongTitleCleaner.FormatDuration(np.Duration);
+
+                                // Same track since last publish => skip the PNG write + republish. The lock
+                                // covers only this check-and-set; nothing inside it calls out of the class.
+                                var key = title + "\n" + artist + "\n" + album;
                                 lock (_publishLock)
                                 {
-                                    if (_disposed) return;
-                                    var s2 = _getSettings?.Invoke();
-                                    if (s2 == null) return;
-                                    // Only publish if Spotify is still the active source (state may
-                                    // have changed while the async fetch was in flight).
-                                    if (_spotify == null || !_spotify.IsSpotifyActive)
-                                    {
-                                        return;
-                                    }
-                                    var title = np.IsEmpty ? string.Empty : (np.Title ?? string.Empty);
-                                    var artist = np.IsEmpty ? string.Empty : (np.Artist ?? string.Empty);
-                                    var album = np.IsEmpty ? string.Empty : (np.Album ?? string.Empty);
-                                    var genre = np.IsEmpty ? string.Empty : (np.Genre ?? string.Empty);
-                                    var duration = (np.IsEmpty || np.Duration <= TimeSpan.Zero)
-                                        ? string.Empty
-                                        : DeskMediaControl.SongTitleCleaner.FormatDuration(np.Duration);
-
-                                    // Same track since last publish => skip the PNG write + republish.
-                                    var key = title + "\n" + artist + "\n" + album;
                                     if (key == _lastSpotifyTrackKey) return;
                                     _lastSpotifyTrackKey = key;
-
-                                    var artPath = _artWriter?.WriteBytes(artBytes) ?? string.Empty;
-                                    if (string.IsNullOrEmpty(artPath))
-                                    {
-                                        // No Spotify album art — fall back to the selected game's cover
-                                        // so the now-playing slot isn't empty (same fallback as game music).
-                                        // Null path: a Spotify track has no owning-game folder.
-                                        var cover = TryGetGameCoverPath(null);
-                                        if (!string.IsNullOrEmpty(cover))
-                                        {
-                                            _artWriter?.Clear(); // point at the cover directly
-                                            artPath = cover;
-                                        }
-                                    }
-                                    Publish(s2, title, artist, artPath, album, genre, duration);
                                 }
+
+                                var artPath = _artWriter?.WriteBytes(artBytes) ?? string.Empty;
+                                if (string.IsNullOrEmpty(artPath))
+                                {
+                                    // No Spotify album art — fall back to the selected game's cover
+                                    // so the now-playing slot isn't empty (same fallback as game music).
+                                    // Null path: a Spotify track has no owning-game folder.
+                                    var cover = TryGetGameCoverPath(null);
+                                    if (!string.IsNullOrEmpty(cover))
+                                    {
+                                        _artWriter?.Clear(); // point at the cover directly
+                                        artPath = cover;
+                                    }
+                                }
+                                Publish(title, artist, artPath, album, genre, duration);
                                 _artWriter?.Sweep();
                             });
                         });
@@ -179,7 +181,7 @@ namespace UniPlaySong.Services
 
                     // Nothing is the active music.
                     _artWriter?.Clear();
-                    Publish(s, string.Empty, string.Empty, string.Empty);
+                    Publish(string.Empty, string.Empty, string.Empty);
                 }
                 catch (Exception ex)
                 {
@@ -198,16 +200,11 @@ namespace UniPlaySong.Services
 
                 var artPath = ResolveUpsArt(song.FilePath);
 
-                lock (_publishLock)
-                {
-                    if (_disposed || generation != Volatile.Read(ref _publishGeneration)) return;
-                    var s = _getSettings?.Invoke();
-                    if (s == null) return;
-                    // Expose UPS song duration too (like Spotify) when the track carries it.
-                    var upsDuration = song.HasDuration ? song.DurationText : string.Empty;
-                    Publish(s, song.Title ?? string.Empty, song.Artist ?? string.Empty, artPath,
-                        duration: upsDuration);
-                }
+                // Expose UPS song duration too (like Spotify) when the track carries it. The generation is
+                // checked again on the UI thread, right before the values are applied.
+                var upsDuration = song.HasDuration ? song.DurationText : string.Empty;
+                Publish(song.Title ?? string.Empty, song.Artist ?? string.Empty, artPath,
+                    duration: upsDuration, generation: generation);
 
                 _artWriter?.Sweep();
             }
@@ -294,8 +291,30 @@ namespace UniPlaySong.Services
 
         // album/genre are Spotify-only; duration is populated for both Spotify AND UPS game music.
         // The nothing-playing call site omits them (default ""), clearing any stale prior values.
-        private void Publish(UniPlaySongSettings s, string title, string artist, string artPath,
-            string album = "", string genre = "", string duration = "")
+        //
+        // The ONLY place the settings object is changed, and it always runs on the UI thread, asynchronously:
+        // setting a property raises PropertyChanged into UPS's own handlers, one of which reads Playnite's
+        // MainView.SelectedGames - a synchronous Dispatcher.Invoke. Raised from a worker that holds a lock the
+        // UI thread is waiting on, that is a deadlock (it froze Playnite on a game switch in 1.8.10 testing).
+        // Never call this under a lock expecting it to have run on return.
+        //
+        // generation: a UPS art result carries the Refresh generation it was started for, and is dropped here
+        // if a newer Refresh has happened since.
+        private void Publish(string title, string artist, string artPath,
+            string album = "", string genre = "", string duration = "", int? generation = null)
+        {
+            _runOnUi(() =>
+            {
+                if (_disposed) return;
+                if (generation.HasValue && generation.Value != Volatile.Read(ref _publishGeneration)) return;
+                var s = _getSettings?.Invoke();
+                if (s == null) return;
+                Apply(s, title, artist, artPath, album, genre, duration);
+            });
+        }
+
+        private void Apply(UniPlaySongSettings s, string title, string artist, string artPath,
+            string album, string genre, string duration)
         {
             _fileLogger?.Debug($"[NowPlaying] Publish: title='{title}', artPath='{artPath}'");
             s.NowPlayingTitle = title;

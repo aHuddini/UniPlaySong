@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
 using UniPlaySong;
@@ -108,6 +110,67 @@ namespace UniPlaySong.Tests.Services
             foreach (var work in firstWork) work();          // then the stale one finishes
 
             Assert.AreEqual("second", _settings.NowPlayingTitle);
+        }
+
+        // The deadlock found in 1.8.10 testing: the art step published from a worker while holding the publish
+        // lock; a settings PropertyChanged handler read Playnite's MainView.SelectedGames, which is a synchronous
+        // Dispatcher.Invoke, while the UI thread sat in Refresh() waiting for that lock. Playnite froze for good.
+        // The rule that prevents it: the settings object only ever changes on the UI thread. Checked with a real
+        // dispatcher thread and a real worker, recording the thread of every PropertyChanged.
+        [Test]
+        public void SettingsOnlyChangeOnTheUiThread_EvenWhenTheArtStepRunsOnAWorker()
+        {
+            var songPath = MakeSong("a.mp3");
+            System.Windows.Threading.Dispatcher ui = null;
+            var ready = new System.Threading.ManualResetEventSlim();
+            var uiThread = new System.Threading.Thread(() =>
+            {
+                ui = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+                ready.Set();
+                System.Windows.Threading.Dispatcher.Run();
+            });
+            uiThread.SetApartmentState(System.Threading.ApartmentState.STA);
+            uiThread.IsBackground = true;
+            uiThread.Start();
+            ready.Wait();
+
+            try
+            {
+                var raisedOn = new System.Collections.Concurrent.ConcurrentBag<int>();
+                var published = new System.Threading.ManualResetEventSlim();
+                _settings.PropertyChanged += (s, e) =>
+                {
+                    raisedOn.Add(System.Threading.Thread.CurrentThread.ManagedThreadId);
+                    // What the real handler does via SelectedGames: a synchronous hop to the UI thread.
+                    ui.Invoke(() => { });
+                    if (e.PropertyName == nameof(UniPlaySongSettings.NowPlayingTitle)) published.Set();
+                };
+
+                NowPlayingPublisher pub = null;
+                ui.Invoke(() =>
+                {
+                    var pb = new Mock<IMusicPlaybackService>();
+                    var spotify = new SpotifyControlService(pb.Object, _client.Object, () => _settings, null);
+                    var meta = new SongMetadataService(pb.Object, null, () => _settings);
+                    pub = new NowPlayingPublisher(meta, spotify, _client.Object, _artWriter, () => _settings,
+                        null, null, work => Task.Run(work), work => ui.BeginInvoke(work));
+                    pb.SetupGet(p => p.CurrentSongPath).Returns(songPath);
+                    meta.ResubscribeToService(pb.Object); // song change → Refresh on the UI thread
+                });
+
+                Assert.IsTrue(published.Wait(TimeSpan.FromSeconds(10)),
+                    "nothing was published within 10 s - the UI thread and the art worker deadlocked");
+                // Refresh again on the UI thread while the worker may be publishing: must not hang.
+                Assert.IsTrue(ui.InvokeAsync(() => pub.Refresh()).Wait(TimeSpan.FromSeconds(10)) == System.Windows.Threading.DispatcherOperationStatus.Completed,
+                    "Refresh on the UI thread hung");
+
+                CollectionAssert.AreEqual(new[] { uiThread.ManagedThreadId }, raisedOn.Distinct().ToArray(),
+                    "a settings property was changed off the UI thread");
+            }
+            finally
+            {
+                ui.InvokeShutdown();
+            }
         }
 
         // The metadata service raises every song twice (filename, then tags), and pause/resume refresh
