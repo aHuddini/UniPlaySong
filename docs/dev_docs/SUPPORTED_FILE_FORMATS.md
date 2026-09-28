@@ -84,7 +84,7 @@ The vast majority of files on sites like [VGMRips](https://vgmrips.net/) are arc
 
 ### Detecting Unsupported VGM Files at Load Time
 
-If UPS can detect an unsupported-chip VGM at load time and fail gracefully instead of playing silent, it would skip the track and fall through to default music. This is on the v1.4.1 task list — see `src/Audio/GmeReader.cs` for the VGM header inspection hook.
+`GmeReader` reads the VGM/VGZ header at load (`VgmHeaderSniffer`) and refuses a file whose sound chip GME cannot emulate, naming the chip in the error, instead of opening it and playing silence.
 
 ### Future: Broader Chip Support via libvgm
 
