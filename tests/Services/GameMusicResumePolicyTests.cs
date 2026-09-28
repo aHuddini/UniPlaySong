@@ -69,7 +69,7 @@ namespace UniPlaySong.Tests.Services
         public void ShouldRemember_Psf_DoesNot()
         {
             // A PSF has no position to seek to at all - reaching one means re-running the driver
-            // from zero - so PsfReader's position setter is a no-op and resuming would be a lie.
+            // from zero - so PsfReader only honours a seek to zero and resuming would be a lie.
             Assert.IsFalse(GameMusicResumePolicy.ShouldRemember(true, @"C:\music\GameA\103 Run Straight.psf", Thirty, FourMinutes));
             Assert.IsFalse(GameMusicResumePolicy.ShouldRemember(true, @"C:\music\GameA\ff7-101.minipsf", Thirty, FourMinutes));
         }

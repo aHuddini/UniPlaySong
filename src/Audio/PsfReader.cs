@@ -9,7 +9,8 @@ namespace UniPlaySong.Audio
     // shape as GmeReader so NAudioMusicPlayer treats the two alike.
     //
     // A PSF is a program, not a stream: the only way to reach a position is to run the driver
-    // there from the start. So there is no seek - Position and CurrentTime setters are no-ops,
+    // there from the start. So the only seek is back to zero, which restarts the engine - that
+    // is what looping and "restart song" ask for. Any other position is ignored,
     // GameMusicResumePolicy never asks to resume one, and NAudioMusicPlayer's pause detaches the
     // mixer input so the emulation freezes where it stopped.
     public class PsfReader : WaveStream, ISampleProvider
@@ -24,6 +25,8 @@ namespace UniPlaySong.Audio
         private readonly long _fadeStartFrame;
         private readonly long _fadeFrames;
         private readonly long _totalFrames;
+        private readonly PsfFile _psf;
+        private readonly string _fileName;
 
         private byte[] _state;
         private GCHandle _pin;
@@ -39,6 +42,8 @@ namespace UniPlaySong.Audio
         public PsfReader(string fileName)
         {
             var psf = PsfFile.Load(fileName);
+            _psf = psf;
+            _fileName = fileName;
 
             _state = new byte[PsfNative.psx_get_state_size(1)];
             // The engine holds pointers into its own state, so the buffer must never move.
@@ -47,17 +52,7 @@ namespace UniPlaySong.Audio
 
             try
             {
-                PsfNative.psx_set_refresh(_psx, (uint)psf.RefreshHz);
-
-                for (int i = 0; i < psf.Sections.Count; i++)
-                {
-                    var section = psf.Sections[i];
-                    if (PsfNative.psf_load_section(_psx, section, (uint)section.Length, i == 0 ? 1u : 0u) != 0)
-                        throw new InvalidOperationException($"PSF failed to load '{fileName}': {PsfNative.LastError(_psx) ?? "bad PS-X EXE"}");
-                }
-
-                if (PsfNative.psf_start(_psx) != PsfNative.Success)
-                    throw new InvalidOperationException($"PSF failed to start '{fileName}': {PsfNative.LastError(_psx) ?? "unknown error"}");
+                Boot();
             }
             catch
             {
@@ -83,7 +78,7 @@ namespace UniPlaySong.Audio
         public override long Position
         {
             get { lock (_lock) return _framesGenerated * Channels * sizeof(float); }
-            set { }
+            set { if (value == 0) Restart(); }
         }
 
         public override TimeSpan TotalTime => TimeSpan.FromSeconds((double)_totalFrames / SampleRate);
@@ -91,7 +86,47 @@ namespace UniPlaySong.Audio
         public override TimeSpan CurrentTime
         {
             get { lock (_lock) return TimeSpan.FromSeconds((double)_framesGenerated / SampleRate); }
-            set { }
+            set { if (value == TimeSpan.Zero) Restart(); }
+        }
+
+        // Loads the program into a zeroed state blob and starts the driver.
+        private void Boot()
+        {
+            PsfNative.psx_set_refresh(_psx, (uint)_psf.RefreshHz);
+
+            for (int i = 0; i < _psf.Sections.Count; i++)
+            {
+                var section = _psf.Sections[i];
+                if (PsfNative.psf_load_section(_psx, section, (uint)section.Length, i == 0 ? 1u : 0u) != 0)
+                    throw new InvalidOperationException($"PSF failed to load '{_fileName}': {PsfNative.LastError(_psx) ?? "bad PS-X EXE"}");
+            }
+
+            if (PsfNative.psf_start(_psx) != PsfNative.Success)
+                throw new InvalidOperationException($"PSF failed to start '{_fileName}': {PsfNative.LastError(_psx) ?? "unknown error"}");
+        }
+
+        // Zeroing the whole blob puts it back to exactly what the constructor got from new byte[],
+        // so the reboot is the same run as a freshly opened file. A failed reboot leaves the reader
+        // at EOF (Read returns 0), which is how every other dead reader ends.
+        private void Restart()
+        {
+            lock (_lock)
+            {
+                if (_psx == IntPtr.Zero || _framesGenerated == 0) return;
+
+                PsfNative.psf_stop(_psx);
+                Array.Clear(_state, 0, _state.Length);
+                _framesGenerated = 0;
+                try
+                {
+                    Boot();
+                }
+                catch
+                {
+                    Release();
+                    throw;
+                }
+            }
         }
 
         // ISampleProvider.Read - the hot path. EOF is a partial read once length + fade is reached,

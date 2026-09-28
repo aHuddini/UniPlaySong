@@ -4,6 +4,8 @@
         <UseWPF>true</UseWPF>
         <RootNamespace>UniPlaySong.Tests</RootNamespace>
         <AssemblyName>UniPlaySong.Tests</AssemblyName>
+        <!-- Playnite 10 is a 32-bit process and the bundled native DLLs are x86; tests load them too. -->
+        <PlatformTarget>x86</PlatformTarget>
     </PropertyGroup>
 
     <ItemGroup>
