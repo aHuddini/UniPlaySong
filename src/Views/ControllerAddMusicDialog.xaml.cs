@@ -16,6 +16,7 @@ namespace UniPlaySong.Views
 {
     // Controller-friendly file browser for adding music files to a game.
     // Two-screen flow: folder selection → file selection within chosen folder.
+    // In folder mode the second screen adds a whole folder instead of one file.
     public partial class ControllerAddMusicDialog : UserControl, IControllerInputReceiver
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -33,6 +34,10 @@ namespace UniPlaySong.Views
         private string _currentFolder = null;
         private string _selectedFilePath = null;
         private string _lastUsedFolder = null;
+        private bool _folderMode = false;
+
+        // Tag on the "add this whole folder" row, distinct from any real path.
+        private static readonly object AddThisFolderTag = new object();
 
         // Predefined folder locations
         private List<FolderOption> _folderOptions;
@@ -59,8 +64,9 @@ namespace UniPlaySong.Views
             ItemsListBox.PreviewKeyDown += OnListBoxKeyDown;
         }
 
-        public void Initialize(Game game, IPlayniteAPI api, GameMusicFileService fileService, IMusicPlaybackService playbackService)
+        public void Initialize(Game game, IPlayniteAPI api, GameMusicFileService fileService, IMusicPlaybackService playbackService, bool folderMode = false)
         {
+            _folderMode = folderMode;
             _currentGame = game;
             _playniteApi = api;
             _fileService = fileService;
@@ -111,7 +117,7 @@ namespace UniPlaySong.Views
             _isBrowsingFiles = false;
             _currentFolder = null;
 
-            DialogTitle.Text = "🎮 Add Music File";
+            DialogTitle.Text = _folderMode ? "🎮 Add Music Folder" : "🎮 Add Music File";
             CurrentPathText.Text = $"Select a folder to browse — Adding to: {_currentGame?.Name ?? "Unknown"}";
             InputFeedback.Text = "Choose a folder location";
             StatusText.Text = "";
@@ -147,11 +153,30 @@ namespace UniPlaySong.Views
             _currentFolder = folderPath;
             _lastUsedFolder = folderPath;
 
-            DialogTitle.Text = "🎮 Select a Music File";
+            DialogTitle.Text = _folderMode ? "🎮 Select a Music Folder" : "🎮 Select a Music File";
             CurrentPathText.Text = folderPath;
             BackButton.Visibility = Visibility.Visible;
 
             ItemsListBox.Items.Clear();
+
+            if (_folderMode)
+            {
+                int musicCount = 0;
+                try
+                {
+                    musicCount = Directory.GetFiles(folderPath)
+                        .Count(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)));
+                }
+                catch (UnauthorizedAccessException) { }
+
+                ItemsListBox.Items.Add(new ListBoxItem
+                {
+                    Content = $"➕ Add all music in this folder ({musicCount} file(s))",
+                    Tag = AddThisFolderTag,
+                    FontSize = 14,
+                    IsEnabled = musicCount > 0
+                });
+            }
 
             // Add subfolders first
             try
@@ -174,6 +199,14 @@ namespace UniPlaySong.Views
             catch (UnauthorizedAccessException)
             {
                 // Skip folders we can't access
+            }
+
+            if (_folderMode)
+            {
+                StatusText.Text = $"{ItemsListBox.Items.Count - 1} folder(s)";
+                InputFeedback.Text = "A: Add this folder or enter a subfolder • B: Back";
+                SelectFirstEnabled();
+                return;
             }
 
             // Add audio files
@@ -225,6 +258,12 @@ namespace UniPlaySong.Views
         {
             var selectedItem = ItemsListBox.SelectedItem as ListBoxItem;
             if (selectedItem?.Tag == null) return;
+
+            if (selectedItem.Tag == AddThisFolderTag)
+            {
+                if (selectedItem.IsEnabled) ImportFolderToGame(_currentFolder);
+                return;
+            }
 
             var path = selectedItem.Tag.ToString();
 
@@ -288,6 +327,50 @@ namespace UniPlaySong.Views
             {
                 InputFeedback.Text = $"❌ Failed to copy: {ex.Message}";
                 Logger.Error(ex, $"Failed to copy music file to game {_currentGame?.Name}");
+            }
+        }
+
+        private void ImportFolderToGame(string sourceDir)
+        {
+            try
+            {
+                var destDir = _fileService.EnsureGameMusicDirectory(_currentGame);
+                if (string.IsNullOrEmpty(destDir)) return;
+
+                if (string.Equals(Path.GetFullPath(sourceDir).TrimEnd('\\'), Path.GetFullPath(destDir).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+                {
+                    InputFeedback.Text = "That is already this game's music folder";
+                    return;
+                }
+
+                var (copied, skipped) = GameMusicFileService.ImportMusicFolder(sourceDir, destDir);
+                _fileService.InvalidateCacheForGame(_currentGame);
+                Logger.Info($"Added music folder for {_currentGame?.Name}: {copied} copied, {skipped} skipped, from {sourceDir}");
+
+                var message = skipped == 0
+                    ? $"Added {copied} file(s)."
+                    : $"Added {copied} file(s). Skipped {skipped} already in the game's music folder.";
+
+                CloseDialog();
+                _playniteApi?.Dialogs.ShowMessage(message, "UniPlaySong");
+            }
+            catch (Exception ex)
+            {
+                InputFeedback.Text = $"❌ Failed to copy: {ex.Message}";
+                Logger.Error(ex, $"Failed to add music folder to game {_currentGame?.Name}");
+            }
+        }
+
+        private void SelectFirstEnabled()
+        {
+            for (int i = 0; i < ItemsListBox.Items.Count; i++)
+            {
+                if ((ItemsListBox.Items[i] as ListBoxItem)?.IsEnabled == true)
+                {
+                    ItemsListBox.SelectedIndex = i;
+                    ItemsListBox.ScrollIntoView(ItemsListBox.Items[i]);
+                    return;
+                }
             }
         }
 

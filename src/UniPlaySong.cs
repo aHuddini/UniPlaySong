@@ -5144,6 +5144,13 @@ namespace UniPlaySong
 
                 items.Add(new GameMenuItem
                 {
+                    Description = "🎮 Add Music Folder",
+                    MenuSection = manageMusicSection,
+                    Action = _ => _controllerDialogHandler.ShowAddMusicFolder(game)
+                });
+
+                items.Add(new GameMenuItem
+                {
                     Description = "🎮 Delete Songs",
                     MenuSection = manageMusicSection,
                     Action = _ => _controllerDialogHandler.ShowDeleteSongs(game)
@@ -5214,6 +5221,14 @@ namespace UniPlaySong
                     Description = "Add Music File",
                     MenuSection = menuSection,
                     Action = _ => _gameMenuHandler.AddMusicFile(game)
+                });
+
+                // Add Music Folder - copy every playable file in a folder (plus PSF libraries / HES sidecars)
+                items.Add(new GameMenuItem
+                {
+                    Description = "Add Music Folder",
+                    MenuSection = menuSection,
+                    Action = _ => _gameMenuHandler.AddMusicFolder(game)
                 });
 
                 // Separator before Primary Song section

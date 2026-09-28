@@ -228,6 +228,39 @@ namespace UniPlaySong.Services
             return string.IsNullOrWhiteSpace(sanitized) ? "Unknown" : sanitized;
         }
 
+        // Copies the music in `sourceDir` (top level only) into `destDir`. Takes every playable
+        // format, plus the companions some formats need to play: every .psflib (a .minipsf names
+        // its driver library in a tag, so the whole set must arrive), and a .m3u only when a .hes
+        // of the same name comes with it. A name that already exists in destDir is skipped, never
+        // renamed - a renamed .psflib breaks every _lib tag pointing at it, and importing the same
+        // folder twice should not duplicate it. Returns (copied, skipped).
+        internal static (int Copied, int Skipped) ImportMusicFolder(string sourceDir, string destDir)
+        {
+            var files = Directory.GetFiles(sourceDir);
+            var hesNames = new HashSet<string>(
+                files.Where(f => string.Equals(Path.GetExtension(f), ".hes", StringComparison.OrdinalIgnoreCase))
+                     .Select(Path.GetFileNameWithoutExtension),
+                StringComparer.OrdinalIgnoreCase);
+
+            int copied = 0, skipped = 0;
+            foreach (var file in files)
+            {
+                var ext = Path.GetExtension(file);
+                bool wanted = Constants.SupportedAudioExtensionsLowercase.Contains(ext)
+                    || string.Equals(ext, ".psflib", StringComparison.OrdinalIgnoreCase)
+                    || (string.Equals(ext, Audio.HesM3uParser.SidecarExtension, StringComparison.OrdinalIgnoreCase)
+                        && hesNames.Contains(Path.GetFileNameWithoutExtension(file)));
+                if (!wanted) continue;
+
+                var dest = Path.Combine(destDir, Path.GetFileName(file));
+                if (File.Exists(dest)) { skipped++; continue; }
+
+                File.Copy(file, dest);
+                copied++;
+            }
+            return (copied, skipped);
+        }
+
         public void InvalidateCacheForGame(Game game)
         {
             var directory = GetGameMusicDirectory(game);

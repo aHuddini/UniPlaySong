@@ -89,6 +89,11 @@ namespace UniPlaySong.Common
             ".psf", ".minipsf"
         };
 
+        // OpenFileDialog filter for picking a song: every format UPS plays, built from the list above
+        // so a new format shows up in the pickers without anyone remembering to edit them.
+        public static readonly string AudioFileDialogFilter =
+            "Audio files|" + string.Join(";", Array.ConvertAll(SupportedAudioExtensions, e => "*" + e));
+
         #endregion
         
         #region Directory Names

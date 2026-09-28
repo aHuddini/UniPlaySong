@@ -359,7 +359,7 @@ namespace UniPlaySong.Menus
 
                         var dialog = new Microsoft.Win32.OpenFileDialog
                         {
-                            Filter = "Audio files|*.mp3;*.wav;*.ogg;*.flac|All files|*.*",
+                            Filter = Constants.AudioFileDialogFilter + "|All files|*.*",
                             Title = $"Add Music File — {game?.Name ?? "Unknown Game"}"
                         };
 
@@ -397,6 +397,40 @@ namespace UniPlaySong.Menus
                     context: $"adding music file for '{game?.Name}'"
                 );
             }
+        }
+
+        public void AddMusicFolder(Game game)
+        {
+            _errorHandler?.Try(
+                () =>
+                {
+                    var sourceDir = _playniteApi.Dialogs.SelectFolder();
+                    if (string.IsNullOrEmpty(sourceDir)) return;
+
+                    var destDir = _fileService.EnsureGameMusicDirectory(game);
+                    if (string.IsNullOrEmpty(destDir)) return;
+
+                    if (string.Equals(Path.GetFullPath(sourceDir).TrimEnd('\\'), Path.GetFullPath(destDir).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase))
+                    {
+                        _playniteApi.Dialogs.ShowMessage("That is already this game's music folder.", "UniPlaySong");
+                        return;
+                    }
+
+                    var (copied, skipped) = GameMusicFileService.ImportMusicFolder(sourceDir, destDir);
+                    _fileService.InvalidateCacheForGame(game);
+                    _logger.Info($"Added music folder for {game?.Name}: {copied} copied, {skipped} skipped, from {sourceDir}");
+
+                    string message;
+                    if (copied == 0 && skipped == 0)
+                        message = $"No music files found in:\n{sourceDir}";
+                    else if (skipped == 0)
+                        message = $"Added {copied} file(s).";
+                    else
+                        message = $"Added {copied} file(s). Skipped {skipped} already in the game's music folder.";
+                    _playniteApi.Dialogs.ShowMessage(message, "UniPlaySong");
+                },
+                context: $"adding music folder for '{game?.Name}'"
+            );
         }
 
         public void OpenMusicFolder(Game game)
@@ -485,7 +519,7 @@ namespace UniPlaySong.Menus
                         // Show file selection dialog starting in the game's music directory
                         var dialog = new Microsoft.Win32.OpenFileDialog
                         {
-                            Filter = "Audio files|*.mp3;*.wav;*.ogg;*.flac",
+                            Filter = Constants.AudioFileDialogFilter,
                             InitialDirectory = musicDir,
                             Title = "Select Primary Song"
                         };
@@ -532,7 +566,7 @@ namespace UniPlaySong.Menus
                     // Show file selection dialog starting in the game's music directory
                     var dialog = new Microsoft.Win32.OpenFileDialog
                     {
-                        Filter = "Audio files|*.mp3;*.wav;*.ogg;*.flac",
+                        Filter = Constants.AudioFileDialogFilter,
                         InitialDirectory = musicDir,
                         Title = "Select Primary Song"
                     };
