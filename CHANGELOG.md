@@ -4,6 +4,17 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.8.9] - 2026-09-27
+
+### Added
+
+- Added Add Music Folder (desktop and controller game menus): copies a folder's top level into the game's music folder, bringing `.psflib` libraries and HES `.m3u` sidecars; existing names are skipped, never renamed
+
+### Fixed
+
+- Fixed Set Primary Song and Add Music File refusing chiptune and PSF files; their pickers hard-coded mp3/wav/ogg/flac and now build the filter from `SupportedAudioExtensions`
+- Fixed SignalRGB, Rainmeter and YASB pausing music as external audio; added to the visible default exclusion list and migrated into existing users' lists on load
+
 ## [1.8.8] - 2026-09-19
 
 ### Added

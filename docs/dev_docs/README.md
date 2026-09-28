@@ -58,4 +58,4 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](Theme%
 
 ---
 
-**Last updated**: 2026-09-19 · **Covers**: v1.8.8
+**Last updated**: 2026-09-27 · **Covers**: v1.8.9

@@ -104,6 +104,7 @@ Comprehensive collection of potential features, ranging from basic QoL improveme
 |---------|----------|---------|
 | ~~Active Theme Music (play Fullscreen theme's `background.mp3` through UPS)~~ | Playback | v1.3.11 |
 | ~~Add Music File (Desktop right-click menu + controller-friendly browser)~~ | Library Management | v1.3.11 |
+| ~~Add Music Folder (Desktop right-click menu + controller browser, top level only)~~ | Library Management | v1.8.9 |
 | ~~Skip First Selection Fix (music plays on first game select)~~ | Playback (Fix) | v1.3.11 |
 | ~~Normalization Codec Auto-detection (MP3/OGG/FLAC/WAV)~~ | Library Management (Fix) | v1.3.12 |
 | ~~External Audio Pause Detection (direct WASAPI)~~ | Playback (Fix) | v1.3.12 |

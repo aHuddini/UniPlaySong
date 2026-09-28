@@ -20,21 +20,17 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.8.8
-
-### Fixed
-- Turning on "Calm Down after a stretch with no input" in the settings now takes effect immediately, instead of after a restart.
-- Retro chiptune tracks played by hovering a game no longer fail silently when Live Effects and the Visualizer are off.
+## What's New - v1.8.9
 
 ### Added
-- Listening history: how long you have actually listened, your most played tracks, and your top games by time. In Settings → Library → Statistics, and on the Music Dashboard.
-- PlayStation 1 music: `.psf` and `.minipsf` files play like any other track, with titles from the rip itself.
+- Add Music Folder: copy a whole folder of songs into a game's music folder in one go, from the game's right-click menu or the controller menu.
 
-### Improved
-- PlayniteAchievements plays its own unlock sounds now, so UniPlaySong's page for them is marked Legacy. It still works — but turn on one or the other, not both.
+### Fixed
+- Set Primary Song and Add Music File now accept retro chiptune and PlayStation files, not only mp3, wav, ogg and flac.
+- SignalRGB, Rainmeter and YASB no longer pause your music — they are on the External Audio ignore list by default, where you can remove them.
 
 ### Previous Version
-- **v1.8.7**: Fixed Playnite's own Fullscreen music cutting out at startup, added a Calm Down page with presets and an idle timer, and made jingle volume its own setting.
+- **v1.8.8**: Added PlayStation 1 music and listening history, fixed idle Calm Down, and marked the Achievements page Legacy now that PlayniteAchievements plays its own sounds.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

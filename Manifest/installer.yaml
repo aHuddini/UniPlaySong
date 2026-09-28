@@ -5,7 +5,9 @@ Packages:
     ReleaseDate: 2026-09-27
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.9/UniPlaySong-1_8_9.pext'
     Changelog:
-      - '[Placeholder] Changelog items for 1.8.9 accumulate here.'
+      - '[New Feature] Add Music Folder (game right-click menu, and the controller menu): copies every song inside a local folder on your PC into the library game''s music folder in one go (previously only option users had were adding individual files with Add Music File). NOTE: Subfolders are not supported yet.'
+      - '[Fix] SignalRGB, Rainmeter and YASB no longer pause your music. They are now on the External Audio ignore list by default (Pauses -> External Audio).'
+      - '[Fix] Set Primary Song and Add Music File now let you pick retro chiptune and PSF files, not only mp3, wav, ogg and flac.'
   - Version: 1.8.8
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-09-19
