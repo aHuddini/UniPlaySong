@@ -259,7 +259,8 @@ namespace UniPlaySong.Services
             // v1.3.8: Add Wallpaper Engine to default excluded apps.
             // v1.6.3: Add Sunshine game-streaming host — its audio-capture session mirrors system
             // output, so UPS's own music reads back as "external audio" and pause-oscillates.
-            var requiredExclusions = new[] { "wallpaper64", "wallpaper32", "webwallpaper32", "sunshine", "sunshinesvc" };
+            // v1.8.9: Add SignalRGB, Rainmeter and YASB — reported interfering with normal playback.
+            var requiredExclusions = new[] { "wallpaper64", "wallpaper32", "webwallpaper32", "sunshine", "sunshinesvc", "signalrgb", "rainmeter", "yasb" };
             var currentExclusions = (settings.ExternalAudioExcludedApps ?? "")
                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(s => s.Trim())
@@ -299,7 +300,7 @@ namespace UniPlaySong.Services
             {
                 settings.ExternalAudioExcludedApps = string.Join(", ", currentExclusions);
                 _plugin.SavePluginSettings(settings);
-                _fileLogger?.Info($"Settings migration: Added Wallpaper Engine to excluded apps: {settings.ExternalAudioExcludedApps}");
+                _fileLogger?.Info($"Settings migration: excluded apps are now: {settings.ExternalAudioExcludedApps}");
             }
         }
     }
