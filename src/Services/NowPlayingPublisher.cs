@@ -1,4 +1,7 @@
 using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using UniPlaySong.Common;
@@ -21,6 +24,21 @@ namespace UniPlaySong.Services
         private readonly FileLogger _fileLogger;
         private readonly object _publishLock = new object();
         private bool _disposed;
+
+        // The UPS art step (TagLib + hashing + a file write) runs here, never on the UI thread Refresh is
+        // called from. Injected so tests can run it inline.
+        private readonly Action<Action> _runInBackground;
+
+        // Bumped by every Refresh. A background art step publishes only if it is still the latest, so a
+        // slow read for the previous song can never overwrite the current one.
+        private int _publishGeneration;
+
+        // The art resolved for the last UPS song, reused while the same song is refreshed again: the
+        // metadata service reports every song twice (filename, then tags), and pause/resume refresh too.
+        private readonly object _artLock = new object();
+        private string _lastArtSongPath;
+        private string _lastArtPath;
+        private bool _lastArtIsCover;
 
         // "Track just changed" pulse: remember the last published identity so a re-publish of the
         // same track (Spotify re-publishes every couple seconds) does NOT re-fire, and a one-shot
@@ -47,8 +65,10 @@ namespace UniPlaySong.Services
             NowPlayingArtWriter artWriter,
             Func<UniPlaySongSettings> getSettings,
             FileLogger fileLogger,
-            Func<string, string> getGameCoverArtPath = null)
+            Func<string, string> getGameCoverArtPath = null,
+            Action<Action> runInBackground = null)
         {
+            _runInBackground = runInBackground ?? (work => Task.Run(work));
             _metadata = metadata;
             _spotify = spotify;
             _spotifyClient = spotifyClient;
@@ -76,6 +96,9 @@ namespace UniPlaySong.Services
 
                 try
                 {
+                    // Any UPS art step still in flight belongs to an older state now.
+                    Interlocked.Increment(ref _publishGeneration);
+
                     if (_spotify != null && _spotify.IsSpotifyActive)
                     {
                         // Fetch Spotify metadata OFF the UI thread (worker); publish when it lands.
@@ -134,6 +157,7 @@ namespace UniPlaySong.Services
                                     }
                                     Publish(s2, title, artist, artPath, album, genre, duration);
                                 }
+                                _artWriter?.Sweep();
                             });
                         });
                         return; // publish happens in the async callbacks above
@@ -146,30 +170,10 @@ namespace UniPlaySong.Services
                     var song = _metadata?.CurrentSongInfo;
                     if (song != null && !song.IsEmpty)
                     {
-                        var artPath = _artWriter?.WriteFromAudioFile(song.FilePath) ?? string.Empty;
-                        if (string.IsNullOrEmpty(artPath))
-                        {
-                            // No embedded track art — fall back to a game cover: the track's OWNING
-                            // game (parsed from its Games\{GameId}\ path — right cover for pool/radio
-                            // songs, and works when CurrentGame is null), else the selected game.
-                            var cover = TryGetGameCoverPath(song.FilePath);
-                            _fileLogger?.Debug($"[NowPlaying] UPS art: embedded=none, file='{song.FilePath}', coverFallback='{cover}'");
-                            if (!string.IsNullOrEmpty(cover))
-                            {
-                                _artWriter?.Clear(); // drop any stale written art; we point at the cover directly
-                                artPath = cover;
-                            }
-                        }
-                        else
-                        {
-                            _fileLogger?.Debug($"[NowPlaying] UPS art: embedded='{artPath}'");
-                        }
-                        if (string.IsNullOrEmpty(artPath))
-                            _fileLogger?.Debug("[NowPlaying] UPS art: FINAL empty (no embedded art AND no game cover resolved)");
-                        // Expose UPS song duration too (like Spotify) when the track carries it.
-                        var upsDuration = song.HasDuration ? song.DurationText : string.Empty;
-                        Publish(s, song.Title ?? string.Empty, song.Artist ?? string.Empty, artPath,
-                            duration: upsDuration);
+                        // Title and art publish together once the art is resolved, so a theme never shows
+                        // the new title over the old picture.
+                        int generation = Volatile.Read(ref _publishGeneration);
+                        _runInBackground(() => PublishUpsSong(song, generation));
                         return;
                     }
 
@@ -181,6 +185,93 @@ namespace UniPlaySong.Services
                 {
                     _fileLogger?.Debug($"[NowPlaying] Refresh failed: {ex.Message}");
                 }
+            }
+        }
+
+        // Background half of a UPS refresh: resolve the art, then publish title + art unless a newer Refresh
+        // has happened meanwhile.
+        private void PublishUpsSong(SongInfo song, int generation)
+        {
+            try
+            {
+                if (_disposed || generation != Volatile.Read(ref _publishGeneration)) return;
+
+                var artPath = ResolveUpsArt(song.FilePath);
+
+                lock (_publishLock)
+                {
+                    if (_disposed || generation != Volatile.Read(ref _publishGeneration)) return;
+                    var s = _getSettings?.Invoke();
+                    if (s == null) return;
+                    // Expose UPS song duration too (like Spotify) when the track carries it.
+                    var upsDuration = song.HasDuration ? song.DurationText : string.Empty;
+                    Publish(s, song.Title ?? string.Empty, song.Artist ?? string.Empty, artPath,
+                        duration: upsDuration);
+                }
+
+                _artWriter?.Sweep();
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"[NowPlaying] UPS publish failed: {ex.Message}");
+            }
+        }
+
+        // The track's embedded picture, else a game cover: the track's OWNING game (parsed from its
+        // Games\{GameId}\ path — right cover for pool/radio songs, and works when CurrentGame is null),
+        // else the selected game. Held under _artLock for the whole resolve, so the two refreshes the
+        // metadata service raises per song read the tags once: the second waits and reuses the first.
+        private string ResolveUpsArt(string songPath)
+        {
+            lock (_artLock)
+            {
+                if (string.Equals(songPath, _lastArtSongPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (_lastArtIsCover)
+                    {
+                        if (File.Exists(_lastArtPath))
+                        {
+                            _artWriter?.Clear();
+                            return _lastArtPath;
+                        }
+                    }
+                    else if (string.IsNullOrEmpty(_lastArtPath))
+                    {
+                        return string.Empty; // known to have no art
+                    }
+                    else
+                    {
+                        var reused = _artWriter?.Reuse(_lastArtPath) ?? string.Empty;
+                        if (!string.IsNullOrEmpty(reused)) return reused;
+                    }
+                }
+
+                var artPath = _artWriter?.WriteFromAudioFile(songPath) ?? string.Empty;
+                bool isCover = false;
+                if (string.IsNullOrEmpty(artPath))
+                {
+                    var cover = TryGetGameCoverPath(songPath);
+                    _fileLogger?.Debug($"[NowPlaying] UPS art: embedded=none, file='{songPath}', coverFallback='{cover}'");
+                    if (!string.IsNullOrEmpty(cover))
+                    {
+                        _artWriter?.Clear(); // no written art for this track; we point at the cover directly
+                        artPath = cover;
+                        isCover = true;
+                    }
+                    else
+                    {
+                        _fileLogger?.Debug("[NowPlaying] UPS art: FINAL empty (no embedded art AND no game cover resolved)");
+                    }
+                }
+                else
+                {
+                    _fileLogger?.Debug($"[NowPlaying] UPS art: embedded='{artPath}'");
+                }
+
+                _lastArtSongPath = songPath;
+                _lastArtPath = artPath;
+                _lastArtIsCover = isCover;
+                return artPath;
             }
         }
 

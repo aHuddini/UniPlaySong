@@ -50,13 +50,84 @@ namespace UniPlaySong.Tests.Services
         }
 
         private (NowPlayingPublisher pub, SpotifyControlService spotify, SongMetadataService meta, Mock<IMusicPlaybackService> pb)
-            BuildPublisher(Func<string, string> gameCoverResolver = null)
+            BuildPublisher(Func<string, string> gameCoverResolver = null, Action<Action> runInBackground = null)
         {
             var pb = new Mock<IMusicPlaybackService>();
             var spotify = new SpotifyControlService(pb.Object, _client.Object, () => _settings, null);
             var meta = new SongMetadataService(pb.Object, null, () => _settings);
-            var pub = new NowPlayingPublisher(meta, spotify, _client.Object, _artWriter, () => _settings, null, gameCoverResolver);
+            // The UPS art step normally runs on a worker thread; inline here so the asserts can follow Refresh.
+            var pub = new NowPlayingPublisher(meta, spotify, _client.Object, _artWriter, () => _settings, null,
+                gameCoverResolver, runInBackground ?? (work => work()));
             return (pub, spotify, meta, pb);
+        }
+
+        private string MakeSong(string name)
+        {
+            var path = System.IO.Path.Combine(_dir, name);
+            System.IO.File.WriteAllBytes(path, new byte[] { 0, 1, 2, 3 }); // not valid audio: no embedded art
+            return path;
+        }
+
+        // The art step (TagLib + write) must not run on the caller's thread - Refresh is called on the UI
+        // thread - and nothing is published until it lands, so title and art never disagree on screen.
+        [Test]
+        public void UpsArtStep_RunsOnTheBackgroundRunner_AndPublishesWhenItLands()
+        {
+            var queued = new System.Collections.Generic.List<Action>();
+            var songPath = MakeSong("a.mp3");
+            var (pub, spotify, meta, pb) = BuildPublisher(runInBackground: queued.Add);
+            pb.SetupGet(p => p.CurrentSongPath).Returns(songPath);
+
+            meta.ResubscribeToService(pb.Object); // raises OnSongInfoChanged → Refresh
+
+            Assert.IsNotEmpty(queued, "the art step ran inline instead of on the runner");
+            Assert.AreEqual(string.Empty, _settings.NowPlayingTitle, "published before the art step ran");
+
+            foreach (var work in queued.ToArray()) work();
+            Assert.AreEqual("a", _settings.NowPlayingTitle);
+        }
+
+        // A slow art read for the previous song must not land on top of the current one.
+        [Test]
+        public void StaleArtStep_IsNotPublished()
+        {
+            var queued = new System.Collections.Generic.List<Action>();
+            var first = MakeSong("first.mp3");
+            var second = MakeSong("second.mp3");
+            var (pub, spotify, meta, pb) = BuildPublisher(runInBackground: queued.Add);
+
+            pb.SetupGet(p => p.CurrentSongPath).Returns(first);
+            meta.ResubscribeToService(pb.Object);
+            var firstWork = queued.ToArray();
+            queued.Clear();
+
+            pb.SetupGet(p => p.CurrentSongPath).Returns(second);
+            meta.ResubscribeToService(pb.Object);
+
+            foreach (var work in queued.ToArray()) work();   // current song lands first
+            foreach (var work in firstWork) work();          // then the stale one finishes
+
+            Assert.AreEqual("second", _settings.NowPlayingTitle);
+        }
+
+        // The metadata service raises every song twice (filename, then tags), and pause/resume refresh
+        // again. The art is resolved once per song, not once per refresh.
+        [Test]
+        public void RepeatedRefreshOfTheSameSong_ResolvesArtOnce()
+        {
+            int resolverCalls = 0;
+            var coverPath = System.IO.Path.Combine(_dir, "cover.jpg");
+            System.IO.File.WriteAllBytes(coverPath, new byte[] { 9 });
+            var songPath = MakeSong("a.mp3");
+            var (pub, spotify, meta, pb) = BuildPublisher(p => { resolverCalls++; return coverPath; });
+            pb.SetupGet(p => p.CurrentSongPath).Returns(songPath);
+            meta.ResubscribeToService(pb.Object);
+
+            pub.Refresh();
+            pub.Refresh();
+
+            Assert.AreEqual(1, resolverCalls);
+            Assert.AreEqual(coverPath, _settings.NowPlayingAlbumArtPath);
         }
 
         [Test]

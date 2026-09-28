@@ -5,7 +5,7 @@ Packages:
     ReleaseDate: 2026-09-27
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.10/UniPlaySong-1_8_10.pext'
     Changelog:
-      - '[Placeholder] Changelog items for 1.8.10 accumulate here.'
+      - '[Critical Fix] Now Playing cover art no longer piles up on disk. Themes that show the current song''s art left one image behind per song change, reaching thousands of files and several GB in the extension''s data folder. The leftovers are cleaned up automatically after updating, and art is now prepared off the UI thread.'
   - Version: 1.8.9
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-09-27

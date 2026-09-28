@@ -3520,6 +3520,22 @@ namespace UniPlaySong
             var nowPlayingArtDir = System.IO.Path.Combine(
                 _api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
             var nowPlayingArtWriter = new Services.NowPlayingArtWriter(nowPlayingArtDir, _fileLogger);
+            // Clears the art files earlier versions could not delete (tens of thousands on some machines),
+            // then anything stale in the art folder. A low-priority background thread: it must never hold
+            // up startup or the first publish.
+            new System.Threading.Thread(() =>
+            {
+                try
+                {
+                    nowPlayingArtWriter.SweepLegacy();
+                    nowPlayingArtWriter.Sweep();
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Debug($"[NowPlaying] Startup sweep failed: {ex.Message}");
+                }
+            })
+            { IsBackground = true, Priority = System.Threading.ThreadPriority.BelowNormal, Name = "UPS art sweep" }.Start();
             _publisherMetadata = new Services.SongMetadataService(_playbackService, _fileLogger, () => _settings);
             _nowPlayingPublisher = new Services.NowPlayingPublisher(
                 _publisherMetadata,
