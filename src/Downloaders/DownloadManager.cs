@@ -905,6 +905,9 @@ namespace UniPlaySong.Downloaders
 
         public bool DownloadSong(Song song, string path, CancellationToken cancellationToken, bool isPreview = false)
         {
+            // Pool threads are reused: a reason left by an earlier download must not explain this one.
+            DownloadFailure.Reason = null;
+
             if (song == null)
             {
                 Logger.Warn("Cannot download: song is null");

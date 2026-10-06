@@ -582,7 +582,8 @@ namespace UniPlaySong.ViewModels
                             var cancellationTokenSource = new System.Threading.CancellationTokenSource();
                             // Pass isPreview=true to optimize download speed
                             downloaded = _downloadManager.DownloadSong(song, tempPath, cancellationTokenSource.Token, isPreview: true);
-                            
+                            var reason = DownloadFailure.Reason; // same thread as the download
+
                             var app = System.Windows.Application.Current;
                             if (app?.Dispatcher != null)
                             {
@@ -599,7 +600,9 @@ namespace UniPlaySong.ViewModels
                                     else
                                     {
                                         Logger.Error($"Preview download failed for {song.Name} - file does not exist at {tempPath}");
-                                        _playniteApi.Dialogs.ShowErrorMessage($"Failed to download preview for {song.Name}. See %AppData%\\Playnite\\extensions.log for yt-dlp error details (network / bot detection / missing JS runtime are the usual causes).", "UniPlaySong");
+                                        _playniteApi.Dialogs.ShowErrorMessage(
+                                            DownloadFailure.ForUser($"Failed to download preview for {song.Name}.", reason, _playniteApi.Paths.ConfigurationPath),
+                                            "UniPlaySong");
                                     }
                                 });
                             }
@@ -955,6 +958,7 @@ namespace UniPlaySong.ViewModels
                 try
                 {
                     var cancellationTokenSource = new System.Threading.CancellationTokenSource();
+                    string lastFailureReason = null;
 
                     foreach (var song in selected)
                     {
@@ -992,6 +996,7 @@ namespace UniPlaySong.ViewModels
                         else
                         {
                             failed++;
+                            lastFailureReason = DownloadFailure.Reason ?? lastFailureReason;
                         }
 
                         // Update progress
@@ -1020,6 +1025,16 @@ namespace UniPlaySong.ViewModels
                             else
                             {
                                 ProgressText = $"Download failed for all {total} song(s)";
+                            }
+
+                            // The status line clears two seconds from now - too soon to read why, or where the log is.
+                            if (failed > 0)
+                            {
+                                _playniteApi.Dialogs.ShowErrorMessage(
+                                    DownloadFailure.ForUser(
+                                        downloaded > 0 ? $"{failed} of {total} song(s) failed to download." : $"Download failed for all {total} song(s).",
+                                        lastFailureReason, _playniteApi.Paths.ConfigurationPath),
+                                    "UniPlaySong");
                             }
 
                             // Play notification sound in sync with the status text appearing

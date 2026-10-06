@@ -645,15 +645,15 @@ namespace UniPlaySong.Views
                             
                             var cancellationToken = new CancellationTokenSource().Token;
                             var downloaded = _downloadManager?.DownloadSong(song, tempPath, cancellationToken, isPreview: true) ?? false;
-                            
+                            var reason = DownloadFailure.Reason; // same thread as the download
+
                             Logger.DebugIf(LogPrefix, $"Download result: {downloaded}, File exists after download: {System.IO.File.Exists(tempPath)}");
-                            
+
                             if (!downloaded || !System.IO.File.Exists(tempPath))
                             {
-                                Dispatcher.BeginInvoke(new Action(() =>
-                                {
-                                    UpdateInputFeedback("❌ Preview download failed - check logs for details");
-                                }));
+                                ShowError(DownloadFailure.ForUser($"Failed to download preview for {song.Name}.", reason, _playniteApi.Paths.ConfigurationPath));
+                                // Queued after ShowError's, so the one-line feedback replaces the full message it wrote there.
+                                Dispatcher.BeginInvoke(new Action(() => UpdateInputFeedback("❌ Preview download failed")));
                                 Logger.Error($"Preview download failed for {song.Name}. Downloaded: {downloaded}, File exists: {System.IO.File.Exists(tempPath)}");
                                 return;
                             }
@@ -1276,7 +1276,8 @@ namespace UniPlaySong.Views
                         // Use the download manager to download the song
                         var cancellationToken = new CancellationTokenSource().Token;
                         var success = _downloadManager?.DownloadSong(selectedSong, filePath, cancellationToken) ?? false;
-                        
+                        var reason = DownloadFailure.Reason; // same thread as the download
+
                         // Update UI on main thread
                         Dispatcher.BeginInvoke(new Action(() =>
                         {
@@ -1364,7 +1365,7 @@ namespace UniPlaySong.Views
                                 else
                                 {
                                     UpdateInputFeedback($"❌ Download failed: {selectedSong.Name}");
-                                    ShowError($"Failed to download: {selectedSong.Name}");
+                                    ShowError(DownloadFailure.ForUser($"Failed to download {selectedSong.Name}.", reason, _playniteApi.Paths.ConfigurationPath));
 
                                     // Return to song selection on failure so user can retry
                                     _currentStep = DialogStep.SongSelection;

@@ -547,15 +547,22 @@ namespace UniPlaySong.ViewModels
                         Source = Source.YouTube
                     };
 
+                    string reason = null;
                     var success = await Task.Run(() =>
-                        _downloadManager.DownloadSong(song, _previewFilePath, _currentCts.Token, isPreview: true));
+                    {
+                        var ok = _downloadManager.DownloadSong(song, _previewFilePath, _currentCts.Token, isPreview: true);
+                        reason = DownloadFailure.Reason; // same thread as the download
+                        return ok;
+                    });
 
                     if (!success || !File.Exists(_previewFilePath))
                     {
                         UpdateOnUIThread(() =>
                         {
                             ShowProgress = false;
-                            _playniteApi.Dialogs.ShowErrorMessage("Failed to download preview. See %AppData%\\Playnite\\extensions.log for yt-dlp error details (network / bot detection / missing JS runtime are the usual causes).", "UniPlaySong");
+                            _playniteApi.Dialogs.ShowErrorMessage(
+                                DownloadFailure.ForUser("Failed to download preview.", reason, _playniteApi.Paths.ConfigurationPath),
+                                "UniPlaySong");
                         });
                         return;
                     }
@@ -678,8 +685,13 @@ namespace UniPlaySong.ViewModels
                     Source = Source.YouTube
                 };
 
+                string reason = null;
                 var success = await Task.Run(() =>
-                    _downloadManager.DownloadSong(song, filePath, _currentCts.Token, isPreview: false));
+                {
+                    var ok = _downloadManager.DownloadSong(song, filePath, _currentCts.Token, isPreview: false);
+                    reason = DownloadFailure.Reason; // same thread as the download
+                    return ok;
+                });
 
                 if (_currentCts.Token.IsCancellationRequested)
                 {
@@ -750,10 +762,13 @@ namespace UniPlaySong.ViewModels
                 }
                 else
                 {
-                    ProgressText = "Download failed. Check logs for details.";
+                    ProgressText = "Download failed.";
                     Logger.Error($"Download failed for video ID: {_extractedVideoId}");
 
-                    await Task.Delay(2000);
+                    // A dialog rather than the progress line: the dialog closes right after, too soon to read a reason.
+                    _playniteApi.Dialogs.ShowErrorMessage(
+                        DownloadFailure.ForUser($"Failed to download {VideoTitle}.", reason, _playniteApi.Paths.ConfigurationPath),
+                        "UniPlaySong");
                     OnDownloadComplete?.Invoke(false);
                 }
             }

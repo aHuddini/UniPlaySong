@@ -235,18 +235,21 @@ namespace UniPlaySong.Downloaders
             if (string.IsNullOrWhiteSpace(_ytDlpPath) || string.IsNullOrWhiteSpace(_ffmpegPath))
             {
                 Logger.Error("yt-dlp or ffmpeg path not configured. Cannot download from YouTube.");
+                DownloadFailure.Reason = "yt-dlp and FFmpeg need to be set up first, under Setup > Tools.";
                 return false;
             }
 
             if (!File.Exists(_ytDlpPath))
             {
                 Logger.Error($"yt-dlp not found at: {_ytDlpPath}");
+                DownloadFailure.Reason = $"yt-dlp wasn't found at {_ytDlpPath}. Check the path under Setup > Tools.";
                 return false;
             }
 
             if (!File.Exists(_ffmpegPath))
             {
                 Logger.Error($"FFmpeg not found at: {_ffmpegPath}");
+                DownloadFailure.Reason = $"FFmpeg wasn't found at {_ffmpegPath}. Check the path under Setup > Tools.";
                 return false;
             }
 
@@ -541,15 +544,23 @@ namespace UniPlaySong.Downloaders
                     if (process.ExitCode != 0)
                     {
                         Logger.Error($"yt-dlp failed with exit code {process.ExitCode} for song '{song?.Name}' (Video ID: {song?.Id})");
-                        
+
+                        var kind = DownloadFailure.Classify(error);
+                        DownloadFailure.Reason = DownloadFailure.Describe(kind);
+
                         // Log full error output
                         if (!string.IsNullOrWhiteSpace(error))
                         {
                             Logger.Error($"yt-dlp error output:\n{error}");
-                            
-                            // Parse common error patterns and provide helpful diagnostics
-                            var errorLower = error.ToLowerInvariant();
-                            if (errorLower.Contains("failed to load python dll") || errorLower.Contains("pyi-") || errorLower.Contains("_internal"))
+
+                            // Same classification the dialogs show; the log gets the long-form help.
+                            if (kind == DownloadFailure.Kind.Cookies)
+                            {
+                                Logger.Error($"Diagnosis: yt-dlp could not read browser cookies (cookie source: {_cookieMode}). "
+                                    + "Close the browser and retry, or switch Setup > Downloads > Cookie Source to No cookies or Firefox. "
+                                    + "Chromium browsers (Chrome, Edge, Brave, Opera) lock and encrypt their cookie database.");
+                            }
+                            else if (kind == DownloadFailure.Kind.BrokenYtDlp)
                             {
                                 Logger.Error("Diagnosis: yt-dlp.exe appears corrupted or incomplete (Python DLL load failed).");
                                 Logger.Error("");
@@ -567,7 +578,7 @@ namespace UniPlaySong.Downloaders
                                 Logger.Error("If the error persists, check Windows Defender for quarantined yt-dlp files,");
                                 Logger.Error("and ensure the Visual C++ 2015-2022 Redistributable (x64) is installed.");
                             }
-                            else if (errorLower.Contains("sign in to confirm") || errorLower.Contains("not a bot") || errorLower.Contains("bot"))
+                            else if (kind == DownloadFailure.Kind.BotCheck)
                             {
                                 Logger.Error("Diagnosis: YouTube bot detection - YouTube is blocking the download");
                                 
@@ -594,23 +605,23 @@ namespace UniPlaySong.Downloaders
                                 Logger.Error("");
                                 Logger.Error("Reference: https://github.com/yt-dlp/yt-dlp/issues/15012");
                             }
-                            else if (errorLower.Contains("unable to download") || errorLower.Contains("http error") || errorLower.Contains("network"))
+                            else if (kind == DownloadFailure.Kind.Network)
                             {
                                 Logger.Error("Diagnosis: Network/HTTP error - check internet connection or YouTube availability");
                             }
-                            else if (errorLower.Contains("ffmpeg") || errorLower.Contains("postprocessor"))
+                            else if (kind == DownloadFailure.Kind.FFmpeg)
                             {
                                 Logger.Error($"Diagnosis: FFmpeg-related error - verify FFmpeg is working at: {_ffmpegPath}");
                             }
-                            else if (errorLower.Contains("private video") || errorLower.Contains("unavailable"))
+                            else if (kind == DownloadFailure.Kind.Unavailable)
                             {
                                 Logger.Error("Diagnosis: Video is private or unavailable");
                             }
-                            else if (errorLower.Contains("permission") || errorLower.Contains("access denied"))
+                            else if (kind == DownloadFailure.Kind.Permission)
                             {
                                 Logger.Error($"Diagnosis: File system permission error - check write access to: {Path.GetDirectoryName(path)}");
                             }
-                            else if (errorLower.Contains("disk") || errorLower.Contains("space"))
+                            else if (kind == DownloadFailure.Kind.DiskSpace)
                             {
                                 Logger.Error("Diagnosis: Disk space issue - check available disk space");
                             }
