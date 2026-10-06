@@ -453,7 +453,7 @@
                                           Style="{StaticResource UpsToggleAmber}"
                                           IsChecked="{Binding Settings.VizFftTimerMode}"/>
                                 <TextBlock Style="{StaticResource UpsHintFlush}"
-                                           Text="By default the FFT runs whenever audio delivers samples, about 43 fps at size 1024. Timer mode runs it at a fixed rate matching the UI refresh — slightly more CPU, sometimes smoother."/>
+                                           Text="By default the visualizer updates as new audio arrives, about 20 times a second. Timer mode updates it at a fixed rate matching the UI refresh — slightly more CPU, sometimes smoother."/>
 
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
                                     <TextBlock Text="Rise (bass)" Style="{StaticResource UpsParamLabel}" Width="130"/>

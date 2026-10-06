@@ -1,0 +1,622 @@
+<UserControl x:Class="UniPlaySong.Controls.Settings.EqualizerPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <ups:EqFillConverter x:Key="EqFill"/>
+            <ups:EqToneConverter x:Key="EqTone"/>
+            <!-- The EQ's own vertical fader. Host themes size a slider's track from its Height and rotate it for
+                 vertical, which collapsed these to a sliver in Playnite's default theme; other themes may not do
+                 vertical at all. Drawn here so it looks the same under every theme. -->
+            <Style x:Key="EqTrackButton" TargetType="RepeatButton">
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="IsTabStop" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="RepeatButton">
+                            <Border Background="Transparent"/>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <LinearGradientBrush x:Key="EqCapFace" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Offset="0"    Color="#EEF2F5"/>
+                <GradientStop Offset="0.42" Color="#C3CDD5"/>
+                <GradientStop Offset="0.58" Color="#8C98A3"/>
+                <GradientStop Offset="1"    Color="#CFD7DE"/>
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="EqCapFaceHover" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Offset="0"    Color="#FFFFFF"/>
+                <GradientStop Offset="0.42" Color="#D6DEE5"/>
+                <GradientStop Offset="0.58" Color="#A3AEB8"/>
+                <GradientStop Offset="1"    Color="#DFE5EA"/>
+            </LinearGradientBrush>
+            <!-- Brushed grain: alternating 1 px light and dark lines across the cap. -->
+            <LinearGradientBrush x:Key="EqGrain" MappingMode="Absolute" StartPoint="0,0" EndPoint="0,2" SpreadMethod="Repeat">
+                <GradientStop Offset="0"   Color="#12FFFFFF"/>
+                <GradientStop Offset="0.5" Color="#12FFFFFF"/>
+                <GradientStop Offset="0.5" Color="#0D000000"/>
+                <GradientStop Offset="1"   Color="#0D000000"/>
+            </LinearGradientBrush>
+            <!-- Machined slot, darkest along its left lip. -->
+            <LinearGradientBrush x:Key="EqSlot" StartPoint="0,0" EndPoint="1,0">
+                <GradientStop Offset="0"    Color="#000000"/>
+                <GradientStop Offset="0.35" Color="#05080B"/>
+                <GradientStop Offset="0.8"  Color="#05080B"/>
+                <GradientStop Offset="1"    Color="#1A222B"/>
+            </LinearGradientBrush>
+            <!-- Lit tube: dark edges, hot core. Cyan for a boost, amber for a cut. -->
+            <LinearGradientBrush x:Key="EqTubeBoost" StartPoint="0,0" EndPoint="1,0">
+                <GradientStop Offset="0"    Color="#0E3A4A"/>
+                <GradientStop Offset="0.32" Color="#3BACD1"/>
+                <GradientStop Offset="0.5"  Color="#D6F6FF"/>
+                <GradientStop Offset="0.68" Color="#3BACD1"/>
+                <GradientStop Offset="1"    Color="#0E3A4A"/>
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="EqTubeCut" StartPoint="0,0" EndPoint="1,0">
+                <GradientStop Offset="0"    Color="#4A2C0A"/>
+                <GradientStop Offset="0.32" Color="#D99A3A"/>
+                <GradientStop Offset="0.5"  Color="#FFE6BD"/>
+                <GradientStop Offset="0.68" Color="#D99A3A"/>
+                <GradientStop Offset="1"    Color="#4A2C0A"/>
+            </LinearGradientBrush>
+            <!-- Inner shadow where the tube meets 0 dB and the cap. -->
+            <LinearGradientBrush x:Key="EqShadeTop" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Offset="0" Color="#70000000"/>
+                <GradientStop Offset="1" Color="#00000000"/>
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="EqShadeBottom" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Offset="0" Color="#00000000"/>
+                <GradientStop Offset="1" Color="#70000000"/>
+            </LinearGradientBrush>
+            <!-- Glass lens over the slot: a specular edge fading out at both ends. -->
+            <LinearGradientBrush x:Key="EqLens" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Offset="0"   Color="#00FFFFFF"/>
+                <GradientStop Offset="0.3" Color="#38FFFFFF"/>
+                <GradientStop Offset="0.7" Color="#38FFFFFF"/>
+                <GradientStop Offset="1"   Color="#00FFFFFF"/>
+            </LinearGradientBrush>
+
+            <!-- Fader cap: brushed aluminium, chamfered, with grip ribs either side of a cut indicator line that
+                 glows cyan on a boost and amber on a cut. -->
+            <Style x:Key="EqThumb" TargetType="Thumb">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Thumb">
+                            <Grid Width="30" Height="18" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                                <Border x:Name="Cap" CornerRadius="2" BorderBrush="#3E4852" BorderThickness="1"
+                                        Background="{StaticResource EqCapFace}">
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="#000000" BlurRadius="5" ShadowDepth="2" Direction="270" Opacity="0.6"/>
+                                    </Border.Effect>
+                                </Border>
+                                <Border Margin="1" CornerRadius="1.5" Background="{StaticResource EqGrain}"/>
+                                <Border Height="1" VerticalAlignment="Top" Margin="1.5,1,1.5,0" Background="#D9FFFFFF"/>
+                                <Border Height="1" VerticalAlignment="Bottom" Margin="1.5,0,1.5,1" Background="#59000000"/>
+                                <Border Height="1" VerticalAlignment="Top" Margin="5,4,5,0" Background="#47000000"/>
+                                <Border Height="1" VerticalAlignment="Top" Margin="5,5,5,0" Background="#99FFFFFF"/>
+                                <Border Height="1" VerticalAlignment="Bottom" Margin="5,0,5,5" Background="#47000000"/>
+                                <Border Height="1" VerticalAlignment="Bottom" Margin="5,0,5,4" Background="#73FFFFFF"/>
+                                <Border Height="2" Margin="3,0" VerticalAlignment="Center" Background="#1A1F24"/>
+                                <Border x:Name="Line" Height="1" Margin="4,0" VerticalAlignment="Center"
+                                        Background="{Binding Value, RelativeSource={RelativeSource AncestorType=Slider}, Converter={StaticResource EqTone}}"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Cap" Property="Background" Value="{StaticResource EqCapFaceHover}"/>
+                                    <Setter TargetName="Cap" Property="BorderBrush" Value="#6E7C89"/>
+                                </Trigger>
+                                <Trigger Property="IsDragging" Value="True">
+                                    <Setter TargetName="Cap" Property="Background" Value="{StaticResource EqCapFaceHover}"/>
+                                    <Setter TargetName="Cap" Property="BorderBrush" Value="{StaticResource UpsAccent}"/>
+                                    <Setter TargetName="Line" Property="Background" Value="White"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="EqTick" TargetType="Border">
+                <Setter Property="Height" Value="1"/>
+                <Setter Property="Width" Value="4"/>
+                <Setter Property="Background" Value="#93A1B0"/>
+                <Setter Property="Opacity" Value="0.4"/>
+                <Setter Property="HorizontalAlignment" Value="Left"/>
+                <Setter Property="VerticalAlignment" Value="Top"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+            </Style>
+
+            <Style x:Key="EqSlider" TargetType="Slider">
+                <Setter Property="Orientation" Value="Vertical"/>
+                <Setter Property="Height" Value="160"/>
+                <Setter Property="Minimum" Value="-12"/>
+                <Setter Property="Maximum" Value="12"/>
+                <Setter Property="TickFrequency" Value="1"/>
+                <Setter Property="IsSnapToTickEnabled" Value="True"/>
+                <Setter Property="SmallChange" Value="1"/>
+                <Setter Property="LargeChange" Value="3"/>
+                <Setter Property="IsMoveToPointEnabled" Value="True"/>
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Slider">
+                            <Grid Width="38" Background="Transparent">
+                                <!-- Printed scale on the left: +12, +6, 0 (longer, brighter), -6, -12. The grid spans the
+                                     cap's travel, so each line sits where the cap's centre stops. -->
+                                <Grid Margin="0,9" IsHitTestVisible="False">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                                    </Grid.RowDefinitions>
+                                    <Border Grid.Row="0" Style="{StaticResource EqTick}" Width="6" Opacity="0.55"/>
+                                    <Border Grid.Row="1" Style="{StaticResource EqTick}"/>
+                                    <Border Grid.Row="2" Style="{StaticResource EqTick}" Width="8" Background="#E4E9EF" Opacity="0.7"/>
+                                    <Border Grid.Row="3" Style="{StaticResource EqTick}"/>
+                                    <Border Grid.Row="3" Style="{StaticResource EqTick}" Width="6" Opacity="0.55" VerticalAlignment="Bottom"/>
+                                </Grid>
+
+                                <Border Width="6" Margin="0,2" CornerRadius="1" HorizontalAlignment="Center"
+                                        Background="{StaticResource EqSlot}" SnapsToDevicePixels="True"/>
+
+                                <!-- Lit tube from 0 dB to the cap: up and cyan for a boost, down and amber for a cut. -->
+                                <Grid Margin="0,9" IsHitTestVisible="False">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition/>
+                                        <RowDefinition/>
+                                    </Grid.RowDefinitions>
+                                    <Grid Grid.Row="0" Width="4" VerticalAlignment="Bottom" ClipToBounds="False"
+                                          Height="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource EqFill}, ConverterParameter=up}">
+                                        <Border CornerRadius="2" Background="{StaticResource EqTubeBoost}">
+                                            <Border.Effect>
+                                                <DropShadowEffect Color="#3BACD1" BlurRadius="8" ShadowDepth="0" Opacity="0.85"/>
+                                            </Border.Effect>
+                                        </Border>
+                                        <Border Height="2.5" VerticalAlignment="Top" CornerRadius="2,2,0,0" Background="{StaticResource EqShadeTop}"/>
+                                        <Border Height="2.5" VerticalAlignment="Bottom" CornerRadius="0,0,2,2" Background="{StaticResource EqShadeBottom}"/>
+                                    </Grid>
+                                    <Grid Grid.Row="1" Width="4" VerticalAlignment="Top" ClipToBounds="False"
+                                          Height="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource EqFill}, ConverterParameter=down}">
+                                        <Border CornerRadius="2" Background="{StaticResource EqTubeCut}">
+                                            <Border.Effect>
+                                                <DropShadowEffect Color="#D99A3A" BlurRadius="8" ShadowDepth="0" Opacity="0.85"/>
+                                            </Border.Effect>
+                                        </Border>
+                                        <Border Height="2.5" VerticalAlignment="Top" CornerRadius="2,2,0,0" Background="{StaticResource EqShadeTop}"/>
+                                        <Border Height="2.5" VerticalAlignment="Bottom" CornerRadius="0,0,2,2" Background="{StaticResource EqShadeBottom}"/>
+                                    </Grid>
+                                </Grid>
+
+                                <Border Width="1" Margin="0,3" HorizontalAlignment="Center" Background="{StaticResource EqLens}"
+                                        IsHitTestVisible="False">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform X="-2.5"/>
+                                    </Border.RenderTransform>
+                                </Border>
+
+                                <Track x:Name="PART_Track" Orientation="Vertical">
+                                    <Track.DecreaseRepeatButton>
+                                        <RepeatButton Style="{StaticResource EqTrackButton}" Command="Slider.DecreaseLarge"/>
+                                    </Track.DecreaseRepeatButton>
+                                    <Track.IncreaseRepeatButton>
+                                        <RepeatButton Style="{StaticResource EqTrackButton}" Command="Slider.IncreaseLarge"/>
+                                    </Track.IncreaseRepeatButton>
+                                    <Track.Thumb>
+                                        <Thumb Style="{StaticResource EqThumb}"/>
+                                    </Track.Thumb>
+                                </Track>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.4"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <!-- Shown twice: Quick Start -> Equalizer (EQ) and Live Effects -> Equalizer (EQ). Both copies bind the same
+         settings, so they stay in step. -->
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Equalizer (EQ)" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="Shape the sound of your music with a graphic equalizer."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Mode" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable equalizer"
+                      IsChecked="{Binding Settings.EqualizerEnabled}"/>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,10"
+                       Text="Default: Off. Works with or without Live Effects."/>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,8" IsEnabled="{Binding Settings.EqualizerEnabled}">
+                <TextBlock Text="Preset" Style="{StaticResource UpsLabel}" Width="140"/>
+                <ComboBox Style="{StaticResource UpsComboBox}" Width="220"
+                          SelectedValuePath="Tag"
+                          SelectedValue="{Binding Settings.EqualizerPreset}"
+                          SelectionChanged="Preset_SelectionChanged">
+                    <ComboBoxItem Content="Custom" Tag="{x:Static local:EqualizerPreset.Custom}"/>
+                    <ComboBoxItem Content="Flat" Tag="{x:Static local:EqualizerPreset.Flat}"/>
+                    <ComboBoxItem Content="Bass Boost" Tag="{x:Static local:EqualizerPreset.BassBoost}"/>
+                    <ComboBoxItem Content="Treble Boost" Tag="{x:Static local:EqualizerPreset.TrebleBoost}"/>
+                    <ComboBoxItem Content="Vocal" Tag="{x:Static local:EqualizerPreset.Vocal}"/>
+                    <ComboBoxItem Content="Rock" Tag="{x:Static local:EqualizerPreset.Rock}"/>
+                    <ComboBoxItem Content="Pop" Tag="{x:Static local:EqualizerPreset.Pop}"/>
+                    <ComboBoxItem Content="Classical" Tag="{x:Static local:EqualizerPreset.Classical}"/>
+                    <ComboBoxItem Content="Electronic" Tag="{x:Static local:EqualizerPreset.Electronic}"/>
+                    <ComboBoxItem Content="Loudness" Tag="{x:Static local:EqualizerPreset.Loudness}"/>
+                </ComboBox>
+            </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,12" IsEnabled="{Binding Settings.EqualizerEnabled}">
+                <TextBlock Text="Bands" Style="{StaticResource UpsLabel}" Width="140"/>
+                <ComboBox Style="{StaticResource UpsComboBox}" Width="220"
+                          SelectedValuePath="Tag"
+                          SelectedValue="{Binding Settings.EqualizerBandCount}"
+                          SelectionChanged="BandCount_SelectionChanged">
+                    <ComboBoxItem Content="15 bands (finer)">
+                        <ComboBoxItem.Tag><sys:Int32>15</sys:Int32></ComboBoxItem.Tag>
+                    </ComboBoxItem>
+                    <ComboBoxItem Content="10 bands (classic)">
+                        <ComboBoxItem.Tag><sys:Int32>10</sys:Int32></ComboBoxItem.Tag>
+                    </ComboBoxItem>
+                </ComboBox>
+            </StackPanel>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Bands" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,4" IsEnabled="{Binding Settings.EqualizerEnabled}">
+                <StackPanel Margin="0,0,22,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.EqualizerPreampDb, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.EqualizerPreampDb, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.EqualizerPreampDb}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="Preamp"/>
+                </StackPanel>
+                <StackPanel>
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Settings.EqualizerBandCount}" Value="10">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <StackPanel Orientation="Horizontal">
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.Equalizer15Band25, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.Equalizer15Band25, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.Equalizer15Band25}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="25"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.Equalizer15Band40, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.Equalizer15Band40, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.Equalizer15Band40}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="40"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.Equalizer15Band63, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.Equalizer15Band63, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.Equalizer15Band63}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="63"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.Equalizer15Band100, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.Equalizer15Band100, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.Equalizer15Band100}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="100"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.Equalizer15Band160, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.Equalizer15Band160, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.Equalizer15Band160}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="160"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.Equalizer15Band250, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.Equalizer15Band250, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.Equalizer15Band250}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="250"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.Equalizer15Band400, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.Equalizer15Band400, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.Equalizer15Band400}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="400"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.Equalizer15Band630, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.Equalizer15Band630, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.Equalizer15Band630}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="630"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.Equalizer15Band1k, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.Equalizer15Band1k, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.Equalizer15Band1k}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="1K"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.Equalizer15Band1k6, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.Equalizer15Band1k6, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.Equalizer15Band1k6}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="1.6K"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.Equalizer15Band2k5, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.Equalizer15Band2k5, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.Equalizer15Band2k5}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="2.5K"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.Equalizer15Band4k, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.Equalizer15Band4k, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.Equalizer15Band4k}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="4K"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.Equalizer15Band6k3, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.Equalizer15Band6k3, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.Equalizer15Band6k3}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="6.3K"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.Equalizer15Band10k, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.Equalizer15Band10k, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.Equalizer15Band10k}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="10K"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.Equalizer15Band16k, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.Equalizer15Band16k, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.Equalizer15Band16k}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="16K"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Grid.ColumnSpan="3" Margin="3,0">
+                            <Border Height="4" BorderBrush="#4A5F73" BorderThickness="1,1,1,0"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Sub-bass"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="3" Grid.ColumnSpan="3" Margin="3,0">
+                            <Border Height="4" BorderBrush="#4A5F73" BorderThickness="1,1,1,0"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Bass"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="6" Grid.ColumnSpan="2" Margin="3,0">
+                            <Border Height="4" BorderBrush="#4A5F73" BorderThickness="1,1,1,0"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Low mids"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="8" Grid.ColumnSpan="2" Margin="3,0">
+                            <Border Height="4" BorderBrush="#4A5F73" BorderThickness="1,1,1,0"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Mids"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="10" Grid.ColumnSpan="2" Margin="3,0">
+                            <Border Height="4" BorderBrush="#4A5F73" BorderThickness="1,1,1,0"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Presence"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="12" Grid.ColumnSpan="1" Margin="3,0">
+                            <Border Height="4" BorderBrush="#4A5F73" BorderThickness="1,1,1,0"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Clarity"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="13" Grid.ColumnSpan="2" Margin="3,0">
+                            <Border Height="4" BorderBrush="#4A5F73" BorderThickness="1,1,1,0"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Treble &amp; air"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+                <StackPanel>
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Settings.EqualizerBandCount}" Value="10">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
+                    <StackPanel Orientation="Horizontal">
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.EqualizerBand60, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.EqualizerBand60, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.EqualizerBand60}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="60"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.EqualizerBand170, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.EqualizerBand170, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.EqualizerBand170}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="170"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.EqualizerBand310, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.EqualizerBand310, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.EqualizerBand310}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="310"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.EqualizerBand600, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.EqualizerBand600, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.EqualizerBand600}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="600"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.EqualizerBand1k, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.EqualizerBand1k, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.EqualizerBand1k}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="1K"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.EqualizerBand3k, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.EqualizerBand3k, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.EqualizerBand3k}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="3K"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.EqualizerBand6k, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.EqualizerBand6k, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.EqualizerBand6k}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="6K"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.EqualizerBand12k, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.EqualizerBand12k, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.EqualizerBand12k}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="12K"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.EqualizerBand14k, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.EqualizerBand14k, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.EqualizerBand14k}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="14K"/>
+                        </StackPanel>
+                        <StackPanel Margin="1,0" Width="46">
+                        <TextBlock Style="{StaticResource UpsValue}" HorizontalAlignment="Center"
+                                   Foreground="{Binding Settings.EqualizerBand16k, Converter={StaticResource EqTone}}"
+                                   Text="{Binding Settings.EqualizerBand16k, StringFormat='{}{0:+0;-0;0}'}"/>
+                        <Slider Style="{StaticResource EqSlider}" Margin="0,6"
+                                Value="{Binding Settings.EqualizerBand16k}" ValueChanged="Band_ValueChanged"/>
+                        <TextBlock Style="{StaticResource UpsLabel}" HorizontalAlignment="Center" Text="16K"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Grid.ColumnSpan="1" Margin="3,0">
+                            <Border Height="4" BorderBrush="#4A5F73" BorderThickness="1,1,1,0"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Sub-bass"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Grid.ColumnSpan="1" Margin="3,0">
+                            <Border Height="4" BorderBrush="#4A5F73" BorderThickness="1,1,1,0"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Bass"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Grid.ColumnSpan="2" Margin="3,0">
+                            <Border Height="4" BorderBrush="#4A5F73" BorderThickness="1,1,1,0"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Low mids"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="4" Grid.ColumnSpan="1" Margin="3,0">
+                            <Border Height="4" BorderBrush="#4A5F73" BorderThickness="1,1,1,0"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Mids"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="5" Grid.ColumnSpan="1" Margin="3,0">
+                            <Border Height="4" BorderBrush="#4A5F73" BorderThickness="1,1,1,0"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Presence"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="6" Grid.ColumnSpan="1" Margin="3,0">
+                            <Border Height="4" BorderBrush="#4A5F73" BorderThickness="1,1,1,0"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Clarity"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="7" Grid.ColumnSpan="3" Margin="3,0">
+                            <Border Height="4" BorderBrush="#4A5F73" BorderThickness="1,1,1,0"/>
+                            <TextBlock Style="{StaticResource UpsHintFlush}" HorizontalAlignment="Center" Margin="0,2,0,0" Text="Treble &amp; air"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,12" TextWrapping="Wrap"
+                       Text="Each band raises or lowers its range by up to 12 dB. Preamp sets the overall level; lower it if strong boosts sound squashed. Loud peaks are smoothed rather than clipped."/>
+
+            <Button Style="{StaticResource UpsButton}" HorizontalAlignment="Left"
+                    Content="Reset to Flat" Click="ResetFlat_Click"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

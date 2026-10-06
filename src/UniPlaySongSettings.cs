@@ -240,6 +240,21 @@ namespace UniPlaySong
         Logarithmic // Log-based — fast initial change, slow tail
     }
 
+    // Equalizer presets. Choosing one sets the ten bands; Custom means the sliders are the user's own.
+    public enum EqualizerPreset
+    {
+        Custom = 0,
+        Flat,
+        BassBoost,
+        TrebleBoost,
+        Vocal,
+        Rock,
+        Pop,
+        Classical,
+        Electronic,
+        Loudness
+    }
+
     public enum VizPreset
     {
         Custom = 0,
@@ -2199,6 +2214,13 @@ namespace UniPlaySong
         // S-curve transition. Independent of LiveEffectsEnabled (sits downstream).
         // Forces NAudio backend like Live Effects does.
         private bool calmDownModeEnabled = false;
+        private bool equalizerEnabled = false;
+        private EqualizerPreset equalizerPreset = EqualizerPreset.Flat;
+        private int equalizerPreampDb = 0;
+        private int equalizerBand60 = 0, equalizerBand170 = 0, equalizerBand310 = 0, equalizerBand600 = 0, equalizerBand1k = 0;
+        private int equalizerBand3k = 0, equalizerBand6k = 0, equalizerBand12k = 0, equalizerBand14k = 0, equalizerBand16k = 0;
+        private int equalizerBandCount = 15;
+        private int equalizer15Band25 = 0, equalizer15Band40 = 0, equalizer15Band63 = 0, equalizer15Band100 = 0, equalizer15Band160 = 0, equalizer15Band250 = 0, equalizer15Band400 = 0, equalizer15Band630 = 0, equalizer15Band1k = 0, equalizer15Band1k6 = 0, equalizer15Band2k5 = 0, equalizer15Band4k = 0, equalizer15Band6k3 = 0, equalizer15Band10k = 0, equalizer15Band16k = 0;
         private float calmDownLowPassCutoffHz = 1500f;
         private float calmDownVolumeMultiplier = 0.5f;
         private float calmDownFadeLengthMultiplier = 2.0f;
@@ -2259,6 +2281,51 @@ namespace UniPlaySong
         private int reverbAllpassFeedback = 50;     // 30-70 (displayed as 0.30-0.70)
         private int reverbHfDampingMin = 20;        // 10-40 (displayed as 0.10-0.40)
         private int reverbHfDampingMax = 50;        // 30-70 (displayed as 0.30-0.70)
+
+        // Ten-band equalizer (Live Effects -> Equalizer (EQ), shared with Quick Start). Its own switch, independent of
+        // the Live Effects master toggle; turning it on forces the NAudio backend, as Calm Down does. Bands and preamp
+        // are dB, -12..12.
+        public bool EqualizerEnabled
+        {
+            get => equalizerEnabled;
+            set { equalizerEnabled = value; OnPropertyChanged(); }
+        }
+
+        public EqualizerPreset EqualizerPreset
+        {
+            get => equalizerPreset;
+            set { equalizerPreset = value; OnPropertyChanged(); }
+        }
+
+        public int EqualizerPreampDb { get => equalizerPreampDb; set { equalizerPreampDb = value; OnPropertyChanged(); } }
+        public int EqualizerBand60 { get => equalizerBand60; set { equalizerBand60 = value; OnPropertyChanged(); } }
+        public int EqualizerBand170 { get => equalizerBand170; set { equalizerBand170 = value; OnPropertyChanged(); } }
+        public int EqualizerBand310 { get => equalizerBand310; set { equalizerBand310 = value; OnPropertyChanged(); } }
+        public int EqualizerBand600 { get => equalizerBand600; set { equalizerBand600 = value; OnPropertyChanged(); } }
+        public int EqualizerBand1k { get => equalizerBand1k; set { equalizerBand1k = value; OnPropertyChanged(); } }
+        public int EqualizerBand3k { get => equalizerBand3k; set { equalizerBand3k = value; OnPropertyChanged(); } }
+        public int EqualizerBand6k { get => equalizerBand6k; set { equalizerBand6k = value; OnPropertyChanged(); } }
+        public int EqualizerBand12k { get => equalizerBand12k; set { equalizerBand12k = value; OnPropertyChanged(); } }
+        public int EqualizerBand14k { get => equalizerBand14k; set { equalizerBand14k = value; OnPropertyChanged(); } }
+        public int EqualizerBand16k { get => equalizerBand16k; set { equalizerBand16k = value; OnPropertyChanged(); } }
+
+        // 15 (default, standard 2/3-octave layout) or 10 (Winamp's). Each layout keeps its own curve.
+        public int EqualizerBandCount { get => equalizerBandCount; set { equalizerBandCount = value; OnPropertyChanged(); } }
+        public int Equalizer15Band25 { get => equalizer15Band25; set { equalizer15Band25 = value; OnPropertyChanged(); } }
+        public int Equalizer15Band40 { get => equalizer15Band40; set { equalizer15Band40 = value; OnPropertyChanged(); } }
+        public int Equalizer15Band63 { get => equalizer15Band63; set { equalizer15Band63 = value; OnPropertyChanged(); } }
+        public int Equalizer15Band100 { get => equalizer15Band100; set { equalizer15Band100 = value; OnPropertyChanged(); } }
+        public int Equalizer15Band160 { get => equalizer15Band160; set { equalizer15Band160 = value; OnPropertyChanged(); } }
+        public int Equalizer15Band250 { get => equalizer15Band250; set { equalizer15Band250 = value; OnPropertyChanged(); } }
+        public int Equalizer15Band400 { get => equalizer15Band400; set { equalizer15Band400 = value; OnPropertyChanged(); } }
+        public int Equalizer15Band630 { get => equalizer15Band630; set { equalizer15Band630 = value; OnPropertyChanged(); } }
+        public int Equalizer15Band1k { get => equalizer15Band1k; set { equalizer15Band1k = value; OnPropertyChanged(); } }
+        public int Equalizer15Band1k6 { get => equalizer15Band1k6; set { equalizer15Band1k6 = value; OnPropertyChanged(); } }
+        public int Equalizer15Band2k5 { get => equalizer15Band2k5; set { equalizer15Band2k5 = value; OnPropertyChanged(); } }
+        public int Equalizer15Band4k { get => equalizer15Band4k; set { equalizer15Band4k = value; OnPropertyChanged(); } }
+        public int Equalizer15Band6k3 { get => equalizer15Band6k3; set { equalizer15Band6k3 = value; OnPropertyChanged(); } }
+        public int Equalizer15Band10k { get => equalizer15Band10k; set { equalizer15Band10k = value; OnPropertyChanged(); } }
+        public int Equalizer15Band16k { get => equalizer15Band16k; set { equalizer15Band16k = value; OnPropertyChanged(); } }
 
         // v1.5.0: Calm Down Mode. When on, the post-mixer CalmDownProcessor applies
         // a low-pass filter (CalmDownLowPassCutoffHz) and volume attenuation (CalmDownVolumeMultiplier) with an S-curve
@@ -2859,6 +2926,14 @@ namespace UniPlaySong
             set { vizFftTimerMode = value; OnPropertyChanged(); }
         }
 
+        // Experimental: visualizer, peak meter and glow follow what the speakers are playing instead of the audio
+        // just handed to the device (~350 ms ahead), updating ~45 times a second. Off = the long-standing behavior.
+        public bool AlternativeAudioReactiveVisualizerSync
+        {
+            get => alternativeAudioReactiveVisualizerSync;
+            set { alternativeAudioReactiveVisualizerSync = value; OnPropertyChanged(); }
+        }
+
         // Bar color theme for the spectrum visualizer. Classic (0) uses the original solid white brush. Other
         // themes use colored gradients.
         public int VizColorTheme
@@ -2955,6 +3030,7 @@ namespace UniPlaySong
         private int vizFftFallLow = 55;          // 0-95 — FFT fall alpha for bass bins
         private int vizFftFallHigh = 70;         // 0-95 — FFT fall alpha for treble bins
         private bool vizFftTimerMode = false;    // false = signal-based (audio-driven), true = fixed 16ms timer (~62fps)
+        private bool alternativeAudioReactiveVisualizerSync = false;
         private VizPreset selectedVizPreset = VizPreset.Punchy; // Current visualizer preset
         private int vizColorTheme = 0;               // VizColorTheme enum — bar color theme (0=Dynamic)
         private bool vizGradientEnabled = true;      // true = gradient bars, false = solid color

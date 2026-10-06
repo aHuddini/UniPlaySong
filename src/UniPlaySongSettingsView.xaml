@@ -190,6 +190,9 @@
                 <TabItem Header="Profiles">
                     <settings:QuickStartPage/>
                 </TabItem>
+                <TabItem Header="Equalizer (EQ)">
+                    <settings:EqualizerPage/>
+                </TabItem>
             </TabControl>
         </TabItem>
 
@@ -280,6 +283,9 @@
                      not pre-empt it. -->
                 <TabItem Header="Live Effects">
                     <settings:EffectsPage/>
+                </TabItem>
+                <TabItem Header="Equalizer (EQ)">
+                    <settings:EqualizerPage/>
                 </TabItem>
                 <TabItem Header="Calm Down">
                     <settings:CalmDownPage/>

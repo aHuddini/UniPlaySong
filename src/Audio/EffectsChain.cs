@@ -977,7 +977,7 @@ namespace UniPlaySong.Audio
         }
 
         // Soft-knee limiter to prevent harsh clipping
-        private static float SoftKneeLimiter(float sample)
+        internal static float SoftKneeLimiter(float sample)
         {
             float absValue = Math.Abs(sample);
 

@@ -28,6 +28,10 @@ namespace UniPlaySong.Services
         // Fixed mixer format — all songs resampled to match
         private static readonly WaveFormat MixerFormat = WaveFormat.CreateIeeeFloatWaveFormat(44100, 2);
 
+        // How far the device has really played; lets the visualizer show what is heard, not what was just queued.
+        // Outlives each persistent layer, because visualizer taps keep a reference across a device rebuild.
+        private readonly OutputClock _outputClock = new OutputClock(MixerFormat);
+
         // When true, Load() won't set VisualizationDataProvider.Current (for multi-instance support)
         public bool SuppressVisualizationProvider { get; set; }
 
@@ -165,7 +169,9 @@ namespace UniPlaySong.Services
 
             _outputDevice = new WaveOutEvent();
             _outputDevice.PlaybackStopped += OnPlaybackStopped;
-            _outputDevice.Init(_outputMixer);
+            _outputDevice.Init(_outputClock);
+            // The equalizer is the last stage, so it shapes game music and an effected Spotify source alike.
+            _outputClock.Attach(new Equalizer(_outputMixer, () => _settingsService.Current), _outputDevice);
             _outputDevice.Play(); // Starts once, runs forever outputting silence until inputs added
 
             _persistentLayerInitialized = true;
@@ -186,6 +192,7 @@ namespace UniPlaySong.Services
                     _outputDevice.Dispose();
                     _outputDevice = null;
                 }
+                _outputClock.Detach();
                 _mixer = null;
                 _outputMixer = null;
                 _calmDownProcessor = null;
@@ -303,7 +310,7 @@ namespace UniPlaySong.Services
                 long chainMs = sw.ElapsedMilliseconds;
 
                 int fftSize = _settingsService.Current?.VizFftSize ?? 1024;
-                _visualizationProvider = new VisualizationDataProvider(_effectsChain, fftSize, _settingsService.Current);
+                _visualizationProvider = new VisualizationDataProvider(_effectsChain, fftSize, () => _settingsService.Current, _outputClock);
                 if (!SuppressVisualizationProvider)
                     VisualizationDataProvider.Current = _visualizationProvider;
                 long vizMs = sw.ElapsedMilliseconds;
@@ -780,7 +787,7 @@ namespace UniPlaySong.Services
                 _secondaryEffectsChain = new EffectsChain((ISampleProvider)_secondaryAudioFile, _settingsService);
 
                 int fftSize = _settingsService.Current?.VizFftSize ?? 1024;
-                _secondaryVisualizationProvider = new VisualizationDataProvider(_secondaryEffectsChain, fftSize, _settingsService.Current);
+                _secondaryVisualizationProvider = new VisualizationDataProvider(_secondaryEffectsChain, fftSize, () => _settingsService.Current, _outputClock);
                 // Do NOT set VisualizationDataProvider.Current here — primary owns that slot
                 // until promotion. Viz still gets combined audio via post-mix read on primary.
 
@@ -918,7 +925,7 @@ namespace UniPlaySong.Services
 
             _externalEffects = new EffectsChain(source, _settingsService);
             int fftSize = _settingsService.Current?.VizFftSize ?? 1024;
-            _externalViz = new VisualizationDataProvider(_externalEffects, fftSize, _settingsService.Current);
+            _externalViz = new VisualizationDataProvider(_externalEffects, fftSize, () => _settingsService.Current, _outputClock);
             if (!SuppressVisualizationProvider)
                 VisualizationDataProvider.Current = _externalViz;
 

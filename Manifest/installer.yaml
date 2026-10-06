@@ -5,6 +5,8 @@ Packages:
     ReleaseDate: 2026-09-27
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.10/UniPlaySong-1_8_10.pext'
     Changelog:
+      - '[New Feature] Equalizer (EQ): a 15-band (or classic 10-band) equalizer with presets (Bass Boost, Vocal, Rock and more), under Live Effects -> Equalizer (EQ) and Quick Start. Works with or without Live Effects.'
+      - '[New Feature] Experimental: Alternative audio-reactive visualizer sync (Settings -> Experimental) keeps visualizers, peak meters and glow effects in time with what you hear, and catches drum hits more reliably.'
       - '[Critical Fix] Now Playing cover art no longer piles up on disk. Themes that show the current song''s art left one image behind per song change, reaching thousands of files and several GB in the extension''s data folder. The leftovers are cleaned up automatically after updating, and art is now prepared off the UI thread.'
       - '[Fix] Under certain playback conditions, PlayStation (PSF) songs now loop when they end, instead of going silent. Restart Song also works on them now.'
       - '[Fix] Failed downloads and previews now say why (like browser cookies yt-dlp can''t read) and where the log is on your install, instead of a fixed %AppData% path.'

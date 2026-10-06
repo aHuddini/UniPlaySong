@@ -7,19 +7,61 @@ using NAudio.Wave;
 
 namespace UniPlaySong.Audio
 {
-    // Audio visualization tap: circular buffer -> FFT thread -> double-buffered spectrum for UI
+    // Audio visualization tap: circular buffer -> FFT thread -> double-buffered spectrum for UI.
+    //
+    // The output device pulls audio in 150 ms blocks and keeps two queued, so a block passes through here ~350 ms
+    // before it is heard (measured with WASAPI loopback). By default the bars and levels follow the newest block, as
+    // they always have. The experimental "alternative audio-reactive visualizer sync" setting (needs an OutputClock)
+    // instead ends the analysis window at the frame the device is playing now and slides it ~45 times a second
+    // through the queued audio. Read live, so toggling it takes effect without reloading the song.
     public class VisualizationDataProvider : ISampleProvider, IDisposable
     {
         private readonly ISampleProvider _source;
         private readonly int _channels;
-        private readonly UniPlaySongSettings _settings;
+        private readonly Func<UniPlaySongSettings> _getSettings;
+        private UniPlaySongSettings Settings => _getSettings?.Invoke();
+        private readonly OutputClock _clock;
 
-        // Simple circular buffer for raw samples (written by audio thread, read by FFT thread)
-        private const int BufferSize = 8192;
-        private readonly float[] _sampleBuffer = new float[BufferSize];
-        private volatile int _writePos;
+        private bool Synced => _clock != null && (Settings?.AlternativeAudioReactiveVisualizerSync ?? false);
 
-        // Per-update peak tracking (written by audio thread, read by UI)
+        // Synced-update state (FFT thread only)
+        private int _lastEnd = int.MinValue;
+        private long _lastUpdateTick;
+
+        // Circular buffers for left and right (written by audio thread, read by FFT thread). Large enough for the
+        // device queue plus one incoming block plus the level window, at 44.1 kHz.
+        private const int BufferSize = 32768;
+        private const int MaxIncomingBlock = 6615; // the device's 150 ms block (WaveOutEvent default: 300 ms in two)
+        private readonly float[] _left = new float[BufferSize];
+        private readonly float[] _right = new float[BufferSize];
+
+        // Write position and the device frame the newest sample corresponds to; published together under the lock
+        // so the FFT thread never pairs one block's position with another's.
+        private readonly object _publishLock = new object();
+        private int _writePos;
+        private long _deviceFrameAtWriteEnd;
+
+        // Peak/RMS window ending at the playing frame: 150 ms, the block the levels have always covered.
+        private const int LevelWindow = 6615;
+        private readonly int _maxLag;
+
+        // Alphas are per step and scaled to the real time between updates, so the look doesn't depend on update rate.
+        // Rise is per FFT hop (~23 ms): a hit lands within one update. Fall is per ~49 ms, the pace the fall settings
+        // were tuned against: the old loop woke for each 150 ms output block and on a 50 ms timeout in between, so it
+        // smoothed three times per block (the "43 fps" in the old settings text was never true). Measured on a
+        // synthetic kick, bass now clears between hits as it did then.
+        private const double RiseStepMs = 1024 * 1000.0 / 44100;
+        private const double FallStepMs = 147.0 / 3;
+        private const int FrameIntervalMs = 16;
+        // Windows sleeps in 15.6 ms ticks by default; a 16 ms wait rounds up to two of them (~31 Hz), 15 ms to one.
+        private const int FrameWaitMs = 15;
+
+        // Audio the device reports as played still has ~40 ms to go before Windows mixes it (the audio engine's own
+        // buffer, below what waveOut's position counts). Measured with WASAPI loopback: 31-55 ms early without this.
+        // ponytail: one constant from one machine; a user-facing sync offset if other hardware (Bluetooth) needs it.
+        private const int DeviceLatencyFrames = 44100 * 40 / 1000;
+
+        // Per-update levels (written by FFT thread, read by UI)
         private volatile float _currentPeak;
         private volatile float _currentRms;
         private volatile float _currentPeakL, _currentPeakR;
@@ -35,6 +77,11 @@ namespace UniPlaySong.Audio
         private readonly Complex[] _fftBuffer;
         private readonly float[] _hannWindow;
         private readonly float[] _smoothedSpectrum;
+        private readonly float[] _powerSum; // summed power per bin across the windows of one update
+
+        // Windows per update: enough for ~60 ms of new audio at 1024 (a slow tick); a longer gap (resume, a stall)
+        // just analyses the newest stretch.
+        private const int MaxWindowsPerUpdate = 12;
 
         // Per-bin temporal smoothing: bass gets slightly slower smoothing (weighty), treble gets faster smoothing
         // (sparkly). Linearly interpolated across bins. Alphas are scaled based on FFT size — larger windows need
@@ -72,21 +119,31 @@ namespace UniPlaySong.Audio
         public int SpectrumSize => _spectrumSize; // Half FFT size = usable spectrum bins
 
         public VisualizationDataProvider(ISampleProvider source, int fftSize = 1024, UniPlaySongSettings settings = null)
+            : this(source, fftSize, settings == null ? null : (Func<UniPlaySongSettings>)(() => settings), null)
+        {
+        }
+
+        // Settings read live: a settings save replaces the settings object, and toggles should apply mid-song.
+        public VisualizationDataProvider(ISampleProvider source, int fftSize, Func<UniPlaySongSettings> getSettings,
+            OutputClock clock)
         {
             _source = source ?? throw new ArgumentNullException(nameof(source));
             _channels = source.WaveFormat.Channels;
-            _settings = settings;
+            _getSettings = getSettings;
+            _clock = clock;
 
             // Validate and set FFT size
             if (fftSize <= 512) { _fftSize = 512; _fftLog2 = 9; }
             else if (fftSize <= 1024) { _fftSize = 1024; _fftLog2 = 10; }
             else { _fftSize = 2048; _fftLog2 = 11; }
             _spectrumSize = _fftSize / 2;
+            _maxLag = BufferSize - Math.Max(_fftSize, LevelWindow) - MaxIncomingBlock;
 
             // Allocate FFT arrays
             _fftBuffer = new Complex[_fftSize];
             _hannWindow = new float[_fftSize];
             _smoothedSpectrum = new float[_spectrumSize];
+            _powerSum = new float[_spectrumSize];
             _riseAlpha = new float[_spectrumSize];
             _fallAlpha = new float[_spectrumSize];
             _spectrumFront = new float[_spectrumSize];
@@ -115,10 +172,10 @@ namespace UniPlaySong.Audio
         private void RecomputeAlphas()
         {
             // Read current settings (cheap int reads)
-            int riseLow = _settings?.VizFftRiseLow ?? 88;
-            int riseHigh = _settings?.VizFftRiseHigh ?? 93;
-            int fallLow = _settings?.VizFftFallLow ?? 50;
-            int fallHigh = _settings?.VizFftFallHigh ?? 65;
+            int riseLow = Settings?.VizFftRiseLow ?? 88;
+            int riseHigh = Settings?.VizFftRiseHigh ?? 93;
+            int fallLow = Settings?.VizFftFallLow ?? 50;
+            int fallHigh = Settings?.VizFftFallHigh ?? 65;
 
             // Skip if nothing changed since last computation
             if (riseLow == _cachedRiseLow && riseHigh == _cachedRiseHigh &&
@@ -148,14 +205,17 @@ namespace UniPlaySong.Audio
 
         public int Read(float[] buffer, int offset, int count)
         {
+            // Read before the source: the device frame this block ends on is everything already submitted plus it.
+            long submittedBefore = _clock?.FramesSubmitted ?? 0;
+
             int samplesRead = _source.Read(buffer, offset, count);
             if (samplesRead == 0) return 0;
 
             float peakL = 0f, peakR = 0f;
             float sumSqL = 0f, sumSqR = 0f;
-            int monoCount = 0;
-
-            int pos = _writePos;
+            int pos;
+            lock (_publishLock) pos = _writePos;
+            int frames = 0;
             for (int i = 0; i < samplesRead; i += _channels)
             {
                 float left = buffer[offset + i];
@@ -167,24 +227,66 @@ namespace UniPlaySong.Audio
                 if (absR > peakR) peakR = absR;
                 sumSqL += left * left;
                 sumSqR += right * right;
-                monoCount++;
 
-                // Mono downmix for FFT circular buffer
-                float sample = (left + right) * 0.5f;
-                _sampleBuffer[pos & (BufferSize - 1)] = sample;
+                _left[pos & (BufferSize - 1)] = left;
+                _right[pos & (BufferSize - 1)] = right;
                 pos++;
+                frames++;
             }
 
-            _writePos = pos;
-            _currentPeakL = peakL;
-            _currentPeakR = peakR;
-            _currentRmsL = monoCount > 0 ? (float)Math.Sqrt(sumSqL / monoCount) : 0f;
-            _currentRmsR = monoCount > 0 ? (float)Math.Sqrt(sumSqR / monoCount) : 0f;
-            _currentPeak = Math.Max(peakL, peakR);
-            _currentRms = monoCount > 0 ? (float)Math.Sqrt((sumSqL + sumSqR) / (monoCount * 2)) : 0f;
+            lock (_publishLock)
+            {
+                _writePos = pos;
+                _deviceFrameAtWriteEnd = submittedBefore + frames;
+            }
+
+            // Long-standing behavior: levels cover the block just read. Synced, the FFT thread computes them from
+            // the window being heard instead.
+            if (!Synced)
+            {
+                _currentPeakL = peakL;
+                _currentPeakR = peakR;
+                _currentRmsL = (float)Math.Sqrt(sumSqL / frames);
+                _currentRmsR = (float)Math.Sqrt(sumSqR / frames);
+                _currentPeak = Math.Max(peakL, peakR);
+                _currentRms = (float)Math.Sqrt((sumSqL + sumSqR) / (frames * 2));
+            }
             _newSamplesSignal.Set();
 
             return samplesRead;
+        }
+
+        // Ring position one past the frame to analyse: the newest frame, held back by however much of this tap's
+        // audio the device has not played yet, capped at what the ring can hold.
+        internal static int WindowEnd(int writePos, long deviceFrameAtWriteEnd, long framesPlayed, int maxLag)
+        {
+            long behind = deviceFrameAtWriteEnd - framesPlayed;
+            if (behind <= 0) return writePos;
+            if (behind > maxLag) behind = maxLag;
+            return writePos - (int)behind;
+        }
+
+        private void ComputeLevels(int end)
+        {
+            float peakL = 0f, peakR = 0f, sumSqL = 0f, sumSqR = 0f;
+            for (int i = end - LevelWindow; i < end; i++)
+            {
+                float l = _left[i & (BufferSize - 1)];
+                float r = _right[i & (BufferSize - 1)];
+                float absL = l > 0 ? l : -l;
+                float absR = r > 0 ? r : -r;
+                if (absL > peakL) peakL = absL;
+                if (absR > peakR) peakR = absR;
+                sumSqL += l * l;
+                sumSqR += r * r;
+            }
+
+            _currentPeakL = peakL;
+            _currentPeakR = peakR;
+            _currentRmsL = (float)Math.Sqrt(sumSqL / LevelWindow);
+            _currentRmsR = (float)Math.Sqrt(sumSqR / LevelWindow);
+            _currentPeak = Math.Max(peakL, peakR);
+            _currentRms = (float)Math.Sqrt((sumSqL + sumSqR) / (LevelWindow * 2));
         }
 
         // Fast path: peak and RMS levels (no FFT, near-zero cost)
@@ -212,17 +314,20 @@ namespace UniPlaySong.Audio
             return toCopy;
         }
 
-        // Background FFT thread: signal mode (wakes on audio data) or timer mode (~16ms fixed intervals)
+        // Background FFT thread. Timer mode spins to exact 16 ms intervals; otherwise it sleeps until new audio
+        // arrives or a timeout: 50 ms for the long-standing behavior, 15 ms when synced (the window slides with
+        // playback, not with incoming blocks).
         private void FftLoop()
         {
-            long targetTicksPerFrame = 16L * Stopwatch.Frequency / 1000L; // ~16ms in Stopwatch ticks
+            long targetTicksPerFrame = FrameIntervalMs * Stopwatch.Frequency / 1000L;
             var sw = new Stopwatch();
             sw.Start();
             long nextFrameTick = sw.ElapsedTicks;
 
             while (!_disposed)
             {
-                bool timerMode = _settings?.VizFftTimerMode ?? false;
+                bool synced = Synced;
+                bool timerMode = Settings?.VizFftTimerMode ?? false;
 
                 if (timerMode)
                 {
@@ -236,57 +341,163 @@ namespace UniPlaySong.Audio
                 }
                 else
                 {
-                    // Signal mode: sleep until audio thread delivers new samples
-                    _newSamplesSignal.Wait(50);
+                    _newSamplesSignal.Wait(synced ? FrameWaitMs : 50);
                     _newSamplesSignal.Reset();
                     // Keep timer in sync so switching to timer mode doesn't cause a burst
                     nextFrameTick = sw.ElapsedTicks + targetTicksPerFrame;
                 }
 
                 if (_disposed) break;
-                if (_paused) continue; // Fullscreen: skip FFT, audio passthrough unaffected
 
-                // Snapshot write position to avoid reading a moving target
-                int wp = _writePos;
-                int readPos = wp - _fftSize;
-
-                for (int i = 0; i < _fftSize; i++)
-                {
-                    _fftBuffer[i].X = _sampleBuffer[(readPos + i) & (BufferSize - 1)] * _hannWindow[i];
-                    _fftBuffer[i].Y = 0;
-                }
-
-                FastFourierTransform.FFT(true, _fftLog2, _fftBuffer);
-
-                // Recompute alphas from live settings (skips if unchanged — cheap int compare)
-                RecomputeAlphas();
-
-                // Combined: normalize FFT output + per-bin asymmetric temporal smoothing.
-                // Single pass eliminates the intermediate _fftSpectrum array and halves cache misses.
-                for (int i = 0; i < _spectrumSize; i++)
-                {
-                    float re = _fftBuffer[i].X;
-                    float im = _fftBuffer[i].Y;
-                    float magSq = re * re + im * im;
-                    float db = 10f * (float)Math.Log10(Math.Max(magSq, 1e-20f));
-                    // Map -80dB..0dB to 0..1, then square for dynamic range expansion
-                    float normalized = (db + 80f) / 80f;
-                    if (normalized < 0f) normalized = 0f;
-                    else if (normalized > 1f) normalized = 1f;
-                    float raw = normalized * normalized;
-
-                    // Per-bin asymmetric smoothing: bass slower (weighty), treble faster (sparkly)
-                    float prev = _smoothedSpectrum[i];
-                    float alpha = raw >= prev ? _riseAlpha[i] : _fallAlpha[i];
-                    _smoothedSpectrum[i] = prev + (raw - prev) * alpha;
-                }
-
-                // Publish to front buffer for UI consumption.
-                // Copy smoothed state into back buffer, then atomically swap into front.
-                // Interlocked.Exchange ensures the UI thread always reads a complete frame.
-                Array.Copy(_smoothedSpectrum, 0, _spectrumBack, 0, _spectrumSize);
-                _spectrumBack = Interlocked.Exchange(ref _spectrumFront, _spectrumBack);
+                if (synced) SyncedUpdate(sw.ElapsedTicks);
+                else LegacyUpdate();
             }
+        }
+
+        // The long-standing behavior: the newest 1024 samples, smoothed once per update.
+        private void LegacyUpdate()
+        {
+            _lastEnd = int.MinValue; // a later switch to synced starts fresh
+            if (_paused) return; // Fullscreen: skip FFT, audio passthrough unaffected
+
+            int wp;
+            lock (_publishLock) wp = _writePos;
+            int readPos = wp - _fftSize;
+
+            for (int i = 0; i < _fftSize; i++)
+            {
+                int p = (readPos + i) & (BufferSize - 1);
+                _fftBuffer[i].X = (_left[p] + _right[p]) * 0.5f * _hannWindow[i];
+                _fftBuffer[i].Y = 0;
+            }
+
+            FastFourierTransform.FFT(true, _fftLog2, _fftBuffer);
+
+            // Recompute alphas from live settings (skips if unchanged — cheap int compare)
+            RecomputeAlphas();
+
+            for (int i = 0; i < _spectrumSize; i++)
+            {
+                float re = _fftBuffer[i].X;
+                float im = _fftBuffer[i].Y;
+                float raw = ToBarScale(re * re + im * im);
+
+                // Per-bin asymmetric smoothing: bass slower (weighty), treble faster (sparkly)
+                float prev = _smoothedSpectrum[i];
+                float alpha = raw >= prev ? _riseAlpha[i] : _fallAlpha[i];
+                _smoothedSpectrum[i] = prev + (raw - prev) * alpha;
+            }
+
+            PublishSpectrum();
+        }
+
+        // Alternative sync: the window ends at the frame being heard; levels and bars follow it.
+        private void SyncedUpdate(long now)
+        {
+            int wp;
+            long deviceEnd;
+            lock (_publishLock)
+            {
+                wp = _writePos;
+                deviceEnd = _deviceFrameAtWriteEnd;
+            }
+            int end = WindowEnd(wp, deviceEnd, _clock.FramesPlayed - DeviceLatencyFrames, _maxLag);
+
+            // Nothing new has played (paused, stopped, between songs): leave levels and bars where they are.
+            if (end == _lastEnd)
+            {
+                _lastUpdateTick = now;
+                return;
+            }
+            int prevEnd = _lastEnd;
+            _lastEnd = end;
+
+            ComputeLevels(end); // meters and glow work in fullscreen too
+            if (_paused || prevEnd == int.MinValue) { _lastUpdateTick = now; return; } // Fullscreen: skip FFT
+
+            double elapsedMs = (now - _lastUpdateTick) * 1000.0 / Stopwatch.Frequency;
+            double riseSteps = elapsedMs / RiseStepMs;
+            double fallSteps = elapsedMs / FallStepMs;
+            _lastUpdateTick = now;
+
+            // Energy of everything that played since the last update: the average power of every window a
+            // quarter-window apart. One window per update covered ~23 ms of every 22-31 ms, tapered at its edges,
+            // so a drum hit landing between two updates came out at half height or not at all (measured:
+            // identical clicks varied 2-2.6x). Quarter-step Hann windows weigh every moment about equally, so a
+            // hit counts the same wherever it lands. Averaged, not the strongest window: bass cycles are as long
+            // as a window, so the strongest window always catches a bass note at its crest and the bars never fall.
+            Array.Clear(_powerSum, 0, _spectrumSize);
+            int hop = _fftSize / 4;
+            int windows = 0;
+            for (int k = 0; k < MaxWindowsPerUpdate; k++)
+            {
+                int windowEnd = end - k * hop;
+                if (k > 0 && windowEnd <= prevEnd) break;
+                AddWindowPower(windowEnd);
+                windows++;
+            }
+
+            // Recompute alphas from live settings (skips if unchanged — cheap int compare)
+            RecomputeAlphas();
+
+            for (int i = 0; i < _spectrumSize; i++)
+            {
+                float raw = ToBarScale(_powerSum[i] / windows);
+
+                // Per-bin asymmetric smoothing: bass slower (weighty), treble faster (sparkly)
+                float prev = _smoothedSpectrum[i];
+                float alpha = raw >= prev ? ScaleAlpha(_riseAlpha[i], riseSteps) : ScaleAlpha(_fallAlpha[i], fallSteps);
+                _smoothedSpectrum[i] = prev + (raw - prev) * alpha;
+            }
+
+            PublishSpectrum();
+        }
+
+        // Publish to front buffer for UI consumption. Copy smoothed state into back buffer, then atomically swap
+        // into front. Interlocked.Exchange ensures the UI thread always reads a complete frame.
+        private void PublishSpectrum()
+        {
+            Array.Copy(_smoothedSpectrum, 0, _spectrumBack, 0, _spectrumSize);
+            _spectrumBack = Interlocked.Exchange(ref _spectrumFront, _spectrumBack);
+        }
+
+        // Power per bin of the window ending at `windowEnd`, added to the update's sum.
+        private void AddWindowPower(int windowEnd)
+        {
+            int readPos = windowEnd - _fftSize;
+            for (int i = 0; i < _fftSize; i++)
+            {
+                int p = (readPos + i) & (BufferSize - 1);
+                _fftBuffer[i].X = (_left[p] + _right[p]) * 0.5f * _hannWindow[i];
+                _fftBuffer[i].Y = 0;
+            }
+
+            FastFourierTransform.FFT(true, _fftLog2, _fftBuffer);
+
+            for (int i = 0; i < _spectrumSize; i++)
+            {
+                float re = _fftBuffer[i].X;
+                float im = _fftBuffer[i].Y;
+                _powerSum[i] += re * re + im * im;
+            }
+        }
+
+        // Power to the 0..1 bar scale: -80..0 dB, squared for dynamic range expansion.
+        private static float ToBarScale(float magSq)
+        {
+            float db = 10f * (float)Math.Log10(Math.Max(magSq, 1e-20f));
+            float normalized = (db + 80f) / 80f;
+            if (normalized < 0f) normalized = 0f;
+            else if (normalized > 1f) normalized = 1f;
+            return normalized * normalized;
+        }
+
+        // An alpha applied once per smoothing step, rescaled for `steps` of them: n updates of the result cover the
+        // same ground as n * steps updates of the original.
+        internal static float ScaleAlpha(float alpha, double steps)
+        {
+            if (steps <= 0) return 0f;
+            return (float)(1.0 - Math.Pow(1.0 - alpha, steps));
         }
 
         public void Dispose()

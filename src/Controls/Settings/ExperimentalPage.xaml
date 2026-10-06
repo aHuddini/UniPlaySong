@@ -113,6 +113,18 @@
             <TextBlock Text="&#x26A0; Experimental: This feature may cause lag on some systems."
                        Style="{StaticResource UpsWarning}"/>
 
+            <!-- Alternative Audio-Reactive Visualizer Sync -->
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Alternative Audio-Reactive Visualizer Sync" Style="{StaticResource UpsSectionTitle}"/></Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Use alternative audio-reactive visualizer sync"
+                      IsChecked="{Binding Settings.AlternativeAudioReactiveVisualizerSync}"
+                      Margin="0,5,0,5"/>
+            <TextBlock Text="Keeps the spectrum visualizer, peak meter and glow effects in time with what you hear, and catches drum hits more reliably. Without it they run about a third of a second ahead of the music. Bars move more smoothly and may look different with your current visualizer tuning."
+                       Style="{StaticResource UpsHint}"
+                       TextWrapping="Wrap"
+                       Margin="32,0,0,5"/>
+            <TextBlock Text="&#x26A0; Experimental: still being tuned — the look may change."
+                       Style="{StaticResource UpsWarning}"/>
+
             <!-- Media Key Control -->
             <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Media Key Control" Style="{StaticResource UpsSectionTitle}"/></Border>
 
