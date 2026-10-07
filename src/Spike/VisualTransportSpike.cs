@@ -14,6 +14,7 @@ using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Playnite.SDK;
+using OutputClock = global::UniPlaySong.Audio.OutputClock;
 
 namespace UniPlaySong.Spike
 {
@@ -54,6 +55,41 @@ namespace UniPlaySong.Spike
 
         public static void Run(IPlayniteAPI api) => Run(api, null, null, false);
 
+        // UPS's own output: how often the device's request for the next 150 ms block came late (gap > 250 ms; a gap
+        // past ~300 ms empties the two-block queue and is an audible dropout).
+        private static void ResetAudioHealth()
+        {
+            OutputClock.SpikeReads = 0;
+            OutputClock.SpikeLateReads = 0;
+            OutputClock.SpikeMaxGapTicks = 0;
+        }
+
+        private static string AudioHealth()
+        {
+            double maxGapMs = OutputClock.SpikeMaxGapTicks * 1000.0 / Stopwatch.Frequency;
+            return $"UPS audio output: {OutputClock.SpikeReads} block requests, " +
+                   $"{OutputClock.SpikeLateReads} late (> 250 ms), longest gap {maxGapMs:F0} ms" +
+                   (OutputClock.SpikeReads == 0 ? " (no requests: is UPS playing music through the effects-capable player?)" : "");
+        }
+
+        // Baseline: 30 s of UPS music alone, no visuals, to learn whether the stutter exists without the spike.
+        public static void RunAudioBaseline(IPlayniteAPI api)
+        {
+            Directory.CreateDirectory(ResultsDir);
+            ResetAudioHealth();
+            var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+            timer.Tick += (s, e) =>
+            {
+                timer.Stop();
+                string mode = api.ApplicationInfo.Mode == ApplicationMode.Fullscreen ? "fullscreen" : "desktop";
+                string text = $"Baseline, {mode}, 30 s, no visuals" + Environment.NewLine + AudioHealth();
+                File.WriteAllText(Path.Combine(ResultsDir, $"playnite-{mode}-audio-baseline.txt"), text);
+                api.Dialogs.ShowMessage(text, "UPS spike: audio baseline");
+            };
+            timer.Start();
+            api.Notifications.Add(new NotificationMessage("ups-spike-baseline", "UPS spike: measuring 30 s of audio, no visuals…", NotificationType.Info));
+        }
+
         public static void Run(IPlayniteAPI api, string alphaMode, string env, bool milkDrop)
         {
             // DllImport by name binds to an already-loaded module, so load the helper first - from a temp copy, so a
@@ -64,6 +100,7 @@ namespace UniPlaySong.Spike
             try { File.Copy(Helper, helperCopy, true); } catch (IOException) { /* already loaded from an earlier run */ }
             LoadLibraryW(helperCopy);
             Directory.CreateDirectory(ResultsDir);
+            ResetAudioHealth();
             string mode = api.ApplicationInfo.Mode == ApplicationMode.Fullscreen ? "fullscreen" : "desktop";
             bool UseMilkDrop = milkDrop && MilkDropAvailable;
             string tag = $"playnite-{mode}{(api.ApplicationSettings.DisableHwAcceleration ? "-swrender" : "")}" +
@@ -180,6 +217,7 @@ namespace UniPlaySong.Spike
                         $"shown={presented} in {elapsed:F2}s = {presented / elapsed:F1} fps; WPF frames {ticks / elapsed:F1}/s; skipped {dropped}",
                         $"latency ms: median {Pct(0.5)}, p95 {Pct(0.95)}, max {(latencies.Count > 0 ? latencies.Last().ToString("F1") : "-")}",
                         $"Playnite process CPU during the run: {cpu / elapsed * 100:F1}% of one core (includes everything Playnite was doing)",
+                        AudioHealth(),
                     });
                 }
                 if (summary != null && !shot)

@@ -27,6 +27,7 @@
 #include <climits>
 #include <vector>
 #include <algorithm>
+#include <string>
 #include "vt_shared.h"
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -37,6 +38,18 @@
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "gdi32.lib")
+
+// Timestamped events for correlating audio glitches with preset switches and slow frames.
+static LARGE_INTEGER g_freq, g_start;
+static std::vector<std::string> g_events;
+static double Seconds() { LARGE_INTEGER n; QueryPerformanceCounter(&n); return (double)(n.QuadPart - g_start.QuadPart) / g_freq.QuadPart; }
+static void Event(const char* text, double value = -1)
+{
+    char line[160];
+    if (value >= 0) std::snprintf(line, sizeof line, "t=%6.2fs  %s %.1f", Seconds(), text, value);
+    else std::snprintf(line, sizeof line, "t=%6.2fs  %s", Seconds(), text);
+    g_events.push_back(line);
+}
 
 static void Fail(const char* what, long code = 0) { std::fprintf(stderr, "%s failed (0x%08lx)\n", what, (unsigned long)code); std::exit(1); }
 
@@ -111,6 +124,7 @@ struct Loopback
                 const float* src = (const float*)data;
                 for (UINT32 i = 0; i < frames; i++)
                 {
+                    if (i == 0 && (flags & AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY)) Event("AUDIO ENGINE GLITCH (loopback discontinuity)");
                     bool silent = (flags & AUDCLNT_BUFFERFLAGS_SILENT) != 0;
                     stereo[2 * i] = silent ? 0.f : src[(size_t)i * ch];
                     stereo[2 * i + 1] = silent ? 0.f : src[(size_t)i * ch + (ch > 1 ? 1 : 0)];
@@ -183,6 +197,8 @@ int main(int argc, char** argv)
     projectm_playlist_handle pl = projectm_playlist_create(pm);
     uint32_t added = projectm_playlist_add_path(pl, presetDir, true, false);
     projectm_playlist_set_shuffle(pl, true);
+    QueryPerformanceFrequency(&g_freq); QueryPerformanceCounter(&g_start);
+    projectm_playlist_set_preset_switched_event_callback(pl, [](bool, unsigned int index, void*) { Event("preset switch, index", (double)index); }, nullptr);
     projectm_playlist_play_next(pl, true);
     std::printf("projectM %dx%d, %u presets from %s, alpha mode %s\n", w, h, added, presetDir, mode);
     std::fflush(stdout);
@@ -237,12 +253,15 @@ int main(int argc, char** argv)
         hdr->frame = ++frame;
         double render = Ms(t0, t1, freq), read = Ms(t1, t2, freq), conv = Ms(t2, t3, freq);
         sumRender += render; sumRead += read; sumConvert += conv; maxTotal = std::max(maxTotal, render + read + conv);
+        if (render + read + conv > 25) Event("slow frame, ms", render + read + conv);
     }
     QueryPerformanceCounter(&t3);
     double secs = Ms(start, t3, freq) / 1000.0;
     if (frame > 0)
         std::printf("frames %lld in %.1f s (%.1f fps); per frame: render %.2f ms, readback %.2f ms, convert+upload %.2f ms; worst total %.1f ms\n",
                     (long long)frame, secs, frame / secs, sumRender / frame, sumRead / frame, sumConvert / frame, maxTotal);
+    std::printf("events (%zu):\n", g_events.size());
+    for (size_t e = 0; e < g_events.size() && e < 80; e++) std::printf("  %s\n", g_events[e].c_str());
     projectm_playlist_destroy(pl);
     projectm_destroy(pm);
     hdr->magic = 0;

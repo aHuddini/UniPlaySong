@@ -5470,6 +5470,11 @@ namespace UniPlaySong
                     Description = "[UPS] Spike: visual transport test",
                     Action = _ => Spike.VisualTransportSpike.Run(PlayniteApi)
                 });
+                items.Add(new MainMenuItem
+                {
+                    Description = "[UPS] Spike: audio baseline (30 s, no visuals)",
+                    Action = _ => Spike.VisualTransportSpike.RunAudioBaseline(PlayniteApi)
+                });
                 if (Spike.VisualTransportSpike.MilkDropAvailable)
                     foreach (var v in Spike.VisualTransportSpike.Variants)
                     {

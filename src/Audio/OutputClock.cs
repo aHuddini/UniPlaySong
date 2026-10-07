@@ -59,8 +59,24 @@ namespace UniPlaySong.Audio
             }
         }
 
+        // SPIKE (feature/music-visual-control only, remove before merge): how promptly the device asks for audio.
+        // WaveOutEvent pulls one 150 ms block at a time with two queued, so a gap well past 150 ms between pulls means
+        // the queue ran low; past ~300 ms it ran dry and the music audibly dropped out.
+        internal static long SpikeReads, SpikeLateReads, SpikeMaxGapTicks;
+        private long _spikeLastReadTicks;
+
         public int Read(float[] buffer, int offset, int count)
         {
+            long nowTicks = System.Diagnostics.Stopwatch.GetTimestamp();
+            if (_spikeLastReadTicks != 0)
+            {
+                long gap = nowTicks - _spikeLastReadTicks;
+                SpikeReads++;
+                if (gap > SpikeMaxGapTicks) SpikeMaxGapTicks = gap;
+                if (gap > System.Diagnostics.Stopwatch.Frequency / 4) SpikeLateReads++; // > 250 ms
+            }
+            _spikeLastReadTicks = nowTicks;
+
             var source = _source;
             if (source == null) return 0;
             int read = source.Read(buffer, offset, count);
