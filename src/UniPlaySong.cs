@@ -5461,6 +5461,17 @@ namespace UniPlaySong
                 });
             }
 
+            // SPIKE A (temporary, never commit): in-process visual transport test. Only appears on the dev machine,
+            // where the spike's built binaries exist.
+            if (Spike.VisualTransportSpike.Available)
+            {
+                items.Add(new MainMenuItem
+                {
+                    Description = "[UPS] Spike: visual transport test",
+                    Action = _ => Spike.VisualTransportSpike.Run(PlayniteApi)
+                });
+            }
+
             // Export entire music library as M3U playlist
             items.Add(new MainMenuItem
             {
