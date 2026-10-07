@@ -20,11 +20,15 @@ namespace UniPlaySong.Spike
     internal static class VisualTransportSpike
     {
         private const string SpikeDir = @"C:\Projects\UniPSound\UniPlaySong\native\vistransport-spike\obj";
-        private static string Producer => Path.Combine(SpikeDir, "vt_producer.exe");
+        private static string TestProducer => Path.Combine(SpikeDir, "vt_producer.exe");
+        // Spike B: projectM renderer, used when it and the (locally downloaded, never bundled) preset pack exist.
+        private static string MilkDrop => Path.Combine(SpikeDir, "vt_milkdrop.exe");
+        private const string PresetDir = @"C:\Projects\projectm-src\presets-cream-of-the-crop";
+        private static bool UseMilkDrop => File.Exists(MilkDrop) && Directory.Exists(PresetDir);
         private static string Helper => Path.Combine(SpikeDir, "vt_consumer32.dll");
         private static string ResultsDir => Path.Combine(SpikeDir, "results");
 
-        public static bool Available => File.Exists(Producer) && File.Exists(Helper);
+        public static bool Available => File.Exists(TestProducer) && File.Exists(Helper);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr LoadLibraryW(string path);
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr CreateEventW(IntPtr a, bool manual, bool initial, string name);
@@ -37,18 +41,34 @@ namespace UniPlaySong.Spike
 
         private const int OffMagic = 0, OffWidth = 4, OffHeight = 8, OffHandles = 16, OffLatest = 40, OffFrame = 48, OffQpc = 56, OffStop = 80;
         private const uint Magic = 0x31585456u;
-        private const int Seconds = 8;
+        private const int Seconds = 12;
 
         public static void Run(IPlayniteAPI api)
         {
-            // DllImport by name binds to an already-loaded module, so load the spike helper from its own folder first.
-            LoadLibraryW(Helper);
+            // DllImport by name binds to an already-loaded module, so load the helper first - from a temp copy, so a
+            // running Playnite doesn't lock the spike's build output.
+            string helperCopyDir = Path.Combine(Path.GetTempPath(), "ups_vt_spike");
+            Directory.CreateDirectory(helperCopyDir);
+            string helperCopy = Path.Combine(helperCopyDir, "vt_consumer32.dll");
+            try { File.Copy(Helper, helperCopy, true); } catch (IOException) { /* already loaded from an earlier run */ }
+            LoadLibraryW(helperCopy);
             Directory.CreateDirectory(ResultsDir);
             string mode = api.ApplicationInfo.Mode == ApplicationMode.Fullscreen ? "fullscreen" : "desktop";
-            string tag = $"playnite-{mode}{(api.ApplicationSettings.DisableHwAcceleration ? "-swrender" : "")}";
+            string tag = $"playnite-{mode}{(api.ApplicationSettings.DisableHwAcceleration ? "-swrender" : "")}{(UseMilkDrop ? "-milkdrop" : "")}";
             string resultsPath = Path.Combine(ResultsDir, tag + ".txt"), shotPath = Path.Combine(ResultsDir, tag + ".png");
 
-            var producer = Process.Start(new ProcessStartInfo(Producer, "1280 720 60 30 ondemand") { UseShellExecute = false, CreateNoWindow = true });
+            var producer = UseMilkDrop
+                ? Process.Start(new ProcessStartInfo(MilkDrop, $"\"{PresetDir}\" 1280 720 luma 20")
+                    { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true })
+                : Process.Start(new ProcessStartInfo(TestProducer, "1280 720 60 30 ondemand") { UseShellExecute = false, CreateNoWindow = true });
+            var rendererLog = new System.Text.StringBuilder();
+            if (UseMilkDrop)
+            {
+                producer.OutputDataReceived += (s2, e2) => { if (e2.Data != null) lock (rendererLog) rendererLog.AppendLine(e2.Data); };
+                producer.ErrorDataReceived += (s2, e2) => { };
+                producer.BeginOutputReadLine();
+                producer.BeginErrorReadLine();
+            }
             MemoryMappedFile mmf = null;
             for (int i = 0; i < 50 && mmf == null; i++)
             {
@@ -167,8 +187,10 @@ namespace UniPlaySong.Spike
                 view.Write(OffStop, 1);
                 SetEvent(tick);
                 vt_shutdown();
-                File.WriteAllText(resultsPath, error ?? summary ?? "closed early");
                 try { if (!producer.WaitForExit(3000)) producer.Kill(); } catch { }
+                string renderer;
+                lock (rendererLog) renderer = rendererLog.ToString();
+                File.WriteAllText(resultsPath, (error ?? summary ?? "closed early") + (UseMilkDrop ? Environment.NewLine + "renderer:" + Environment.NewLine + renderer : ""));
                 view.Dispose(); mmf.Dispose();
                 api.Dialogs.ShowMessage(error ?? summary ?? "closed early", "UPS spike: visual transport");
             };
