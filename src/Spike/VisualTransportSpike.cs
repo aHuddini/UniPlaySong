@@ -24,7 +24,7 @@ namespace UniPlaySong.Spike
         // Spike B: projectM renderer, used when it and the (locally downloaded, never bundled) preset pack exist.
         private static string MilkDrop => Path.Combine(SpikeDir, "vt_milkdrop.exe");
         private const string PresetDir = @"C:\Projects\projectm-src\presets-cream-of-the-crop";
-        private static bool UseMilkDrop => File.Exists(MilkDrop) && Directory.Exists(PresetDir);
+        public static bool MilkDropAvailable => File.Exists(MilkDrop) && Directory.Exists(PresetDir);
         private static string Helper => Path.Combine(SpikeDir, "vt_consumer32.dll");
         private static string ResultsDir => Path.Combine(SpikeDir, "results");
 
@@ -43,7 +43,18 @@ namespace UniPlaySong.Spike
         private const uint Magic = 0x31585456u;
         private const int Seconds = 12;
 
-        public static void Run(IPlayniteAPI api)
+        // Spike B variants, one menu entry each: transparency mode, and switches to isolate the audio stutter.
+        public static readonly (string Label, string Mode, string Env)[] Variants =
+        {
+            ("projectM, soft key", "soft", null),
+            ("projectM, additive", "additive", null),
+            ("projectM, soft key, audio capture OFF", "soft", "VT_NOAUDIO"),
+            ("projectM, soft key, rendering OFF", "soft", "VT_NORENDER"),
+        };
+
+        public static void Run(IPlayniteAPI api) => Run(api, null, null, false);
+
+        public static void Run(IPlayniteAPI api, string alphaMode, string env, bool milkDrop)
         {
             // DllImport by name binds to an already-loaded module, so load the helper first - from a temp copy, so a
             // running Playnite doesn't lock the spike's build output.
@@ -54,13 +65,20 @@ namespace UniPlaySong.Spike
             LoadLibraryW(helperCopy);
             Directory.CreateDirectory(ResultsDir);
             string mode = api.ApplicationInfo.Mode == ApplicationMode.Fullscreen ? "fullscreen" : "desktop";
-            string tag = $"playnite-{mode}{(api.ApplicationSettings.DisableHwAcceleration ? "-swrender" : "")}{(UseMilkDrop ? "-milkdrop" : "")}";
+            bool UseMilkDrop = milkDrop && MilkDropAvailable;
+            string tag = $"playnite-{mode}{(api.ApplicationSettings.DisableHwAcceleration ? "-swrender" : "")}" +
+                         (UseMilkDrop ? $"-milkdrop-{alphaMode}{(env != null ? "-" + env.ToLowerInvariant() : "")}" : "");
             string resultsPath = Path.Combine(ResultsDir, tag + ".txt"), shotPath = Path.Combine(ResultsDir, tag + ".png");
 
-            var producer = UseMilkDrop
-                ? Process.Start(new ProcessStartInfo(MilkDrop, $"\"{PresetDir}\" 1280 720 luma 20")
-                    { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true })
-                : Process.Start(new ProcessStartInfo(TestProducer, "1280 720 60 30 ondemand") { UseShellExecute = false, CreateNoWindow = true });
+            ProcessStartInfo psi;
+            if (UseMilkDrop)
+            {
+                psi = new ProcessStartInfo(MilkDrop, $"\"{PresetDir}\" 1280 720 {alphaMode} 20")
+                    { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+                if (env != null) psi.EnvironmentVariables[env] = "1";
+            }
+            else psi = new ProcessStartInfo(TestProducer, "1280 720 60 30 ondemand") { UseShellExecute = false, CreateNoWindow = true };
+            var producer = Process.Start(psi);
             var rendererLog = new System.Text.StringBuilder();
             if (UseMilkDrop)
             {

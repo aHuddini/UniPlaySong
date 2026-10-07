@@ -5470,6 +5470,16 @@ namespace UniPlaySong
                     Description = "[UPS] Spike: visual transport test",
                     Action = _ => Spike.VisualTransportSpike.Run(PlayniteApi)
                 });
+                if (Spike.VisualTransportSpike.MilkDropAvailable)
+                    foreach (var v in Spike.VisualTransportSpike.Variants)
+                    {
+                        var variant = v;
+                        items.Add(new MainMenuItem
+                        {
+                            Description = "[UPS] Spike B: " + variant.Label,
+                            Action = _ => Spike.VisualTransportSpike.Run(PlayniteApi, variant.Mode, variant.Env, true)
+                        });
+                    }
             }
 
             // Export entire music library as M3U playlist

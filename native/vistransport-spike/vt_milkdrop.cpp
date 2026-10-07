@@ -11,6 +11,7 @@
 // Audio: WASAPI loopback of the default output, polled on the render thread (spike only; the feature will take
 // UPS's own PCM instead of everything the PC plays).
 #define NOMINMAX
+#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include <d3d11.h>
 #include <dxgi.h>
@@ -130,10 +131,19 @@ int main(int argc, char** argv)
     int w = argc > 2 ? std::atoi(argv[2]) : 1280, h = argc > 3 ? std::atoi(argv[3]) : 720;
     const char* mode = argc > 4 ? argv[4] : "luma";
     int presetSeconds = argc > 5 ? std::atoi(argv[5]) : 10;
-    int alphaMode = !std::strcmp(mode, "opaque") ? 0 : !std::strcmp(mode, "additive") ? 2 : 1;
+    // opaque | luma (coverage = brightest channel) | soft (luma with a dead zone: below ~16% brightness fully
+    // see-through, full cover from ~63%) | additive (alpha 0: only ever adds light).
+    int alphaMode = !std::strcmp(mode, "opaque") ? 0 : !std::strcmp(mode, "additive") ? 2 : !std::strcmp(mode, "soft") ? 3 : 1;
+    uint8_t softCurve[256];
+    for (int v = 0; v < 256; v++)
+    {
+        double t = (v - 40) / 120.0; t = t < 0 ? 0 : t > 1 ? 1 : t;
+        softCurve[v] = (uint8_t)(255 * t * t * (3 - 2 * t) + 0.5); // smoothstep(40, 160)
+    }
     // "free": no consumer pacing, render as fast as possible for N seconds (raw throughput measurement).
     // Isolation switches via the environment: VT_NORENDER skips projectM, VT_NOUPLOAD skips readback + upload.
     bool noRender = std::getenv("VT_NORENDER") != nullptr, noUpload = std::getenv("VT_NOUPLOAD") != nullptr;
+    bool noAudio = std::getenv("VT_NOAUDIO") != nullptr; // stutter isolation: no loopback capture at all
     int freeSeconds = argc > 6 && !std::strcmp(argv[6], "free") ? (argc > 7 ? std::atoi(argv[7]) : 10) : 0;
 
     // D3D11 side: identical to the Spike A producer, so the consumer and Playnite harness need no changes.
@@ -177,7 +187,9 @@ int main(int argc, char** argv)
     std::printf("projectM %dx%d, %u presets from %s, alpha mode %s\n", w, h, added, presetDir, mode);
     std::fflush(stdout);
 
-    Loopback audio; audio.Open();
+    Loopback audio;
+    if (!noAudio) audio.Open();
+    std::printf("switches: render %s, upload %s, audio capture %s\n", noRender ? "off" : "on", noUpload ? "off" : "on", noAudio ? "off" : "on");
     std::vector<uint8_t> gl(frameBytes), out(frameBytes);
     LARGE_INTEGER freq, start, t0, t1, t2, t3; QueryPerformanceFrequency(&freq); QueryPerformanceCounter(&start);
     double sumRender = 0, sumRead = 0, sumConvert = 0, maxTotal = 0;
@@ -195,7 +207,7 @@ int main(int argc, char** argv)
         int i = (int)(frame % VT_BUFFERS);
 
         QueryPerformanceCounter(&t0);
-        audio.Drain(pm);
+        if (!noAudio) audio.Drain(pm);
         if (!noRender) projectm_opengl_render_frame(pm);
         glFinish();
         QueryPerformanceCounter(&t1);
@@ -212,7 +224,8 @@ int main(int argc, char** argv)
             for (int x = 0; x < w; x++, s += 4, d += 4)
             {
                 d[0] = s[0]; d[1] = s[1]; d[2] = s[2];
-                d[3] = alphaMode == 0 ? 255 : alphaMode == 2 ? 0 : std::max(s[0], std::max(s[1], s[2]));
+                uint8_t m = std::max(s[0], std::max(s[1], s[2]));
+                d[3] = alphaMode == 0 ? 255 : alphaMode == 2 ? 0 : alphaMode == 3 ? softCurve[m] : m;
             }
         }
         if (!noUpload) { d3d->UpdateSubresource(tex[i], 0, nullptr, out.data(), w * 4, 0); d3d->Flush(); }
