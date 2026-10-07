@@ -20,17 +20,19 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.8.9
+## What's New - v1.8.10
 
 ### Added
-- Add Music Folder: copy a whole folder of songs into a game's music folder in one go, from the game's right-click menu or the controller menu.
+- Equalizer (EQ): a 15-band (or classic 10-band) equalizer with presets, under Live Effects and Quick Start. Works with or without Live Effects. ([#96](https://github.com/aHuddini/UniPlaySong/issues/96))
+- Experimental: alternative visualizer sync keeps the visualizer, peak meter and glow in time with what you hear (Settings → Experimental).
 
 ### Fixed
-- Set Primary Song and Add Music File now accept retro chiptune and PlayStation files, not only mp3, wav, ogg and flac.
-- SignalRGB, Rainmeter and YASB no longer pause your music — they are on the External Audio ignore list by default, where you can remove them.
+- Themes that show Now Playing cover art no longer pile up image files on disk; the leftovers are cleaned up automatically.
+- PlayStation (PSF) songs now loop and restart instead of going silent.
+- Failed downloads and previews now say why (like browser cookies yt-dlp can't read) and where to find the log.
 
 ### Previous Version
-- **v1.8.8**: Added PlayStation 1 music and listening history, fixed idle Calm Down, and marked the Achievements page Legacy now that PlayniteAchievements plays its own sounds.
+- **v1.8.9**: Added Add Music Folder; Set Primary Song and Add Music File accept chiptune and PSF files; SignalRGB, Rainmeter and YASB no longer pause your music.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
@@ -45,6 +47,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 
 - **Playback Customization** - Fade effects, preview duration (15s-1min), random song selection
 - **Live Reverb Effects** - Real-time reverb effects with 18 Audacity-derived presets and custom controls to enhance preview audio (pairs well with Fullscreen theme aesthetics)
+- **Equalizer** - 15-band (or classic 10-band) graphic EQ with presets, working with or without Live Effects
 - **Audio-Reactive Visualizer** - Real-time spectrum visualizer with 22 color themes including Dynamic game-art colors, tuning presets, and per-bar gradient rendering (Desktop mode)
 - **Controller Support** - Full Xbox controller navigation for music management in fullscreen mode
 - **Audio Editing** - Amplify/Trim tools, audio normalization, and batch operations

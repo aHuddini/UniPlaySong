@@ -675,12 +675,12 @@ page it appears on will be cleared by a button the user never associated with it
 | Group | Pages |
 |---|---|
 | **About** | Overview (What's New, Troubleshooting), Credits, Links, Donate |
-| **Quick Start** | Profiles |
+| **Quick Start** | Profiles, Equalizer (EQ) |
 | **Setup** | Tools, Downloads, Automations |
 | **General** | Media Controls, Tagging, Performance, Miscellaneous |
 | **Playback** | Startup, Music Mode, Default Music, Randomization, Trigger Methods, Global Override |
 | **Pauses** | Common Events, External Audio |
-| **Live Effects** | Volume, Fade Transitions, Live Effects, Calm Down, Visualizers |
+| **Live Effects** | Volume, Fade Transitions, Live Effects, Equalizer (EQ), Calm Down, Visualizers |
 | **Gamification** | Library Events, Achievements (Legacy), ControlUp, Miscellaneous |
 | **Library** | Statistics, Audio Editing, Audio Management |
 | **Advanced** | Theme Support, Backup, Migration, Cleanup, Debug, Experimental |

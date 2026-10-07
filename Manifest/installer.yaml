@@ -2,7 +2,7 @@
 Packages:
   - Version: 1.8.10
     RequiredApiVersion: 6.16.0
-    ReleaseDate: 2026-09-27
+    ReleaseDate: 2026-10-06
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.8.10/UniPlaySong-1_8_10.pext'
     Changelog:
       - '[New Feature] Equalizer (EQ): a 15-band (or classic 10-band) equalizer with presets (Bass Boost, Vocal, Rock and more), under Live Effects -> Equalizer (EQ) and Quick Start. Works with or without Live Effects.'

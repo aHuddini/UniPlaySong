@@ -4,6 +4,27 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.8.10] - 2026-10-06
+
+### Added
+
+- Added Equalizer (EQ) (#96): a 15-band (2/3-octave, default) or 10-band graphic EQ, ±12 dB per band plus preamp and nine presets, under Live Effects and Quick Start; works without the Live Effects master switch
+- Added solved EQ band gains after Spotifast's `eq.rs` (MIT): digital-bandwidth peaking filters adjusted together so every preset plays within 0.1 dB of its sliders; NAudio's `PeakingEQ` came out too narrow near the top bands
+- Added experimental alternative audio-reactive visualizer sync (Advanced -> Experimental): bars, meters and glow follow the frame being heard via the device's played position, instead of the newest output block ~350 ms ahead
+
+### Fixed
+
+- Fixed Now Playing cover art leaking one file per song change (40,202 files, 8.2 GB on one machine); art is now content-addressed in `NowPlayingArt\`, swept with retry, and resolved off the UI thread
+- Fixed a UI hang introduced by moving the art step to a worker: Now Playing settings now change only on the UI thread, since `MainView.SelectedGames` is a synchronous dispatcher call
+- Fixed PSF songs going silent and spinning on end-of-song when looping or restarting; a seek to zero now reboots the engine from a zeroed state, with `psf.dll` unchanged
+- Fixed failed downloads and previews giving no cause (#99): yt-dlp errors are classified (browser cookies, bot check, broken yt-dlp, network, FFmpeg, unavailable, disk) and dialogs show the reason and the real `extensions.log` path
+
+### Changed
+
+- Visualizer taps read settings through a live getter, so visualizer tuning now applies mid-song after a settings save instead of on the next song
+- Corrected the Visualizers timer-mode text: the default mode updates about 20 times a second, not 43
+- The test project builds x86 so tests can load the bundled native DLLs, matching 32-bit Playnite
+
 ## [1.8.9] - 2026-09-27
 
 ### Added

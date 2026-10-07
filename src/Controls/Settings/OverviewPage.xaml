@@ -38,10 +38,13 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: Add Music Folder &#8212; copy a whole folder of songs into a game in one go (right-click menu or controller menu).
+                        Added: Equalizer (EQ) &#8212; 15 or 10 bands with presets, under Live Effects and Quick Start.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: Set Primary Song accepts chiptune and PlayStation files, and SignalRGB, Rainmeter and YASB no longer pause your music.
+                        Fixed: Now Playing cover art no longer fills your disk, PSF songs loop properly, and failed downloads say why.
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}">
+                        Experimental: visualizer sync that keeps the bars in time with what you hear.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:

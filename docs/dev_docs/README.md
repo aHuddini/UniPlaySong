@@ -17,7 +17,7 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](Theme%
 
 | Doc | Covers |
 |---|---|
-| [NAUDIO_PIPELINE.md](features/NAUDIO_PIPELINE.md) | The persistent-mixer architecture, per-sample volume ramping, the five fade curves, song-end detection, format normalization, the logical-pause mechanism, and how the NAudio backend compares to SDL2. |
+| [NAUDIO_PIPELINE.md](features/NAUDIO_PIPELINE.md) | The persistent-mixer architecture, per-sample volume ramping, the five fade curves, song-end detection, format normalization, the logical-pause mechanism, the graphic equalizer stage, the experimental visualizer sync, and how the NAudio backend compares to SDL2. |
 | [SUPPORTED_FILE_FORMATS.md](SUPPORTED_FILE_FORMATS.md) | Standard formats plus retro chiptune via GME, and the backend auto-switch that GME files trigger. |
 | [CHIPTUNE_GME_DLL_BUILD.md](features/CHIPTUNE_GME_DLL_BUILD.md) | Building the Game Music Emu native library. |
 | [PSF_ENGINE_BUILD.md](features/PSF_ENGINE_BUILD.md) | Building the PlayStation PSF engine (`psf.dll`) and where its sources come from. |
@@ -58,4 +58,4 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](Theme%
 
 ---
 
-**Last updated**: 2026-09-27 · **Covers**: v1.8.9
+**Last updated**: 2026-10-06 · **Covers**: v1.8.10

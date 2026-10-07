@@ -14,9 +14,13 @@ A single `WaveOutEvent` + `MixingSampleProvider` lives for the lifetime of the p
 
 ```
 Persistent layer (created once on first Load, never stopped until Dispose):
-    MixingSampleProvider (44100Hz, stereo, float — ReadFully=true, outputs silence when empty)
-        → SmoothVolumeSampleProvider (per-sample curve ramp, fader controls this)
-            → WaveOutEvent (Init + Play called once, runs forever)
+    _mixer: MixingSampleProvider (44100Hz, stereo, float — ReadFully=true, outputs silence when empty)
+        → CalmDownProcessor
+            → SmoothVolumeSampleProvider (per-sample curve ramp, fader controls this)
+                → _outputMixer: MixingSampleProvider (+ external source, post-master)
+                    → Equalizer (graphic EQ; passthrough when off or flat)
+                        → OutputClock (counts frames handed to the device)
+                            → WaveOutEvent (Init + Play called once, runs forever)
 
 Per-song chain (created on Load, removed on Close):
     AudioFileReader / OggFileReader (NVorbis for .ogg files)
@@ -71,6 +75,31 @@ The mute-and-replace physics: the loopback tap is **post** session-volume, so th
 Idle audio-device teardown (issue #81) must NOT fire while effected Spotify is audible: `SleepCoordinator.isAudible` counts `SpotifyLiveEffectsHost.IsEffecting`, and lock/suspend shut the host down (unmuting Spotify) and rebuild on resume.
 
 See `docs/dev_docs/features/SPOTIFY_INTEGRATION.md` for the capture path and `SpotifyEffectsCoordinator`'s dry-output mute invariant, and `TECHNICAL_REFERENCE.md` for the capture approaches ruled out.
+
+## Equalizer — v1.8.10
+
+`Audio/Equalizer.cs` is the last stage before `OutputClock`, so it shapes game music, crossfades and an
+external (effected Spotify) source alike. Settings: Live Effects → Equalizer (EQ), shown again under Quick Start
+(one `EqualizerPage` control in both places, bound to the same settings).
+
+- **Layouts.** 15 bands (2/3-octave, 25 Hz–16 kHz, the default) or 10 (Winamp's, 60 Hz–16 kHz), chosen by
+  `EqualizerBandCount`. Each layout keeps its own curve (`EqualizerBand*`, `Equalizer15Band*`); a curve's layout is
+  told by its length. ±12 dB per band plus `EqualizerPreampDb`.
+- **Filters.** Audio EQ Cookbook peaking filters in the digital bandwidth form, each reaching halfway (in octaves)
+  to its neighbours; the outer bands extend three octaves below and one above. NAudio's `PeakingEQ` takes an analog
+  Q and comes out too narrow near the top bands.
+- **Solved gains.** Neighbouring filters overlap and add up, so `SolveGains` adjusts all gains together (Gaussian
+  elimination over the per-dB interaction matrix, up to six rounds, ±36 dB guard) until the response meets every
+  slider at its centre. Every preset plays within 0.1 dB of its sliders in both layouts.
+- **Presets** are written for 10 bands; the 15-band versions are `CarryCurve` of them — what the 10-band curve plays
+  at the 15 centres. Switching layouts in the page carries a custom curve the same way.
+- **Backend.** `EqualizerEnabled` forces NAudio like Calm Down, at all three decision points: `CreateMusicPlayer`,
+  the settings diff, and the live property-changed path (the dialog edits the live object, so ticking it while SDL2
+  plays switches at once).
+- Off, or every band and the preamp at 0, audio passes through untouched. When active, output goes through
+  `EffectsChain.SoftKneeLimiter`.
+- The page's vertical faders are its own template (`EqSlider`): Playnite's theme rotates a vertical slider and sizes
+  the track from `Height`, which collapses it.
 
 ## Volume Ramping (SmoothVolumeSampleProvider)
 
@@ -176,6 +205,24 @@ Temporal smoothing uses asymmetric rise/fall alphas that vary by frequency:
 
 Alphas are scaled by FFT size — larger windows update less frequently, so need higher alphas for equivalent visual responsiveness. Settings: `VizFftRiseLow`, `VizFftRiseHigh`, `VizFftFallLow`, `VizFftFallHigh` (int, 0-100).
 
+### Alternative Sync (Experimental) — v1.8.10
+
+`WaveOutEvent` pulls 150 ms blocks and keeps two queued, so a tap sees audio ~350 ms before it is heard (measured
+with WASAPI loopback). By default the tap analyses the newest 1024 samples of each block. With
+`AlternativeAudioReactiveVisualizerSync` on (Advanced → Experimental), the taps on `NAudioMusicPlayer` (primary,
+crossfade secondary, external) use `OutputClock`:
+
+- `OutputClock` counts frames handed to the device; with `WaveOutEvent.GetPosition()` (32-bit, wraps after ~3.4 h:
+  taken modulo 2^32) that gives what is queued. One per player, re-attached on each persistent-layer rebuild.
+- Each `Read` records the device frame its block ends on; the window ends at the frame being heard, less a
+  measured 40 ms (`DeviceLatencyFrames`) the position count can't see.
+- Updates run every ~15 ms and average the power of quarter-overlapping Hann windows covering everything played
+  since the last update, so a short hit counts the same wherever it lands.
+- Peak/RMS come from the same 150 ms window. Smoothing is time-based: rise per 23 ms hop, fall per ~49 ms.
+- Taps without a clock (the Spotify viz-only pump, which analyses audio already played) keep the default behaviour.
+
+Taps read settings through a live getter (`Func<UniPlaySongSettings>`), since a settings save replaces the object.
+
 ### Fullscreen Gate
 
 `VisualizationDataProvider.Paused` skips FFT computation when the desktop visualizer is not visible (fullscreen mode). Audio passthrough is unaffected. `GlobalPaused` static property propagates to newly created providers (one per song).
@@ -260,6 +307,9 @@ Not all fader-bypass paths use `onReady` (e.g. `ResumeImmediate`): those set vol
 | `Services/NAudioMusicPlayer.cs` | Persistent mixer + per-song chain management |
 | `Audio/SmoothVolumeSampleProvider.cs` | Per-sample curve ramp (5 curve types) |
 | `Audio/VisualizationDataProvider.cs` | FFT + peak/RMS tap for spectrum visualizer |
+| `Audio/OutputClock.cs` | Frames submitted vs played, for the experimental visualizer sync |
+| `Audio/Equalizer.cs` | Graphic EQ stage (15 or 10 bands, solved gains, presets) |
+| `Controls/Settings/EqualizerPage.xaml` | EQ page and its fader template (shown in Live Effects and Quick Start) |
 | `Audio/EffectsChain.cs` | Reverb + echo + EQ pipeline (style presets) |
 | `Players/MusicFader.cs` | Ramp monitor + action dispatcher |
 | `Services/IMusicPlayer.cs` | Player interface (shared by NAudio + SDL2) |
