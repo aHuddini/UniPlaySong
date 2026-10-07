@@ -94,6 +94,9 @@ namespace UniPlaySong.Common
                         if (peak <= peakThreshold) continue;
 
                         var name = ResolveProcessNameCached(pid);
+                        // SPIKE (feature/music-visual-control): the visualizer renderer captures the speakers to react to
+                        // the music, so its session's level IS the music. Never external, whoever launched it.
+                        if (name == "vt_milkdrop") continue;
                         if (excludedProcessNames != null && excludedProcessNames.Count > 0
                             && name != null && excludedProcessNames.Contains(name))
                             continue;

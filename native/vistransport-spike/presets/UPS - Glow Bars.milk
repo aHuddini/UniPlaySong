@@ -1,0 +1,157 @@
+[preset00]
+MILKDROP_PRESET_VERSION=201
+PSVERSION=2
+PSVERSION_WARP=2
+PSVERSION_COMP=2
+fRating=5.0
+fGammaAdj=1.0
+fDecay=1.0
+fVideoEchoZoom=1.0
+fVideoEchoAlpha=0.0
+nVideoEchoOrientation=0
+nWaveMode=0
+bAdditiveWaves=0
+bWaveDots=0
+bWaveThick=0
+bModWaveAlphaByVolume=0
+bMaximizeWaveColor=0
+bTexWrap=0
+bDarkenCenter=0
+bRedBlueStereo=0
+bBrighten=0
+bDarken=0
+bSolarize=0
+bInvert=0
+fWaveAlpha=0.0
+fWaveScale=1.0
+fWaveSmoothing=0.0
+fWaveParam=0.0
+fWarpAnimSpeed=1.0
+fWarpScale=1.0
+fZoomExponent=1.0
+fShader=0.0
+zoom=1.0
+rot=0.0
+cx=0.5
+cy=0.5
+dx=0.0
+dy=0.0
+warp=0.0
+sx=1.0
+sy=1.0
+wave_r=0.0
+wave_g=0.0
+wave_b=0.0
+wave_a=0.0
+ob_size=0.0
+ob_a=0.0
+ib_size=0.0
+ib_a=0.0
+nMotionVectorsX=0.0
+nMotionVectorsY=0.0
+mv_a=0.0
+b1ed=0.0
+wavecode_0_enabled=1
+wavecode_0_samples=512
+wavecode_0_sep=0
+wavecode_0_bSpectrum=1
+wavecode_0_bUseDots=0
+wavecode_0_bDrawThick=0
+wavecode_0_bAdditive=0
+wavecode_0_scaling=1.0
+wavecode_0_smoothing=0.0
+wavecode_0_r=0
+wavecode_0_g=0
+wavecode_0_b=0
+wavecode_0_a=0
+wave_0_per_point1=i=floor(sample*511+0.5);
+wave_0_per_point2=gmem[1000+i]=(value1+value2)*0.5;
+wave_0_per_point3=a=0;
+per_frame_1=dt=1/max(fps, 15); n=32; lo=1.5; hi=300.0; loudest=0; total=0; bi=0;
+per_frame_2=loop(n,
+per_frame_3=  f0=lo*pow(hi/lo, bi/n); f1=lo*pow(hi/lo, (bi+1)/n);
+per_frame_4=  v=0;
+per_frame_5=  f1-f0 < 1 ? (
+per_frame_6=    c=(f0+f1)/2; i=floor(c); t=c-i;
+per_frame_7=    v=gmem[1000+i]*(1-t) + gmem[1001+i]*t;
+per_frame_8=  ) : (
+per_frame_9=    i=floor(f0);
+per_frame_10=    loop(floor(f1)-floor(f0)+1, v=max(v, gmem[1000+i]); i+=1;);
+per_frame_11=  );
+per_frame_12=  v*=1+1.5*bi/n;
+per_frame_13=  gmem[200+bi]=v;
+per_frame_14=  loudest=max(loudest, v);
+per_frame_15=  bi+=1;
+per_frame_16=);
+per_frame_17=reg00=max(max(loudest, reg00*pow(0.5, dt/4)), 0.02);
+per_frame_18=bi=0;
+per_frame_19=loop(n,
+per_frame_20=  t=min(1, max(0, 1+20*log10(max(gmem[200+bi], 0.00001)/reg00)/30));
+per_frame_21=  h=gmem[bi];
+per_frame_22=  h=t > h ? h+(t-h)*min(1, dt*14.0) : max(t, h-dt*0.8);
+per_frame_23=  gmem[bi]=h;
+per_frame_24=  total+=h;
+per_frame_25=  pk=gmem[100+bi];
+per_frame_26=  pk > h ? (
+per_frame_27=    gmem[300+bi] > 0 ? (gmem[300+bi]-=dt;) : (pk=max(h, pk-dt*0.35););
+per_frame_28=  ) : (
+per_frame_29=    pk=h; gmem[300+bi]=0.4;
+per_frame_30=  );
+per_frame_31=  gmem[100+bi]=pk;
+per_frame_32=  bi+=1;
+per_frame_33=);
+per_frame_34=reg01=reg01+(total/n-reg01)*min(1, dt*6);
+per_frame_35=reg02=0.19/aspecty; reg03=0.44-reg02;
+per_frame_36=q1=floor(gmem[0]*999)+min(gmem[1], 0.999);
+per_frame_37=q2=floor(gmem[2]*999)+min(gmem[3], 0.999);
+per_frame_38=q3=floor(gmem[4]*999)+min(gmem[5], 0.999);
+per_frame_39=q4=floor(gmem[6]*999)+min(gmem[7], 0.999);
+per_frame_40=q5=floor(gmem[8]*999)+min(gmem[9], 0.999);
+per_frame_41=q6=floor(gmem[10]*999)+min(gmem[11], 0.999);
+per_frame_42=q7=floor(gmem[12]*999)+min(gmem[13], 0.999);
+per_frame_43=q8=floor(gmem[14]*999)+min(gmem[15], 0.999);
+per_frame_44=q9=floor(gmem[16]*999)+min(gmem[17], 0.999);
+per_frame_45=q10=floor(gmem[18]*999)+min(gmem[19], 0.999);
+per_frame_46=q11=floor(gmem[20]*999)+min(gmem[21], 0.999);
+per_frame_47=q12=floor(gmem[22]*999)+min(gmem[23], 0.999);
+per_frame_48=q13=floor(gmem[24]*999)+min(gmem[25], 0.999);
+per_frame_49=q14=floor(gmem[26]*999)+min(gmem[27], 0.999);
+per_frame_50=q15=floor(gmem[28]*999)+min(gmem[29], 0.999);
+per_frame_51=q16=floor(gmem[30]*999)+min(gmem[31], 0.999);
+warp_1=`float Q(float k) { return q1 * (step(-0.5, k) - step(0.5, k)) + q2 * (step(0.5, k) - step(1.5, k)) + q3 * (step(1.5, k) - step(2.5, k)) + q4 * (step(2.5, k) - step(3.5, k)) + q5 * (step(3.5, k) - step(4.5, k)) + q6 * (step(4.5, k) - step(5.5, k)) + q7 * (step(5.5, k) - step(6.5, k)) + q8 * (step(6.5, k) - step(7.5, k)) + q9 * (step(7.5, k) - step(8.5, k)) + q10 * (step(8.5, k) - step(9.5, k)) + q11 * (step(9.5, k) - step(10.5, k)) + q12 * (step(10.5, k) - step(11.5, k)) + q13 * (step(11.5, k) - step(12.5, k)) + q14 * (step(12.5, k) - step(13.5, k)) + q15 * (step(13.5, k) - step(14.5, k)) + q16 * (step(14.5, k) - step(15.5, k)) + q17 * (step(15.5, k) - step(16.5, k)) + q18 * (step(16.5, k) - step(17.5, k)) + q19 * (step(17.5, k) - step(18.5, k)) + q20 * (step(18.5, k) - step(19.5, k)) + q21 * (step(19.5, k) - step(20.5, k)) + q22 * (step(20.5, k) - step(21.5, k)) + q23 * (step(21.5, k) - step(22.5, k)) + q24 * (step(22.5, k) - step(23.5, k)) + q25 * (step(23.5, k) - step(24.5, k)) + q26 * (step(24.5, k) - step(25.5, k)) + q27 * (step(25.5, k) - step(26.5, k)) + q28 * (step(26.5, k) - step(27.5, k)) + q29 * (step(27.5, k) - step(28.5, k)) + q30 * (step(28.5, k) - step(29.5, k)) + q31 * (step(29.5, k) - step(30.5, k)) + q32 * (step(30.5, k) - step(31.5, k)); }
+warp_2=`float BAR(float i) { float q = Q(floor(i * 0.5)); return frac(i * 0.5) < 0.25 ? floor(q) / 999.0 : frac(q); }
+warp_3=`shader_body
+warp_4=`{
+warp_5=`  float k = 60.0 / max(fps, 15.0);
+warp_6=`  float sgn = 1.0 - 2.0 * step(0.5, uv.y);
+warp_7=`  float2 tuv = uv + float2(sin(uv.y * 9.0 + time * 0.7) * 0.0, 0.0018 * sgn) * k;
+warp_8=`  float3 prev = lerp(tex2D(sampler_main, tuv).xyz, GetBlur1(tuv), 0.6) * pow(0.8, k);
+warp_9=`  float2 p = uv_orig;
+warp_10=`  float gap = 0.19 * texsize.y * texsize.z;
+warp_11=`  float wing = 0.44 - gap;
+warp_12=`  float fx = (abs(p.x - 0.5) - gap) / wing * 32.0;
+warp_13=`  float inWing = step(0.0, fx) * step(fx, 32.0);
+warp_14=`  float i = clamp(floor(fx), 0.0, 31.0);
+warp_15=`  float f = frac(fx) - 0.5;
+warp_16=`  float px = texsize.z * 32.0 / wing;
+warp_17=`  float y = abs(p.y - 0.5);
+warp_18=`  float down = step(0.5, p.y);
+warp_19=`  float h = BAR(i) * 0.30 + 0.004;
+warp_20=`  float inX = saturate((0.30 - abs(f)) / px + 0.5) * inWing;
+warp_21=`  float inY = saturate((h - y) / texsize.w + 0.5);
+warp_22=`  float t = saturate(y / 0.30);
+warp_23=`  float3 col = lerp(float3(0.05, 0.55, 1.0), float3(0.85, 0.35, 1.0), t);
+warp_24=`  col = lerp(col, float3(1.0, 1.0, 1.0), saturate((y - h + 0.008) / 0.008) * 0.25);
+warp_25=`  ret = max(prev, col * inX * inY * (1.0 - 0.55 * down));
+warp_26=`}
+comp_1=`shader_body
+comp_2=`{
+comp_3=`  float3 c = tex2D(sampler_main, uv).xyz;
+comp_4=`  float3 glow = GetBlur1(uv) * 0.6 + GetBlur2(uv) * 0.7;
+comp_5=`  float2 d = (uv - float2(0.5, 0.5)) * float2(0.8, 3.0);
+comp_6=`  float pulse = saturate((bass_att - 0.6) * 0.7);
+comp_7=`  float3 back = float3(0.2, 0.35, 1.0) * exp(-length(d) * 4.0) * (0.10 + 0.35 * pulse);
+comp_8=`  float2 e = min(uv, 1.0 - uv);
+comp_9=`  float fade = smoothstep(0.0, 0.10, e.x) * smoothstep(0.0, 0.14, e.y);
+comp_10=`  ret = saturate((c + glow + back) * fade - 0.02) / 0.98;
+comp_11=`}

@@ -1,0 +1,468 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+                    mc:Ignorable="d">
+
+    <Style TargetType="{x:Type Main}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Main}">
+                    <Grid x:Name="PART_MainHost"
+                          d:DesignWidth="{StaticResource DesignWidth}"
+                          d:DesignHeight="{StaticResource DesignHeight}"
+                          d:DataContext="{x:Static DesignMainViewModel.DesignIntance}">
+                        <Grid x:Name="PART_ViewHost" Background="{DynamicResource MainBackgourndBrush}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <FadeImage x:Name="PART_ImageBackground" Grid.RowSpan="3"
+                                       HorizontalAlignment="Center" VerticalAlignment="Top"/>
+
+                            <Grid Grid.Row="0" Background="{DynamicResource TopBarBackgroundBrush}"
+                                  Height="110">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="100" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="100" />
+                                </Grid.ColumnDefinitions>
+
+                                <FilterPresetSelector x:Name="PART_FilterPresetSelector" Grid.Column="1" Margin="0,0,50,0" />
+
+                                <ContentControl x:Name="PART_ElemBatteryStatus" Focusable="False" FontSize="42"
+                                            VerticalAlignment="Center" Margin="10,0,10,0"
+                                            Grid.Column="2">
+                                    <ContentControl.Style>
+                                        <Style TargetType="ContentControl">
+                                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding PowerStatus.Charge}" Value="Critical">
+                                                    <Setter Property="Content" Value="{DynamicResource BatteryStatusCritical}" />
+                                                    <Setter Property="Foreground" Value="Red" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding PowerStatus.Charge}" Value="Low">
+                                                    <Setter Property="Content" Value="{DynamicResource BatteryStatusLow}" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding PowerStatus.Charge}" Value="Medium">
+                                                    <Setter Property="Content" Value="{DynamicResource BatteryStatusMedium}" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding PowerStatus.Charge}" Value="High">
+                                                    <Setter Property="Content" Value="{DynamicResource BatteryStatusHigh}" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding PowerStatus.IsCharging}" Value="True">
+                                                    <Setter Property="Content" Value="{DynamicResource BatteryStatusCharging}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ContentControl.Style>
+                                </ContentControl>
+
+                                <TextBlock x:Name="PART_TextBatteryPercentage" Style="{DynamicResource TextBlockBaseStyle}"
+                                       VerticalAlignment="Center" Margin="0,0,20,0"
+                                       Grid.Column="3"/>
+
+                                <TextBlock x:Name="PART_TextClock" Style="{DynamicResource TextBlockBaseStyle}"
+                                       VerticalAlignment="Center" Margin="20,0,20,0"
+                                       Grid.Column="4"/>
+
+                                <ButtonEx x:Name="PART_ButtonProgramUpdate" VerticalAlignment="Center"
+                                          Margin="10,0,10,0" Height="48" MinWidth="48"
+                                          Style="{DynamicResource ButtonTopMenu}"                                          
+                                          Grid.Column="5">
+                                    <ButtonEx.Content>
+                                        <TextBlock Text="&#xef08;" FontFamily="{StaticResource FontIcoFont}"                                                   
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2"
+                                                   Foreground="{DynamicResource GlyphLightBrush}" FontSize="30" />
+                                    </ButtonEx.Content>
+                                </ButtonEx>
+
+                                <ButtonEx x:Name="PART_ButtonNotifications" VerticalAlignment="Center"
+                                          Margin="10,0,10,0" Height="48" MinWidth="48"
+                                          Grid.Column="6">
+                                    <Button.Content>
+                                        <Grid>
+                                            <TextBlock Text="&#xeea3;" FontFamily="{StaticResource FontIcoFont}"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2"
+                                                       Foreground="White" FontSize="30" />
+                                            <TextBlock Text="&#x25CF;" Foreground="{DynamicResource GlyphBrush}"
+                                                       HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                                       FontSize="24" Margin="0,0,5,0" />
+                                        </Grid>
+                                    </Button.Content>
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource ButtonTopMenu}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Api Notifications.Count}" Value="0">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </ButtonEx>
+
+                                <ButtonEx x:Name="PART_ButtonMainMenu" VerticalAlignment="Center"
+                                          Style="{DynamicResource ButtonTopMenu}"
+                                          Margin="10,0,10,0" Height="48" MinWidth="48"
+                                          Grid.Column="7">
+                                    <Button.Content>
+                                        <Image RenderOptions.BitmapScalingMode="Fant" Margin="2"
+                                           Source="{ThemeFile 'Images/applogo_clean.png'}" />
+                                    </Button.Content>
+                                </ButtonEx>
+                            </Grid>
+
+                            <DockPanel Grid.Row="1">
+                                <!-- UPS visualizer test: hidden (not collapsed, so Playnite's focus logic is untouched) while the page shows -->
+                                <DockPanel.Style>
+                                    <Style TargetType="DockPanel">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsChecked, ElementName=UpsVisualizerToggle}" Value="True">
+                                                <Setter Property="Opacity" Value="0" />
+                                                <Setter Property="IsHitTestVisible" Value="False" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DockPanel.Style>
+                                <Filters x:Name="PART_ElemFilters"
+                                         DockPanel.Dock="Left" Focusable="False" />
+
+                                <FiltersAdditional x:Name="PART_ElemFiltersAdditional"
+                                                   DockPanel.Dock="Left" Focusable="False" />
+
+                                <ContentControl x:Name="PART_ContentFilterItems"
+                                            DockPanel.Dock="Left" Focusable="False" />
+
+                                <ListBoxEx x:Name="PART_ListGameItems" Margin="25,0,25,0"
+                                           Background="Transparent" BorderThickness="0"
+                                           DockPanel.Dock="Right"
+                                           KeyboardNavigation.DirectionalNavigation="Once" />
+                            </DockPanel>
+
+                            <TextBlock Grid.Row="1" FontSize="40"
+                                       Text="{DynamicResource LOCNoGamesFound}"
+                                       TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource TextBlockBaseStyle}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Items.Count, ElementName=PART_ListGameItems}" Value="0">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+
+                            <!-- UPS Now Playing page, built around UPS's visualizer presets. Stage: the visualizer full-bleed with the
+                                 cover art at its exact centre (inside Halo Ring's ring, above the bars' floor). Strip below: title,
+                                 artist, timeline and transport. The visualizer never takes focus; the transport buttons do. -->
+                            <Grid Grid.Row="1">
+                                <Grid.Style>
+                                    <Style TargetType="Grid">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsChecked, ElementName=UpsVisualizerToggle}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Grid.Style>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <!-- Backdrop: the song's album art, blurred and dimmed over the game art. The cached parent bakes the
+                                     blur in at quarter resolution, so it reruns when the song changes, not on every visualizer frame. -->
+                                <Border Grid.RowSpan="2" IsHitTestVisible="False" ClipToBounds="True">
+                                    <Border.CacheMode>
+                                        <BitmapCache RenderAtScale="0.25" />
+                                    </Border.CacheMode>
+                                    <Image x:Name="UpsArtSource" Source="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingAlbumArtPath}"
+                                           Stretch="UniformToFill" Opacity="0.5">
+                                        <Image.Effect>
+                                            <BlurEffect Radius="60" KernelType="Gaussian" RenderingBias="Performance" />
+                                        </Image.Effect>
+                                    </Image>
+                                </Border>
+                                <!-- Darker towards the floor, so the visualizer's glow and backlight carry the page -->
+                                <Rectangle Grid.RowSpan="2" IsHitTestVisible="False">
+                                    <Rectangle.Fill>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Offset="0" Color="#59000000" />
+                                            <GradientStop Offset="0.55" Color="#99000000" />
+                                            <GradientStop Offset="1" Color="#E6000000" />
+                                        </LinearGradientBrush>
+                                    </Rectangle.Fill>
+                                </Rectangle>
+
+                                <!-- {PluginSettings} only goes on ordinary properties. Fullscreen builds this view before extensions
+                                     load and fixes the binding up afterwards; used directly as a DataTrigger's binding it is
+                                     already sealed by then, and the fix-up crashes Playnite. Triggers read this element instead. -->
+                                <FrameworkElement x:Name="UpsPlayState" Visibility="Collapsed"
+                                                  Tag="{PluginSettings Plugin=UniPlaySong, Path=ActiveMediaIsPlaying}" />
+
+                                <!-- Stage -->
+                                <Grid Grid.Row="0">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="35*" />
+                                        <RowDefinition Height="30*" />
+                                        <RowDefinition Height="35*" />
+                                    </Grid.RowDefinitions>
+                                    <ContentControl x:Name="UPS_MusicVisualControl" Grid.RowSpan="3"
+                                                    Focusable="False" IsHitTestVisible="False" />
+
+                                    <!-- Cover: a disc 30% of the stage's height at its centre - the gap every UPS preset leaves. Layers:
+                                         shadow (static, cached), the record (turns while music plays), then light that stays put
+                                         while the record turns under it: a vinyl sheen, a glimmer sweeping across every few seconds,
+                                         and a highlight circling the rim. Only the small light layers redraw while animating. -->
+                                    <Grid Grid.Row="1" HorizontalAlignment="Center" IsHitTestVisible="False"
+                                          Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}">
+                                        <Ellipse Fill="Black">
+                                            <Ellipse.CacheMode>
+                                                <BitmapCache />
+                                            </Ellipse.CacheMode>
+                                            <Ellipse.Effect>
+                                                <DropShadowEffect BlurRadius="40" ShadowDepth="0" Opacity="0.7" Color="Black" />
+                                            </Ellipse.Effect>
+                                        </Ellipse>
+
+                                        <!-- The record -->
+                                        <Grid RenderTransformOrigin="0.5,0.5">
+                                            <Grid.CacheMode>
+                                                <BitmapCache />
+                                            </Grid.CacheMode>
+                                            <Grid.RenderTransform>
+                                                <RotateTransform />
+                                            </Grid.RenderTransform>
+                                            <Grid.Style>
+                                                <Style TargetType="Grid">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Tag, ElementName=UpsPlayState}" Value="True">
+                                                            <DataTrigger.EnterActions>
+                                                                <BeginStoryboard x:Name="UpsCoverSpin">
+                                                                    <Storyboard>
+                                                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                                                                         By="360" Duration="0:0:30" RepeatBehavior="Forever" />
+                                                                    </Storyboard>
+                                                                </BeginStoryboard>
+                                                            </DataTrigger.EnterActions>
+                                                            <DataTrigger.ExitActions>
+                                                                <PauseStoryboard BeginStoryboardName="UpsCoverSpin" />
+                                                            </DataTrigger.ExitActions>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Grid.Style>
+                                            <!-- No art: a dark disc with a note -->
+                                            <Ellipse Fill="#FF15171C" />
+                                            <TextBlock Text="&#xECA3;" FontFamily="{StaticResource FontIcoFont}" FontSize="64"
+                                                       Foreground="#59FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            <!-- Round crop: a brush maps to the disc's own square, so art of any shape is centre-cropped
+                                                 to the circle (an Image's mask follows the drawn picture, which for non-square art
+                                                 overflows the square). Reads the backdrop's already-loaded art: {PluginSettings} on
+                                                 a brush here would crash Fullscreen at startup. -->
+                                            <Ellipse>
+                                                <Ellipse.Fill>
+                                                    <ImageBrush ImageSource="{Binding Source, ElementName=UpsArtSource}" Stretch="UniformToFill" />
+                                                </Ellipse.Fill>
+                                            </Ellipse>
+                                            <Ellipse Width="14" Height="14" Fill="#E6101216" Stroke="#40FFFFFF" StrokeThickness="1" />
+                                        </Grid>
+
+                                        <!-- Vinyl sheen: two soft light wedges on opposite sides, fixed while the record turns -->
+                                        <Ellipse>
+                                            <Ellipse.Fill>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                    <GradientStop Offset="0.16" Color="#00FFFFFF" />
+                                                    <GradientStop Offset="0.27" Color="#24FFFFFF" />
+                                                    <GradientStop Offset="0.38" Color="#00FFFFFF" />
+                                                    <GradientStop Offset="0.62" Color="#00FFFFFF" />
+                                                    <GradientStop Offset="0.73" Color="#17FFFFFF" />
+                                                    <GradientStop Offset="0.84" Color="#00FFFFFF" />
+                                                </LinearGradientBrush>
+                                            </Ellipse.Fill>
+                                        </Ellipse>
+
+                                        <!-- Glimmer: a narrow shine sweeps across in ~1.2 s, every 7 s -->
+                                        <Ellipse>
+                                            <Ellipse.Fill>
+                                                <LinearGradientBrush StartPoint="0,0.15" EndPoint="1,0.85">
+                                                    <LinearGradientBrush.RelativeTransform>
+                                                        <TranslateTransform X="-1.2" />
+                                                    </LinearGradientBrush.RelativeTransform>
+                                                    <GradientStop Offset="0.42" Color="#00FFFFFF" />
+                                                    <GradientStop Offset="0.5" Color="#66FFFFFF" />
+                                                    <GradientStop Offset="0.58" Color="#00FFFFFF" />
+                                                </LinearGradientBrush>
+                                            </Ellipse.Fill>
+                                            <Ellipse.Triggers>
+                                                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                                    <BeginStoryboard>
+                                                        <Storyboard RepeatBehavior="Forever">
+                                                            <DoubleAnimationUsingKeyFrames Duration="0:0:7"
+                                                                Storyboard.TargetProperty="(Shape.Fill).(Brush.RelativeTransform).(TranslateTransform.X)">
+                                                                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="-1.2" />
+                                                                <DiscreteDoubleKeyFrame KeyTime="0:0:5.8" Value="-1.2" />
+                                                                <EasingDoubleKeyFrame KeyTime="0:0:7" Value="1.2">
+                                                                    <EasingDoubleKeyFrame.EasingFunction>
+                                                                        <SineEase EasingMode="EaseInOut" />
+                                                                    </EasingDoubleKeyFrame.EasingFunction>
+                                                                </EasingDoubleKeyFrame>
+                                                            </DoubleAnimationUsingKeyFrames>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                            </Ellipse.Triggers>
+                                        </Ellipse>
+
+                                        <!-- Rim: a highlight circling the edge once every 9 s -->
+                                        <Ellipse StrokeThickness="2.5">
+                                            <Ellipse.Stroke>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                    <LinearGradientBrush.RelativeTransform>
+                                                        <RotateTransform CenterX="0.5" CenterY="0.5" />
+                                                    </LinearGradientBrush.RelativeTransform>
+                                                    <GradientStop Offset="0" Color="#D9FFFFFF" />
+                                                    <GradientStop Offset="0.35" Color="#1FFFFFFF" />
+                                                    <GradientStop Offset="0.65" Color="#1FFFFFFF" />
+                                                    <GradientStop Offset="1" Color="#59FFFFFF" />
+                                                </LinearGradientBrush>
+                                            </Ellipse.Stroke>
+                                            <Ellipse.Triggers>
+                                                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetProperty="(Shape.Stroke).(Brush.RelativeTransform).(RotateTransform.Angle)"
+                                                                             From="0" To="360" Duration="0:0:9" RepeatBehavior="Forever" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                            </Ellipse.Triggers>
+                                        </Ellipse>
+                                    </Grid>
+                                </Grid>
+
+                                <!-- Strip: title, artist, timeline, transport -->
+                                <StackPanel Grid.Row="1" HorizontalAlignment="Center" Width="760" Margin="0,4,0,22">
+                                    <TextBlock Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingTitle}"
+                                               Style="{DynamicResource TextBlockBaseStyle}" Foreground="White"
+                                               FontSize="34" FontWeight="SemiBold" TextAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingArtist}"
+                                               Style="{DynamicResource TextBlockBaseStyle}" Foreground="White" Opacity="0.7"
+                                               FontSize="20" TextAlignment="Center" TextTrimming="CharacterEllipsis"
+                                               Margin="0,2,0,14" />
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="56" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="56" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{PluginSettings Plugin=UniPlaySong, Path=ActiveMediaPositionText}"
+                                                   Foreground="White" Opacity="0.65" FontSize="15" VerticalAlignment="Center" />
+                                        <ProgressBar Grid.Column="1" Minimum="0" Maximum="100" Height="4" VerticalAlignment="Center"
+                                                     Value="{PluginSettings Plugin=UniPlaySong, Path=ActiveMediaProgress, Mode=OneWay}"
+                                                     Foreground="White" Background="#33FFFFFF" BorderThickness="0" Focusable="False" />
+                                        <TextBlock Grid.Column="2" Text="{PluginSettings Plugin=UniPlaySong, Path=ActiveMediaDurationText}"
+                                                   Foreground="White" Opacity="0.65" FontSize="15" VerticalAlignment="Center"
+                                                   TextAlignment="Right" />
+                                    </Grid>
+                                    <ContentControl x:Name="UPS_MediaControllerTransport" Focusable="False"
+                                                    KeyboardNavigation.IsTabStop="False" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid Grid.Row="2" Background="{DynamicResource TopBarBackgroundBrush}"
+                              Height="100">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="100" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="100" />
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <!--Install-->
+                                    <ButtonEx x:Name="PART_ButtonInstall"
+                                              Style="{DynamicResource ButtonBottomMenu}"
+                                              Content="{DynamicResource LOCInstallGame}" />
+                                    <!--Play-->
+                                    <ButtonEx x:Name="PART_ButtonPlay"
+                                              Style="{DynamicResource ButtonBottomMenu}"
+                                              Content="{DynamicResource LOCPlayGame}" />
+                                    <!--Details-->
+                                    <ButtonEx x:Name="PART_ButtonDetails"
+                                              Style="{DynamicResource ButtonBottomMenu}"
+                                              Content="{DynamicResource LOCGameDetails}" />
+                                    <!--Options-->
+                                    <ButtonEx x:Name="PART_ButtonGameOptions"
+                                              Style="{DynamicResource ButtonBottomMenu}"
+                                              Content="{DynamicResource LOCGameOptions}" />
+                                    <!--Search-->
+                                    <ButtonEx x:Name="PART_ButtonSearch"
+                                              Style="{DynamicResource ButtonBottomMenu}"
+                                              Content="{DynamicResource LOCSearchLabel}" />
+                                    <!--Filter-->
+                                    <ButtonEx x:Name="PART_ButtonFilter"
+                                              Style="{DynamicResource ButtonBottomMenu}"
+                                              Content="{DynamicResource LOCFilter}" />
+                                    <!--UPS visualizer test page-->
+                                    <ToggleButton x:Name="UpsVisualizerToggle"
+                                                  Content="&#9835; Visualizer" FontSize="22" Padding="18,8" Margin="10,0"
+                                                  VerticalAlignment="Center"
+                                                  Background="#EE1DB954" Foreground="White" BorderThickness="0" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2" x:Name="PART_ElemSearchActive"
+                                            VerticalAlignment="Top" HorizontalAlignment="Stretch"
+                                            Margin="0,15,0,0">
+                                    <TextBlock  FontSize="18"                                                
+                                                TextAlignment="Center"
+                                                Style="{DynamicResource TextBlockBaseStyle}"
+                                                Text="{DynamicResource LOCGameListSearchResults}"/>
+                                    <TextBlock  Foreground="White"
+                                                TextAlignment="Center"
+                                                Style="{DynamicResource TextBlockBaseStyle}"
+                                                Text="{Binding AppSettings.Fullscreen.FilterSettings.Name}"/>
+                                </StackPanel>
+
+                                <TextBlock Grid.Column="2" x:Name="PART_ElemExtraFilterActive"
+                                       FontSize="20"
+                                       VerticalAlignment="Center" HorizontalAlignment="Stretch"
+                                       TextAlignment="Center"
+                                       Style="{DynamicResource TextBlockBaseStyle}"
+                                       Text="{DynamicResource LOCGameListExtraFiltered}"/>
+
+                                <StackPanel x:Name="PART_ElemProgressIndicator" Orientation="Horizontal"
+                                        Grid.Column="3" VerticalAlignment="Center">
+                                    <TextBlock x:Name="PART_TextProgressTooltip" 
+                                           Margin="0,0,15,0" FontSize="20" VerticalAlignment="Center"
+                                           Style="{DynamicResource TextBlockBaseStyle}"/>
+                                    <ContentControl Style="{DynamicResource ProgressIndicator}" Focusable="False"
+                                                Height="38" Width="38" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+
+                        <GameDetails x:Name="PART_ElemGameDetails" Grid.RowSpan="3"
+                                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+
+                        <GameStatus x:Name="PART_ElemGameStatus" Grid.RowSpan="3"
+                                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

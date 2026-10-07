@@ -397,7 +397,7 @@ namespace UniPlaySong
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "UPS",
-                ElementList = new List<string> { "MusicControl", "SpectrumVisualizer", "MusicControl_PauseGamePlayDefault", "NowPlayingMiniPlayer", "NowPlayingMiniPlayerCompact", "MediaControllerBar", "MediaControllerOverlay", "MediaControllerCompact" }
+                ElementList = new List<string> { "MusicControl", "SpectrumVisualizer", "MusicControl_PauseGamePlayDefault", "NowPlayingMiniPlayer", "NowPlayingMiniPlayerCompact", "MediaControllerBar", "MediaControllerOverlay", "MediaControllerCompact", "MediaControllerTransport", "MusicVisualControl" }
             });
 
             // Register settings support for theme integration via Playnite's {PluginSettings} markup extension (v1.4.6+).
@@ -4767,6 +4767,10 @@ namespace UniPlaySong
                 return new Controls.MediaControllerOverlay(_activeMediaViewModel);
             if (args.Name == "MediaControllerCompact")
                 return new Controls.MediaControllerCompact(_activeMediaViewModel);
+            if (args.Name == "MediaControllerTransport")
+                return new Controls.MediaControllerTransport(_activeMediaViewModel);
+            if (args.Name == "MusicVisualControl") // SPIKE: feature/music-visual-control
+                return new Spike.MusicVisualControl();
             return null;
         }
 

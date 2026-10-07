@@ -23,25 +23,25 @@ namespace UniPlaySong.Spike
         private const string SpikeDir = @"C:\Projects\UniPSound\UniPlaySong\native\vistransport-spike\obj";
         private static string TestProducer => Path.Combine(SpikeDir, "vt_producer.exe");
         // Spike B: projectM renderer, used when it and the (locally downloaded, never bundled) preset pack exist.
-        private static string MilkDrop => Path.Combine(SpikeDir, "vt_milkdrop.exe");
-        private const string PresetDir = @"C:\Projects\projectm-src\presets-cream-of-the-crop";
+        internal static string MilkDrop => Path.Combine(SpikeDir, "vt_milkdrop.exe");
+        internal const string PresetDir = @"C:\Projects\projectm-src\presets-cream-of-the-crop";
         public static bool MilkDropAvailable => File.Exists(MilkDrop) && Directory.Exists(PresetDir);
-        private static string Helper => Path.Combine(SpikeDir, "vt_consumer32.dll");
+        internal static string Helper => Path.Combine(SpikeDir, "vt_consumer32.dll");
         private static string ResultsDir => Path.Combine(SpikeDir, "results");
 
         public static bool Available => File.Exists(TestProducer) && File.Exists(Helper);
 
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr LoadLibraryW(string path);
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr CreateEventW(IntPtr a, bool manual, bool initial, string name);
-        [DllImport("kernel32.dll")] private static extern bool SetEvent(IntPtr h);
-        [DllImport("vt_consumer32.dll", CallingConvention = CallingConvention.Cdecl)] private static extern int vt_init(IntPtr hwnd);
-        [DllImport("vt_consumer32.dll", CallingConvention = CallingConvention.Cdecl)] private static extern int vt_open(int index, ulong handle, int w, int h);
-        [DllImport("vt_consumer32.dll", CallingConvention = CallingConvention.Cdecl)] private static extern IntPtr vt_backbuffer(int w, int h);
-        [DllImport("vt_consumer32.dll", CallingConvention = CallingConvention.Cdecl)] private static extern int vt_copy(int index);
-        [DllImport("vt_consumer32.dll", CallingConvention = CallingConvention.Cdecl)] private static extern void vt_shutdown();
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] internal static extern IntPtr LoadLibraryW(string path);
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] internal static extern IntPtr CreateEventW(IntPtr a, bool manual, bool initial, string name);
+        [DllImport("kernel32.dll")] internal static extern bool SetEvent(IntPtr h);
+        [DllImport("vt_consumer32.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int vt_init(IntPtr hwnd);
+        [DllImport("vt_consumer32.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int vt_open(int index, ulong handle, int w, int h);
+        [DllImport("vt_consumer32.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern IntPtr vt_backbuffer(int w, int h);
+        [DllImport("vt_consumer32.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern int vt_copy(int index);
+        [DllImport("vt_consumer32.dll", CallingConvention = CallingConvention.Cdecl)] internal static extern void vt_shutdown();
 
-        private const int OffMagic = 0, OffWidth = 4, OffHeight = 8, OffHandles = 16, OffLatest = 40, OffFrame = 48, OffQpc = 56, OffStop = 80;
-        private const uint Magic = 0x31585456u;
+        internal const int OffMagic = 0, OffWidth = 4, OffHeight = 8, OffHandles = 16, OffLatest = 40, OffFrame = 48, OffQpc = 56, OffStop = 80;
+        internal const uint Magic = 0x31585456u;
         private const int Seconds = 12;
 
         // Spike B variants, one menu entry each: transparency mode, and switches to isolate the audio stutter.
@@ -90,15 +90,20 @@ namespace UniPlaySong.Spike
             api.Notifications.Add(new NotificationMessage("ups-spike-baseline", "UPS spike: measuring 30 s of audio, no visuals…", NotificationType.Info));
         }
 
-        public static void Run(IPlayniteAPI api, string alphaMode, string env, bool milkDrop)
+        // DllImport by name binds to an already-loaded module, so load the helper first - from a temp copy, so a
+        // running Playnite doesn't lock the spike's build output.
+        internal static void LoadHelper()
         {
-            // DllImport by name binds to an already-loaded module, so load the helper first - from a temp copy, so a
-            // running Playnite doesn't lock the spike's build output.
             string helperCopyDir = Path.Combine(Path.GetTempPath(), "ups_vt_spike");
             Directory.CreateDirectory(helperCopyDir);
             string helperCopy = Path.Combine(helperCopyDir, "vt_consumer32.dll");
             try { File.Copy(Helper, helperCopy, true); } catch (IOException) { /* already loaded from an earlier run */ }
             LoadLibraryW(helperCopy);
+        }
+
+        public static void Run(IPlayniteAPI api, string alphaMode, string env, bool milkDrop)
+        {
+            LoadHelper();
             Directory.CreateDirectory(ResultsDir);
             ResetAudioHealth();
             string mode = api.ApplicationInfo.Mode == ApplicationMode.Fullscreen ? "fullscreen" : "desktop";
@@ -113,6 +118,7 @@ namespace UniPlaySong.Spike
                 psi = new ProcessStartInfo(MilkDrop, $"\"{PresetDir}\" 1280 720 {alphaMode} 20")
                     { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
                 if (env != null) psi.EnvironmentVariables[env] = "1";
+                psi.EnvironmentVariables["VT_PARENT"] = Process.GetCurrentProcess().Id.ToString();
             }
             else psi = new ProcessStartInfo(TestProducer, "1280 720 60 30 ondemand") { UseShellExecute = false, CreateNoWindow = true };
             var producer = Process.Start(psi);

@@ -158,6 +158,9 @@ int main(int argc, char** argv)
     // Isolation switches via the environment: VT_NORENDER skips projectM, VT_NOUPLOAD skips readback + upload.
     bool noRender = std::getenv("VT_NORENDER") != nullptr, noUpload = std::getenv("VT_NOUPLOAD") != nullptr;
     bool noAudio = std::getenv("VT_NOAUDIO") != nullptr; // stutter isolation: no loopback capture at all
+    // VT_PARENT=<pid>: exit when that process does, even if it crashed or never sent stop - otherwise a renderer
+    // outlives Playnite and keeps capturing the speakers.
+    HANDLE parent = std::getenv("VT_PARENT") ? OpenProcess(SYNCHRONIZE, FALSE, (DWORD)std::atoi(std::getenv("VT_PARENT"))) : nullptr;
     int freeSeconds = argc > 6 && !std::strcmp(argv[6], "free") ? (argc > 7 ? std::atoi(argv[7]) : 10) : 0;
 
     // D3D11 side: identical to the Spike A producer, so the consumer and Playnite harness need no changes.
@@ -165,7 +168,8 @@ int main(int argc, char** argv)
     if (FAILED(D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, D3D11_CREATE_DEVICE_BGRA_SUPPORT, nullptr, 0, D3D11_SDK_VERSION, &dev, nullptr, &d3d)))
         Fail("D3D11CreateDevice");
     size_t frameBytes = (size_t)w * h * 4;
-    HANDLE map = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, (DWORD)(VT_CPU_OFFSET + frameBytes * VT_BUFFERS), VT_MAPPING_NAME);
+    HANDLE map = CreateFileMappingW(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0, (DWORD)(VT_CPU_OFFSET + frameBytes * VT_BUFFERS),
+                                    freeSeconds > 0 ? nullptr : VT_MAPPING_NAME); // free runs have no viewer: unnamed, never touching a live one
     auto* base = (uint8_t*)MapViewOfFile(map, FILE_MAP_ALL_ACCESS, 0, 0, 0);
     auto* hdr = (VtHeader*)base;
     ZeroMemory(hdr, sizeof(VtHeader));
@@ -184,7 +188,7 @@ int main(int argc, char** argv)
     hdr->width = w; hdr->height = h; hdr->buffers = VT_BUFFERS; hdr->latest = -1;
     MemoryBarrier();
     hdr->magic = VT_MAGIC;
-    HANDLE tick = CreateEventW(nullptr, FALSE, FALSE, L"Local\\UPS_VisualTransport_Spike_Tick");
+    HANDLE tick = CreateEventW(nullptr, FALSE, FALSE, freeSeconds > 0 ? nullptr : L"Local\\UPS_VisualTransport_Spike_Tick");
 
     CreateGl(w, h);
     projectm_handle pm = projectm_create();
@@ -199,16 +203,31 @@ int main(int argc, char** argv)
     projectm_playlist_set_shuffle(pl, true);
     QueryPerformanceFrequency(&g_freq); QueryPerformanceCounter(&g_start);
     projectm_playlist_set_preset_switched_event_callback(pl, [](bool, unsigned int index, void*) { Event("preset switch, index", (double)index); }, nullptr);
+    projectm_set_preset_switch_failed_event_callback(pm, [](const char* file, const char* message, void*) {
+        std::printf("PRESET FAILED: %s\n  %s\n", file, message); std::fflush(stdout); }, nullptr);
     projectm_playlist_play_next(pl, true);
     std::printf("projectM %dx%d, %u presets from %s, alpha mode %s\n", w, h, added, presetDir, mode);
     std::fflush(stdout);
 
+    // VT_PCM=<file>: raw 48 kHz stereo float, fed at 800 frames (one 60 fps frame) per rendered frame instead of
+    // capturing the speakers - silent and repeatable, for checking presets.
+    std::vector<float> pcm;
+    size_t pcmPos = 0;
+    if (const char* pcmPath = std::getenv("VT_PCM"))
+        if (FILE* f = std::fopen(pcmPath, "rb"))
+        {
+            std::fseek(f, 0, SEEK_END); pcm.resize(std::ftell(f) / sizeof(float)); std::fseek(f, 0, SEEK_SET);
+            pcm.resize(std::fread(pcm.data(), sizeof(float), pcm.size(), f));
+            std::fclose(f);
+            noAudio = true;
+        }
     Loopback audio;
     if (!noAudio) audio.Open();
     std::printf("switches: render %s, upload %s, audio capture %s\n", noRender ? "off" : "on", noUpload ? "off" : "on", noAudio ? "off" : "on");
     std::vector<uint8_t> gl(frameBytes), out(frameBytes);
     LARGE_INTEGER freq, start, t0, t1, t2, t3; QueryPerformanceFrequency(&freq); QueryPerformanceCounter(&start);
     double sumRender = 0, sumRead = 0, sumConvert = 0, maxTotal = 0;
+    std::vector<double> renders, totals;
     int64_t frame = 0;
     while (!hdr->stop)
     {
@@ -219,14 +238,24 @@ int main(int argc, char** argv)
         }
         else
             WaitForSingleObject(tick, 50); // one frame per display frame on the consumer side
+        if (parent && WaitForSingleObject(parent, 0) == WAIT_OBJECT_0) break;
         if (hdr->stop) break;
         int i = (int)(frame % VT_BUFFERS);
 
         QueryPerformanceCounter(&t0);
         if (!noAudio) audio.Drain(pm);
+        if (pcm.size() >= 1600)
+        {
+            if (pcmPos + 1600 > pcm.size()) pcmPos = 0;
+            projectm_pcm_add_float(pm, pcm.data() + pcmPos, 800, PROJECTM_STEREO);
+            pcmPos += 1600;
+        }
         if (!noRender) projectm_opengl_render_frame(pm);
         glFinish();
         QueryPerformanceCounter(&t1);
+        // projectM can leave its own framebuffer bound for reading (presets with a composite shader do); its finished
+        // image is always in framebuffer 0.
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
         if (!noUpload) glReadPixels(0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, gl.data());
         QueryPerformanceCounter(&t2);
 
@@ -253,13 +282,40 @@ int main(int argc, char** argv)
         hdr->frame = ++frame;
         double render = Ms(t0, t1, freq), read = Ms(t1, t2, freq), conv = Ms(t2, t3, freq);
         sumRender += render; sumRead += read; sumConvert += conv; maxTotal = std::max(maxTotal, render + read + conv);
+        renders.push_back(render); totals.push_back(render + read + conv);
         if (render + read + conv > 25) Event("slow frame, ms", render + read + conv);
     }
+    // VT_DUMP=<file.bmp>: the last frame, composited over mid-grey the way a theme would show it (premultiplied).
+    if (const char* dump = std::getenv("VT_DUMP"))
+        if (FILE* f = std::fopen(dump, "wb"))
+        {
+            int rowBytes = (w * 3 + 3) & ~3;
+            BITMAPFILEHEADER fh = {}; BITMAPINFOHEADER ih = {};
+            fh.bfType = 0x4D42; fh.bfOffBits = sizeof(fh) + sizeof(ih); fh.bfSize = fh.bfOffBits + rowBytes * h;
+            ih.biSize = sizeof(ih); ih.biWidth = w; ih.biHeight = -h; ih.biPlanes = 1; ih.biBitCount = 24;
+            std::fwrite(&fh, sizeof(fh), 1, f); std::fwrite(&ih, sizeof(ih), 1, f);
+            std::vector<uint8_t> row(rowBytes);
+            for (int y = 0; y < h; y++)
+            {
+                const uint8_t* s = out.data() + (size_t)y * w * 4;
+                for (int x = 0; x < w; x++, s += 4)
+                    for (int c = 0; c < 3; c++) row[x * 3 + c] = (uint8_t)std::min(255, s[c] + 96 * (255 - s[3]) / 255);
+                std::fwrite(row.data(), rowBytes, 1, f);
+            }
+            std::fclose(f);
+        }
     QueryPerformanceCounter(&t3);
     double secs = Ms(start, t3, freq) / 1000.0;
     if (frame > 0)
         std::printf("frames %lld in %.1f s (%.1f fps); per frame: render %.2f ms, readback %.2f ms, convert+upload %.2f ms; worst total %.1f ms\n",
                     (long long)frame, secs, frame / secs, sumRender / frame, sumRead / frame, sumConvert / frame, maxTotal);
+    if (!renders.empty())
+    {
+        std::sort(renders.begin(), renders.end());
+        std::sort(totals.begin(), totals.end());
+        size_t k = renders.size() * 95 / 100;
+        std::printf("p95: render %.2f ms, total %.2f ms\n", renders[k], totals[k]);
+    }
     std::printf("events (%zu):\n", g_events.size());
     for (size_t e = 0; e < g_events.size() && e < 80; e++) std::printf("  %s\n", g_events[e].c_str());
     projectm_playlist_destroy(pl);
