@@ -15,6 +15,15 @@ namespace UniPlaySong.Services.ActiveMedia
         private readonly SpotifyControlService _spotifyControl;
         private readonly ISpotifyClient _spotifyClient;
         private readonly FileLogger _fileLogger;
+        // The playback service as it is NOW: a backend swap (Live Effects toggle, chiptune switch) replaces it, and
+        // _playback above is the one from construction. Seeking reads this so it never seeks a discarded player.
+        private readonly Func<IMusicPlaybackService> _currentPlayback;
+
+        // Spotify applies a seek ~100 ms after it's asked, and its timeline only moves when it pushes an update. Relative
+        // seeks in quick succession (a scrub) build on the last target, not on a position that hasn't caught up yet.
+        private TimeSpan? _spotifySeekTarget;
+        private DateTime _spotifySeekAt;
+        private static readonly TimeSpan SpotifyCatchUp = TimeSpan.FromSeconds(1.5);
 
         // Player volume captured when UPS music was muted, so unmute restores that exact level
         // (which already includes MusicVolume + Calm Down attenuation). -1 = not currently muted.
@@ -26,9 +35,11 @@ namespace UniPlaySong.Services.ActiveMedia
             IMusicPlaybackService playback,
             SpotifyControlService spotifyControl,
             ISpotifyClient spotifyClient,
-            FileLogger fileLogger)
+            FileLogger fileLogger,
+            Func<IMusicPlaybackService> currentPlayback = null)
         {
             _playback = playback;
+            _currentPlayback = currentPlayback;
             _spotifyControl = spotifyControl;
             _spotifyClient = spotifyClient;
             _fileLogger = fileLogger;
@@ -227,13 +238,57 @@ namespace UniPlaySong.Services.ActiveMedia
             // Spotify app volume not settable via the SMTC client contract — ignored.
         }
 
+        private IMusicPlaybackService SeekPlayback => _currentPlayback?.Invoke() ?? _playback;
+        private bool SpotifyIsSource => _spotifyControl?.IsSpotifyActive == true;
+
+        public bool CanSeek => SpotifyIsSource ? _spotifyClient?.CanSeek == true : SeekPlayback?.CanSeek == true;
+
         public void SeekTo(double percent)
         {
-            if (ResolveSource() != ActiveMediaSourceKind.Ups || _playback?.CanSeek != true) return;
-            var total = _playback.GetCurrentSongTotalTime();
-            if (!total.HasValue) return;
-            _playback.Seek(TimeSpan.FromSeconds(total.Value.TotalSeconds * Math.Max(0, Math.Min(100, percent)) / 100));
+            double fraction = Math.Max(0, Math.Min(100, percent)) / 100;
+            if (SpotifyIsSource)
+            {
+                var tl = _spotifyClient?.GetTimeline() ?? SpotifyTimeline.Empty;
+                if (_spotifyClient?.CanSeek == true && tl.HasDuration)
+                    SeekSpotify(TimeSpan.FromSeconds(tl.Duration.TotalSeconds * fraction), tl.Duration);
+                return;
+            }
+            var playback = SeekPlayback;
+            var total = playback?.GetCurrentSongTotalTime();
+            if (playback?.CanSeek != true || !total.HasValue) return;
+            playback.Seek(TimeSpan.FromSeconds(total.Value.TotalSeconds * fraction));
             RaiseChanged(); // timelines show the new position now, not at the next 1 s poll
+        }
+
+        public void SeekBy(double seconds)
+        {
+            if (SpotifyIsSource)
+            {
+                var tl = _spotifyClient?.GetTimeline() ?? SpotifyTimeline.Empty;
+                if (_spotifyClient?.CanSeek != true || !tl.HasDuration) return;
+                var from = tl.Position;
+                var sinceLast = DateTime.UtcNow - _spotifySeekAt;
+                if (_spotifySeekTarget.HasValue && sinceLast < SpotifyCatchUp)
+                    from = _spotifySeekTarget.Value + (_spotifyClient.IsPlaying ? sinceLast : TimeSpan.Zero);
+                SeekSpotify(from + TimeSpan.FromSeconds(seconds), tl.Duration);
+                return;
+            }
+            var playback = SeekPlayback;
+            var now = playback?.CurrentTime;
+            if (playback?.CanSeek != true || !now.HasValue) return;
+            playback.Seek(now.Value + TimeSpan.FromSeconds(seconds));
+            RaiseChanged();
+        }
+
+        // Kept a second short of the end, as for UPS music: past the end Spotify skips to the next track.
+        private void SeekSpotify(TimeSpan target, TimeSpan duration)
+        {
+            var max = duration - TimeSpan.FromSeconds(1);
+            if (target > max) target = max;
+            if (target < TimeSpan.Zero) target = TimeSpan.Zero;
+            _spotifySeekTarget = target;
+            _spotifySeekAt = DateTime.UtcNow;
+            _spotifyClient.RequestSeek(target, RaiseChanged); // republish once Spotify has it, so timelines catch up
         }
 
         public void Poll()

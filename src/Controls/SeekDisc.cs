@@ -5,7 +5,6 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Controls;
-using UniPlaySong.Services;
 using UniPlaySong.Services.ActiveMedia;
 
 namespace UniPlaySong.Controls
@@ -35,9 +34,9 @@ namespace UniPlaySong.Controls
         private double? _stickAngle, _dragAngle;
         private bool _counted;
 
-        public SeekDisc(Func<IMusicPlaybackService> playback, IActiveMediaService activeMedia, IPlayniteAPI api)
+        public SeekDisc(IActiveMediaService activeMedia, IPlayniteAPI api)
         {
-            _seeker = new RelativeSeeker(playback, activeMedia);
+            _seeker = new RelativeSeeker(activeMedia);
             _stick = RightStick.TryCreate(api, out _);
             Focusable = false;
             Background = Brushes.Transparent; // hit-testable for the mouse, invisible

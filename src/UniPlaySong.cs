@@ -3574,11 +3574,12 @@ namespace UniPlaySong
                 _playbackService,
                 _spotifyControlService,
                 _spotifyClient,
-                _fileLogger);
+                _fileLogger,
+                () => _playbackService);
 
             _activeMediaViewModel = new Controls.ActiveMediaViewModel(_settingsService, _activeMediaService);
             _activeMediaViewModel.Attach();
-            Controls.TimelineSeek.Register(_activeMediaViewModel, () => _playbackService, _activeMediaService, _api, _fileLogger); // themes' UPS-bound progress bars become seekable
+            Controls.TimelineSeek.Register(_activeMediaViewModel, _activeMediaService, _api, _fileLogger); // themes' UPS-bound progress bars become seekable
 
             // ExternalControlService: routes playnite://uniplaysong/{command} URIs. Constructed
             // after _activeMediaService so source-aware transport commands (next/previous/
@@ -4771,7 +4772,7 @@ namespace UniPlaySong
             if (args.Name == "MediaControllerTransport")
                 return new Controls.MediaControllerTransport(_activeMediaViewModel);
             if (args.Name == "SeekDisc")
-                return new Controls.SeekDisc(() => _playbackService, _activeMediaService, _api);
+                return new Controls.SeekDisc(_activeMediaService, _api);
             if (args.Name == "MusicVisualControl") // SPIKE: feature/music-visual-control
                 return new Spike.MusicVisualControl();
             return null;

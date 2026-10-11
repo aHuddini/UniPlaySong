@@ -21,6 +21,10 @@ namespace UniPlaySong.Services.Spotify
         private readonly SpotifySmtcWorker _worker;
         private volatile bool _cachedAvailable;
         private volatile bool _cachedPlaying;
+        private volatile bool _cachedCanSeek;
+        private readonly object _seekLock = new object();
+        private TimeSpan? _seekTarget;
+        private Action _seekDone;
 
         public event Action AvailabilityChanged;
 
@@ -81,17 +85,19 @@ namespace UniPlaySong.Services.Spotify
             {
                 var s = FindSpotify();
                 _cachedAvailable = s != null;
-                bool playing = false;
+                bool playing = false, canSeek = false;
                 if (s != null)
                 {
                     try
                     {
-                        playing = s.ControlSession?.GetPlaybackInfo()?.PlaybackStatus
-                            == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+                        var info = s.ControlSession?.GetPlaybackInfo();
+                        playing = info?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+                        canSeek = info?.Controls?.IsPlaybackPositionEnabled == true;
                     }
-                    catch { playing = false; }
+                    catch { playing = false; canSeek = false; }
                 }
                 _cachedPlaying = playing;
+                _cachedCanSeek = canSeek;
             }
             catch (Exception ex) { _fileLogger?.Debug($"[Spotify] RefreshCache failed: {ex.Message}"); }
         }
@@ -118,6 +124,46 @@ namespace UniPlaySong.Services.Spotify
         public bool IsAvailable => _cachedAvailable;
 
         public bool IsPlaying => _cachedPlaying;
+
+        public bool CanSeek => _cachedCanSeek;
+
+        // Latest-wins: only the newest target is kept while one is queued, and the worker takes it when it gets there.
+        public void RequestSeek(TimeSpan position, Action onDone)
+        {
+            bool post;
+            lock (_seekLock)
+            {
+                post = _seekTarget == null;
+                _seekTarget = position;
+                _seekDone = onDone;
+            }
+            if (post) _worker.PostRequest(DoSeek);
+        }
+
+        private void DoSeek()
+        {
+            TimeSpan? target;
+            Action done;
+            lock (_seekLock)
+            {
+                target = _seekTarget;
+                done = _seekDone;
+                _seekTarget = null;
+                _seekDone = null;
+            }
+            if (target == null) return;
+            var s = FindSpotify();
+            if (s != null)
+            {
+                try
+                {
+                    if (s.ControlSession?.GetPlaybackInfo()?.Controls?.IsPlaybackPositionEnabled == true)
+                        s.ControlSession.TryChangePlaybackPositionAsync(target.Value.Ticks).GetAwaiter().GetResult();
+                }
+                catch (Exception ex) { _fileLogger?.Debug($"[Spotify] Seek to {target} failed: {ex.Message}"); }
+            }
+            if (done != null) MarshalToUi(done);
+        }
 
         public bool TryPause()
         {

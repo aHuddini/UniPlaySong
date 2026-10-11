@@ -8,7 +8,6 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using Playnite.SDK;
 using UniPlaySong.Common;
-using UniPlaySong.Services;
 using UniPlaySong.Services.ActiveMedia;
 
 namespace UniPlaySong.Controls
@@ -29,13 +28,12 @@ namespace UniPlaySong.Controls
         private static bool _tilting;
         private static FileLogger _log;
 
-        public static void Register(ActiveMediaViewModel media, Func<IMusicPlaybackService> playback, IActiveMediaService activeMedia,
-                                    IPlayniteAPI api, FileLogger log)
+        public static void Register(ActiveMediaViewModel media, IActiveMediaService activeMedia, IPlayniteAPI api, FileLogger log)
         {
             bool first = _media == null;
             _media = media;
             _log = log;
-            _seeker = new RelativeSeeker(playback, activeMedia);
+            _seeker = new RelativeSeeker(activeMedia);
             if (!first) return; // class handlers live for the process; register them once
             _stick = RightStick.TryCreate(api, out string why);
             _log?.Debug(_stick != null ? "[Seek] Right stick available for timelines" : $"[Seek] Right stick unavailable: {why}");
@@ -53,7 +51,6 @@ namespace UniPlaySong.Controls
             EventManager.RegisterClassHandler(typeof(ProgressBar), UIElement.PreviewMouseMoveEvent, new MouseEventHandler(OnMove));
             EventManager.RegisterClassHandler(typeof(ProgressBar), UIElement.PreviewMouseLeftButtonUpEvent, new MouseButtonEventHandler(OnUp));
             EventManager.RegisterClassHandler(typeof(ProgressBar), UIElement.LostMouseCaptureEvent, new MouseEventHandler(OnLostCapture));
-            EventManager.RegisterClassHandler(typeof(ProgressBar), UIElement.MouseEnterEvent, new MouseEventHandler(OnEnter));
         }
 
         // {PluginSettings Plugin=UniPlaySong, Path=ActiveMediaProgress} binds "Settings.ActiveMediaProgress";
@@ -65,14 +62,6 @@ namespace UniPlaySong.Controls
 
         private static bool IsUpsTimeline(ProgressBar bar) =>
             IsUpsTimeline(BindingOperations.GetBindingExpression(bar, RangeBase.ValueProperty)?.ParentBinding?.Path?.Path, bar.DataContext);
-
-        // Shows the bar is draggable. Only set when the theme left the cursor alone.
-        private static void OnEnter(object sender, MouseEventArgs e)
-        {
-            var bar = (ProgressBar)sender;
-            if (bar.ReadLocalValue(FrameworkElement.CursorProperty) == DependencyProperty.UnsetValue && IsUpsTimeline(bar))
-                bar.Cursor = Cursors.Hand;
-        }
 
         private static void OnDown(object sender, MouseButtonEventArgs e)
         {

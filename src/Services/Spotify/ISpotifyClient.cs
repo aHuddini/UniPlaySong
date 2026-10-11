@@ -44,6 +44,13 @@ namespace UniPlaySong.Services.Spotify
         // no thumbnail / failure. Fail-safe (never throws).
         byte[] TryGetAlbumArtBytes();
 
+        // Whether Spotify accepts seeking right now (its media session's playback-position control). Cached, cheap.
+        bool CanSeek { get; }
+
+        // Move the current track to a position, off the UI thread. While a seek is still queued a newer one replaces it,
+        // so a drag never builds a backlog. onDone runs on the UI thread once Spotify has been asked.
+        void RequestSeek(TimeSpan position, Action onDone);
+
         // Fetch the current track OFF the UI thread; onResult is invoked on the UI thread.
         void RequestNowPlaying(Action<SpotifyNowPlaying> onResult);
 
