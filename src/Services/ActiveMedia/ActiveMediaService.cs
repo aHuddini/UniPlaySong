@@ -227,6 +227,15 @@ namespace UniPlaySong.Services.ActiveMedia
             // Spotify app volume not settable via the SMTC client contract — ignored.
         }
 
+        public void SeekTo(double percent)
+        {
+            if (ResolveSource() != ActiveMediaSourceKind.Ups || _playback?.CanSeek != true) return;
+            var total = _playback.GetCurrentSongTotalTime();
+            if (!total.HasValue) return;
+            _playback.Seek(TimeSpan.FromSeconds(total.Value.TotalSeconds * Math.Max(0, Math.Min(100, percent)) / 100));
+            RaiseChanged(); // timelines show the new position now, not at the next 1 s poll
+        }
+
         public void Poll()
         {
             // Position advances without an event while playing; re-publish the snapshot.

@@ -134,6 +134,12 @@ namespace UniPlaySong.Services
         // Used by CrossfadeCoordinator to compute remaining time.
         System.TimeSpan? GetCurrentSongCurrentTime();
 
+        // Whether the current song can jump to another position (regular audio files; not chiptunes, PSF or Spotify).
+        bool CanSeek { get; }
+
+        // Moves the current song to the given position, kept inside the song. No-op when CanSeek is false.
+        void Seek(System.TimeSpan position);
+
         // Starts a crossfade from the currently-playing song into the next song, with both audible simultaneously over
         // the crossfade duration. No-op if the current backend doesn't support crossfade (SDL2) or if already
         // crossfading. Called by CrossfadeCoordinator only; user-facing code should not call this directly.

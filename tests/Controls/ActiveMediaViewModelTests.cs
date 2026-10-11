@@ -27,6 +27,41 @@ namespace UniPlaySong.Tests.Controls
             _vm = new ActiveMediaViewModel(_provider, _service.Object);
         }
 
+        private static ActiveMediaSnapshot UpsAt(double progress) => new ActiveMediaSnapshot(
+            true, ActiveMediaSourceKind.Ups, "UniPlaySong", true, false, progress, "0:40", "1:40", 50, true, true);
+
+        // A theme binding ActiveMediaProgress two-way (a Slider) writes it to seek.
+        [Test]
+        public void ThemeWriteToProgress_Seeks()
+        {
+            _vm.Attach();
+            _settings.ActiveMediaProgress = 40;
+            _service.Verify(s => s.SeekTo(40), Times.Once);
+        }
+
+        // UPS writes the same property on every position update; that must never be taken for a seek.
+        [Test]
+        public void MirroredProgress_DoesNotSeek()
+        {
+            _service.Setup(s => s.GetSnapshot()).Returns(UpsAt(55));
+            _vm.Attach();
+            _service.Raise(s => s.Changed += null);
+
+            Assert.AreEqual(55, _settings.ActiveMediaProgress);
+            _service.Verify(s => s.SeekTo(It.IsAny<double>()), Times.Never);
+        }
+
+        // A drag sends many values: the first lands at once, the rest wait for the next interval.
+        [Test]
+        public void RapidSeeks_FirstLandsAtOnce_RestAreHeld()
+        {
+            _vm.RequestSeek(10);
+            _vm.RequestSeek(20);
+            _vm.RequestSeek(30);
+            _service.Verify(s => s.SeekTo(10), Times.Once);
+            _service.Verify(s => s.SeekTo(It.IsAny<double>()), Times.Once);
+        }
+
         [Test]
         public void PlayPauseCommand_InvokesService()
         {

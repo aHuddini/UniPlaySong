@@ -218,6 +218,18 @@ namespace UniPlaySong.Services
 
         public TimeSpan? GetCurrentSongCurrentTime() => _musicPlayer?.CurrentTime;
 
+        public bool CanSeek => _musicPlayer?.CanSeek == true && _musicPlayer.TotalTime.HasValue;
+
+        // Kept a second short of the end: a seek onto the last samples would just end the song.
+        public void Seek(TimeSpan position)
+        {
+            if (!CanSeek) return;
+            var total = _musicPlayer.TotalTime.Value;
+            var target = TimeSpan.FromTicks(Math.Max(0, Math.Min(position.Ticks, (total - TimeSpan.FromSeconds(1)).Ticks)));
+            _musicPlayer.Seek(target);
+            _fileLogger?.Debug($"Seek: {target.TotalSeconds:F1} s of {total.TotalSeconds:F1} s");
+        }
+
         // Toggle play/pause for the unified controller. Uses the Manual pause source so it
         // composes with the existing multi-source pause model (does not fight FocusLoss etc.).
         public void TogglePlayPauseInternal()

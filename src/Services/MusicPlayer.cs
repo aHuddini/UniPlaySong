@@ -260,6 +260,15 @@ namespace UniPlaySong.Services
             }
         }
 
+        public bool CanSeek => _mediaPlayer?.Clock?.Controller != null;
+
+        public void Seek(TimeSpan position)
+        {
+            if (!CanSeek) return;
+            try { _mediaPlayer.Clock.Controller.Seek(position, TimeSeekOrigin.BeginTime); }
+            catch (Exception ex) { _errorHandler?.HandleError(ex, context: "seeking music player", showUserMessage: false); }
+        }
+
         public void Pause()
         {
             try

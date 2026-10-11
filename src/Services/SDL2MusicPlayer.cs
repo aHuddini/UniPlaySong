@@ -418,6 +418,18 @@ namespace UniPlaySong.Services
             }
         }
 
+        // The music stream is process-global (shared with Playnite's own background music), so only seek while it is
+        // this player's song, playing or paused.
+        public bool CanSeek => _music != IntPtr.Zero && IsActive;
+
+        // Works paused too: a paused stream resumes from the new position.
+        public void Seek(TimeSpan position)
+        {
+            if (!CanSeek) return;
+            if (SDL2Mixer.Mix_SetMusicPosition(Math.Max(0, position.TotalSeconds)) < 0)
+                Logger.Debug($"SDL2 seek to {position} refused: {SDL2.SDL_GetError()}");
+        }
+
         public void Pause()
         {
             if (_isActive && SDL2Mixer.Mix_PlayingMusic() == 1)

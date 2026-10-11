@@ -96,6 +96,8 @@ namespace DashboardTestApp
         public bool UserHasManuallyStartedThisSession => false;
         public TimeSpan? GetCurrentSongTotalTime() => null;
         public TimeSpan? GetCurrentSongCurrentTime() => null;
+        public bool CanSeek => false;
+        public void Seek(TimeSpan position) { }
         public void StartCrossfadeIntoNext(string nextPath, double durationSeconds) { }
     }
 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Reflection;
 using System.Windows.Media;
 using NAudio.Wave;
@@ -117,6 +117,8 @@ namespace UniPlaySong.Tests.Players
             public void Resume(Action onReady = null) { onReady?.Invoke(); }
             public void Close() { }
             public void SetVolumeRamp(double targetVolume, double durationSeconds) { Volume = targetVolume; }
+            public bool CanSeek => false;
+            public void Seek(TimeSpan position) { }
 
             public bool IsAudioDeviceOpen => false;
             public void ReleaseAudioDevice() { }

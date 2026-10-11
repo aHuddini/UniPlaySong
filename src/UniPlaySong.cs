@@ -397,7 +397,7 @@ namespace UniPlaySong
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "UPS",
-                ElementList = new List<string> { "MusicControl", "SpectrumVisualizer", "MusicControl_PauseGamePlayDefault", "NowPlayingMiniPlayer", "NowPlayingMiniPlayerCompact", "MediaControllerBar", "MediaControllerOverlay", "MediaControllerCompact", "MediaControllerTransport", "MusicVisualControl" }
+                ElementList = new List<string> { "MusicControl", "SpectrumVisualizer", "MusicControl_PauseGamePlayDefault", "NowPlayingMiniPlayer", "NowPlayingMiniPlayerCompact", "MediaControllerBar", "MediaControllerOverlay", "MediaControllerCompact", "MediaControllerTransport", "SeekDisc", "MusicVisualControl" }
             });
 
             // Register settings support for theme integration via Playnite's {PluginSettings} markup extension (v1.4.6+).
@@ -3578,6 +3578,7 @@ namespace UniPlaySong
 
             _activeMediaViewModel = new Controls.ActiveMediaViewModel(_settingsService, _activeMediaService);
             _activeMediaViewModel.Attach();
+            Controls.TimelineSeek.Register(_activeMediaViewModel, () => _playbackService, _activeMediaService, _api, _fileLogger); // themes' UPS-bound progress bars become seekable
 
             // ExternalControlService: routes playnite://uniplaysong/{command} URIs. Constructed
             // after _activeMediaService so source-aware transport commands (next/previous/
@@ -4769,6 +4770,8 @@ namespace UniPlaySong
                 return new Controls.MediaControllerCompact(_activeMediaViewModel);
             if (args.Name == "MediaControllerTransport")
                 return new Controls.MediaControllerTransport(_activeMediaViewModel);
+            if (args.Name == "SeekDisc")
+                return new Controls.SeekDisc(() => _playbackService, _activeMediaService, _api);
             if (args.Name == "MusicVisualControl") // SPIKE: feature/music-visual-control
                 return new Spike.MusicVisualControl();
             return null;

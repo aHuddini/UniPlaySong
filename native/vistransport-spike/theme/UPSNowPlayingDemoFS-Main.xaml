@@ -241,8 +241,12 @@
                                             <Grid.CacheMode>
                                                 <BitmapCache />
                                             </Grid.CacheMode>
+                                            <!-- Two turns: seeking (UPS_SeekDisc's ScrubAngle, follows your hand) and the spin -->
                                             <Grid.RenderTransform>
-                                                <RotateTransform />
+                                                <TransformGroup>
+                                                    <RotateTransform Angle="{Binding Content.ScrubAngle, ElementName=UPS_SeekDisc}" />
+                                                    <RotateTransform />
+                                                </TransformGroup>
                                             </Grid.RenderTransform>
                                             <Grid.Style>
                                                 <Style TargetType="Grid">
@@ -251,7 +255,7 @@
                                                             <DataTrigger.EnterActions>
                                                                 <BeginStoryboard x:Name="UpsCoverSpin">
                                                                     <Storyboard>
-                                                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                                                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TransformGroup.Children)[1].(RotateTransform.Angle)"
                                                                                          By="360" Duration="0:0:30" RepeatBehavior="Forever" />
                                                                     </Storyboard>
                                                                 </BeginStoryboard>
@@ -350,6 +354,11 @@
                                             </Ellipse.Triggers>
                                         </Ellipse>
                                     </Grid>
+
+                                    <!-- Seeking: turn the disc. Drag around it, or circle the right stick like a jog wheel. Draws
+                                         nothing itself; the record above follows its ScrubAngle. -->
+                                    <ContentControl x:Name="UPS_SeekDisc" Grid.Row="1" HorizontalAlignment="Center" Focusable="False"
+                                                    Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}" />
                                 </Grid>
 
                                 <!-- Strip: title, artist, timeline, transport -->
@@ -370,9 +379,39 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="{PluginSettings Plugin=UniPlaySong, Path=ActiveMediaPositionText}"
                                                    Foreground="White" Opacity="0.65" FontSize="15" VerticalAlignment="Center" />
-                                        <ProgressBar Grid.Column="1" Minimum="0" Maximum="100" Height="4" VerticalAlignment="Center"
+                                        <!-- Seekable timeline (UPS makes any bar bound to ActiveMediaProgress click/drag to seek).
+                                             A 24 px tall hit area drawn as a slim 4 px line: easy to grab, still thin. Hover or
+                                             drag thickens it and shows a knob at the playhead. -->
+                                        <ProgressBar Grid.Column="1" Minimum="0" Maximum="100" Height="24" VerticalAlignment="Center"
                                                      Value="{PluginSettings Plugin=UniPlaySong, Path=ActiveMediaProgress, Mode=OneWay}"
-                                                     Foreground="White" Background="#33FFFFFF" BorderThickness="0" Focusable="False" />
+                                                     Focusable="False">
+                                            <ProgressBar.Template>
+                                                <ControlTemplate TargetType="ProgressBar">
+                                                    <Grid Background="Transparent">
+                                                        <Border x:Name="PART_Track" Height="4" CornerRadius="2" Background="#33FFFFFF"
+                                                                VerticalAlignment="Center" />
+                                                        <Grid x:Name="PART_Indicator" HorizontalAlignment="Left">
+                                                            <Border x:Name="Fill" Height="4" CornerRadius="2" Background="White"
+                                                                    VerticalAlignment="Center" />
+                                                            <Ellipse x:Name="Knob" Width="14" Height="14" Fill="White" Opacity="0"
+                                                                     HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-7,0" />
+                                                        </Grid>
+                                                    </Grid>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="PART_Track" Property="Height" Value="6" />
+                                                            <Setter TargetName="Fill" Property="Height" Value="6" />
+                                                            <Setter TargetName="Knob" Property="Opacity" Value="1" />
+                                                        </Trigger>
+                                                        <Trigger Property="IsMouseCaptured" Value="True">
+                                                            <Setter TargetName="PART_Track" Property="Height" Value="6" />
+                                                            <Setter TargetName="Fill" Property="Height" Value="6" />
+                                                            <Setter TargetName="Knob" Property="Opacity" Value="1" />
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </ProgressBar.Template>
+                                        </ProgressBar>
                                         <TextBlock Grid.Column="2" Text="{PluginSettings Plugin=UniPlaySong, Path=ActiveMediaDurationText}"
                                                    Foreground="White" Opacity="0.65" FontSize="15" VerticalAlignment="Center"
                                                    TextAlignment="Right" />

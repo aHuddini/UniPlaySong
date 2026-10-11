@@ -27,6 +27,10 @@ namespace UniPlaySong.Services.ActiveMedia
         // Re-read the active source's position (called by the 1s poll timer while playing).
         void Poll();
 
+        // Jump to a point in the active song, 0-100 of its length. UPS music only for now (not Spotify, chiptunes or
+        // PSF); ignored when the source can't seek.
+        void SeekTo(double percent);
+
         // Raised (already marshalled to the UI thread) whenever the snapshot changes.
         event Action Changed;
     }

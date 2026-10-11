@@ -418,6 +418,27 @@ namespace UniPlaySong.Services
             }
         }
 
+        // Emulated readers can only restart; a crossfade has two songs to keep in step; an ended song is on its way out.
+        public bool CanSeek => _audioFile != null && !IsEmulatedReader(_audioFile) && !IsCrossfading
+                               && (_isInMixer || _logicallyPaused);
+
+        // Safe while the song is in the mixer: the readers lock their position against the audio thread's reads
+        // (AudioFileReader internally, OggFileReader with its own lock). A paused song resumes from _pausedPosition,
+        // so that moves too.
+        public void Seek(TimeSpan position)
+        {
+            if (!CanSeek) return;
+            try
+            {
+                if (_logicallyPaused) _pausedPosition = position;
+                _audioFile.CurrentTime = position;
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"[NAudio] Seek to {position} failed: {ex.Message}");
+            }
+        }
+
         // Logical pause — song stays in mixer outputting silence (volume already 0 from fader).
         // Position is saved so resume can seek back (song advances at vol=0 otherwise).
         public void Pause()

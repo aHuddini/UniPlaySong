@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 using UniPlaySong.Common;
 using UniPlaySong.Models;
 using UniPlaySong.Services;
@@ -121,11 +122,54 @@ namespace UniPlaySong.Controls
             });
         }
 
+        // ── seeking ──
+        // Timelines seek through here: UPS-bound progress bars (TimelineSeek) and themes binding ActiveMediaProgress
+        // two-way. A drag sends many values; the first lands at once, then at most one per SeekInterval, the last
+        // always.
+        private static readonly TimeSpan SeekInterval = TimeSpan.FromMilliseconds(100);
+        private DispatcherTimer _seekTimer;
+        private double? _pendingSeek;
+        private double _lastSeek = -1;
+        private bool _mirroring; // our own writes to ActiveMediaProgress are not seek requests
+
+        public void RequestSeek(double percent)
+        {
+            if (percent == _lastSeek) return; // a click with a hair of mouse movement sends the same point twice
+            _lastSeek = percent;
+            _pendingSeek = percent;
+            if (_seekTimer == null)
+            {
+                _seekTimer = new DispatcherTimer { Interval = SeekInterval };
+                _seekTimer.Tick += (s, e) => FlushSeek();
+            }
+            if (!_seekTimer.IsEnabled)
+            {
+                FlushSeek();
+                _seekTimer.Start();
+            }
+        }
+
+        private void FlushSeek()
+        {
+            if (_pendingSeek is double percent)
+            {
+                _pendingSeek = null;
+                _service?.SeekTo(percent);
+            }
+            else
+            {
+                _seekTimer?.Stop();
+                _lastSeek = -1; // the burst is over; a later click on the same spot is a new seek
+            }
+        }
+
         private void MirrorToSettings(ActiveMediaSnapshot s)
         {
             var st = Settings;
             if (st == null) return;
-            st.ActiveMediaProgress = s.Progress;
+            _mirroring = true;
+            try { st.ActiveMediaProgress = s.Progress; }
+            finally { _mirroring = false; }
             st.ActiveMediaPositionText = s.PositionText;
             st.ActiveMediaDurationText = s.DurationText;
             st.ActiveMediaVolume = s.Volume;
@@ -140,6 +184,13 @@ namespace UniPlaySong.Controls
 
         private void OnSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == nameof(UniPlaySongSettings.ActiveMediaProgress))
+            {
+                // A write that isn't our own mirror is a theme's two-way binding (a Slider) asking to seek.
+                if (!_mirroring && sender is UniPlaySongSettings st && Math.Abs(st.ActiveMediaProgress - _snap.Progress) > 0.05)
+                    RequestSeek(st.ActiveMediaProgress);
+                return;
+            }
             if (e.PropertyName != nameof(UniPlaySongSettings.NowPlayingTitle) &&
                 e.PropertyName != nameof(UniPlaySongSettings.NowPlayingArtist) &&
                 e.PropertyName != nameof(UniPlaySongSettings.NowPlayingAlbumArtPath) &&

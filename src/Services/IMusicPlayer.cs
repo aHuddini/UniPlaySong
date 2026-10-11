@@ -47,6 +47,13 @@ namespace UniPlaySong.Services
 
         void Close();
 
+        // Whether the loaded song can jump to another position right now (false for emulated formats, which can only
+        // restart, and while crossfading).
+        bool CanSeek { get; }
+
+        // Moves the current song to the given position, playing or paused (a paused song resumes from there).
+        void Seek(TimeSpan position);
+
         // Sets a volume ramp from current volume to target over the given duration.
         // NAudio: per-sample interpolation on the audio thread (no stepping artifacts).
         // SDL2/WPF: DispatcherTimer stepping with exponential curve (preserves current behavior).
