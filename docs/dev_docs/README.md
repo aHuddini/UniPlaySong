@@ -8,7 +8,7 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](Theme%
 | Doc | Read it when |
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | You need the shape of the system — directory map, service organization, data flow, threading model, extension points. |
-| [TECHNICAL_REFERENCE.md](TECHNICAL_REFERENCE.md) | You're chasing a specific behaviour — playback state variables, song selection, default-music fallback, skip logic, preview mode, fades, constants. The debugging tips at the end are the fastest way in. |
+| [TECHNICAL_REFERENCE.md](TECHNICAL_REFERENCE.md) | You're chasing a specific behaviour — playback state variables, song selection, default-music fallback, skip logic, preview mode, fades, seeking (players, timelines, the seek disc, the right stick, Spotify), constants. The debugging tips at the end are the fastest way in. |
 | [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md) | You're building or packaging. `version.txt` is the version single source of truth. |
 | [DEPENDENCIES.md](DEPENDENCIES.md) | You hit a missing DLL or external tool (SDL2, NAudio, yt-dlp, FFmpeg, the native Spotify loopback shim). |
 | [SHIPPED_BINARIES.md](SHIPPED_BINARIES.md) | You need to know what is inside the `.pext` and where each binary came from — every shipped `.dll` with its SHA-256, provenance and licence, and which natives are unsigned or self-built. |
@@ -26,13 +26,13 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](Theme%
 
 | Doc | Covers |
 |---|---|
-| [SPOTIFY_INTEGRATION.md](features/SPOTIFY_INTEGRATION.md) | Control and radio: the event-mirror architecture (`SpotifyControlService` ↔ SMTC), the drive model and pause ownership, default-music gap handling, and Radio Mode. |
+| [SPOTIFY_INTEGRATION.md](features/SPOTIFY_INTEGRATION.md) | Control and radio: the event-mirror architecture (`SpotifyControlService` ↔ SMTC), the drive model and pause ownership, default-music gap handling, Radio Mode, and seeking through SMTC. |
 
 ## Feature-specific
 
 | Doc | Covers |
 |---|---|
-| [THEME_INTEGRATION_GUIDE.md](Theme%20Support/THEME_INTEGRATION_GUIDE.md) | The theme-developer contract: `UPS_MusicControl`, `{PluginSettings}` bindings, theme-shipped audio, external control URIs, unified media controls, now-playing data. Kept current — the canonical theme reference. |
+| [THEME_INTEGRATION_GUIDE.md](Theme%20Support/THEME_INTEGRATION_GUIDE.md) | The theme-developer contract: `UPS_MusicControl`, `{PluginSettings}` bindings, theme-shipped audio, external control URIs, unified media controls, now-playing data, seeking (seekable timelines, `UPS_SeekDisc`, seek URIs). Kept current — the canonical theme reference. |
 | [ACHIEVEMENT_SOUND_INTEGRATION.md](features/ACHIEVEMENT_SOUND_INTEGRATION.md) | The achievement/trophy unlock sound contract, rarity URIs, per-rarity resolution, and the v1.8.4 query API for extensions that want to play the sound themselves. |
 | [VISUALIZER_DYNAMIC_COLOR_ALGORITHM.md](features/VISUALIZER_DYNAMIC_COLOR_ALGORITHM.md) | Album-art colour extraction, brightness/saturation tuning, caching. |
 | [PERF_OPTIMIZATION_PLAN.md](roadmaps/PERF_OPTIMIZATION_PLAN.md) | Backlog for the `PerfOptimization` branch — ranked optimization, refactor and test-coverage work, with the measurements behind each item and a list of things already checked and found fine. |
@@ -58,4 +58,4 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](Theme%
 
 ---
 
-**Last updated**: 2026-10-06 · **Covers**: v1.8.10
+**Last updated**: 2026-10-11 · **Covers**: v1.8.10 + seeking (unreleased, `feature/music-visual-control`)

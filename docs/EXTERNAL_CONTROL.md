@@ -15,6 +15,8 @@ Control UniPlaySong playback via Playnite's `playnite://` URI protocol. Works fr
 | Restart | `playnite://uniplaysong/restart` | Restart the current song from the beginning. |
 | Stop | `playnite://uniplaysong/stop` | Stop playback entirely. |
 | Set Volume | `playnite://uniplaysong/volume/{0-100}` | Set volume to a value between 0 and 100. |
+| Seek | `playnite://uniplaysong/seek/{seconds}` | Skip forward (positive) or back (negative) within the current song, e.g. `seek/10`, `seek/-10`. Works for UPS music and Spotify; ignored for chiptunes and PSF. |
+| Seek To | `playnite://uniplaysong/seekto/{0-100}` | Jump to a point in the current song, as a percentage of its length. |
 
 ## Sound events (for other extensions)
 
@@ -41,4 +43,5 @@ which sound *would* play: [ACHIEVEMENT_SOUND_INTEGRATION.md](dev_docs/features/A
 - **Windows Run (Win+R)** — Type the URI and press Enter
 - **Desktop Shortcut** — Right-click desktop > New Shortcut > paste the URI as the target
 - **Batch File** — `start playnite://uniplaysong/volume/50`
-- **Playnite Themes** — See [Theme Integration Guide](dev_docs/Theme%20Support/THEME_INTEGRATION_GUIDE.md)
+- **Playnite Themes** — a button with `Command="{x:Static commands:GlobalCommands.NavigateUrlCommand}"` and the URI as
+  `CommandParameter`; see [Theme Integration Guide → Firing a URI from a theme button](dev_docs/Theme%20Support/THEME_INTEGRATION_GUIDE.md#firing-a-uri-from-a-theme-button)

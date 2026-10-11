@@ -20,6 +20,10 @@ How to wire your Playnite Fullscreen theme into UniPlaySong's music playback.
 | Ship per-rarity achievement unlock sounds | `audio/Achievements/{rarity}.wav` in your theme's folder (v1.5.10+) |
 | Custom media-control buttons (play, pause, skip, volume) | `playnite://uniplaysong/...` URIs (v1.3.10+) |
 | Drop in a ready-made Now-Playing overlay, transport bar, or minimal play/skip control | `UPS_MediaControllerOverlay` / `UPS_MediaControllerBar` / `UPS_MediaControllerCompact` elements (v1.5.8+) |
+| Big previous / play-pause / next buttons for a player page that shows its own art, title and timeline | `UPS_MediaControllerTransport` element (next release) |
+| Let the user seek on your timeline — mouse and right stick | Nothing: any `ProgressBar` bound to `ActiveMediaProgress` already seeks (next release) — see [Seeking](#seeking--scrub-the-current-song-next-release) |
+| Skip forward / back buttons | `playnite://uniplaysong/seek/{seconds}` and `seekto/{0-100}` URIs (next release) |
+| A turntable-style cover the user turns to seek | `UPS_SeekDisc` overlay element (next release) |
 
 ---
 
@@ -620,11 +624,47 @@ For custom media control buttons embedded in your theme. Fire-and-forget — no 
 | Restart Current Song | `playnite://uniplaysong/restart` |
 | Stop Playback | `playnite://uniplaysong/stop` |
 | Set Volume (0–100) | `playnite://uniplaysong/volume/50` |
+| Skip forward / back by N seconds (next release) | `playnite://uniplaysong/seek/10`, `playnite://uniplaysong/seek/-10` |
+| Jump to a point, 0–100 % (next release) | `playnite://uniplaysong/seekto/50` |
 
 **When to use which:**
 
 - `UPS_MusicControl` — state-driven pause/resume tied to UI visibility
 - URI — explicit user actions (a "Skip" button on a media bar)
+
+### Firing a URI from a theme button
+
+Use Playnite's own `NavigateUrlCommand` with the URI as the parameter — the same way themes already open
+`playnite://playnite/installaddon/...` links. Declare the namespace on your view's root element (many themes, Aniki
+ReMake included, already have it):
+
+```xml
+xmlns:commands="clr-namespace:Playnite.Commands;assembly=Playnite"
+```
+
+Then any button can fire any UPS command:
+
+```xml
+<!-- Fullscreen: ButtonEx, so the controller's confirm press activates it -->
+<ButtonEx Content="Play / Pause"
+          Command="{x:Static commands:GlobalCommands.NavigateUrlCommand}"
+          CommandParameter="playnite://uniplaysong/playpausetoggle" />
+```
+
+```xml
+<!-- Desktop: a plain Button works for the mouse -->
+<Button Content="Next song"
+        Command="{x:Static commands:GlobalCommands.NavigateUrlCommand}"
+        CommandParameter="playnite://uniplaysong/next" />
+```
+
+- **Fullscreen needs `ButtonEx`** (or `ToggleButtonEx`). A plain `Button` shows, but ignores the controller's confirm
+  press — Playnite only auto-activates its own buttons.
+- **A URI takes a short trip through Windows and back into Playnite**, so expect a brief delay per press (typically a
+  fraction of a second). Right for buttons; for continuous control like scrubbing, use a seekable timeline or the
+  right stick (see [Seeking](#seeking--scrub-the-current-song-next-release)).
+- A bad or unknown command shows a UniPlaySong notification rather than failing silently, which makes typos easy to
+  spot while building.
 
 ### Achievement / trophy unlock sound (v1.5.10+)
 
@@ -662,6 +702,7 @@ Three self-contained, transport-capable theme elements — display **and** contr
 | `UPS_MediaControllerOverlay` | PS5-style Now-Playing popup: large album art, source name, position/duration with a progress bar, full transport row (previous / play-pause / next / mute), and a volume slider. |
 | `UPS_MediaControllerBar` | Horizontal transport pill: album art + title/artist, with inline previous / play-pause / next buttons. |
 | `UPS_MediaControllerCompact` | Minimal one-line control: play-pause + next (skip), for a tight footprint. |
+| `UPS_MediaControllerTransport` (next release) | Previous / play-pause / next alone, at a large size — for a player page that lays out its own art, title and timeline. |
 
 ```xml
 <!-- Full Now-Playing overlay -->
@@ -676,6 +717,11 @@ Three self-contained, transport-capable theme elements — display **and** contr
 ```xml
 <!-- Minimal play/skip control -->
 <ContentControl x:Name="UPS_MediaControllerCompact" />
+```
+
+```xml
+<!-- Transport buttons only, for your own player layout -->
+<ContentControl x:Name="UPS_MediaControllerTransport" Focusable="False" KeyboardNavigation.IsTabStop="False" />
 ```
 
 Each is an empty-tag `<ContentControl>` — no child XAML, no triggers to wire. Drop it anywhere in a Desktop or Fullscreen theme view and UPS supplies the content, styling, and behavior. If UniPlaySong isn't installed the tag simply resolves to nothing, so it's safe to ship in a theme unconditionally. The now-playing text and album art update live as tracks and playback change (including when the user toggles Radio Mode or edits UPS settings) — no theme-side refresh needed.
@@ -757,10 +803,133 @@ The existing `NowPlaying*` properties (`NowPlayingTitle`, `NowPlayingArtist`, `N
 | Next | `playnite://uniplaysong/next` (alias: `skip`) |
 | Previous | `playnite://uniplaysong/previous` |
 | Toggle Mute | `playnite://uniplaysong/togglemute` |
+| Skip forward / back N seconds (next release) | `playnite://uniplaysong/seek/{seconds}` (signed) |
+| Jump to a point, 0–100 % (next release) | `playnite://uniplaysong/seekto/{percent}` |
 
-These four are source-aware — they act on whichever source is audible (UPS or Spotify). `togglemute` mutes UPS's own music via its player volume, or Spotify at the Windows audio-session level (the same as Spotify's Volume Mixer entry, since the media-key API has no mute); either way `ActiveMediaIsMuted` reflects the result. The original `play`, `pause`, `stop`, `restart`, and `volume/{0-100}` URIs (see [External control via URIs](#5-external-control-via-uris-v1310)) are unchanged and remain UPS-only.
+These (and the two seek commands) are source-aware — they act on whichever source is audible (UPS or Spotify). `togglemute` mutes UPS's own music via its player volume, or Spotify at the Windows audio-session level (the same as Spotify's Volume Mixer entry, since the media-key API has no mute); either way `ActiveMediaIsMuted` reflects the result. The original `play`, `pause`, `stop`, `restart`, and `volume/{0-100}` URIs (see [External control via URIs](#5-external-control-via-uris-v1310)) are unchanged and remain UPS-only.
 
 > **Note:** Transport currently drives UniPlaySong's own music playback and the Spotify desktop app. Support for other media apps/sessions is planned.
+
+### Seeking — scrub the current song (next release)
+
+UPS can move the current song to any point — its own music files and Spotify alike (not chiptunes or PSF, which can only restart). There are four ways in, and the first needs nothing from you.
+
+**1. Your timeline is already seekable.** Any `ProgressBar` whose `Value` is bound to `ActiveMediaProgress` — like the one in the snippet above, or the bar inside `UPS_MediaControllerOverlay` — becomes:
+
+- **click to jump / drag to scrub** with the mouse, and
+- **right-stick scrubbable** in Fullscreen: tilt right to fast-forward, left to rewind, faster the further you tilt (about 4 s per second just past the dead zone, up to 40 s per second at full tilt). Pushing mostly up or down is ignored. No focus is needed, so the D-pad stays free for your buttons.
+
+Nothing to add to your theme. Worth knowing:
+
+- The right stick needs a Playnite whose SDK reports analog stick values (SDK 6.18+, i.e. current Playnite 10). On older Playnite the timeline is mouse-only.
+- The stick is only read while a UPS timeline is visible, and only while Playnite is the active window — a game in front never scrubs the music.
+- A UPS timeline is picked up the first time its value changes, so within a second of music playing.
+- Thin bars are hard to hit with a mouse. Give the bar a tall, transparent hit area and draw the thin line in its template — it stays a `ProgressBar`, so seeking keeps working:
+
+```xml
+<!-- 24 px to grab, drawn as a 4 px line; hover/drag thickens it and shows a knob at the playhead -->
+<ProgressBar Minimum="0" Maximum="100" Height="24" Focusable="False"
+             Value="{PluginSettings Plugin=UniPlaySong, Path=ActiveMediaProgress, Mode=OneWay}">
+    <ProgressBar.Template>
+        <ControlTemplate TargetType="ProgressBar">
+            <Grid Background="Transparent">
+                <Border x:Name="PART_Track" Height="4" CornerRadius="2" Background="#33FFFFFF" VerticalAlignment="Center" />
+                <Grid x:Name="PART_Indicator" HorizontalAlignment="Left">
+                    <Border x:Name="Fill" Height="4" CornerRadius="2" Background="White" VerticalAlignment="Center" />
+                    <Ellipse x:Name="Knob" Width="14" Height="14" Fill="White" Opacity="0"
+                             HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-7,0" />
+                </Grid>
+            </Grid>
+            <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter TargetName="PART_Track" Property="Height" Value="6" />
+                    <Setter TargetName="Fill" Property="Height" Value="6" />
+                    <Setter TargetName="Knob" Property="Opacity" Value="1" />
+                </Trigger>
+                <Trigger Property="IsMouseCaptured" Value="True">
+                    <Setter TargetName="PART_Track" Property="Height" Value="6" />
+                    <Setter TargetName="Fill" Property="Height" Value="6" />
+                    <Setter TargetName="Knob" Property="Opacity" Value="1" />
+                </Trigger>
+            </ControlTemplate.Triggers>
+        </ControlTemplate>
+    </ProgressBar.Template>
+</ProgressBar>
+```
+
+`PART_Track` and `PART_Indicator` are the names WPF's `ProgressBar` sizes the fill by — keep them.
+
+**2. A draggable knob — bind a `Slider` two-way.**
+
+```xml
+<Slider Minimum="0" Maximum="100" Focusable="False" IsMoveToPointEnabled="True"
+        Value="{PluginSettings Plugin=UniPlaySong, Path=ActiveMediaProgress, Mode=TwoWay}" />
+```
+
+UPS tells your writes apart from its own once-a-second progress updates, so only a drag or click seeks. A drag lands at most about ten seeks a second. Keep the `Slider` unfocusable in Fullscreen: a focused `Slider` takes D-pad Up/Down as value changes and traps navigation. Right-stick tilt follows `ProgressBar` timelines only, so a page with nothing but a `Slider` seeks by mouse (or add skip buttons, below).
+
+**3. Skip buttons — the `seek` URIs.** Source-aware like `next`/`previous`:
+
+| Command | URI |
+|---|---|
+| Skip forward / back by N seconds (signed) | `playnite://uniplaysong/seek/10`, `playnite://uniplaysong/seek/-10` |
+| Jump to a point (0–100 % of the song) | `playnite://uniplaysong/seekto/50` |
+
+Wire them like any other URI ([Firing a URI from a theme button](#firing-a-uri-from-a-theme-button)). A skip-back /
+skip-forward pair for a Fullscreen player:
+
+```xml
+<!-- Needs xmlns:commands="clr-namespace:Playnite.Commands;assembly=Playnite" on the root element -->
+<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+    <!-- Back 10 s -->
+    <ButtonEx Content="&#xEC78;" FontFamily="{StaticResource FontIcoFont}" FontSize="24"
+              Width="56" Height="56" Margin="8,0"
+              Command="{x:Static commands:GlobalCommands.NavigateUrlCommand}"
+              CommandParameter="playnite://uniplaysong/seek/-10" />
+    <!-- Forward 10 s -->
+    <ButtonEx Content="&#xEC6E;" FontFamily="{StaticResource FontIcoFont}" FontSize="24"
+              Width="56" Height="56" Margin="8,0"
+              Command="{x:Static commands:GlobalCommands.NavigateUrlCommand}"
+              CommandParameter="playnite://uniplaysong/seek/10" />
+</StackPanel>
+```
+
+The glyphs are IcoFont's previous/next arrows (Playnite bundles the font as `FontIcoFont`); use any icon, text or your
+theme's button style. Other useful parameters:
+
+| Button | `CommandParameter` |
+|---|---|
+| Back 30 s | `playnite://uniplaysong/seek/-30` |
+| Forward 5 s | `playnite://uniplaysong/seek/5` |
+| Back to the start | `playnite://uniplaysong/seekto/0` |
+| Halfway | `playnite://uniplaysong/seekto/50` |
+
+Decimals work (`seek/2.5`). A seek is kept a second short of the end, so `seekto/100` won't skip the song. Both act
+on whatever is playing — UPS music or Spotify — and do nothing for chiptunes, PSF, or when nothing is playing.
+
+**4. A turntable — `UPS_SeekDisc`.** A transparent overlay you lay over your own cover art. Turn it to seek: drag around it with the mouse, or circle the right stick like a jog wheel. One full turn is 30 s; clockwise is forward. It draws nothing — your disc turns by binding a rotation to the element's `ScrubAngle` (degrees turned by seeking):
+
+```xml
+<Grid>
+    <!-- Your disc: any look you like -->
+    <Grid Width="300" Height="300" RenderTransformOrigin="0.5,0.5">
+        <Grid.RenderTransform>
+            <RotateTransform Angle="{Binding Content.ScrubAngle, ElementName=UPS_SeekDisc}" />
+        </Grid.RenderTransform>
+        <Ellipse>
+            <Ellipse.Fill>
+                <ImageBrush ImageSource="{Binding Source, ElementName=MyArt}" Stretch="UniformToFill" />
+            </Ellipse.Fill>
+        </Ellipse>
+    </Grid>
+    <!-- The seek surface: same size and place as the disc -->
+    <ContentControl x:Name="UPS_SeekDisc" Width="300" Height="300" Focusable="False" />
+</Grid>
+```
+
+- If your disc also spins on its own (a record turning while music plays), put both turns in a `TransformGroup` — the seek turn bound to `ScrubAngle`, the spin animated — and point the spin's storyboard at `(UIElement.RenderTransform).(TransformGroup.Children)[1].(RotateTransform.Angle)`.
+- While a disc is on screen it owns the right stick (circle to turn); timelines go back to tilt-to-scrub when it's gone.
+- `MyArt` above is an `Image` elsewhere on the page with its `Source` bound to `NowPlayingAlbumArtPath`. Don't bind `{PluginSettings}` straight into the brush in a Fullscreen **Main** view — see [Troubleshooting](#troubleshooting).
 
 ---
 
@@ -805,6 +974,20 @@ If your theme already uses PlayniteSound's `Sounds_MusicControl`, add UPS suppor
 2. Tag must be `"True"` (string) or `true` (boolean).
 3. Enable debug logging in UPS settings → look for `[MusicControl] Tag changed` lines.
 
+**Fullscreen crashes on startup after adding a trigger or brush:**
+
+Playnite builds the Fullscreen **Main** view before extensions load, so a `{PluginSettings}` binding there starts empty and is filled in once UPS loads. On an ordinary property (`Text`, `Source`, `Tag`, `Value`) that works. Used directly as a `DataTrigger`'s `Binding`, or inside a brush (`ImageBrush.ImageSource`), the binding is already sealed by then and Playnite crashes with `Binding cannot be changed after it has been used` (in `playnite.log`). Views built later, like GameDetails, aren't affected. Put the value on an ordinary property and point at that instead:
+
+```xml
+<!-- A hidden element carries the value... -->
+<FrameworkElement x:Name="UpsPlayState" Visibility="Collapsed"
+                  Tag="{PluginSettings Plugin=UniPlaySong, Path=ActiveMediaIsPlaying}" />
+<!-- ...and the trigger reads it -->
+<DataTrigger Binding="{Binding Tag, ElementName=UpsPlayState}" Value="True"> ... </DataTrigger>
+```
+
+For a brush, bind to an `Image` that already shows the art: `ImageSource="{Binding Source, ElementName=MyArt}"`.
+
 **Music doesn't resume:**
 
 1. Tag must flip back to `"False"` when the overlay closes.
@@ -817,7 +1000,7 @@ If your theme already uses PlayniteSound's `Sounds_MusicControl`, add UPS suppor
 
 | | |
 |---|---|
-| **UniPlaySong** | 1.1.9+ for `UPS_MusicControl`; 1.4.6+ for `{PluginSettings}`; 1.5.2+ for `UPS_BackgroundAudio`; 1.5.3+ for `UPS_MusicControl_PauseGamePlayDefault`; 1.5.7+ for live now-playing bindings (`NowPlayingTitle`/`NowPlayingArtist`/`NowPlayingAlbumArtPath`, plus Spotify-only `NowPlayingAlbum`/`NowPlayingGenre`/`NowPlayingDuration`); 1.5.7+ for the now-playing mini-player elements (UPS_NowPlayingMiniPlayer / UPS_NowPlayingMiniPlayerCompact); 1.5.8+ for the unified media controller elements (UPS_MediaControllerOverlay / UPS_MediaControllerBar / UPS_MediaControllerCompact), the `ActiveMedia*` data bindings, and the source-aware `playpausetoggle`/`next`/`previous`/`togglemute` URIs |
+| **UniPlaySong** | 1.1.9+ for `UPS_MusicControl`; 1.4.6+ for `{PluginSettings}`; 1.5.2+ for `UPS_BackgroundAudio`; 1.5.3+ for `UPS_MusicControl_PauseGamePlayDefault`; 1.5.7+ for live now-playing bindings (`NowPlayingTitle`/`NowPlayingArtist`/`NowPlayingAlbumArtPath`, plus Spotify-only `NowPlayingAlbum`/`NowPlayingGenre`/`NowPlayingDuration`); 1.5.7+ for the now-playing mini-player elements (UPS_NowPlayingMiniPlayer / UPS_NowPlayingMiniPlayerCompact); 1.5.8+ for the unified media controller elements (UPS_MediaControllerOverlay / UPS_MediaControllerBar / UPS_MediaControllerCompact), the `ActiveMedia*` data bindings, and the source-aware `playpausetoggle`/`next`/`previous`/`togglemute` URIs; next release for seeking (seekable `ActiveMediaProgress` timelines, two-way `Slider`, `seek`/`seekto` URIs, `UPS_SeekDisc`) and `UPS_MediaControllerTransport` |
 | **Playnite** | 10.x and 11.x, Fullscreen and Desktop |
 | **PlayniteSound** | Coexists — both `Sounds_MusicControl` and `UPS_MusicControl` work in the same theme |
 | **ANIKI REMAKE** | Fully supported reference theme |

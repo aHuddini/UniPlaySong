@@ -118,6 +118,19 @@ namespace UniPlaySong.Services
                     HandleVolume(args.Arguments);
                     break;
 
+                // Skip forward/back within the current song by a signed number of seconds: seek/10, seek/-10.
+                // Source-aware like next/previous (UPS music or Spotify); ignored when the song can't seek.
+                case "seek":
+                    if (TryParseNumber(args.Arguments, "Seek requires seconds, e.g. seek/10 or seek/-10", out double seconds))
+                        _activeMedia.SeekBy(seconds);
+                    break;
+
+                // Jump to a point in the current song, 0-100 of its length: seekto/50 is halfway.
+                case "seekto":
+                    if (TryParseNumber(args.Arguments, "Seekto requires a percentage (0-100)", out double percent))
+                        _activeMedia.SeekTo(percent);
+                    break;
+
                 // Achievement/trophy unlock sound — fired by external plugins (e.g. Playnite
                 // Achievements) via playnite://uniplaysong/playniteachievements/{rarity}, where
                 // {rarity} is common | uncommon | rare | ultrarare | hidden | capstone. Namespaced under the
@@ -140,6 +153,24 @@ namespace UniPlaySong.Services
                     Notify($"Unknown command \"{command}\"");
                     break;
             }
+        }
+
+        // The second URI segment as a number; invariant culture, so "-7.5" reads the same everywhere.
+        private bool TryParseNumber(string[] arguments, string missingMessage, out double value)
+        {
+            value = 0;
+            if (arguments.Length < 2)
+            {
+                Notify(missingMessage);
+                return false;
+            }
+            if (!double.TryParse(arguments[1], System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out value))
+            {
+                Notify($"Invalid number \"{arguments[1]}\"");
+                return false;
+            }
+            return true;
         }
 
         private void HandleVolume(string[] arguments)

@@ -123,7 +123,24 @@ This is **Tier 1 (SMTC control)** — no OAuth, no Spotify Web API, no per-user 
 
 ## Future / available-but-unused SMTC surface
 
-The `GlobalSystemMediaTransportControlsSession` we already hold also exposes (all gated on the corresponding `Controls.IsXEnabled`): `TryStopAsync`, `TryChangeShuffleActiveAsync`, `TryChangeAutoRepeatModeAsync`, `TryChangePlaybackPositionAsync` (seek — Spotify support is inconsistent), and **read** access to `MediaProperties.Thumbnail` (album art, an `IRandomAccessStreamReference` decodable to a WPF bitmap) and `GetTimelineProperties()` (position/duration, updated on SMTC's own coarse cadence). These enable a richer mini-player / album-art surface — Desktop only, since Playnite's Top Panel and Sidebar don't render in Fullscreen.
+The `GlobalSystemMediaTransportControlsSession` we already hold also exposes (all gated on the corresponding `Controls.IsXEnabled`): `TryStopAsync`, `TryChangeShuffleActiveAsync`, `TryChangeAutoRepeatModeAsync`, and **read** access to `MediaProperties.Thumbnail` (album art, an `IRandomAccessStreamReference` decodable to a WPF bitmap) and `GetTimelineProperties()` (position/duration, updated on SMTC's own coarse cadence). These enable a richer mini-player / album-art surface — Desktop only, since Playnite's Top Panel and Sidebar don't render in Fullscreen.
+
+## Seeking
+
+Spotify honours SMTC seeking: `Controls.IsPlaybackPositionEnabled` is true and `TryChangePlaybackPositionAsync`
+works — probed on a live session, a 10 s jump landed in ~120 ms. So seeking needs no Web API, Premium or per-user
+developer app.
+
+- `ISpotifyClient.CanSeek` is `IsPlaybackPositionEnabled`, cached in `RefreshCache` next to `IsPlaying` (both come from
+  the same `GetPlaybackInfo()` read), so the right stick can check it every frame.
+- `RequestSeek(position, onDone)` runs on the SMTC worker like the other commands, **latest-wins**: while one seek is
+  queued a newer target replaces it, so a drag never builds a backlog. The worker re-checks the control flag before
+  calling, and `onDone` is marshalled to the UI thread.
+- `ActiveMediaService` routes timelines, the seek disc, the right stick and the `seek`/`seekto` URIs here when Spotify
+  is the active source. Because Spotify's position only moves when it pushes an update, relative seeks within 1.5 s
+  build on the last requested target. Targets stop a second short of the end; past it Spotify skips to the next track.
+
+The cross-source design is in [TECHNICAL_REFERENCE.md → Seeking](../TECHNICAL_REFERENCE.md#seeking).
 
 ## Live Effects & Visualizer on Spotify (v1.6.5, Experimental)
 

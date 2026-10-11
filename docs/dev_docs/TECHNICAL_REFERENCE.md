@@ -17,9 +17,10 @@ This document provides detailed technical references for key variables, logic, a
 9. [Controller Input Handling](#controller-input-handling)
 10. [Audio Normalization](#audio-normalization)
 11. [Download Manager](#download-manager)
-12. [Theme Integration](#theme-integration)
-13. [Theme Integration Internals (UPS_MusicControl)](#theme-integration-internals-ups_musiccontrol)
-14. [Debugging Tips](#debugging-tips)
+12. [Seeking](#seeking)
+13. [Theme Integration](#theme-integration)
+14. [Theme Integration Internals (UPS_MusicControl)](#theme-integration-internals-ups_musiccontrol)
+15. [Debugging Tips](#debugging-tips)
 
 > Theme **developer** documentation (XAML you put in a theme) lives in
 > [THEME_INTEGRATION_GUIDE.md](Theme%20Support/THEME_INTEGRATION_GUIDE.md). This file documents UPS internals.
@@ -1198,6 +1199,126 @@ public const string GamesFolderName = "Games";
 public const string TempFolderName = "Temp";
 public const string PreservedOriginalsFolderName = "PreservedOriginals";
 ```
+
+---
+
+## Seeking
+
+Moves the current song to another point — UPS music files and Spotify. Not chiptunes or PSF: GME seeks by replaying
+emulation (seconds on a long track) and PSF can only restart, so their readers report `CanSeek = false`.
+
+Every input converges on `IActiveMediaService`, which picks the source. All of it runs on the UI thread except the
+Spotify call itself.
+
+```
+Mouse on a timeline ............ TimelineSeek ──────────────┐
+Theme Slider (two-way binding) . ActiveMediaViewModel ──────┤ RequestSeek (throttled) ─► SeekTo(percent)
+seekto URI ..................... ExternalControlService ────┘
+Right-stick tilt on a timeline . TimelineSeek ──────────────┐
+Disc turn (mouse / right stick)  SeekDisc ──────────────────┤ RelativeSeeker (batched) ─► SeekBy(seconds)
+seek URI ....................... ExternalControlService ────┘
+                                          │
+                     ActiveMediaService ──┤ Spotify is the source ─► SpotifySmtcClient.RequestSeek (SMTC worker)
+                                          └ otherwise ─────────────► current IMusicPlaybackService.Seek ─► IMusicPlayer.Seek
+```
+
+### Players — `IMusicPlayer.CanSeek` / `Seek(TimeSpan)`
+
+| Player | How | `CanSeek` false when |
+|---|---|---|
+| `NAudioMusicPlayer` | Sets the reader's `CurrentTime` while it stays in the mixer. A paused song also moves `_pausedPosition`, which `Resume` seeks back to. | No reader, emulated reader (`GmeReader`, `PsfReader`), crossfading, or the song already ended (out of the mixer and not paused). |
+| `SDL2MusicPlayer` | `Mix_SetMusicPosition`. Works paused too. | Not this player's song: the SDL_mixer music stream is process-global and shared with Playnite's own background music. A format SDL refuses logs `SDL2 seek ... refused`. |
+| `MusicPlayer` (WPF fallback) | `Clock.Controller.Seek`. | No clock. |
+
+Thread safety: the audio thread reads while the UI thread seeks. `AudioFileReader` locks internally; `OggFileReader`
+takes its own lock around `ReadSamples` and `TimePosition` (it had none, and `Resume` already set the position
+concurrently).
+
+### `MusicPlaybackService.Seek`
+
+Clamps the target to `[0, length − 1 s]` — a seek onto the last samples just ends the song — and logs
+`Seek: x s of y s`. `CanSeek` also requires a known length.
+
+### `ActiveMediaService` — `CanSeek`, `SeekTo(percent)`, `SeekBy(seconds)`
+
+- **Source:** Spotify when `SpotifyControlService.IsSpotifyActive`, otherwise UPS music.
+- **Current playback, not the original.** The service is constructed with UPS's playback service, and a backend swap
+  (Live Effects toggle, chiptune switch) replaces that service. Seeks go through an optional
+  `Func<IMusicPlaybackService>` passed at construction, so they reach the player of the moment. Only seeking reads it;
+  the rest of the service still holds the original (the open "backend swap" item).
+- **Spotify:** `SeekTo` scales Spotify's SMTC duration; `SeekBy` starts from its position. Spotify applies a seek
+  ~100 ms after the request and its timeline only moves when it pushes an update, so relative seeks within 1.5 s of
+  the last one build on that **target** (plus elapsed time if playing) instead of the reported position, which would
+  lose steps mid-scrub. Targets are clamped a second short of the end — past it, Spotify skips to the next track.
+  Details: [SPOTIFY_INTEGRATION.md](features/SPOTIFY_INTEGRATION.md#seeking).
+- After a seek the service raises `Changed`, so timelines show the new position at once rather than at the next 1 s
+  poll. For Spotify that happens when the worker has made the call.
+
+### Timelines — `Controls/TimelineSeek.cs`
+
+Class handlers on **every** `ProgressBar` in the process; only UPS timelines are touched. A bar is a UPS timeline when
+its `Value` binding path ends in `ActiveMediaProgress` (a theme's `{PluginSettings}` binds `Settings.ActiveMediaProgress`)
+or is `Progress` on an `ActiveMediaViewModel` data context (UPS's own media elements).
+
+- **Mouse:** preview down/move/up, with mouse capture for the drag, call `ActiveMediaViewModel.RequestSeek(percent)`.
+- **Right stick (tilt):** bars are tracked when their **value changes**, not on `Loaded`. Fullscreen builds its main
+  view before extensions load, and themes build views at different times; Aniki ReMake's player was missed by both a
+  `Loaded` class handler and a startup visual-tree walk. A bound timeline updates every second while music plays, and
+  `RangeBase.ValueChanged` reaches the class handler however and whenever the bar was built. `IsVisibleChanged` on each
+  tracked bar starts a 16 ms poll only while one is visible. `TimelineSeekMath.TiltSecondsPerSecond`: dead zone 0.35,
+  then 4–40 s/s on the square of the tilt; mostly-vertical is ignored. Suspended while any `SeekDisc` is visible
+  (`SeekDisc.VisibleCount`).
+
+### Two-way theme writes — `Controls/ActiveMediaViewModel.cs`
+
+UPS itself writes `ActiveMediaProgress` every second (`MirrorToSettings`). A theme `Slider` bound two-way writes it too.
+`_mirroring` is set around UPS's own write, so `OnSettingsChanged` treats any other write (differing from the snapshot
+by more than 0.05) as a seek. `RequestSeek` is shared with the mouse path: the first value lands at once, later ones at
+most every 100 ms through a `DispatcherTimer`, the last always; an identical repeat within a burst is dropped (a click
+with a hair of mouse movement sent the same point twice).
+
+### Disc — `Controls/SeekDisc.cs` (`UPS_SeekDisc`)
+
+A transparent, unfocusable overlay. Mouse drag and right-stick circling both turn it: the angle around the centre
+(`SeekDiscMath`, y-down so clockwise grows) is followed one-to-one, and `WrapDegrees` keeps the ±180° seam from
+reading as a full turn back. 30 s per turn. `ScrubAngle` (a dependency property) accumulates the degrees so a theme's
+disc can follow. Stick dead zone 0.6 — nearer the centre the angle is noise.
+
+### Batching relative seeks — `Controls/RelativeSeeker.cs`
+
+Disc turns and tilt send a step every frame. Steps add up and reach `SeekBy` at most every 120 ms; `Flush` lands the
+rest when the gesture ends. Decoders and Spotify don't want a seek per frame.
+
+### Right stick — `Controls/RightStick.cs`
+
+Analog values come from `IPlayniteAPI.GetConnectedControllers2()` (SDK 6.18), which returns `IGamepad` objects with an
+`AnalogInputState` dictionary keyed by `ControllerInput.RightStickX/Y` (`short`). UPS builds against SDK 6.16 so it
+keeps loading on older Playnite, so the method is found by reflection — **on the interface**, not the API object's
+class, since an explicit interface implementation has no public method of that name on the class. On a Playnite
+without it, seeking is mouse-only and the log says why. Reads are ignored unless a Playnite window is active, so the
+stick in a game never scrubs the music.
+
+### URIs — `ExternalControlService`
+
+`seek/{seconds}` (signed, decimals allowed) → `SeekBy`; `seekto/{0-100}` → `SeekTo`. Parsed with the invariant culture;
+a missing or invalid number shows a notification, like `volume`.
+
+### Debugging
+
+With debug logging on, `UniPlaySong.log` shows:
+
+| Line | Means |
+|---|---|
+| `[Seek] Right stick available for timelines` / `unavailable: <reason>` | Whether the analog stick API was found. |
+| `[Seek] Progress bar bound to <path>: a UPS timeline / not ours` | Once per distinct binding: what the timeline detection saw. |
+| `[Seek] Tracking a timeline (n tracked, visible=…)` | A bar was picked up for the stick. |
+| `[Seek] Timeline on screen: right stick active` / `idle` | Stick polling started / stopped. |
+| `[Seek] Tilt x=… y=… -> … s/s, canSeek=…` | Start of each tilt. |
+| `Seek: x s of y s` | A UPS-music seek reached the playback service. |
+| `[Spotify] Seek to … failed` | The SMTC call threw. |
+
+Tests: `MusicPlaybackServiceSeekTests`, `ActiveMediaSeekTests`, `ActiveMediaViewModelTests` (two-way writes, throttle),
+`TimelineSeekTests` (binding detection, tilt), `SeekDiscMathTests`, `SeekUriTests`.
 
 ---
 
