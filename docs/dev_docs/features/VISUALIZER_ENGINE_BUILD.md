@@ -110,7 +110,11 @@ native\visualizer\build.cmd         renderer (x64) + bridge (x86) into src\Audio
   install. Verify: `dumpbin /dependents` on each file lists only Windows system DLLs.
 - **`tar`:** `build_deps.cmd` calls `%SystemRoot%\System32\tar.exe` explicitly; Git's GNU tar, if first on PATH,
   reads `C:\...` as a remote host.
-- After a rebuild, every hash changes: update
+- **Version resource (`version.rc`)** on the renderer and the bridge, compiled once per binary (`/DVIS_BRIDGE` for the
+  bridge). It has its own version (1.0.0.0), not UniPlaySong's, so a release does not change either binary. Without
+  one, the bridge (almost all static runtime, unsigned) was flagged as a trojan by a couple of VirusTotal engines.
+- **Reproducible:** `/Brepro` makes the same source give the same bytes, so a rebuild without code changes keeps
+  every hash. When code changes, update
   [`VIRUSTOTAL-AUDIT-UniPlaySongVisualizer-Bridge-projectM-glew32.md`](../../../src/Audio/Native/Visualizer/VIRUSTOTAL-AUDIT-UniPlaySongVisualizer-Bridge-projectM-glew32.md)
   and [`SHIPPED_BINARIES.md`](../SHIPPED_BINARIES.md) (`DllDocumentationTests` fails until the audit matches).
 
