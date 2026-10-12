@@ -1,5 +1,12 @@
 ﻿AddonId: 'UniPlaySong.a1b2c3d4-e5f6-7890-abcd-ef1234567890'
 Packages:
+  - Version: 1.9.0
+    RequiredApiVersion: 6.16.0
+    ReleaseDate: 2026-10-11
+    PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.0/UniPlaySong-1_9_0.pext'
+    Changelog:
+      - '[New Feature] Seek within songs: click or drag a music timeline, or tilt the controller''s right stick while one is on screen. Works with Spotify too.'
+      - '[New Feature] For themes: skip-forward/back commands, a buttons-only player control and a turntable-style cover you turn to seek. See the Theme Integration Guide.'
   - Version: 1.8.10
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-10-06
