@@ -323,6 +323,7 @@ namespace UniPlaySong.Services
                 [Advanced] = new string[]
                 {
                     nameof(UniPlaySongSettings.AlternativeAudioReactiveVisualizerSync),
+                    nameof(UniPlaySongSettings.MusicVisualizerEnabled),
                     nameof(UniPlaySongSettings.AudioBufferSamples),
                     nameof(UniPlaySongSettings.EnableDebugLogging),
                     nameof(UniPlaySongSettings.EnableMediaKeyControl),

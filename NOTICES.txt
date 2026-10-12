@@ -10,6 +10,9 @@ Binary transparency
 -------------------
 All six bundled native DLLs are UNSIGNED (no Authenticode certificate):
 SDL2.dll, SDL2_mixer.dll, gme.dll, z.dll, psf.dll, SpotifyLoopback.dll.
+So are the four music visualizer binaries in the Visualizer\ folder:
+UniPlaySongVisualizer.exe, UniPlaySongVisualizerBridge.dll, projectM-4.dll,
+glew32.dll - all compiled by the maintainer (see "Music visualizer" below).
 
 Four were compiled by the maintainer rather than obtained as upstream builds:
 
@@ -274,6 +277,175 @@ License:    MIT
 Upstream:   https://github.com/MaterialDesignInXAML/MaterialDesignInXamlToolkit
 Linkage:    Dynamic (NuGet package)
 Modifications: NONE.
+
+
+Music visualizer (Visualizer\ folder)
+====================================
+
+The experimental music visualizer (Settings -> Experimental -> Music Visualizer
+for Themes). UniPlaySongVisualizer.exe and UniPlaySongVisualizerBridge.dll are
+first-party (MIT, see LICENSE), built from native/visualizer/. So is the
+shipped preset, Visualizer\presets\UPS - Glow Bars.milk. The two libraries
+below are built from source tarballs archived in the repository.
+
+
+projectM (projectM-4.dll)
+-------------------------
+Purpose:    The MilkDrop-compatible visualization engine the renderer drives
+License:    GNU Lesser General Public License v2.1 (LGPL-2.1)
+Upstream:   https://github.com/projectM-visualizer/projectm
+Pinned at:  tag v4.1.8 (commit 4967dc003e5206d7df3ff447287f7609c47d2343),
+            with its vendor/projectm-eval submodule
+Linkage:    Dynamic - projectM-4.dll is a separate file loaded by
+            UniPlaySongVisualizer.exe; it is NOT compiled into any
+            UniPlaySong binary. Recipients can replace it with their own
+            build of projectM 4.1.x exposing the same projectm_* C API.
+
+Copyright (C) 2003-2009 projectM Team (as stated in projectM's COPYING header)
+
+Source code availability (LGPL section 6):
+
+  The corresponding source code for the projectM-4.dll bundled with this
+  .pext is archived at:
+
+      lib/source/projectm-source-4.1.8.tar.gz
+      SHA-256: 246b8b6cbfdc3d0b99b79ce5e2c2e08acdeb0b5ad991e4740528cbded6e0e748
+
+  in the UniPlaySong source repository (https://github.com/aHuddini/UniPlaySong).
+  It is the v4.1.8 tag plus the projectm-eval submodule; only docs/ and
+  background.png, which are not build inputs, are left out. The complete tag
+  is available upstream at:
+
+      https://github.com/projectM-visualizer/projectm/tree/v4.1.8
+
+  Build instructions: docs/dev_docs/features/VISUALIZER_ENGINE_BUILD.md.
+
+Modifications: NONE. Built unmodified with CMake: x64, BUILD_SHARED_LIBS=ON,
+static MSVC runtime, playlist library and SDL UI off.
+
+Written offer: Anyone who has received a UniPlaySong .pext containing this
+projectM-4.dll may obtain the corresponding LGPL source by:
+  (a) downloading the tarball above from the UniPlaySong repository, OR
+  (b) cloning https://github.com/projectM-visualizer/projectm and checking
+      out tag v4.1.8, OR
+  (c) opening an issue at https://github.com/aHuddini/UniPlaySong/issues
+      requesting the source archive.
+
+Components compiled into projectM-4.dll (vendored in the projectM source):
+
+  projectm-eval    MIT - Copyright (c) 2023 The projectM Team
+  hlslparser       MIT - Copyright (c) 2013-2014 Unknown Worlds Entertainment, Inc.
+  GLM              MIT (or the Happy Bunny License) - Copyright (c) 2005 G-Truc Creation
+  SOIL2, stb       Public domain
+  etc1_utils.c     Apache License 2.0 - Copyright 2009 Google Inc.
+                   (inside SOIL2; licence text at
+                   http://www.apache.org/licenses/LICENSE-2.0)
+
+  MIT License text, for the MIT components above:
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+
+
+GLEW (glew32.dll)
+-----------------
+Purpose:    OpenGL extension loading for projectM and the renderer
+License:    Modified BSD + MIT (Mesa) + Khronos (text below)
+Upstream:   https://github.com/nigels-com/glew
+Version:    2.2.0
+Source:     lib/source/glew-source-2.2.0.tgz (the upstream release tarball)
+            SHA-256: d4fc82893cfb00109578d0a1a2337fb8ca335b3ceccf97b97e5cc7f08e4353e1
+Linkage:    Dynamic (DLL beside the renderer)
+Modifications: NONE. Built with CMake, x64, static MSVC runtime.
+
+The OpenGL Extension Wrangler Library
+Copyright (C) 2002-2007, Milan Ikits <milan ikits[]ieee org>
+Copyright (C) 2002-2007, Marcelo E. Magallon <mmagallo[]debian org>
+Copyright (C) 2002, Lev Povalahev
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice,
+  this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* The name of the author may be used to endorse or promote products
+  derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+THE POSSIBILITY OF SUCH DAMAGE.
+
+
+Mesa 3-D graphics library
+Version:  7.0
+
+Copyright (C) 1999-2007  Brian Paul   All Rights Reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+BRIAN PAUL BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
+AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Copyright (c) 2007 The Khronos Group Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and/or associated documentation files (the
+"Materials"), to deal in the Materials without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Materials, and to
+permit persons to whom the Materials are furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be included
+in all copies or substantial portions of the Materials.
+
+THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+MATERIALS OR THE USE OR OTHER DEALINGS IN THE MATERIALS.
 
 
 Bundled Default Music

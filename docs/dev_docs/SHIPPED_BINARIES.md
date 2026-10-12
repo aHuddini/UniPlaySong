@@ -1,6 +1,7 @@
 # Shipped Binaries
 
-Every `.dll` in the UniPlaySong `.pext`: what it is, where it comes from, its licence and its hash.
+Every `.dll` (and the one `.exe`) in the UniPlaySong `.pext`: what it is, where it comes from, its licence and its
+hash.
 
 Current for **v1.8.8**.
 
@@ -32,6 +33,10 @@ copies and the hashes below.
 | `SDL2_mixer.dll` | 306,688 | Committed | `lib/SDL2_mixer.dll` — see the sourcing warning below | zlib |
 | `z.dll` | 78,336 | Committed | `src/Audio/Native/RetroChiptune/z.dll` | zlib |
 | `psf.dll` | 185,344 | Committed (first-party) | `src/Audio/Native/RetroChiptune/psf.dll`, built from `native/psf/` | ISC + BSD-2 |
+| `Visualizer/UniPlaySongVisualizer.exe` | 186,368 | Committed (first-party) | `src/Audio/Native/Visualizer/`, built from `native/visualizer/` (x64) | MIT |
+| `Visualizer/UniPlaySongVisualizerBridge.dll` | 84,992 | Committed (first-party) | `src/Audio/Native/Visualizer/`, built from `native/visualizer/` (x86) | MIT |
+| `Visualizer/projectM-4.dll` | 1,279,488 | Committed | `src/Audio/Native/Visualizer/`, projectM 4.1.8 built from `lib/source/` (x64) | LGPL-2.1 |
+| `Visualizer/glew32.dll` | 500,224 | Committed | `src/Audio/Native/Visualizer/`, GLEW 2.2.0 built from `lib/source/` (x64) | Modified BSD + MIT + Khronos |
 | `FuzzySharp.dll` | 39,936 | NuGet | `FuzzySharp` 2.0.2 | MIT |
 | `HtmlAgilityPack.dll` | 169,472 | NuGet | `HtmlAgilityPack` 1.11.46 (`lib/Net45/`) | MIT |
 | `MaterialDesignColors.dll` | 302,592 | NuGet | `MaterialDesignColors` 2.1.0 | MIT |
@@ -81,6 +86,10 @@ b1833a41ab1e933f7b006e5db15300b7223bfccc2c3b6689d49a9171dd27de1d  TagLibSharp.dl
 f50a551e39e7714e1662ccf78f4e03b9be49e2704860fcbc4513d3d0d1879866  WindowsMediaController.dll
 ddddfe7a7f87c87f29419f493d83ccf679bf9e1c276532a268a3687509f62875  psf.dll
 b1f8e01096a7a0585a7a3738e3f371e332d8de4ddd88d8dab1ab51dfd8432560  z.dll
+763fc6ad9da9948a37f9e7a61e109406e41f3b7e18473796442de394f7bfe60a  Visualizer/glew32.dll
+6ec38fa4ca701918fac274f1dfe0ba420f3ae76f16e09d0ae6e9ae1a3c6f3656  Visualizer/projectM-4.dll
+b984353e6cb6de385329fcb886eda083301e0efbc9decc145e38fed3490fa8d6  Visualizer/UniPlaySongVisualizer.exe
+37bcaa80976fb2908cd4b228a4c7929b5d3efe94146136ad4be60d7efd18078e  Visualizer/UniPlaySongVisualizerBridge.dll
 ```
 
 ## Where committed binaries are picked up
@@ -90,6 +99,7 @@ b1f8e01096a7a0585a7a3738e3f371e332d8de4ddd88d8dab1ab51dfd8432560  z.dll
 | `lib/SDL2.dll`, `lib/SDL2_mixer.dll` | packaging script, direct path — fails if missing |
 | `src/Audio/Native/RetroChiptune/{gme,z,psf}.dll` | packaging script, direct path |
 | `src/Audio/Native/SpotifyLoopback.dll` | csproj copy to build output, then packaged |
+| `src/Audio/Native/Visualizer/` (four binaries + the shipped preset) | packaging script, direct path, into `Visualizer\` in the `.pext` |
 
 ## Binary transparency
 
@@ -102,6 +112,10 @@ to a publisher. Four are compiled by the maintainer:
 | `gme.dll` | libgme @ `1815b97`, CMake, `GME_YM2612_EMU=Nuked` | [`features/CHIPTUNE_GME_DLL_BUILD.md`](features/CHIPTUNE_GME_DLL_BUILD.md); source at `lib/source/gme-source-1815b97.tar.gz` |
 | `z.dll` | zlib @ tag `v1.3.2`, CMake, Win32 | [`RetroChiptune/DLL-README.md`](../../src/Audio/Native/RetroChiptune/DLL-README.md). No source archive is kept — zlib's licence does not require one. |
 | `psf.dll` | `native/psf/` (first-party bridges over ares @ `17813a3` and aopsf @ `f0371db`) | [`features/PSF_ENGINE_BUILD.md`](features/PSF_ENGINE_BUILD.md); `native/psf/build.cmd` |
+| `Visualizer/*` | renderer + bridge from `native/visualizer/` (first-party); projectM `v4.1.8` and GLEW 2.2.0 from `lib/source/` | [`features/VISUALIZER_ENGINE_BUILD.md`](features/VISUALIZER_ENGINE_BUILD.md); `native/visualizer/build_deps.cmd` then `build.cmd` |
+
+The visualizer's four binaries are unsigned too, and their VirusTotal reports are **not yet submitted** — submit them
+before the visualizer ships in a release (hashes in its `VIRUSTOTAL-AUDIT` file, which says so until then).
 
 `SDL2.dll` and `SDL2_mixer.dll` are upstream libsdl-org release builds (2.30.5 / 2.8.0), unsigned as
 shipped by that project.
@@ -126,10 +140,11 @@ Licence texts are in [`NOTICES.txt`](../../NOTICES.txt), bundled into the `.pext
 third-party DLL is named there; `UniPlaySong.dll` and `SpotifyLoopback.dll` are first-party and
 covered by `LICENSE`.
 
-Two components are copyleft, both dynamically linked, which is what keeps them compatible with
+Three components are copyleft, all dynamically linked, which is what keeps them compatible with
 UniPlaySong's MIT licence:
 
 - **`gme.dll`** — LGPL-2.1-or-later. Source archived for LGPL section 6.
+- **`Visualizer/projectM-4.dll`** — LGPL-2.1. Source archived for LGPL section 6 (`lib/source/projectm-source-4.1.8.tar.gz`).
 - **`TagLibSharp.dll`** — LGPL-2.1, unmodified NuGet package.
 
 ## Per-folder documentation
@@ -142,6 +157,7 @@ and licence. Separate from `README.md` so a folder can carry both, and so a diff
 | `lib/` | `SDL2.dll`, `SDL2_mixer.dll` | [`DLL-README`](../../lib/DLL-README.md) · [`VIRUSTOTAL-AUDIT-SDL2`](../../lib/VIRUSTOTAL-AUDIT-SDL2.md) |
 | `src/Audio/Native/` | `SpotifyLoopback.dll` | [`DLL-README`](../../src/Audio/Native/DLL-README.md) · [`VIRUSTOTAL-AUDIT-SpotifyLoopback`](../../src/Audio/Native/VIRUSTOTAL-AUDIT-SpotifyLoopback.md) |
 | `src/Audio/Native/RetroChiptune/` | `gme.dll`, `z.dll`, `psf.dll` | [`DLL-README`](../../src/Audio/Native/RetroChiptune/DLL-README.md) · [`VIRUSTOTAL-AUDIT-gme-z-psf`](../../src/Audio/Native/RetroChiptune/VIRUSTOTAL-AUDIT-gme-z-psf.md) |
+| `src/Audio/Native/Visualizer/` | `UniPlaySongVisualizer.exe`, `UniPlaySongVisualizerBridge.dll`, `projectM-4.dll`, `glew32.dll` | [`DLL-README`](../../src/Audio/Native/Visualizer/DLL-README.md) · [`VIRUSTOTAL-AUDIT-UniPlaySongVisualizer-Bridge-projectM-glew32`](../../src/Audio/Native/Visualizer/VIRUSTOTAL-AUDIT-UniPlaySongVisualizer-Bridge-projectM-glew32.md) |
 
 `DllDocumentationTests` fails if a folder gains a `.dll` without one. A plain `README.md` does not
 satisfy it.
@@ -150,7 +166,7 @@ satisfy it.
 
 ```bash
 unzip -o -d /tmp/pext pext/UniPlaySong.*_1_8_8.pext
-cd /tmp/pext && sha256sum *.dll | grep -v ' UniPlaySong.dll$' | sort -k2
+cd /tmp/pext && sha256sum *.dll Visualizer/*.dll Visualizer/*.exe | grep -v ' UniPlaySong.dll$' | sort -k2
 ```
 
 Compare against the SHA-256 block above.

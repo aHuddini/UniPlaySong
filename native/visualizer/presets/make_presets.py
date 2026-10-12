@@ -1,5 +1,6 @@
 # Generates UPS's own MilkDrop presets. Written for UPS, so they ship under UPS's licence, unlike the community
-# preset packs (no licence, never bundled). Run it, then copy or point the renderer at this folder.
+# preset packs (no licence, never bundled). Run it to regenerate the .milk files here; native/visualizer/build.cmd copies
+# the style that ships (Glow Bars, for now) into src/Audio/Native/Visualizer/presets/.
 #
 # Every style shares one bar engine. Order inside one projectM frame:
 #   1. preset per-frame code: turns last frame's spectrum (gmem[1000..1511]) into N log-spaced bar levels -

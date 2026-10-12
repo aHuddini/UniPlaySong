@@ -125,6 +125,18 @@
             <TextBlock Text="&#x26A0; Experimental: still being tuned — the look may change."
                        Style="{StaticResource UpsWarning}"/>
 
+            <!-- Music Visualizer for themes -->
+            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Music Visualizer for Themes" Style="{StaticResource UpsSectionTitle}"/></Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Show the music visualizer in themes that include it"
+                      IsChecked="{Binding Settings.MusicVisualizerEnabled}"
+                      Margin="0,5,0,5"/>
+            <TextBlock Text="An animated visualizer that moves with the music, shown wherever your theme places it. It reacts only to the music UniPlaySong is playing, never to game or system sounds. Nothing appears if your theme doesn't include it."
+                       Style="{StaticResource UpsHint}"
+                       TextWrapping="Wrap"
+                       Margin="32,0,0,5"/>
+            <TextBlock Text="&#x26A0; Experimental: uses your graphics card while it's on screen."
+                       Style="{StaticResource UpsWarning}"/>
+
             <!-- Media Key Control -->
             <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Media Key Control" Style="{StaticResource UpsSectionTitle}"/></Border>
 

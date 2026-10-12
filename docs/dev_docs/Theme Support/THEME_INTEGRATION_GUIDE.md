@@ -24,6 +24,7 @@ How to wire your Playnite Fullscreen theme into UniPlaySong's music playback.
 | Let the user seek on your timeline — mouse and right stick | Nothing: any `ProgressBar` bound to `ActiveMediaProgress` already seeks (next release) — see [Seeking](#seeking--scrub-the-current-song-next-release) |
 | Skip forward / back buttons | `playnite://uniplaysong/seek/{seconds}` and `seekto/{0-100}` URIs (next release) |
 | A turntable-style cover the user turns to seek | `UPS_SeekDisc` overlay element (next release) |
+| An animated, music-reactive visualizer with real transparency, for a page or your music player | `UPS_MusicVisualControl` element, experimental (next release) — see [Music visualizer](#music-visualizer--ups_musicvisualcontrol-experimental-next-release) |
 
 ---
 
@@ -931,6 +932,55 @@ on whatever is playing — UPS music or Spotify — and do nothing for chiptunes
 - While a disc is on screen it owns the right stick (circle to turn); timelines go back to tilt-to-scrub when it's gone.
 - `MyArt` above is an `Image` elsewhere on the page with its `Source` bound to `NowPlayingAlbumArtPath`. Don't bind `{PluginSettings}` straight into the brush in a Fullscreen **Main** view — see [Troubleshooting](#troubleshooting).
 
+### Music visualizer — `UPS_MusicVisualControl` (experimental, next release)
+
+An animated MilkDrop-style visualizer that moves with the music, drawn with **real transparency** over whatever your
+view shows behind it. It reacts only to the music UniPlaySong plays — never to game or system sounds.
+
+```xml
+<!-- Fill a page or a panel; it draws nothing until the user turns it on -->
+<ContentControl x:Name="UPS_MusicVisualControl" Focusable="False" IsHitTestVisible="False" />
+```
+
+- **Users switch it on:** Settings → Experimental → *Music Visualizer for Themes*. It's off by default; until it's on,
+  the element stays empty and costs nothing, so it's safe to ship in a theme unconditionally.
+- **It never takes focus** and doesn't take mouse input, so it can't disturb controller navigation. Put any buttons in
+  front of it as usual.
+- **Size it the way you want it drawn.** It renders at the element's own size, so it stays sharp; the frame follows
+  when the element is resized. One visualizer at a time — if a view has two, only one draws.
+- **It runs only while visible.** Collapse it (or hide the page) and it stops; show it and it starts.
+- **The centre is left for your cover art.** The visuals keep clear of a disc in the middle of the element — 30 % of
+  its height across — so a page can put the album art there:
+
+  ```xml
+  <Grid>
+      <ContentControl x:Name="UPS_MusicVisualControl" Focusable="False" IsHitTestVisible="False" />
+      <!-- Cover art in the centre slot: 30 % of the visualizer's height -->
+      <Grid>
+          <Grid.RowDefinitions>
+              <RowDefinition Height="35*" /><RowDefinition Height="30*" /><RowDefinition Height="35*" />
+          </Grid.RowDefinitions>
+          <Ellipse Grid.Row="1" HorizontalAlignment="Center"
+                   Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}">
+              <Ellipse.Fill>
+                  <ImageBrush ImageSource="{Binding Source, ElementName=MyArt}" Stretch="UniformToFill" />
+              </Ellipse.Fill>
+          </Ellipse>
+      </Grid>
+  </Grid>
+  ```
+
+  (`MyArt` is an `Image` on the page with its `Source` bound to `NowPlayingAlbumArtPath`; see
+  [Troubleshooting](#troubleshooting) for why the brush doesn't bind `{PluginSettings}` directly.)
+- **Dark backgrounds suit it best.** Black is see-through and bright is solid, so the glow reads strongest over a dimmed
+  backdrop — a blurred, darkened copy of the album art works well.
+- **One style for now** (Glow Bars: slim bars either side of the centre with a reflection and bloom); more will come
+  and will keep the same centre slot.
+- **Cost:** it uses the graphics card while on screen — a few milliseconds a frame on integrated graphics at 1080p.
+
+A complete Fullscreen example page — visualizer, centred spinning cover, seekable timeline, title and transport — is
+in the UniPlaySong repository at `native/visualizer/demo-theme/UPSNowPlayingDemoFS-Main.xaml`.
+
 ---
 
 ## Compatibility with PlayniteSound
@@ -1000,7 +1050,7 @@ For a brush, bind to an `Image` that already shows the art: `ImageSource="{Bindi
 
 | | |
 |---|---|
-| **UniPlaySong** | 1.1.9+ for `UPS_MusicControl`; 1.4.6+ for `{PluginSettings}`; 1.5.2+ for `UPS_BackgroundAudio`; 1.5.3+ for `UPS_MusicControl_PauseGamePlayDefault`; 1.5.7+ for live now-playing bindings (`NowPlayingTitle`/`NowPlayingArtist`/`NowPlayingAlbumArtPath`, plus Spotify-only `NowPlayingAlbum`/`NowPlayingGenre`/`NowPlayingDuration`); 1.5.7+ for the now-playing mini-player elements (UPS_NowPlayingMiniPlayer / UPS_NowPlayingMiniPlayerCompact); 1.5.8+ for the unified media controller elements (UPS_MediaControllerOverlay / UPS_MediaControllerBar / UPS_MediaControllerCompact), the `ActiveMedia*` data bindings, and the source-aware `playpausetoggle`/`next`/`previous`/`togglemute` URIs; next release for seeking (seekable `ActiveMediaProgress` timelines, two-way `Slider`, `seek`/`seekto` URIs, `UPS_SeekDisc`) and `UPS_MediaControllerTransport` |
+| **UniPlaySong** | 1.1.9+ for `UPS_MusicControl`; 1.4.6+ for `{PluginSettings}`; 1.5.2+ for `UPS_BackgroundAudio`; 1.5.3+ for `UPS_MusicControl_PauseGamePlayDefault`; 1.5.7+ for live now-playing bindings (`NowPlayingTitle`/`NowPlayingArtist`/`NowPlayingAlbumArtPath`, plus Spotify-only `NowPlayingAlbum`/`NowPlayingGenre`/`NowPlayingDuration`); 1.5.7+ for the now-playing mini-player elements (UPS_NowPlayingMiniPlayer / UPS_NowPlayingMiniPlayerCompact); 1.5.8+ for the unified media controller elements (UPS_MediaControllerOverlay / UPS_MediaControllerBar / UPS_MediaControllerCompact), the `ActiveMedia*` data bindings, and the source-aware `playpausetoggle`/`next`/`previous`/`togglemute` URIs; next release for seeking (seekable `ActiveMediaProgress` timelines, two-way `Slider`, `seek`/`seekto` URIs, `UPS_SeekDisc`), `UPS_MediaControllerTransport`, and the experimental `UPS_MusicVisualControl` |
 | **Playnite** | 10.x and 11.x, Fullscreen and Desktop |
 | **PlayniteSound** | Coexists — both `Sounds_MusicControl` and `UPS_MusicControl` work in the same theme |
 | **ANIKI REMAKE** | Fully supported reference theme |

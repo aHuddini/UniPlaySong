@@ -172,6 +172,14 @@ Native DLLs power SDL2 audio playback, retro chiptune decoding (GME), and Spotif
 - **Copy to build output + package**: `<None CopyToOutputDirectory>` in `UniPlaySong.csproj`; bundled into the `.pext` by `scripts/package_extension.ps1` (mirrors the gme.dll/SDL2 copy steps).
 - **License**: MIT (UniPlaySong's own).
 
+### Music visualizer — `Visualizer\` folder (experimental)
+- **Purpose**: The MilkDrop visualizer behind the *Music Visualizer for Themes* setting (`UPS_MusicVisualControl`)
+- **Files**: `UniPlaySongVisualizer.exe` (x64 renderer, first-party), `UniPlaySongVisualizerBridge.dll` (x86, first-party), `projectM-4.dll` (projectM 4.1.8, x64), `glew32.dll` (GLEW 2.2.0, x64), `presets\UPS - Glow Bars.milk`
+- **Location**: `src/Audio/Native/Visualizer/`, packaged into `Visualizer\` in the `.pext` by `scripts/package_extension.ps1`
+- **Source archives**: `lib/source/projectm-source-4.1.8.tar.gz` (LGPL §6), `lib/source/glew-source-2.2.0.tgz`
+- **Build**: `native/visualizer/build_deps.cmd` then `build.cmd` — [`VISUALIZER_ENGINE_BUILD.md`](features/VISUALIZER_ENGINE_BUILD.md). Static MSVC runtime: no redistributable needed.
+- **License**: projectM **LGPL-2.1** (dynamic: a separate, replaceable DLL); GLEW modified BSD + MIT + Khronos; renderer, bridge and preset MIT
+
 ### DLL Loading
 
 **Assembly Resolution:**
@@ -490,6 +498,8 @@ All bundled dependencies are compatible with the MIT license under which UniPlay
 - **SDL2 / SDL2_mixer**: zlib license
 - **zlib (z.dll)**: zlib license
 - **TagLibSharp**: LGPL v2.1 — compatible via dynamic linking (NuGet-distributed DLL alongside `UniPlaySong.dll`).
+- **projectM (Visualizer/projectM-4.dll)**: **LGPL v2.1** — compatible via dynamic linking: a separate DLL loaded by the visualizer renderer, replaceable with any projectM 4.1.x build. Source archived at `lib/source/projectm-source-4.1.8.tar.gz`. Its vendored components are MIT, public domain and Apache-2.0; no GPL code.
+- **GLEW (Visualizer/glew32.dll)**: modified BSD + MIT + Khronos.
 - **Game Music Emu (gme.dll)**: **LGPL v2.1+** — compatible via dynamic linking. UniPlaySong links via P/Invoke; `gme.dll` is a separate file in the `.pext`, making it user-replaceable. Our build uses `GME_YM2612_EMU=Nuked` (LGPL-safe); the MAME YM2612 core (GPL v2+) is explicitly NOT used. Source pin and reproduction in [`GME_BUILD.md`](features/CHIPTUNE_GME_DLL_BUILD.md).
 
 > **Per-component upstream URLs, license texts, and LGPL §6 source-availability pointers live in [`NOTICES.txt`](../../NOTICES.txt).** That file is also bundled in the `.pext` so end users have it.

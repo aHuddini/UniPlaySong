@@ -2934,6 +2934,14 @@ namespace UniPlaySong
             set { alternativeAudioReactiveVisualizerSync = value; OnPropertyChanged(); }
         }
 
+        // Experimental: themes that place the music visualizer element (UPS_MusicVisualControl) show an animated,
+        // music-reactive visual. Off = the element stays empty and nothing extra runs.
+        public bool MusicVisualizerEnabled
+        {
+            get => musicVisualizerEnabled;
+            set { musicVisualizerEnabled = value; OnPropertyChanged(); }
+        }
+
         // Bar color theme for the spectrum visualizer. Classic (0) uses the original solid white brush. Other
         // themes use colored gradients.
         public int VizColorTheme
@@ -3031,6 +3039,7 @@ namespace UniPlaySong
         private int vizFftFallHigh = 70;         // 0-95 — FFT fall alpha for treble bins
         private bool vizFftTimerMode = false;    // false = signal-based (audio-driven), true = fixed 16ms timer (~62fps)
         private bool alternativeAudioReactiveVisualizerSync = false;
+        private bool musicVisualizerEnabled = false;
         private VizPreset selectedVizPreset = VizPreset.Punchy; // Current visualizer preset
         private int vizColorTheme = 0;               // VizColorTheme enum — bar color theme (0=Dynamic)
         private bool vizGradientEnabled = true;      // true = gradient bars, false = solid color

@@ -1,5 +1,5 @@
-// SPIKE A consumer helper (x86 DLL, loaded into the 32-bit WPF process). Opens the producer's three
-// shared D3D11 textures as D3D9Ex textures and copies the newest into one stable render target, which
+// UniPlaySong visualizer bridge (x86 DLL, loaded into Playnite's 32-bit process by UPS_MusicVisualControl). Opens the
+// renderer's three shared D3D11 textures as D3D9Ex textures and copies the newest into one stable render target, which
 // is what WPF's D3DImage displays. The copy is GPU-to-GPU (StretchRect); nothing passes through the CPU.
 #include <windows.h>
 #include <d3d9.h>
@@ -24,9 +24,8 @@ extern "C" __declspec(dllexport) int vt_init(HWND hwnd)
         D3DCREATE_HARDWARE_VERTEXPROCESSING | D3DCREATE_MULTITHREADED | D3DCREATE_FPU_PRESERVE, &pp, nullptr, &g_dev);
 }
 
-// Opens one of the producer's textures by its shared handle. The value came from a 64-bit process; legacy
-// DXGI shared handles are global and 32-bit wide, so truncating to this process's HANDLE is the point
-// being tested.
+// Opens one of the renderer's textures by its shared handle. The value came from a 64-bit process; legacy DXGI
+// shared handles are global and 32-bit wide, so truncating to this process's HANDLE is safe.
 extern "C" __declspec(dllexport) int vt_open(int index, uint64_t handle, int w, int h)
 {
     HANDLE sh = (HANDLE)(uintptr_t)handle;

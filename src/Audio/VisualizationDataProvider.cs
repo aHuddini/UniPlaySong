@@ -21,6 +21,9 @@ namespace UniPlaySong.Audio
         private readonly Func<UniPlaySongSettings> _getSettings;
         private UniPlaySongSettings Settings => _getSettings?.Invoke();
         private readonly OutputClock _clock;
+        // The output clock of the player this provider taps (null for players without one), so other consumers can tell
+        // which player is audible.
+        internal OutputClock Clock => _clock;
 
         private bool Synced => _clock != null && (Settings?.AlternativeAudioReactiveVisualizerSync ?? false);
 

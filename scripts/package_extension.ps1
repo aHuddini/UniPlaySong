@@ -221,6 +221,25 @@ if (Test-Path $spotifyLoopbackPath) {
     Write-Host "  WARNING: SpotifyLoopback.dll not found in build output. Spotify live effects will not work." -ForegroundColor Yellow
 }
 
+# Copy the music visualizer (experimental, behind a setting): an x64 renderer with its libraries, the x86 bridge
+# Playnite loads, and the shipped preset. Into a Visualizer\ subfolder - the x64 binaries must not sit beside the
+# x86 plugin DLLs, where Playnite or the loader could pick them up. From src/Audio/Native/Visualizer/ (built by
+# native/visualizer/build.cmd) so the shipped bytes are the documented ones. Fail-soft: without it the element stays empty.
+Write-Host "Copying music visualizer..." -ForegroundColor Yellow
+$visualizerDir = Join-Path $projectRoot "src\Audio\Native\Visualizer"
+$visualizerFiles = @("UniPlaySongVisualizer.exe", "UniPlaySongVisualizerBridge.dll", "projectM-4.dll", "glew32.dll", "presets\UPS - Glow Bars.milk")
+$visualizerDest = Join-Path $packageDir "Visualizer"
+$visualizerMissing = $visualizerFiles | Where-Object { -not (Test-Path (Join-Path $visualizerDir $_)) }
+if ($visualizerMissing) {
+    Write-Host "  WARNING: music visualizer files missing ($($visualizerMissing -join ', ')) - run native\visualizer\build.cmd" -ForegroundColor Yellow
+} else {
+    New-Item -ItemType Directory -Force -Path (Join-Path $visualizerDest "presets") | Out-Null
+    foreach ($file in $visualizerFiles) {
+        Copy-Item (Join-Path $visualizerDir $file) -Destination (Join-Path $visualizerDest $file) -Force
+    }
+    Write-Host "  Copied: Visualizer\ ($($visualizerFiles.Count) files)" -ForegroundColor Gray
+}
+
 # Copy dependencies from the build output - i.e. the assemblies NuGet actually restored.
 #
 # There used to be a lib\dll folder checked in, and this preferred it over the build output. That
