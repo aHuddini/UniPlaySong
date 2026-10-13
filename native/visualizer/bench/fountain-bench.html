@@ -78,6 +78,22 @@
     <div class="btns">
       <button id="presetYours5Full" class="main" title="Your tune #5 with stereo wings, a tint per song section and the lead-melody highlight">Tune #5 + sections + melody</button>
       <button id="presetYours5" title="Your values from 2026-10-13 00:36, plus beads cooling as they settle">Your tune #5</button>
+    </div>
+    <h2 class="sec">Showcase</h2>
+    <div class="btns" title="Showcase: complete looks - palette, gradient, motion, glow, colour behaviour and song layers pushed toward one concept">
+      <button id="showSound" title="Speed: dots shoot out and streak, a sonic-boom wave cracks out from the cover on every beat, gold rings glint, red on the kick">Sound Barrier</button>
+      <button id="showNova" title="A star collapsing and exploding: long build-up wind-ups, huge slow shockwaves on the ONE, white-hot drops">Supernova</button>
+      <button id="showBullet" title="Shoot-'em-up density: hundreds of short-lived candy bullets, jittery snap, ping-pong between the wings">Bullet Hell</button>
+      <button id="showAbyss" title="Deep sea: slow bubbles rising through soft bokeh, the whole line breathing with the pads, the melody a jellyfish glow">Abyss</button>
+      <button id="showCathedral" title="Orchestral and choral: light through stained glass, held chords fill the space, the melody sings, harmony turns the glass">Cathedral</button>
+      <button id="showGlitch" title="Datamosh: raw unsmoothed levels, wobbling overshoot, a wide chromatic split, two-tone green-or-magenta pixels (no flashing)">Glitch</button>
+      <button id="showLava" title="Slow wax: blobs rise and drift, a slow ripple rolls outward, heat climbs to glowing orange at the tips">Lava Lamp</button>
+      <button id="showHolo" title="A projected display: crisp short-lived pixels, an RGB split at the edges, even scan-like pulses, white flickers of colour">Hologram</button>
+      <button id="showQuick" title="Liquid metal: each beat lands like a drop in mercury - ripples run sideways along the surface, pass through each other and wobble before settling">Quicksilver</button>
+      <button id="showMinimal" title="Quiet elegance for menus: silver and white, accents barely there, a clean wave on the ONE">Minimal</button>
+      <button id="showFestival" title="Everything on: a full spectrum across the line, ping-pong wings, big drops and wind-ups, sparkle, sections and melody">Festival</button>
+    </div>
+    <div class="btns">
       <select id="presetPick" title="Every other preset">
         <option value="">More presets...</option>
         <optgroup label="Your tunes">
@@ -147,6 +163,7 @@ const PARAMS = [
   ["FLING", "Fling & motion", "Fling on a kick", 0.8, 0, 3, 0.05, "How far a kick throws the outer dots away from the line. 0 = kicks don't throw anything."],
   ["FLING_FREQ", "Fling & motion", "Fling speed (Hz)", 2.2, 0.3, 8, 0.1, "How fast the throw happens and returns. Low = a slow, floaty swell; high = a tight snap that follows the beat closely."],
   ["FLING_DAMP", "Fling & motion", "Fling bounce", 0.55, 0.05, 2, 0.05, "Below 1 the thrown dots overshoot and bounce back past the start before settling; 1 and above = they return smoothly with no bounce."],
+  ["LIQUID", "Fling & motion", "Liquid surface", 0, 0, 1, 0.05, "Links each column to its neighbours like a water surface: a throw spreads sideways as a travelling ripple, ripples pass through and interfere. With low 'Fling bounce' it wobbles like liquid metal. 0 = columns move on their own."],
   ["FLING_TIP", "Fling & motion", "Fling: outer dots only", 1.5, 0, 4, 0.1, "Which dots get thrown. 0 = the whole column moves together; higher = only the dots furthest from the line move, the core stays put."],
   ["KICK_THRESHOLD", "Fling & motion", "Kick threshold", 0.03, 0, 0.2, 0.005, "How big a jump in loudness has to be to count as a kick. Raise it until only real hits light the amber bars in the graph; too low and every small wobble triggers fling, stretch and colour."],
   ["KICK_GAIN", "Fling & motion", "Kick strength", 3.0, 0.5, 10, 0.1, "How hard a kick above the threshold hits: higher = smaller hits already give a full kick."],
@@ -275,8 +292,19 @@ const PALETTES = [
   ["Pocket LCD", [1.2, 2.6, 0.8], [7.5, 9.0, 3.5], "Four-shade olive handheld screen (the original Game Boy)"],
   ["Ink Clash", [10.0, 1.2, 6.0], [6.0, 10.0, 0.5], "Two teams of neon ink: pink on the left, lime on the right (Splatoon)"],
   ["Phantom", [9.0, 9.0, 9.0], [10.0, 0.6, 0.8], "Bold red and white with sharp contrast (Persona 5's menus)"],
+  ["Ring Rush", [0.6, 2.5, 10.0], [10.0, 8.0, 1.5], "Cobalt blue, white speed lines, gold rings, red shoes on the kick (Sonic)"],
+  // ---- Showcase palettes: made for the Showcase looks (they work on their own too)
+  ["Solar", [8.0, 0.6, 0.4], [10.0, 10.0, 10.0], "Crimson to gold to white-hot - a star going supernova"],
+  ["Danmaku", [10.0, 1.0, 7.0], [1.0, 9.0, 10.0], "Bullet-hell candy: magenta, yellow-white and cyan bullets"],
+  ["Abyss", [0.4, 1.2, 5.0], [5.0, 10.0, 9.0], "Deep-sea bioluminescence: navy depths, teal light, a pink jellyfish glow"],
+  ["Stained Glass", [8.0, 0.8, 1.5], [1.5, 3.0, 10.0], "Cathedral glass: ruby, gold and sapphire light"],
+  ["Corrupted", [1.0, 10.0, 3.0], [10.0, 1.0, 8.0], "Datamosh: terminal green or broken magenta, nothing between"],
+  ["Lava", [4.0, 0.5, 4.0], [10.0, 7.0, 1.0], "Lava lamp: deep purple wax, magenta-red, glowing orange"],
+  ["Mercury", [3.0, 3.6, 5.0], [10.0, 10.0, 10.0], "Liquid chrome: gunmetal, polished silver, white highlights"],
+  ["Hologram", [0.0, 4.0, 6.0], [9.0, 10.0, 10.0], "Projected hologram: deep cyan to bright cyan to white"],
 ];
 const CLASSIC_PALETTES = 12;   // the ones before Game styles
+const GAME_END = 28;           // Game styles run up to here; the Showcase palettes follow
 // Each palette's colour scheme for the temperature model (HDR like the palette; the shader keeps every shift at the
 // dot's brightness, so these set hue and saturation): hot = which palette colour loudness heats toward (2 = the second,
 // 1 = the first); cool = the two cool shades 'Cool colour' blends between (the cold end of the scale); kick = the beat's
@@ -314,6 +342,15 @@ const SCHEMES = {
   "Pocket LCD": { mid: [4.5, 6.5, 1.2], kick: [8.0, 9.5, 4.0], cool: [[1.0, 2.4, 1.0], [1.5, 3.0, 1.2]], calm: [[1.0, 2.0, 0.8], [1.3, 2.5, 1.0]], glint: [8.5, 9.5, 5.0], bloom: [0.55, 0.8, 0.2], heatGain: 1.2, coolGain: 0.6, grad: 2 },
   "Ink Clash": { mid: [9.0, 9.0, 9.0], kick: [10.0, 9.0, 2.0], cool: [[6.0, 1.0, 9.0], [8.0, 1.0, 8.0]], calm: [[3.0, 1.0, 4.0], [4.0, 2.0, 5.0]], glint: [10.0, 10.0, 10.0], bloom: [0.8, 0.6, 0.5], grad: 4 },
   "Phantom": { mid: [10.0, 4.0, 4.0], kick: [10.0, 10.0, 10.0], cool: [[6.0, 6.0, 6.5], [5.0, 5.0, 6.0]], calm: [[4.0, 4.0, 4.5], [5.0, 5.0, 5.5]], glint: [10.0, 10.0, 10.0], bloom: [1.0, 0.2, 0.25], coolGain: 0.8, grad: 0 , split: 1 },
+  "Ring Rush": { mid: [9.0, 9.5, 10.0], kick: [10.0, 1.2, 1.0], cool: [[0.5, 2.0, 9.0], [1.5, 1.5, 10.0]], calm: [[0.5, 2.5, 6.0], [1.0, 3.0, 8.0]], glint: [10.0, 9.0, 3.0], bloom: [0.35, 0.55, 1.0], grad: 1 },
+  "Solar": { mid: [10.0, 7.0, 1.5], kick: [10.0, 9.5, 7.0], cool: [[6.0, 0.8, 1.5], [7.0, 1.5, 0.5]], calm: [[4.0, 0.8, 0.6], [5.0, 1.5, 0.6]], glint: [10.0, 10.0, 8.0], bloom: [1.0, 0.45, 0.12], coolGain: 0.6, grad: 1 },
+  "Danmaku": { hot: 1, heatGain: 0.6, mid: [10.0, 9.5, 6.0], kick: [10.0, 10.0, 4.0], cool: [[1.0, 7.0, 10.0], [3.0, 5.0, 10.0]], calm: [[4.0, 2.0, 7.0], [5.0, 3.0, 8.0]], glint: [10.0, 10.0, 10.0], bloom: [0.8, 0.5, 0.9], grad: 0 },
+  "Abyss": { mid: [0.5, 6.0, 6.5], kick: [10.0, 3.0, 8.0], cool: [[0.3, 1.0, 4.5], [0.5, 2.0, 6.0]], calm: [[0.3, 2.0, 3.5], [0.5, 3.0, 4.5]], glint: [8.0, 10.0, 10.0], bloom: [0.2, 0.7, 0.9], heatGain: 1.1, grad: 0 },
+  "Stained Glass": { mid: [10.0, 8.0, 3.0], kick: [10.0, 9.5, 8.0], cool: [[1.5, 2.5, 9.0], [3.0, 2.0, 9.0]], calm: [[2.0, 1.5, 5.0], [3.0, 2.0, 6.0]], glint: [10.0, 10.0, 9.0], bloom: [1.0, 0.75, 0.45], grad: 0 },
+  "Corrupted": { kick: [10.0, 10.0, 10.0], cool: [[0.5, 8.0, 6.0], [1.0, 6.0, 8.0]], calm: [[0.5, 4.0, 2.0], [4.0, 0.5, 4.0]], glint: [10.0, 10.0, 10.0], bloom: [0.6, 0.6, 0.6], split: 1, grad: 0 },
+  "Lava": { mid: [10.0, 2.0, 1.5], kick: [10.0, 8.0, 3.0], cool: [[3.0, 0.5, 5.0], [4.5, 0.5, 4.5]], calm: [[3.0, 0.5, 3.0], [4.0, 0.8, 3.5]], glint: [10.0, 8.0, 5.0], bloom: [1.0, 0.3, 0.5], grad: 2 },
+  "Mercury": { mid: [7.0, 7.6, 9.0], kick: [8.0, 9.0, 10.0], cool: [[2.5, 3.2, 5.5], [3.5, 3.5, 6.0]], calm: [[2.5, 3.0, 4.0], [3.0, 3.5, 4.5]], glint: [10.0, 10.0, 10.0], bloom: [0.7, 0.75, 0.9], heatGain: 1.3, coolGain: 0.8, grad: 0 },
+  "Hologram": { mid: [0.5, 9.0, 10.0], kick: [10.0, 10.0, 10.0], cool: [[0.0, 3.5, 6.0], [0.5, 3.0, 8.0]], calm: [[0.0, 2.5, 4.0], [0.3, 3.0, 5.0]], glint: [10.0, 10.0, 10.0], bloom: [0.3, 0.9, 1.0], heatGain: 1.2, grad: 0 },
   "Teal to gold": { mid: [7.0, 8.0, 6.0], heatGain: 0.9, coolGain: 0.85, cool: [[1.0, 6.0, 5.5], [1.0, 5.0, 7.0]], kick: [6.0, 10.0, 10.0], calm: [[1.0, 4.0, 5.0], [1.5, 5.0, 7.0]], glint: [9.0, 10.0, 8.0], bloom: [0.30, 0.80, 0.70] },
 };
 const schemeOf = pal => ({ ...SCHEME_DEFAULT, ...(SCHEMES[pal[0].split(" (")[0]] || SCHEMES[pal[0]] || {}) });
@@ -399,9 +436,9 @@ document.getElementById("openAll").onclick = () => { for (const n in groups) { g
 document.getElementById("closeAll").onclick = () => { for (const n in groups) { groups[n].open = false; openState[n] = false; } saveOpen(); };
 const palSel = document.getElementById("palette"), gradSel = document.getElementById("gradient");
 // two groups in the select: the classics, then the game styles (with their inspiration as the tooltip)
-{ const groups = [document.createElement("optgroup"), document.createElement("optgroup")];
-  groups[0].label = "Classic"; groups[1].label = "Game styles";
-  PALETTES.forEach((p, i) => { const o = document.createElement("option"); o.value = i; o.textContent = "Palette: " + p[0]; if (p[3]) o.title = p[3]; groups[i < CLASSIC_PALETTES ? 0 : 1].appendChild(o); });
+{ const groups = [document.createElement("optgroup"), document.createElement("optgroup"), document.createElement("optgroup")];
+  groups[0].label = "Classic"; groups[1].label = "Game styles"; groups[2].label = "Showcase";
+  PALETTES.forEach((p, i) => { const o = document.createElement("option"); o.value = i; o.textContent = "Palette: " + p[0]; if (p[3]) o.title = p[3]; groups[i < CLASSIC_PALETTES ? 0 : i < GAME_END ? 1 : 2].appendChild(o); });
   groups.forEach(gp => palSel.appendChild(gp)); }
 palSel.value = P.PALETTE; gradSel.value = P.GRADIENT;
 // a game style comes with its suggested gradient (it's part of the look); the gradient can be changed after
@@ -465,6 +502,22 @@ const YOUR_TUNE_4_COOL = { ...YOUR_TUNE_4, COLOR_LEVEL: 0.9, COLOR_TIPS: 1, COLO
 // The user's tune #5 (2026-10-13): tune #4 cooler, retuned - plus moving dots cooling.
 const YOUR_TUNE_5 = { ...YOUR_TUNE_4, KICK_COLOR: 0.5, GLOW_PULSE: 0.08, COLOR_LEVEL: 0.9, COLOR_TIPS: 1, COLOR_CURVE: 2.6,
   COLOR_EASE: 0.72, COOL_AIR: 0.9, COOL_HUE: 0.6, MOVE_COOL: 0.7 };
+// Showcase: complete looks built on tune #5 + sections + melody, each pushing the engine toward one concept. Guard
+// rails stay: colour fades >= 0.3 s (none go lower), the brightness flash stays tune #5's 0.05, the accent budgets.
+const SHOWCASE_BASE = { ...YOUR_TUNE_5, STEREO: 1, ANALYSIS: 1, SECTION_LOOK: 0.4, MELODY: 0.7 };
+const SHOWCASE = {
+  showSound: { name: "Sound Barrier", palette: "Ring Rush", grad: 1, values: { LAUNCH: 1.0, LAUNCH_SPEED: 7, LIFE_SPREAD: 4, REACH: 24, STRETCH_GAIN: 0.12, STRETCH_MAX: 8, STRETCH_DIM: 0.6, BEAT_SPRING: 2.6, BEAT_SNAP: 0.25, FLING_DAMP: 0.6, FLING: 2.8, WAVE: 1.6, WAVE_SPEED: 600, BEAT_IN_PLACE: 0.4, BEAT_ACCENT: 0.6, BEAT_OTHERS: 0.6, DROP_FLING: 2.8, DROP_DECAY: 0.9, EASE_IN: 0.04, EASE_OUT: 0.25, SPARKLE: 0.9, KICK_COLOR: 0.7, COLOR_EASE: 0.3, DEFOCUS: 0.35, FRINGE: 0.0025, BLOOM_WIDE: 0.8, MELODY: 0.8, COOL_AIR: 0.5, MOVE_COOL: 0.4, PAD_GLOW: 0.3 } },
+  showNova: { name: "Supernova", palette: "Solar", grad: 1, values: { TENSION: 1.5, DROP_FLING: 3, DROP_DECAY: 2.5, WAVE: 2.0, WAVE_SPEED: 90, BEAT_ACCENT: 1.4, BEAT_OTHERS: 0.15, BEAT_IN_PLACE: 0.1, BEAT_SNAP: 0.7, FLING: 3, REACH: 26, BLOOM_WIDE: 1.6, BLOOM_NEAR: 0.7, GLOW_PULSE: 0.2, PAD_GLOW: 1.0, SECTION_LOOK: 0.7, TEMP_AMOUNT: 0.6, COLOR_LEVEL: 0.9, COLOR_CURVE: 1.8, KICK_COLOR: 0.6, COOL_AIR: 0.3 } },
+  showBullet: { name: "Bullet Hell", palette: "Danmaku", grad: 0, values: { COOL_AIR: 0.3, BEAT_SPRING: 3.2, BEAT_SNAP: 0.18, FLING_DAMP: 0.5, BEAT_EVEN: 0.1, BEAT_IN_PLACE: 0.9, FLING: 2.2, STRETCH_GAIN: 0.1, STRETCH_MAX: 6, LIFE_SPREAD: 3, LAUNCH: 0.9, LAUNCH_SPEED: 8, SPARKLE: 1.0, DEFOCUS: 0.2, BLOOM_WIDE: 0.5, SIZE: 0.75, EASE_IN: 0.03, EASE_OUT: 0.2, PINGPONG: 0.8, WAVE: 0.5, WAVE_SPEED: 500, TEMP_AMOUNT: 0.5, COLOR_EASE: 0.3, MELODY: 1.0 } },
+  showAbyss: { name: "Abyss", palette: "Abyss", grad: 0, values: { BEAT_SPRING: 0.8, BEAT_SNAP: 1.0, BEAT_EVEN: 1, FLING: 1.6, FLING_DAMP: 1.2, LAUNCH: 0.9, LAUNCH_SPEED: 1.2, LIFE_SPREAD: 40, DEFOCUS: 1.0, BLOOM_WIDE: 2.0, BLOOM_NEAR: 0.8, EXPOSURE: 0.45, BREATH: 0.9, PAD_GLOW: 1.2, PAD_SWELL: 1.0, WAVE: 0.3, WAVE_SPEED: 60, EASE_IN: 0.2, EASE_OUT: 1.0, MELODY: 1.2, SPARKLE: 0.4, COOL_AIR: 0.8, TEMP_AMOUNT: 0.35, STRETCH_GAIN: 0.01, LIQUID: 0.5 } },
+  showCathedral: { name: "Cathedral", palette: "Stained Glass", grad: 0, values: { BEAT_DRIVE: 0.3, BEAT_EVEN: 1, FLING: 1.4, FLING_DAMP: 1.0, CORE: 1.4, CORE_HOLD: 0.95, PAD_GLOW: 1.4, PAD_SWELL: 1.2, MELODY: 1.3, HARMONY_HUE: 0.8, SECTION_LOOK: 0.6, BLOOM_WIDE: 1.8, GLOW_PULSE: 0.15, LIFE_SPREAD: 30, LAUNCH: 0.5, LAUNCH_SPEED: 2, TEMP_AMOUNT: 0.3, SPARKLE: 0.5, DROP_FLING: 1.6 } },
+  showGlitch: { name: "Glitch", palette: "Corrupted", grad: 0, values: { FLING_DAMP: 0.2, BEAT_SPRING: 3.5, BEAT_SNAP: 0.15, PINGPONG: 1.2, BEAT_EVEN: 0, TILT: 8, GAMMA: 0.5, EASE_IN: 0.01, EASE_OUT: 0.08, FRINGE: 0.005, DEFOCUS: 0.1, STRETCH_GAIN: 0.15, STRETCH_MAX: 9, SPARKLE: 1.0, KICK_COLOR: 1.0, COLOR_EASE: 0.3, SECTION_LOOK: 1, PHRASE_HUE: 1 } },
+  showLava: { name: "Lava Lamp", palette: "Lava", grad: 0, values: { COOL_AIR: 0.4, LAUNCH: 1.0, LAUNCH_SPEED: 0.8, LIFE_SPREAD: 50, SIZE: 1.0, DEFOCUS: 1, BLOOM_WIDE: 1.5, BEAT_EVEN: 1, BEAT_SNAP: 1.2, BEAT_SPRING: 0.7, FLING_DAMP: 1.4, WAVE: 0.8, WAVE_SPEED: 40, BREATH: 1.0, PAD_SWELL: 1.2, COLOR_LEVEL: 1, TEMP_AMOUNT: 0.7, COLOR_CURVE: 1.4, COLOR_TIPS: 1, COLOR_EASE: 1.2, LIQUID: 0.6 } },
+  showHolo: { name: "Hologram", palette: "Hologram", grad: 0, values: { FRINGE: 0.004, DEFOCUS: 0.2, STRETCH_DIM: 1.0, LIFE_SPREAD: 6, BRIGHT: 3, EXPOSURE: 0.5, BEAT_IN_PLACE: 0.8, BEAT_EVEN: 0.8, SPARKLE: 0.8, MELODY: 1.0, COOL_AIR: 0.3, TEMP_AMOUNT: 0.25, KICK_COLOR: 0.7, GLOW_PULSE: 0.05, BLOOM_WIDE: 0.6 } },
+  showQuick: { name: "Quicksilver", palette: "Mercury", grad: 0, values: { LIQUID: 0.85, FLING_DAMP: 0.35, BEAT_SPRING: 1.6, BEAT_SNAP: 0.5, BEAT_IN_PLACE: 0.7, BEAT_EVEN: 0.4, WAVE: 0.0, FLING: 2.6, SIZE: 1.0, DEFOCUS: 0.9, BLOOM_WIDE: 1.2, BLOOM_NEAR: 0.7, LAUNCH: 0.2, STRETCH_GAIN: 0.02, STRETCH_MAX: 2, BREATH: 0.6, LIFE_SPREAD: 20, SPARKLE: 0.7, PAD_SWELL: 0.6, TEMP_AMOUNT: 0.3, COOL_AIR: 0.6, KICK_COLOR: 0.6 } },
+  showMinimal: { name: "Minimal", palette: "Silver", grad: 2, values: { ACCENT: 0.15, TEMP_AMOUNT: 0.15, COOL_AIR: 0.3, KICK_COLOR: 0.2, SPARKLE: 0.15, BLOOM_WIDE: 0.4, BLOOM_NEAR: 0.3, DEFOCUS: 0.5, FLING: 1.6, BEAT_SNAP: 0.5, WAVE: 0.8, PAD_GLOW: 0.3, MELODY: 0.5, SECTION_LOOK: 0, HARMONY_HUE: 0, GLOW_PULSE: 0.04, FRINGE: 0 } },
+  showFestival: { name: "Festival", palette: "Vapor", grad: 3, values: { PINGPONG: 0.8, WAVE: 1.6, WAVE_SPEED: 260, SPARKLE: 1.0, DROP_FLING: 2.8, TENSION: 1.5, SECTION_LOOK: 1, MELODY: 1.2, PAD_GLOW: 1, HARMONY_HUE: 0.8, TEMP_AMOUNT: 0.5, BEAT_ACCENT: 1.2, BEAT_OTHERS: 0.5, FLING: 2.9, REACH: 24, BLOOM_WIDE: 1.4 } },
+};
 const whiteToMagenta = () => setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0);
 document.getElementById("presetYours4").onclick = () => { applyAll(YOUR_TUNE_4); whiteToMagenta(); };
 document.getElementById("presetYours5Full").onclick = () => { applyAll({ ...YOUR_TUNE_5, STEREO: 1, SECTION_LOOK: 0.5, MELODY: 0.8 }); whiteToMagenta(); };
@@ -476,6 +529,9 @@ document.getElementById("presetPick").onchange = e => {
   b.onclick();
   const el = document.getElementById("flash"); el.textContent = "Preset: " + name; el.classList.add("on");
   clearTimeout(flashTimer); flashTimer = setTimeout(() => el.classList.remove("on"), 1400);
+};
+for (const id in SHOWCASE) document.getElementById(id).onclick = () => {
+  const sc = SHOWCASE[id]; applyAll({ ...SHOWCASE_BASE, ...sc.values }); setColour(PALETTES.findIndex(p => p[0] === sc.palette), sc.grad);
 };
 for (const id in BEAT_PRESETS) document.getElementById(id).onclick = () => { applyAll({ ...BEAT_LOOK, ...BEAT_PRESETS[id] }); setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0); };
 document.getElementById("presetMapped").onclick = () => { applyAll(LIVE_MAPPED); setColour(0, 2); if (sourceSel.value === "synth") sourceSel.value = "song"; };
@@ -1196,7 +1252,9 @@ let reg00 = 0.02, acc60 = 0, meanLevel = 0;
 // song dynamics: short vs long loudness gives the section (0 = breakdown .. 1 = full); a drop is the music slamming
 // back after a quiet stretch; the bass kick feeds a shockwave that travels outward from the cover
 let tension = 0, beatIdx = 0, beatFrac = 0, phrase = 0, lastSongT = -1;
+let dropColL = 24, dropColR = 71;   // where the last beat's drop landed on each wing (Liquid)
 let beatEnv = 0, beatAt = -1, padE = 0, harmX = 0, harmY = 0, harmE = 0;   // the beat throw's envelope; the song time (plus lead) beats have been taken up to
+const liqTmp = new Float32Array(N), targ = new Float32Array(N);   // the liquid's copy of the throws; each spring's target
 const kv = new Float32Array(N);   // each column's throw: its own kick, or the beat's, by BEAT_DRIVE
 const kc = new Float32Array(N);   // the colour's copy of it, smoothed - the colour fades in where the throw snaps
 let dropC = 0, sectionC = 1;      // the drop's colour (fades in) and a slow section for the breakdown colour
@@ -1302,6 +1360,10 @@ function engine(dt, t) {
     for (let i = Math.max(0, beatIndexAt(beatAt) + 1); i < bs.length && bs[i] <= tt; i++) if (bs[i] > beatAt) {
       const hit = Math.pow(beatInfo.strength[i], P.BEAT_CONTRAST) * (i % 4 === beatInfo.barPhase ? 1 + P.BEAT_ACCENT : P.BEAT_OTHERS);
       beatEnv = Math.max(beatEnv, P.BEAT_FLOOR + (1 - P.BEAT_FLOOR) * hit);
+      // with Liquid, the beat lands as a drop where the music is loudest on each wing, and the surface carries it out
+      let bl = -1, br = -1;
+      for (let c = 0; c < N; c++) { if (c < N / 2) { if (bl < 0 || ez[c] > ez[bl]) bl = c; } else if (br < 0 || ez[c] > ez[br]) br = c; }
+      dropColL = bl; dropColR = br;
     }
     beatAt = tt;
     // the beat grid for ping-pong and phrases: the tracked beats, not the map's estimate
@@ -1336,11 +1398,28 @@ function engine(dt, t) {
     const side = c < 48 ? 0 : 1, pp = ppAmt * ((Math.abs(beatIdx) % 2) === side ? 1 : -0.5);
     // on the beat, each column throws by what's sounding in it - a silent column stays put
     const sh = Math.min(1, live * 1.4);
-    kv[c] = env[c] + (beatEnv * (sh + (1 - sh) * P.BEAT_EVEN) - env[c]) * bd;
+    let shape = sh + (1 - sh) * P.BEAT_EVEN;
+    if (P.LIQUID > 0) { const d = c < N / 2 ? c - dropColL : c - dropColR; shape *= 1 - P.LIQUID + P.LIQUID * 1.6 * Math.exp(-(d * d) / 25); }   // a drop
+    kv[c] = env[c] + (beatEnv * shape - env[c]) * bd;
     const target = Math.max(kv[c] * (beatOn ? P.BEAT_IN_PLACE : 1) * (1 + pp), dyn * P.WAVE * wave * (1 + pp), dyn * P.DROP_FLING * dropPulse) + Math.max(0, pp) * 0.35;
-    const steps = 4, h = dt / steps;
-    for (let s = 0; s < steps; s++) { const a = w * w * (target - fl[c]) - 2 * z * w * flv[c]; flv[c] += a * h; fl[c] += flv[c] * h; }
+    targ[c] = target;   // the spring is stepped below, all columns together (the liquid couples neighbours)
     total += live;
+  }
+  // the fling springs, stepped together: each column pulled toward its target, damped - and with Liquid, pulled toward
+  // its neighbours too (a 1-D wave equation, ends reflecting), so a throw travels sideways as a ripple. Symplectic
+  // Euler in 4 substeps a frame (more on a long frame): stable while k h^2 < 1 (k = 2500 x Liquid -> 0.04 at 60 fps).
+  {
+    // (water has little restoring force at a point - the coupling carries the energy - so Liquid weakens each column's
+    // own pull: otherwise a drop just fades where it lands instead of travelling)
+    const k = 2500 * P.LIQUID, wl = w * w * (1 - 0.85 * P.LIQUID), steps = Math.max(4, Math.ceil(dt * 240)), h = dt / steps;
+    for (let st = 0; st < steps; st++) {
+      if (k > 0) for (let c = 0; c < N; c++) liqTmp[c] = fl[c];
+      for (let c = 0; c < N; c++) {
+        let a = wl * (targ[c] - fl[c]) - 2 * z * w * flv[c];
+        if (k > 0) a += k * (liqTmp[c > 0 ? c - 1 : 1] + liqTmp[c < N - 1 ? c + 1 : N - 2] - 2 * liqTmp[c]);
+        flv[c] += a * h; fl[c] += flv[c] * h;
+      }
+    }
   }
   meanLevel += (total / N - meanLevel) * (1 - Math.exp(-dt / P.GLOW_SMOOTH));
   const ca = P.COLOR_EASE > 0 ? 1 - Math.exp(-dt / P.COLOR_EASE) : 1, cr = P.COLOR_EASE > 0 ? 1 - Math.exp(-dt / (3 * P.COLOR_EASE)) : 1;

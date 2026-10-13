@@ -39,10 +39,11 @@ export async function run(file, preset, from = 30, len = 40, label = "", record 
     const m = await E.buildMap(Math.floor((x.length - mh) / mh), sr / mh, sr / mh, f => { const o = f * mh; for (let i = 0; i < mh; i++) { mre[i] = x[o + i] * hw[i]; mim[i] = 0; } mF(mre, mim); for (let i = 0; i < mh / 2; i++) mag[i] = Math.hypot(mre[i], mim[i]); return mag; }, "song");
     E.setMap(m); globalThis.__drops = m.drops;
   }
-  const dt = 1 / 60, rows = [], frames = [], cj = { a: 0, b: 0 }, cj2 = {}, cool = {}; globalThis.__pv = null; globalThis.__pa = null; globalThis.__pb = null;
+  let maxFl = 0; const dt = 1 / 60, rows = [], frames = [], cj = { a: 0, b: 0 }, cj2 = {}, cool = {}; globalThis.__pv = null; globalThis.__pa = null; globalThis.__pb = null;
   for (let t = from - 5; t < from + len; t += dt) {
     mock.actx.currentTime = t; E.engine(dt, t);
     if (t >= from) { const s = E.state(); if (record) frames.push(Float32Array.from(s.fl));
+      for (let c = 0; c < 96; c++) maxFl = Math.max(maxFl, Math.abs(s.fl[c]));
       if (process.env.COOL) { const Pp = preset, ss = (a, b, x) => { const u = Math.min(1, Math.max(0, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
         for (const [ti, tip] of [0.2, 0.5, 0.8, 1.0].entries()) { let cw = 0, mv = 0;
           for (let c = 0; c < 96; c++) { const T = Math.pow(Math.min(1, s.heatC[c] * 1.5), Pp.COLOR_CURVE) * (1 + (ss(0.1, 0.9, tip) - 1) * Pp.COLOR_TIPS);
@@ -71,6 +72,7 @@ export async function run(file, preset, from = 30, len = 40, label = "", record 
   const mean = a => a.reduce((p, q) => p + q, 0) / a.length;
   const corr = (a, c) => { const ma = mean(a), mc = mean(c); let s = 0, sa = 0, sc = 0; for (let i = 0; i < a.length; i++) { s += (a[i] - ma) * (c[i] - mc); sa += (a[i] - ma) ** 2; sc += (c[i] - mc) ** 2; } return s / Math.sqrt(sa * sc + 1e-12); };
   if (process.env.DBG) { const w = strs; const mu = mean(w); console.log("   strengths in window: mean", mu.toFixed(2), "sd", Math.sqrt(mean(w.map(v => (v - mu) ** 2))).toFixed(2), " drops:", (globalThis.__drops || []).map(d => d.toFixed(1)).join(",")); }
+  if (process.env.MAXFL) console.log(`  ${label}: largest throw ${maxFl.toFixed(2)}`);
   const out = { label, bpm: bi.bpm, depth: med(depth), lag: med(lag), sat: mean(rows.map(r => r[2])), level: mean(rows.map(r => r[1])), follow: corr(peaks, strs) };
   if (process.env.COOL) { const avg = a => a.reduce((p, q) => p + q, 0) / a.length;
     for (const [ti, tip] of [0.2, 0.5, 0.8, 1.0].entries()) console.log(`  ${label} dots at ${tip} of the way out: cool tint ${avg(cool[ti].map(r => r[0])).toFixed(2)} on average, 'settling' ${avg(cool[ti].map(r => r[1])).toFixed(2)}`);
