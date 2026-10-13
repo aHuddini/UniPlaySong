@@ -258,16 +258,35 @@ const PALETTES = [
   ["Gold to violet", [8.0, 5.0, 1.2], [4.0, 1.5, 9.0]],
   ["White to magenta", [6.0, 5.0, 6.5], [7.0, 1.0, 4.0]],
   ["Teal to gold", [1.0, 6.0, 5.0], [8.0, 5.5, 1.0]],
+  // ---- Game styles: palettes that evoke a game's interface / art style (named by aesthetic; the inspiration is the
+  // fourth entry, shown as the tooltip). Each scheme below gives its middle colour, accents and suggested gradient.
+  ["Neon Noir", [0.4, 6.5, 7.5], [10.0, 0.8, 1.6], "Cyberpunk HUD: teal to hazard yellow to hot red (as in Cyberpunk 2077's interface)"],
+  ["Phosphor", [0.6, 4.5, 1.2], [6.5, 10.0, 7.0], "Green phosphor terminal (Fallout's Pip-Boy, retro CRT readouts)"],
+  ["Amber CRT", [6.0, 2.0, 0.3], [10.0, 8.5, 5.0], "Amber retro-future monitors (Alien: Isolation's terminals)"],
+  ["Ancient Tech", [0.8, 2.5, 10.0], [7.0, 10.0, 10.0], "Glowing blue relic tech with an orange warning pulse (Zelda: Breath of the Wild's Sheikah towers)"],
+  ["Plasma", [5.0, 1.2, 10.0], [1.0, 10.0, 6.0], "Alien plasma: violet to blue to plasma green (Halo's Covenant)"],
+  ["Vapor", [10.0, 3.5, 7.5], [2.5, 9.0, 10.0], "Vaporwave: hot pink to lavender to cyan (retro mall aesthetics, Hotline Miami's pastels)"],
+  ["Moonlit Ruins", [2.5, 3.5, 7.0], [9.5, 9.5, 10.0], "Pale moonlight over dark ruins (Hollow Knight's hand-drawn blues)"],
+  ["Bonfire", [7.0, 6.2, 5.6], [10.0, 8.5, 5.0], "Ash and ember: grey ash core, flames at the tips (Dark Souls' bonfires)"],
+  ["Hellfire", [7.5, 0.5, 0.3], [10.0, 9.0, 2.5], "Demon-slaying red to orange to yellow, with green power-ups on the kick (DOOM's HUD)"],
+  ["Visor HUD", [0.8, 8.0, 5.0], [10.0, 5.0, 1.0], "Green scan visor and an orange power suit (Metroid Prime's HUD)"],
+  ["Paragon / Renegade", [1.2, 3.8, 10.0], [10.0, 1.2, 1.0], "Blue on one side, red on the other, white between (Mass Effect's choices)"],
+  ["Lightcycle", [0.4, 8.0, 10.0], [10.0, 5.5, 0.6], "Neon grid: cyan and orange light trails on black (Tron)"],
+  ["Pocket LCD", [1.2, 2.6, 0.8], [7.5, 9.0, 3.5], "Four-shade olive handheld screen (the original Game Boy)"],
+  ["Ink Clash", [10.0, 1.2, 6.0], [6.0, 10.0, 0.5], "Two teams of neon ink: pink on the left, lime on the right (Splatoon)"],
+  ["Phantom", [9.0, 9.0, 9.0], [10.0, 0.6, 0.8], "Bold red and white with sharp contrast (Persona 5's menus)"],
 ];
+const CLASSIC_PALETTES = 12;   // the ones before Game styles
 // Each palette's colour scheme for the temperature model (HDR like the palette; the shader keeps every shift at the
 // dot's brightness, so these set hue and saturation): hot = which palette colour loudness heats toward (2 = the second,
 // 1 = the first); cool = the two cool shades 'Cool colour' blends between (the cold end of the scale); kick = the beat's
 // colour shift; calm = the breakdown pair; glint = hi-hat sparkle; bloom = the wide bloom's tint; heatGain / coolGain
 // = how strongly heat and cool show on this palette (close-coloured palettes need more, warm-to-cool ones less); mid =
-// an optional colour halfway along the palette, for two-hue palettes whose plain midpoint is muddy (orange + blue). The cool pair stays in
+// an optional colour halfway along the palette, for two-hue palettes whose plain midpoint is muddy (orange + blue);
+// split = two-tone: each dot snaps to one colour or the other (red OR white), no blends between. The cool pair stays in
 // the palette's own family - a cooler, deeper take on its cold colour - so strong Cool air never paints a green or
 // teal palette blue.
-const SCHEME_DEFAULT = { mid: null, heatGain: 1, coolGain: 1, hot: 2, cool: [[3.0, 3.8, 10.0], [7.8, 2.0, 10.0]], kick: [3.0, 5.0, 10.0], calm: [[1.2, 4.5, 6.5], [2.5, 5.0, 10.0]], glint: [5.0, 8.0, 10.0], bloom: [0.80, 0.27, 0.96] };
+const SCHEME_DEFAULT = { split: 0, mid: null, heatGain: 1, coolGain: 1, hot: 2, cool: [[3.0, 3.8, 10.0], [7.8, 2.0, 10.0]], kick: [3.0, 5.0, 10.0], calm: [[1.2, 4.5, 6.5], [2.5, 5.0, 10.0]], glint: [5.0, 8.0, 10.0], bloom: [0.80, 0.27, 0.96] };
 const SCHEMES = {
   "Tekken (magenta to violet)": {},
   "Ice": { heatGain: 1.25, coolGain: 0.8, cool: [[2.0, 2.5, 10.0], [4.5, 2.2, 10.0]], kick: [7.0, 9.0, 10.0], calm: [[1.0, 3.5, 6.0], [1.5, 4.5, 9.0]], glint: [9.0, 9.5, 10.0], bloom: [0.40, 0.62, 1.00] },
@@ -280,6 +299,21 @@ const SCHEMES = {
   "Pink to cyan": { mid: [8.0, 7.0, 9.0], heatGain: 0.85, coolGain: 0.75, hot: 1, cool: [[1.0, 5.5, 8.0], [1.5, 4.5, 9.0]], kick: [10.0, 3.0, 7.0], calm: [[1.0, 4.0, 6.0], [1.5, 5.0, 8.0]], glint: [8.0, 10.0, 10.0], bloom: [0.80, 0.35, 0.80] },
   "Gold to violet": { mid: [8.5, 6.5, 7.0], heatGain: 0.85, coolGain: 0.8, hot: 1, cool: [[3.0, 2.0, 10.0], [5.0, 2.0, 10.0]], kick: [10.0, 8.0, 4.0], calm: [[2.0, 2.0, 7.0], [3.0, 2.5, 9.0]], glint: [10.0, 9.0, 7.0], bloom: [0.85, 0.55, 0.35] },
   "White to magenta": {},
+  "Neon Noir": { mid: [9.5, 8.8, 1.2], kick: [10.0, 9.2, 1.5], cool: [[0.3, 4.5, 6.5], [0.8, 3.5, 8.0]], calm: [[0.4, 3.0, 4.5], [1.0, 2.5, 6.0]], glint: [6.0, 10.0, 10.0], bloom: [1.0, 0.25, 0.35], heatGain: 0.9, coolGain: 0.8, grad: 4 },
+  "Phosphor": { mid: [2.5, 9.0, 3.0], kick: [7.0, 10.0, 6.0], cool: [[0.5, 4.0, 2.5], [0.8, 4.5, 4.0]], calm: [[0.4, 3.0, 1.5], [0.6, 3.5, 2.5]], glint: [8.0, 10.0, 8.0], bloom: [0.3, 1.0, 0.45], heatGain: 1.2, coolGain: 0.7, grad: 0 },
+  "Amber CRT": { mid: [10.0, 5.5, 1.2], kick: [10.0, 9.5, 8.0], cool: [[4.5, 1.5, 0.6], [5.0, 2.5, 1.5]], calm: [[3.5, 1.5, 0.4], [4.5, 2.0, 0.8]], glint: [10.0, 9.5, 7.0], bloom: [1.0, 0.55, 0.15], heatGain: 1.15, coolGain: 0.6, grad: 0 },
+  "Ancient Tech": { mid: [0.6, 7.5, 10.0], kick: [10.0, 5.0, 0.8], cool: [[0.6, 2.0, 9.0], [2.0, 1.5, 10.0]], calm: [[0.5, 3.0, 6.0], [0.8, 4.0, 8.0]], glint: [8.0, 10.0, 10.0], bloom: [0.25, 0.7, 1.0], grad: 0 },
+  "Plasma": { mid: [2.0, 5.0, 10.0], kick: [9.0, 4.0, 10.0], cool: [[3.0, 1.0, 9.0], [5.0, 1.0, 8.0]], calm: [[2.0, 2.0, 7.0], [3.0, 1.5, 8.0]], glint: [8.0, 10.0, 9.0], bloom: [0.6, 0.3, 1.0], grad: 4 },
+  "Vapor": { mid: [7.0, 6.5, 10.0], hot: 1, kick: [10.0, 9.0, 4.0], cool: [[2.0, 7.0, 10.0], [4.0, 6.0, 10.0]], calm: [[5.0, 4.0, 9.0], [6.0, 5.0, 10.0]], glint: [10.0, 10.0, 10.0], bloom: [0.9, 0.5, 1.0], heatGain: 0.85, coolGain: 0.8, grad: 4 },
+  "Moonlit Ruins": { mid: [6.0, 7.5, 10.0], kick: [10.0, 9.0, 6.0], cool: [[1.5, 2.5, 6.0], [3.0, 3.0, 7.0]], calm: [[1.5, 2.5, 5.0], [2.5, 3.0, 6.0]], glint: [10.0, 10.0, 10.0], bloom: [0.55, 0.65, 1.0], heatGain: 1.2, coolGain: 0.9, grad: 0 },
+  "Bonfire": { mid: [10.0, 4.5, 0.8], kick: [10.0, 6.0, 1.5], cool: [[6.0, 5.6, 5.4], [5.4, 5.4, 6.2]], calm: [[5.5, 4.8, 4.2], [6.0, 5.2, 4.6]], glint: [10.0, 8.0, 4.0], bloom: [1.0, 0.5, 0.15], grad: 0 },
+  "Hellfire": { mid: [10.0, 4.0, 0.4], kick: [2.5, 10.0, 2.5], cool: [[5.0, 0.6, 0.6], [6.0, 0.8, 1.5]], calm: [[4.0, 0.8, 0.4], [5.0, 1.5, 0.6]], glint: [10.0, 9.0, 6.0], bloom: [1.0, 0.3, 0.1], coolGain: 0.7, grad: 1 },
+  "Visor HUD": { mid: [7.0, 9.5, 7.0], kick: [10.0, 9.0, 3.0], cool: [[0.6, 6.0, 5.0], [0.8, 5.0, 7.0]], calm: [[0.5, 4.0, 3.5], [0.8, 4.5, 5.0]], glint: [8.0, 10.0, 9.0], bloom: [0.4, 1.0, 0.6], grad: 4 },
+  "Paragon / Renegade": { mid: [8.5, 8.5, 10.0], kick: [10.0, 10.0, 10.0], cool: [[1.0, 3.0, 9.0], [2.0, 2.5, 10.0]], calm: [[1.0, 2.5, 6.0], [1.5, 3.0, 8.0]], glint: [9.0, 9.5, 10.0], bloom: [0.7, 0.5, 1.0], grad: 4 },
+  "Lightcycle": { mid: [9.0, 10.0, 10.0], kick: [10.0, 10.0, 10.0], cool: [[0.3, 6.0, 9.0], [0.8, 5.0, 10.0]], calm: [[0.3, 4.0, 6.0], [0.6, 5.0, 8.0]], glint: [9.0, 10.0, 10.0], bloom: [0.3, 0.85, 1.0], grad: 0 , split: 1 },
+  "Pocket LCD": { mid: [4.5, 6.5, 1.2], kick: [8.0, 9.5, 4.0], cool: [[1.0, 2.4, 1.0], [1.5, 3.0, 1.2]], calm: [[1.0, 2.0, 0.8], [1.3, 2.5, 1.0]], glint: [8.5, 9.5, 5.0], bloom: [0.55, 0.8, 0.2], heatGain: 1.2, coolGain: 0.6, grad: 2 },
+  "Ink Clash": { mid: [9.0, 9.0, 9.0], kick: [10.0, 9.0, 2.0], cool: [[6.0, 1.0, 9.0], [8.0, 1.0, 8.0]], calm: [[3.0, 1.0, 4.0], [4.0, 2.0, 5.0]], glint: [10.0, 10.0, 10.0], bloom: [0.8, 0.6, 0.5], grad: 4 },
+  "Phantom": { mid: [10.0, 4.0, 4.0], kick: [10.0, 10.0, 10.0], cool: [[6.0, 6.0, 6.5], [5.0, 5.0, 6.0]], calm: [[4.0, 4.0, 4.5], [5.0, 5.0, 5.5]], glint: [10.0, 10.0, 10.0], bloom: [1.0, 0.2, 0.25], coolGain: 0.8, grad: 0 , split: 1 },
   "Teal to gold": { mid: [7.0, 8.0, 6.0], heatGain: 0.9, coolGain: 0.85, cool: [[1.0, 6.0, 5.5], [1.0, 5.0, 7.0]], kick: [6.0, 10.0, 10.0], calm: [[1.0, 4.0, 5.0], [1.5, 5.0, 7.0]], glint: [9.0, 10.0, 8.0], bloom: [0.30, 0.80, 0.70] },
 };
 const schemeOf = pal => ({ ...SCHEME_DEFAULT, ...(SCHEMES[pal[0].split(" (")[0]] || SCHEMES[pal[0]] || {}) });
@@ -364,9 +398,14 @@ document.getElementById("search").addEventListener("input", e => applySearch(e.t
 document.getElementById("openAll").onclick = () => { for (const n in groups) { groups[n].open = true; openState[n] = true; } saveOpen(); };
 document.getElementById("closeAll").onclick = () => { for (const n in groups) { groups[n].open = false; openState[n] = false; } saveOpen(); };
 const palSel = document.getElementById("palette"), gradSel = document.getElementById("gradient");
-PALETTES.forEach((p, i) => { const o = document.createElement("option"); o.value = i; o.textContent = "Palette: " + p[0]; palSel.appendChild(o); });
+// two groups in the select: the classics, then the game styles (with their inspiration as the tooltip)
+{ const groups = [document.createElement("optgroup"), document.createElement("optgroup")];
+  groups[0].label = "Classic"; groups[1].label = "Game styles";
+  PALETTES.forEach((p, i) => { const o = document.createElement("option"); o.value = i; o.textContent = "Palette: " + p[0]; if (p[3]) o.title = p[3]; groups[i < CLASSIC_PALETTES ? 0 : 1].appendChild(o); });
+  groups.forEach(gp => palSel.appendChild(gp)); }
 palSel.value = P.PALETTE; gradSel.value = P.GRADIENT;
-palSel.onchange = () => { P.PALETTE = +palSel.value; saved(); };
+// a game style comes with its suggested gradient (it's part of the look); the gradient can be changed after
+palSel.onchange = () => { P.PALETTE = +palSel.value; const sg = schemeOf(PALETTES[P.PALETTE]).grad; if (P.PALETTE >= CLASSIC_PALETTES && sg !== undefined) { P.GRADIENT = sg; gradSel.value = sg; } saved(); };
 gradSel.onchange = () => { P.GRADIENT = +gradSel.value; saved(); };
 let pinned = { ...P }, comparing = false;
 document.getElementById("pin").onclick = () => { pinned = { ...P }; const el = document.getElementById("flash"); el.textContent = "Pinned for compare (hold C)"; el.classList.add("on"); clearTimeout(flashTimer); flashTimer = setTimeout(() => el.classList.remove("on"), 1400); };
@@ -1354,7 +1393,7 @@ uniform sampler2D uHist, uColA, uColB, uColC;
 uniform float uSection, uDrop, uTension, uPhrase, uPad, uHarm, uSecHue;
 uniform vec3 uColMin, uColMax;
 uniform vec3 uCoolA, uCoolB, uKick, uCalmA, uCalmB, uGlint, uColMid;   // uColMid: (-1) = no middle colour   // the palette's scheme
-uniform float uHotMax, uHeatGain, uCoolGain;   // 1 = loudness heats toward the second palette colour, 0 = toward the first
+uniform float uHotMax, uHeatGain, uCoolGain, uSplit;   // 1 = loudness heats toward the second palette colour, 0 = toward the first
 uniform int uGrad;
 out vec4 outColor;
 ${DEFS}
@@ -1429,6 +1468,7 @@ void main() {
       // one wins: heat, cool, breakdown, kick.
       // the palette's own blend: random per dot, lows to highs, or core to tips
       float cg = uGrad == 1 ? C.y : (uGrad == 2 ? tip : (uGrad == 4 ? g / 95.0 : fract(h.y * 5.17 + u.y * 2.31)));
+      cg = mix(cg, smoothstep(0.45, 0.55, cg), uSplit);   // two-tone palettes: one colour or the other
       // temperature: the column's faded loudness, cooler toward the core (COLOR_TIPS), only the loud parts high
       // (COLOR_CURVE)
       float T = pow(clamp(B.z * 1.5, 0.0, 1.0), COLOR_CURVE) * mix(1.0, smoothstep(0.1, 0.9, tip), COLOR_TIPS);
@@ -1623,7 +1663,7 @@ function frame(now) {
     gl.uniform3fv(gl.getUniformLocation(progScene, "uCalmA"), sch.calm[0]); gl.uniform3fv(gl.getUniformLocation(progScene, "uCalmB"), sch.calm[1]);
     gl.uniform3fv(gl.getUniformLocation(progScene, "uGlint"), sch.glint);
     gl.uniform1f(gl.getUniformLocation(progScene, "uHotMax"), sch.hot === 2 ? 1 : 0);
-    gl.uniform1f(gl.getUniformLocation(progScene, "uHeatGain"), sch.heatGain); gl.uniform1f(gl.getUniformLocation(progScene, "uCoolGain"), sch.coolGain);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uHeatGain"), sch.heatGain); gl.uniform1f(gl.getUniformLocation(progScene, "uSplit"), sch.split); gl.uniform1f(gl.getUniformLocation(progScene, "uCoolGain"), sch.coolGain);
     gl.uniform1i(gl.getUniformLocation(progScene, "uGrad"), (comparing ? pinned : P).GRADIENT || 0);
     useTex(progScene, "uHist", 0, texHist); useTex(progScene, "uColA", 1, texA); useTex(progScene, "uColB", 2, texB); useTex(progScene, "uColC", 3, texC);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
