@@ -92,6 +92,11 @@
       <button id="showQuick" title="Liquid metal: each beat lands like a drop in mercury - ripples run sideways along the surface, pass through each other and wobble before settling">Quicksilver</button>
       <button id="showMinimal" title="Quiet elegance for menus: silver and white, accents barely there, a clean wave on the ONE">Minimal</button>
       <button id="showFestival" title="Everything on: a full spectrum across the line, ping-pong wings, big drops and wind-ups, sparkle, sections and melody">Festival</button>
+      <button id="showLight" title="Long exposure: every throw leaves a streak of light that pours outward off the fountain and fades">Light Painting</button>
+      <button id="showPlaza" title="A real fountain: jets arc up and fall back under gravity, splash on the line, and reflect in the pool below">Fountain Plaza</button>
+      <button id="showMirror" title="Still water at night: liquid ripples on the surface, a wavering reflection below, soft trails">Mirror Lake</button>
+      <button id="showComet" title="Comet tails: long trails streaming outward, dots flung far and falling back, a white-hot head on every drop">Comet</button>
+      <button id="showEmbers" title="Embers thrown up from the fire fall back as sparks, splash on the hearth, glow on the floor below">Ember Rain</button>
     </div>
     <div class="btns">
       <select id="presetPick" title="Every other preset">
@@ -164,6 +169,13 @@ const PARAMS = [
   ["FLING_FREQ", "Fling & motion", "Fling speed (Hz)", 2.2, 0.3, 8, 0.1, "How fast the throw happens and returns. Low = a slow, floaty swell; high = a tight snap that follows the beat closely."],
   ["FLING_DAMP", "Fling & motion", "Fling bounce", 0.55, 0.05, 2, 0.05, "Below 1 the thrown dots overshoot and bounce back past the start before settling; 1 and above = they return smoothly with no bounce."],
   ["LIQUID", "Fling & motion", "Liquid surface", 0, 0, 1, 0.05, "Links each column to its neighbours like a water surface: a throw spreads sideways as a travelling ripple, ripples pass through and interfere. With low 'Fling bounce' it wobbles like liquid metal. 0 = columns move on their own."],
+  ["GRAVITY", "Effects", "Fountain arc (gravity)", 0, 0, 1, 0.05, "Dots arc up and fall back to the line under gravity over their life, like water from a fountain - instead of rising and fading. 0 = off."],
+  ["SPLASH", "Effects", "Splash on landing", 0, 0, 1, 0.05, "With the fountain arc: as a dot lands back on the line it splashes - a small bounce and a scatter sideways."],
+  ["TRAILS", "Effects", "Motion trails (s)", 0, 0, 1.5, 0.05, "Moving dots leave fading afterimages, like a long-exposure photo; this is how long they take to fade. 0 = off."],
+  ["TRAIL_DRIFT", "Effects", "Trail drift", 0, -0.02, 0.03, 0.001, "Trails stream outward from the cover (above 0) or draw inward (below 0) as they fade - light pouring off the fountain."],
+  ["REFLECT", "Effects", "Water reflection", 0, 0, 1, 0.05, "The fountain stands on water: below the water line the picture becomes its reflection - mirrored, wavering, cooler and dimmer. 0 = off; 1 = the lower half is all reflection."],
+  ["REFLECT_Y", "Effects", "Water line", 0, 0, 0.3, 0.01, "Where the water's surface sits: 0 = at the fountain's line (the lower half becomes the reflection), higher = further down."],
+  ["REFLECT_RIPPLE", "Effects", "Water ripple", 0.4, 0, 1, 0.05, "How much the reflection wavers; it ripples more with the Liquid surface on."],
   ["FLING_TIP", "Fling & motion", "Fling: outer dots only", 1.5, 0, 4, 0.1, "Which dots get thrown. 0 = the whole column moves together; higher = only the dots furthest from the line move, the core stays put."],
   ["KICK_THRESHOLD", "Fling & motion", "Kick threshold", 0.03, 0, 0.2, 0.005, "How big a jump in loudness has to be to count as a kick. Raise it until only real hits light the amber bars in the graph; too low and every small wobble triggers fling, stretch and colour."],
   ["KICK_GAIN", "Fling & motion", "Kick strength", 3.0, 0.5, 10, 0.1, "How hard a kick above the threshold hits: higher = smaller hits already give a full kick."],
@@ -365,7 +377,7 @@ const inputs = {};
 const fmt = (k, v) => { const step = PARAMS.find(p => p[0] === k)[6]; const d = Math.max(0, -Math.floor(Math.log10(step) + 1e-9)); return Number(v).toFixed(Math.min(d, 4)); };
 // The panel's groups, in this order (a group not listed goes at the end); colour and temperature pulled out of Look
 const COLOUR_KEYS = ["ACCENT", "TEMP_AMOUNT", "COLOR_LEVEL", "COLOR_TIPS", "COLOR_CURVE", "COLOR_EASE", "COOL_AIR", "COOL_HUE", "MOVE_COOL", "KICK_COLOR", "FLASH", "CALM_COLOR", "SPARKLE"];
-const GROUP_ORDER = ["Colour & temperature", "Beat (loaded songs)", "Layers (loaded songs)", "Live show", "Song map", "Fling & motion",
+const GROUP_ORDER = ["Colour & temperature", "Beat (loaded songs)", "Layers (loaded songs)", "Effects", "Live show", "Song map", "Fling & motion",
   "Look", "Core", "Shape", "Stretch", "Levels", "Drum detection", "Synthetic beat"];
 const OPEN_DEFAULT = ["Colour & temperature", "Beat (loaded songs)", "Layers (loaded songs)"];
 const groupOf = (k, g) => COLOUR_KEYS.includes(k) ? "Colour & temperature" : g;
@@ -517,6 +529,11 @@ const SHOWCASE = {
   showQuick: { name: "Quicksilver", palette: "Mercury", grad: 0, values: { LIQUID: 0.85, FLING_DAMP: 0.35, BEAT_SPRING: 1.6, BEAT_SNAP: 0.5, BEAT_IN_PLACE: 0.7, BEAT_EVEN: 0.4, WAVE: 0.0, FLING: 2.6, SIZE: 1.0, DEFOCUS: 0.9, BLOOM_WIDE: 1.2, BLOOM_NEAR: 0.7, LAUNCH: 0.2, STRETCH_GAIN: 0.02, STRETCH_MAX: 2, BREATH: 0.6, LIFE_SPREAD: 20, SPARKLE: 0.7, PAD_SWELL: 0.6, TEMP_AMOUNT: 0.3, COOL_AIR: 0.6, KICK_COLOR: 0.6 } },
   showMinimal: { name: "Minimal", palette: "Silver", grad: 2, values: { ACCENT: 0.15, TEMP_AMOUNT: 0.15, COOL_AIR: 0.3, KICK_COLOR: 0.2, SPARKLE: 0.15, BLOOM_WIDE: 0.4, BLOOM_NEAR: 0.3, DEFOCUS: 0.5, FLING: 1.6, BEAT_SNAP: 0.5, WAVE: 0.8, PAD_GLOW: 0.3, MELODY: 0.5, SECTION_LOOK: 0, HARMONY_HUE: 0, GLOW_PULSE: 0.04, FRINGE: 0 } },
   showFestival: { name: "Festival", palette: "Vapor", grad: 3, values: { PINGPONG: 0.8, WAVE: 1.6, WAVE_SPEED: 260, SPARKLE: 1.0, DROP_FLING: 2.8, TENSION: 1.5, SECTION_LOOK: 1, MELODY: 1.2, PAD_GLOW: 1, HARMONY_HUE: 0.8, TEMP_AMOUNT: 0.5, BEAT_ACCENT: 1.2, BEAT_OTHERS: 0.5, FLING: 2.9, REACH: 24, BLOOM_WIDE: 1.4 } },
+  showLight: { name: "Light Painting", palette: "Neon Noir", grad: 4, values: { TRAILS: 0.9, TRAIL_DRIFT: 0.012, FLING: 2.8, BEAT_SPRING: 2.4, BEAT_SNAP: 0.3, STRETCH_GAIN: 0.08, STRETCH_MAX: 6, LAUNCH: 0.9, LAUNCH_SPEED: 6, SPARKLE: 0.6, BLOOM_WIDE: 0.9 } },
+  showPlaza: { name: "Fountain Plaza", palette: "Ice", grad: 0, values: { GRAVITY: 1, SPLASH: 1, LAUNCH: 0, LIFE_SPREAD: 6, REACH: 22, REFLECT: 0.6, REFLECT_RIPPLE: 0.5, TRAILS: 0.12, PAD_GLOW: 0.6, BEAT_SNAP: 0.6, SPARKLE: 0.7, STRETCH_GAIN: 0.04 } },
+  showMirror: { name: "Mirror Lake", palette: "Moonlit Ruins", grad: 0, values: { LIQUID: 0.85, FLING_DAMP: 0.35, BEAT_SPRING: 1.6, BEAT_SNAP: 0.5, BEAT_IN_PLACE: 0.7, BEAT_EVEN: 0.4, WAVE: 0, REFLECT: 0.8, REFLECT_RIPPLE: 0.8, TRAILS: 0.3, DEFOCUS: 0.9, BLOOM_WIDE: 1.2, LAUNCH: 0.2, STRETCH_GAIN: 0.02, BREATH: 0.6, PAD_SWELL: 0.6 } },
+  showComet: { name: "Comet", palette: "Solar", grad: 1, values: { TRAILS: 1.2, TRAIL_DRIFT: 0.02, GRAVITY: 0.6, FLING: 3, REACH: 26, BEAT_ACCENT: 1.2, BEAT_OTHERS: 0.3, DROP_FLING: 3, DROP_DECAY: 2, STRETCH_GAIN: 0.1, STRETCH_MAX: 7, BLOOM_WIDE: 1.4, TENSION: 1.4 } },
+  showEmbers: { name: "Ember Rain", palette: "Bonfire", grad: 0, values: { GRAVITY: 1, SPLASH: 0.8, LIFE_SPREAD: 10, TRAILS: 0.4, TRAIL_DRIFT: -0.004, REFLECT: 0.35, REFLECT_RIPPLE: 0.2, SPARKLE: 0.9, BLOOM_WIDE: 1.3, COLOR_LEVEL: 1, TEMP_AMOUNT: 0.6, STRETCH_GAIN: 0.06 } },
 };
 const whiteToMagenta = () => setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0);
 document.getElementById("presetYours4").onclick = () => { applyAll(YOUR_TUNE_4); whiteToMagenta(); };
@@ -1520,6 +1537,9 @@ void main() {
       float ls = LAUNCH_SPEED, e1 = 1.0 - exp(-ls);
       float travel = mix(1.0, (1.0 - exp(-ls * na)) / e1, LAUNCH);
       float travelD = LAUNCH * ls * exp(-ls * na) / e1 / life;
+      // fountain arc: up and back down under gravity over the dot's life (a parabola, peak at mid-life)
+      travel = mix(travel, 4.0 * na * (1.0 - na), GRAVITY);
+      travelD = mix(travelD, 4.0 * (1.0 - 2.0 * na) / life, GRAVITY);
       // fling: the column's spring, felt by the outer dots
       float tipW = pow(tip, FLING_TIP);
       float flm = 1.0 + FLING * B.x * tipW;
@@ -1536,7 +1556,10 @@ void main() {
       float vz = base * (travelD * flm + travel * flD) + k * 2.0 * REACH * travel * flm * A.w * 60.0 * b;
       float stretch = 1.0 + STRETCH_MAX * clamp(abs(vz) * STRETCH_GAIN, 0.0, 1.0);
       float size = (0.25 + 0.15 * fract(h.x * 7.31 + u.x * 3.17)) * SIZE;
-      vec2 d = vec2(dx, (zy - z) / stretch) / size;
+      // splash: in the last 14% of its life a landing dot bounces a little and scatters to one side of its column
+      float spl = GRAVITY * SPLASH * smoothstep(0.86, 1.0, na);
+      float zs = z + sign(k) * 0.6 * GRAVITY * SPLASH * sin(3.14159 * smoothstep(0.86, 1.0, na));
+      vec2 d = vec2(dx - (h.x > 0.5 ? 0.3 : -0.3) * spl, (zy - zs) / stretch) / size;
       float disc = 1.0 - smoothstep(0.0, 1.0, length(d));
       // ---- colour: the palette first, accents on top. Every accent follows one rule - its strength decides HOW MANY
       // dots take its colour (each dot has its own threshold per accent), never how far every dot shifts - so a bar is
@@ -1584,7 +1607,8 @@ void main() {
       col = col * cos(ang) + cross(kk, col) * sin(ang) + kk * dot(kk, col) * (1.0 - cos(ang));
       col = max(col, vec3(0.0));
       // only the kicked outer dots flash; a streak spreads its light rather than adding to it
-      acc += col * disc * disc * CurveA(na) * BRIGHT * (1.0 + FLASH * A.y * tipW + 0.8 * MELODY * C.x) / mix(1.0, stretch, STRETCH_DIM);
+      float alpha = mix(CurveA(na), 0.6 * smoothstep(0.0, 0.08, na) * (1.0 - smoothstep(0.94, 1.0, na)), GRAVITY);
+      acc += col * disc * disc * alpha * BRIGHT * (1.0 + FLASH * A.y * tipW + 0.8 * MELODY * C.x) / mix(1.0, stretch, STRETCH_DIM);
     }
   }
   outColor = vec4(ACES(acc * EXPOSURE), 1.0);
@@ -1602,11 +1626,24 @@ void main() {
   for (int i = 1; i < 5; i++) { c += texture(uSrc, uv + uDir * float(i)).rgb * w[i]; c += texture(uSrc, uv - uDir * float(i)).rgb * w[i]; }
   outColor = vec4(c, 1.0);
 }`;
+// motion trails: this frame, or the last frame's trail a little faded (and drifted toward / away from the centre),
+// whichever is brighter - max, so trails never build up brightness
+const TRAIL_FS = `#version 300 es
+precision highp float;
+uniform sampler2D uNow, uPrev;
+uniform vec2 uDst;
+uniform float uKeep, uDrift;
+out vec4 outColor;
+void main() {
+  vec2 uv = gl_FragCoord.xy / uDst;
+  vec3 prev = texture(uPrev, (uv - 0.5) * (1.0 - uDrift) + 0.5).rgb * uKeep;
+  outColor = vec4(max(texture(uNow, uv).rgb, prev), 1.0);
+}`;
 const COMP_FS = `#version 300 es
 precision highp float;
 uniform vec2 uRes;
 uniform float uP[${PARAMS.length}];
-uniform float uLevel, uPad, uWarm;
+uniform float uLevel, uPad, uWarm, uTime;
 uniform vec3 uGlowHot, uCoolA, uCoolB, uBloomTint;
 uniform int uBg;
 uniform sampler2D uScene, uB1, uB2, uB3;
@@ -1617,6 +1654,17 @@ void main() {
   vec2 o = vec2(FRINGE * smoothstep(0.2, 1.0, length(uv - 0.5) * 2.0), 0.0);
   vec3 c = vec3(texture(uScene, uv + o).r, texture(uScene, uv).g, texture(uScene, uv - o).b);
   vec3 b1 = texture(uB1, uv).rgb, b2 = texture(uB2, uv).rgb, b3 = texture(uB3, uv).rgb;
+  // water surface: below the water line the picture becomes the fountain's reflection - mirrored about the line,
+  // wavering sideways more with depth (and with the Liquid surface), cooler and dimmer. The fountain is symmetric about
+  // its line, so a reflection drawn further down only landed on its own lower half; this replaces that half instead
+  float wl = 0.5 - REFLECT_Y;
+  if (REFLECT > 0.0 && uv.y < wl) {
+    float dd = wl - uv.y;
+    vec2 ruv = vec2(uv.x + (0.25 + 0.75 * REFLECT_RIPPLE) * (0.002 + 0.006 * LIQUID) * sin(uv.y * 150.0 + uTime * 2.6) * (0.4 + dd * 12.0), wl + dd);
+    vec3 tint = vec3(0.8, 0.88, 1.0) * 0.6 * exp(-dd * 3.0);
+    c = mix(c, texture(uScene, ruv).rgb * tint, REFLECT);
+    b1 = mix(b1, texture(uB1, ruv).rgb * tint, REFLECT); b2 = mix(b2, texture(uB2, ruv).rgb * tint, REFLECT); b3 = mix(b3, texture(uB3, ruv).rgb * tint, REFLECT);
+  }
   vec3 base = mix(c, b1 * 1.2 + b2 * 0.6 + c * 0.25, DEFOCUS);
   // the glow's colour by temperature: the cool colour while the music runs cool, the palette's hot colour as it heats
   vec3 coolGlow = mix(uCoolA, uCoolB, COOL_HUE); coolGlow /= max(coolGlow.r, max(coolGlow.g, coolGlow.b));
@@ -1653,7 +1701,7 @@ function program(fs) {
   if (!gl.getProgramParameter(p, gl.LINK_STATUS)) fail("link: " + gl.getProgramInfoLog(p));
   return p;
 }
-const progScene = program(SCENE_FS), progBlur = program(BLUR_FS), progComp = program(COMP_FS);
+const progScene = program(SCENE_FS), progBlur = program(BLUR_FS), progComp = program(COMP_FS), progTrail = program(TRAIL_FS);
 const vao = gl.createVertexArray();
 function dataTex(fmt, w, h) {
   const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
@@ -1670,7 +1718,7 @@ function target(w, h) {
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
   return { t, f, w, h };
 }
-let T = null;
+let T = null, trailFlip = false, trailOn = false;
 const ASPECT = 2560 / 1188;   // the Playnite element this was tuned on
 function resize() {
   const stage = document.getElementById("stage").getBoundingClientRect();
@@ -1682,7 +1730,7 @@ function resize() {
   if (T && T.W === W && T.H === H) return;
   canvas.width = W; canvas.height = H;
   const lv = s => [Math.max(1, Math.round(W / s)), Math.max(1, Math.round(H / s))];
-  T = { W, H, scene: target(W, H) };
+  T = { W, H, scene: target(W, H), trA: target(W, H), trB: target(W, H) };
   for (const [name, s] of [["b1", 2], ["b2", 4], ["b3", 8]]) { T[name] = target(...lv(s)); T[name + "t"] = target(...lv(s)); }
 }
 addEventListener("resize", resize);
@@ -1747,13 +1795,28 @@ function frame(now) {
     useTex(progScene, "uHist", 0, texHist); useTex(progScene, "uColA", 1, texA); useTex(progScene, "uColB", 2, texB); useTex(progScene, "uColC", 3, texC);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     // blur pyramid: projectM's GetBlur1 / 2 / 3
-    blur(T.scene, T.b1, T.b1t); blur(T.b1, T.b2, T.b2t); blur(T.b2, T.b3, T.b3t);
+    // trails: ping-pong between two targets; turning them on starts from this frame (no stale trail)
+    let frameT = T.scene;
+    const QT = comparing ? pinned : P;
+    if (QT.TRAILS > 0) {
+      const dst = trailFlip ? T.trB : T.trA, prev = trailFlip ? T.trA : T.trB;
+      gl.useProgram(progTrail);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, dst.f); gl.viewport(0, 0, T.W, T.H);
+      useTex(progTrail, "uNow", 0, T.scene.t); useTex(progTrail, "uPrev", 1, prev.t);
+      gl.uniform2f(gl.getUniformLocation(progTrail, "uDst"), T.W, T.H);
+      gl.uniform1f(gl.getUniformLocation(progTrail, "uKeep"), trailOn ? Math.exp(-dt / QT.TRAILS) : 0);
+      gl.uniform1f(gl.getUniformLocation(progTrail, "uDrift"), QT.TRAIL_DRIFT * Math.min(1, dt * 60));
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      frameT = dst; trailFlip = !trailFlip; trailOn = true;
+    } else trailOn = false;
+    blur(frameT, T.b1, T.b1t); blur(T.b1, T.b2, T.b2t); blur(T.b2, T.b3, T.b3t);
     // composite
     gl.useProgram(progComp);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, T.W, T.H);
     gl.uniform2f(gl.getUniformLocation(progComp, "uRes"), T.W, T.H);
     gl.uniform1fv(gl.getUniformLocation(progComp, "uP"), uArr);
     gl.uniform1f(gl.getUniformLocation(progComp, "uLevel"), meanLevel);
+    gl.uniform1f(gl.getUniformLocation(progComp, "uTime"), t);
     gl.uniform1f(gl.getUniformLocation(progComp, "uPad"), padE);
     {   // the glow's warmth: the columns' mean (faded) loudness through the same curve as the dots' temperature
       const QQ = comparing ? pinned : P; let m = 0; for (let c = 0; c < N; c++) m += heatC[c]; m /= N;
@@ -1764,7 +1827,7 @@ function frame(now) {
       gl.uniform3f(gl.getUniformLocation(progComp, "uGlowHot"), hot[0] / hm, hot[1] / hm, hot[2] / hm);
     }
     gl.uniform1i(gl.getUniformLocation(progComp, "uBg"), { dark: 0, grey: 1, black: 2 }[document.getElementById("bg").value]);
-    useTex(progComp, "uScene", 0, T.scene.t); useTex(progComp, "uB1", 1, T.b1.t); useTex(progComp, "uB2", 2, T.b2.t); useTex(progComp, "uB3", 3, T.b3.t);
+    useTex(progComp, "uScene", 0, frameT.t); useTex(progComp, "uB1", 1, T.b1.t); useTex(progComp, "uB2", 2, T.b2.t); useTex(progComp, "uB3", 3, T.b3.t);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   } catch (e) { fail(e.stack || e.message); return; }
   const pt1 = performance.now();
@@ -1919,6 +1982,8 @@ if (location.hash.indexOf("drumtest") >= 0) {
 }
 // ...&song=URL loads a song by URL (headless checks; file:// needs --allow-file-access-from-files)
 { const sm = /song=([^&]+)/.exec(location.hash); if (sm) fetch(decodeURIComponent(sm[1])).then(r => r.arrayBuffer()).then(ab => loadFile({ arrayBuffer: async () => ab })).catch(e => fail("song: " + e.message)); }
+// ...&graphs=off hides the signal graphs (they cover the bottom of the stage, where the water reflection sits)
+if (/graphs=off/.test(location.hash)) document.getElementById("graphs").value = "off";
 // ...&preset=BUTTON_ID presses that preset button (e.g. #drumtest&play&preset=presetYours4Cool)
 { const pm = /preset=([A-Za-z0-9]+)/.exec(location.hash); const b = pm && document.getElementById(pm[1]); if (b) b.onclick(); }
 { const pp = /pal=(\d+)/.exec(location.hash), gg = /grad=(\d+)/.exec(location.hash); if (pp || gg) setColour(pp ? +pp[1] : P.PALETTE, gg ? +gg[1] : (P.GRADIENT || 0)); }
