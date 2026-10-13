@@ -76,8 +76,8 @@
     </div>
     <h2 class="sec">Presets</h2>
     <div class="btns">
-      <button id="presetYours5" class="main" title="Your values from 2026-10-13 00:36, plus beads cooling as they settle">Your tune #5</button>
       <button id="presetYours5Full" class="main" title="Your tune #5 with stereo wings, a tint per song section and the lead-melody highlight">Tune #5 + sections + melody</button>
+      <button id="presetYours5" title="Your values from 2026-10-13 00:36, plus beads cooling as they settle">Your tune #5</button>
       <select id="presetPick" title="Every other preset">
         <option value="">More presets...</option>
         <optgroup label="Your tunes">
@@ -109,7 +109,7 @@
       <select id="palette" title="Palette: the two colours each dot blends between"></select>
       <select id="gradient" title="What picks each dot's blend between the palette's two colours">
         <option value="0">Colour: random per dot</option><option value="1">Colour: lows to highs across the line</option>
-        <option value="2">Colour: core to tips</option><option value="3">Colour: spectrum across the line</option></select>
+        <option value="2">Colour: core to tips</option><option value="3">Colour: spectrum across the line</option><option value="4">Colour: left to right (e.g. warm to cool)</option></select>
       <select id="bg"><option value="dark">Dark theme</option><option value="grey">Grey</option><option value="black">Black</option></select>
       <select id="speed"><option value="1">Speed 1x</option><option value="0.5">Speed 1/2x</option><option value="0.25">Speed 1/4x</option></select>
       <select id="graphs"><option value="on">Signal graphs on</option><option value="off">Signal graphs off</option></select>
@@ -172,6 +172,8 @@ const PARAMS = [
   ["STRETCH_DIM", "Look", "Streak dimming", 0.6, 0, 1, 0.05, "1 = a streak spreads its dot's light along its length (no flash); 0 = stretching adds light."],
   ["GLOW_PULSE", "Look", "Background glow pulse", 0.13, 0, 1, 0.01, "How much the soft magenta glow behind the line swells with the music."],
   ["GLOW_SMOOTH", "Look", "Background glow smoothing (s)", 0.5, 0.05, 2, 0.05, "How slowly that glow follows: higher = a gentle swell instead of a beat-by-beat pulse."],
+  ["ACCENT", "Look", "Accent strength", 0.5, 0, 1, 0.05, "How far a dot that takes an accent (heat, cool air, breakdown, kick) goes toward it - the accents are also softened. Low = they come in gently over the palette; 1 = turned dots take the accent fully."],
+  ["TEMP_AMOUNT", "Look", "Temperature effect", 0.4, 0, 1, 0.05, "How many dots temperature turns: hot dots in loud columns, cool dots in quiet spots and settling throws - each dot turns on its own, so a bar is always a mix. Low = mostly the palette with a scattering of hot and cool; 1 = most dots take part."],
   ["COLOR_LEVEL", "Look", "Colour by loudness", 0, 0, 1, 0.05, "How much each dot's temperature picks its colour. 0 = each dot keeps its own random shade (Tekken). 1 = cool dots take the palette's first colour, hot ones its second - only the outer dots of loud columns get hot."],
   ["COLOR_TIPS", "Look", "Loudness colour: outer dots", 0, 0, 1, 0.05, "How much cooler the core runs than the tips. 0 = a loud column heats all its dots alike. 1 = only the outer dots heat up; the core and small rings stay cool - hot air at the edges."],
   ["COLOR_CURVE", "Look", "Loudness colour: only the loud parts", 1, 0.5, 4, 0.05, "Above 1, moderate loudness barely shifts the colour and only the loudest moments go all the way - the difference between hot and very hot."],
@@ -260,23 +262,25 @@ const PALETTES = [
 // Each palette's colour scheme for the temperature model (HDR like the palette; the shader keeps every shift at the
 // dot's brightness, so these set hue and saturation): hot = which palette colour loudness heats toward (2 = the second,
 // 1 = the first); cool = the two cool shades 'Cool colour' blends between (the cold end of the scale); kick = the beat's
-// colour shift; calm = the breakdown pair; glint = hi-hat sparkle; bloom = the wide bloom's tint. The cool pair stays in
+// colour shift; calm = the breakdown pair; glint = hi-hat sparkle; bloom = the wide bloom's tint; heatGain / coolGain
+// = how strongly heat and cool show on this palette (close-coloured palettes need more, warm-to-cool ones less); mid =
+// an optional colour halfway along the palette, for two-hue palettes whose plain midpoint is muddy (orange + blue). The cool pair stays in
 // the palette's own family - a cooler, deeper take on its cold colour - so strong Cool air never paints a green or
 // teal palette blue.
-const SCHEME_DEFAULT = { hot: 2, cool: [[3.0, 3.8, 10.0], [7.8, 2.0, 10.0]], kick: [3.0, 5.0, 10.0], calm: [[1.2, 4.5, 6.5], [2.5, 5.0, 10.0]], glint: [5.0, 8.0, 10.0], bloom: [0.80, 0.27, 0.96] };
+const SCHEME_DEFAULT = { mid: null, heatGain: 1, coolGain: 1, hot: 2, cool: [[3.0, 3.8, 10.0], [7.8, 2.0, 10.0]], kick: [3.0, 5.0, 10.0], calm: [[1.2, 4.5, 6.5], [2.5, 5.0, 10.0]], glint: [5.0, 8.0, 10.0], bloom: [0.80, 0.27, 0.96] };
 const SCHEMES = {
   "Tekken (magenta to violet)": {},
-  "Ice": { cool: [[2.0, 2.5, 10.0], [4.5, 2.2, 10.0]], kick: [7.0, 9.0, 10.0], calm: [[1.0, 3.5, 6.0], [1.5, 4.5, 9.0]], glint: [9.0, 9.5, 10.0], bloom: [0.40, 0.62, 1.00] },
-  "Ember": { cool: [[6.0, 0.8, 1.5], [5.0, 0.8, 3.5]], kick: [10.0, 8.0, 4.0], calm: [[5.0, 2.0, 0.8], [6.0, 3.0, 1.0]], glint: [10.0, 9.0, 6.0], bloom: [1.00, 0.45, 0.15] },
+  "Ice": { heatGain: 1.25, coolGain: 0.8, cool: [[2.0, 2.5, 10.0], [4.5, 2.2, 10.0]], kick: [7.0, 9.0, 10.0], calm: [[1.0, 3.5, 6.0], [1.5, 4.5, 9.0]], glint: [9.0, 9.5, 10.0], bloom: [0.40, 0.62, 1.00] },
+  "Ember": { heatGain: 1.0, coolGain: 0.75, cool: [[6.0, 0.8, 1.5], [5.0, 0.8, 3.5]], kick: [10.0, 8.0, 4.0], calm: [[5.0, 2.0, 0.8], [6.0, 3.0, 1.0]], glint: [10.0, 9.0, 6.0], bloom: [1.00, 0.45, 0.15] },
   "Aurora": { cool: [[1.0, 6.0, 5.0], [1.2, 4.8, 7.0]], kick: [5.0, 10.0, 7.0], calm: [[1.0, 5.0, 5.0], [1.5, 4.0, 7.0]], glint: [7.0, 10.0, 9.0], bloom: [0.30, 0.90, 0.60] },
   "Sunset": { cool: [[6.0, 2.0, 9.0], [8.0, 2.0, 7.0]], kick: [10.0, 7.0, 3.0], calm: [[4.0, 2.0, 6.0], [5.0, 2.5, 8.0]], glint: [10.0, 8.0, 6.0], bloom: [1.00, 0.40, 0.40] },
-  "Synthwave": { cool: [[2.0, 2.0, 9.0], [4.0, 1.5, 9.0]], kick: [10.0, 2.0, 7.0], calm: [[2.0, 2.0, 7.0], [3.0, 2.0, 9.0]], glint: [6.0, 9.0, 10.0], bloom: [0.70, 0.20, 1.00] },
-  "Silver": { cool: [[3.0, 4.5, 8.0], [4.0, 4.0, 8.0]], kick: [9.0, 9.0, 10.0], calm: [[3.0, 4.0, 6.0], [3.5, 4.5, 7.5]], glint: [10.0, 10.0, 10.0], bloom: [0.60, 0.65, 0.80] },
-  "Warm to cool": { hot: 1, cool: [[1.0, 3.0, 9.0], [3.0, 2.0, 9.0]], kick: [10.0, 7.0, 3.0], calm: [[1.0, 3.5, 6.0], [2.0, 4.0, 8.0]], glint: [10.0, 9.0, 7.0], bloom: [0.90, 0.50, 0.30] },
-  "Pink to cyan": { hot: 1, cool: [[1.0, 5.5, 8.0], [1.5, 4.5, 9.0]], kick: [10.0, 3.0, 7.0], calm: [[1.0, 4.0, 6.0], [1.5, 5.0, 8.0]], glint: [8.0, 10.0, 10.0], bloom: [0.80, 0.35, 0.80] },
-  "Gold to violet": { hot: 1, cool: [[3.0, 2.0, 10.0], [5.0, 2.0, 10.0]], kick: [10.0, 8.0, 4.0], calm: [[2.0, 2.0, 7.0], [3.0, 2.5, 9.0]], glint: [10.0, 9.0, 7.0], bloom: [0.85, 0.55, 0.35] },
+  "Synthwave": { heatGain: 1.0, coolGain: 0.9, cool: [[2.0, 2.0, 9.0], [4.0, 1.5, 9.0]], kick: [10.0, 2.0, 7.0], calm: [[2.0, 2.0, 7.0], [3.0, 2.0, 9.0]], glint: [6.0, 9.0, 10.0], bloom: [0.70, 0.20, 1.00] },
+  "Silver": { heatGain: 1.35, coolGain: 1.1, cool: [[3.0, 4.5, 8.0], [4.0, 4.0, 8.0]], kick: [9.0, 9.0, 10.0], calm: [[3.0, 4.0, 6.0], [3.5, 4.5, 7.5]], glint: [10.0, 10.0, 10.0], bloom: [0.60, 0.65, 0.80] },
+  "Warm to cool": { mid: [8.5, 6.8, 6.0], heatGain: 0.75, coolGain: 0.6, hot: 1, cool: [[1.0, 3.0, 9.0], [3.0, 2.0, 9.0]], kick: [10.0, 7.0, 3.0], calm: [[1.0, 3.5, 6.0], [2.0, 4.0, 8.0]], glint: [10.0, 9.0, 7.0], bloom: [0.90, 0.50, 0.30] },
+  "Pink to cyan": { mid: [8.0, 7.0, 9.0], heatGain: 0.85, coolGain: 0.75, hot: 1, cool: [[1.0, 5.5, 8.0], [1.5, 4.5, 9.0]], kick: [10.0, 3.0, 7.0], calm: [[1.0, 4.0, 6.0], [1.5, 5.0, 8.0]], glint: [8.0, 10.0, 10.0], bloom: [0.80, 0.35, 0.80] },
+  "Gold to violet": { mid: [8.5, 6.5, 7.0], heatGain: 0.85, coolGain: 0.8, hot: 1, cool: [[3.0, 2.0, 10.0], [5.0, 2.0, 10.0]], kick: [10.0, 8.0, 4.0], calm: [[2.0, 2.0, 7.0], [3.0, 2.5, 9.0]], glint: [10.0, 9.0, 7.0], bloom: [0.85, 0.55, 0.35] },
   "White to magenta": {},
-  "Teal to gold": { cool: [[1.0, 6.0, 5.5], [1.0, 5.0, 7.0]], kick: [6.0, 10.0, 10.0], calm: [[1.0, 4.0, 5.0], [1.5, 5.0, 7.0]], glint: [9.0, 10.0, 8.0], bloom: [0.30, 0.80, 0.70] },
+  "Teal to gold": { mid: [7.0, 8.0, 6.0], heatGain: 0.9, coolGain: 0.85, cool: [[1.0, 6.0, 5.5], [1.0, 5.0, 7.0]], kick: [6.0, 10.0, 10.0], calm: [[1.0, 4.0, 5.0], [1.5, 5.0, 7.0]], glint: [9.0, 10.0, 8.0], bloom: [0.30, 0.80, 0.70] },
 };
 const schemeOf = pal => ({ ...SCHEME_DEFAULT, ...(SCHEMES[pal[0].split(" (")[0]] || SCHEMES[pal[0]] || {}) });
 const P = {};
@@ -289,7 +293,7 @@ try { Object.assign(P, JSON.parse(localStorage.getItem("fountainBench") || "{}")
 const inputs = {};
 const fmt = (k, v) => { const step = PARAMS.find(p => p[0] === k)[6]; const d = Math.max(0, -Math.floor(Math.log10(step) + 1e-9)); return Number(v).toFixed(Math.min(d, 4)); };
 // The panel's groups, in this order (a group not listed goes at the end); colour and temperature pulled out of Look
-const COLOUR_KEYS = ["COLOR_LEVEL", "COLOR_TIPS", "COLOR_CURVE", "COLOR_EASE", "COOL_AIR", "COOL_HUE", "MOVE_COOL", "KICK_COLOR", "FLASH", "CALM_COLOR", "SPARKLE"];
+const COLOUR_KEYS = ["ACCENT", "TEMP_AMOUNT", "COLOR_LEVEL", "COLOR_TIPS", "COLOR_CURVE", "COLOR_EASE", "COOL_AIR", "COOL_HUE", "MOVE_COOL", "KICK_COLOR", "FLASH", "CALM_COLOR", "SPARKLE"];
 const GROUP_ORDER = ["Colour & temperature", "Beat (loaded songs)", "Layers (loaded songs)", "Live show", "Song map", "Fling & motion",
   "Look", "Core", "Shape", "Stretch", "Levels", "Drum detection", "Synthetic beat"];
 const OPEN_DEFAULT = ["Colour & temperature", "Beat (loaded songs)", "Layers (loaded songs)"];
@@ -352,7 +356,7 @@ function setParam(k, v) { P[k] = v; inputs[k].input.value = v; inputs[k].val.tex
 function saved() {
   try { localStorage.setItem("fountainBench", JSON.stringify(P)); } catch (e) { }
   const o = {}; for (const p of PARAMS) o[p[0]] = +fmt(p[0], P[p[0]]);
-  o.PALETTE = PALETTES[P.PALETTE || 0][0]; o.GRADIENT = ["random", "across", "core-to-tips", "spectrum"][P.GRADIENT || 0];
+  o.PALETTE = PALETTES[P.PALETTE || 0][0]; o.GRADIENT = ["random", "across", "core-to-tips", "spectrum", "left-to-right"][P.GRADIENT || 0];
   document.getElementById("out").value = JSON.stringify(o, null, 1);
 }
 buildPanel();
@@ -953,6 +957,8 @@ async function runLayers() {
   layersBusy = false; drumStatus = "";
   if (buf === buffer) layers = r;
 }
+// the index of the first value >= t in a sorted list (binary search)
+const lowerBound = (list, t) => { let lo = 0, hi = list.length; while (lo < hi) { const m = (lo + hi) >> 1; if (list[m] < t) lo = m + 1; else hi = m; } return lo; };
 const beatIndexAt = t => { if (!beatInfo) return -1; const bs = beatInfo.beats; let lo = 0, hi = bs.length; while (lo < hi) { const m = (lo + hi) >> 1; if (bs[m] <= t) lo = m + 1; else hi = m; } return lo - 1; };
 function drumsTick(now) {   // re-run once the detection sliders have been still for 300 ms
   if (buffer && beatsOf !== buffer && !beatBusy && !drumBusy && !layersBusy) { runBeats(); return; }
@@ -975,11 +981,12 @@ function scheduleTicks() {
   const from = Math.max(tickFrom, now);
   if (sel !== "off") for (const k of sel === "drums" ? ["kick", "snare", "hat"] : [sel])
     for (let lap = Math.floor(from / dur); lap <= Math.floor(end / dur); lap++)
-      for (const t of (k === "beat" ? beatInfo && beatInfo.beats : drums && drums[k]) || []) {
-        const a = lap * dur + t; if (a <= from || a > end) continue;
+      { const list = (k === "beat" ? beatInfo && beatInfo.beats : drums && drums[k]) || [];
+      for (let ix = lowerBound(list, from - lap * dur); ix < list.length && lap * dur + list[ix] <= end; ix++) {
+        const t = list[ix], a = lap * dur + t; if (a <= from) continue;
         const s = actx.createBufferSource(); s.buffer = tickBuf(k); s.connect(actx.destination); s.start(startAt + a);
         tickNodes.push(s); s.onended = () => { const i = tickNodes.indexOf(s); if (i >= 0) tickNodes.splice(i, 1); };
-      }
+      } }
   tickFrom = end;
 }
 function stopTicks() { for (const s of tickNodes) { try { s.stop(); } catch (e) { } } tickNodes.length = 0; }
@@ -1253,7 +1260,7 @@ function engine(dt, t) {
   if (beatOn) {
     const tt = songT + P.BEAT_LEAD * springPeak(fq, z, bLen), bs = beatInfo.beats;
     if (tt < beatAt) beatAt = -1;   // looped
-    for (let i = 0; i < bs.length; i++) if (bs[i] > beatAt && bs[i] <= tt) {
+    for (let i = Math.max(0, beatIndexAt(beatAt) + 1); i < bs.length && bs[i] <= tt; i++) if (bs[i] > beatAt) {
       const hit = Math.pow(beatInfo.strength[i], P.BEAT_CONTRAST) * (i % 4 === beatInfo.barPhase ? 1 + P.BEAT_ACCENT : P.BEAT_OTHERS);
       beatEnv = Math.max(beatEnv, P.BEAT_FLOOR + (1 - P.BEAT_FLOOR) * hit);
     }
@@ -1346,14 +1353,22 @@ uniform float uP[${PARAMS.length}];
 uniform sampler2D uHist, uColA, uColB, uColC;
 uniform float uSection, uDrop, uTension, uPhrase, uPad, uHarm, uSecHue;
 uniform vec3 uColMin, uColMax;
-uniform vec3 uCoolA, uCoolB, uKick, uCalmA, uCalmB, uGlint;   // the palette's scheme
-uniform float uHotMax;   // 1 = loudness heats toward the second palette colour, 0 = toward the first
+uniform vec3 uCoolA, uCoolB, uKick, uCalmA, uCalmB, uGlint, uColMid;   // uColMid: (-1) = no middle colour   // the palette's scheme
+uniform float uHotMax, uHeatGain, uCoolGain;   // 1 = loudness heats toward the second palette colour, 0 = toward the first
 uniform int uGrad;
 out vec4 outColor;
 ${DEFS}
 vec2 H2(float c, float s) { return fract(sin(vec2(dot(vec2(c, s), vec2(12.9898, 78.233)), dot(vec2(c, s), vec2(39.3468, 11.135)))) * 43758.5453); }
 vec3 ACES(vec3 x) { return clamp(x * (2.51 * x + 0.03) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
 float CurveB(float x) { float s = clamp(x / 0.205, 0.0, 1.0); return x < 0.205 ? 0.745 * s * s * (3.0 - 2.0 * s) : 1.0 - 0.255 * exp(-5.3 * (x - 0.205)); }
+const vec3 LUM = vec3(0.2126, 0.7152, 0.0722);
+// how far a dot has turned to an accent: 0 below its own threshold s (0..1), 1 once the strength is 0.4 past it -
+// the strength sets how many dots turn, and each dot turns over a band of it (never at once)
+float popDot(float amount, float s) { return smoothstep(s, s + 0.4, amount); }
+// an accent colour at the dot's own brightness: a change of colour, not a flash
+vec3 lumMatch(vec3 c, vec3 ref) { return c * dot(ref, LUM) / max(dot(c, LUM), 1e-4); }
+// an accent softened toward its own grey (30% less saturated), so it comes in naturally over the palette
+vec3 soften(vec3 c) { return mix(vec3(dot(c, LUM)), c, 0.7); }
 float CurveA(float x) { float s = clamp(x / 0.49, 0.0, 1.0); return x < 0.49 ? 0.6 * s * s * (3.0 - 2.0 * s) : 0.6 * (1.0 - x) / 0.51; }
 void main() {
   vec2 p = vec2(gl_FragCoord.x / uRes.x, 1.0 - gl_FragCoord.y / uRes.y);
@@ -1405,43 +1420,47 @@ void main() {
       float size = (0.25 + 0.15 * fract(h.x * 7.31 + u.x * 3.17)) * SIZE;
       vec2 d = vec2(dx, (zy - z) / stretch) / size;
       float disc = 1.0 - smoothstep(0.0, 1.0, length(d));
-      // the blend between the palette's two colours: random per dot, across the line, or core to tips
-      float cg = uGrad == 1 ? C.y : (uGrad == 2 ? tip : fract(h.y * 5.17 + u.y * 2.31));
-      // loudness heats the colour toward the palette's second one - the outer dots most (COLOR_TIPS), and only the
-      // loud parts all the way (COLOR_CURVE)
-      // temperature: the column's faded loudness, cooler toward the core - the core and small rings run cool, only
-      // the outer dots of a loud column run hot. It picks the colour: the palette's first colour when cool, its second
-      // (hot) colour only at the hottest (COLOR_LEVEL = how strongly); below that, Cool air tints toward violet-blue
+      // ---- colour: the palette first, accents on top. Every accent follows one rule - its strength decides HOW MANY
+      // dots take its colour (each dot has its own threshold per accent), never how far every dot shifts - so a bar is
+      // always a mix of the palette and accents, never one flat tint. Each accent has a coverage budget so the palette
+      // keeps the majority (cool air had ~70% of all dots - anything not hot counted as cool): heat <= ~1/3 of the dots
+      // even at loud tips, cool <= ~1/4, breakdown <= ~1/3; a kick passes, so it may take more for a moment. The strengths are faded upstream and each dot
+      // turns over a band of them, so nothing snaps; accents keep the dot's brightness. Where they overlap the later
+      // one wins: heat, cool, breakdown, kick.
+      // the palette's own blend: random per dot, lows to highs, or core to tips
+      float cg = uGrad == 1 ? C.y : (uGrad == 2 ? tip : (uGrad == 4 ? g / 95.0 : fract(h.y * 5.17 + u.y * 2.31)));
+      // temperature: the column's faded loudness, cooler toward the core (COLOR_TIPS), only the loud parts high
+      // (COLOR_CURVE)
       float T = pow(clamp(B.z * 1.5, 0.0, 1.0), COLOR_CURVE) * mix(1.0, smoothstep(0.1, 0.9, tip), COLOR_TIPS);
-      cg = mix(cg, mix(1.0 - T, T, uHotMax), COLOR_LEVEL);
-      vec3 col = mix(uColMin, uColMax, cg) * 0.12;
+      // sections and chords: they lean the palette's balance between its own two colours (a chorus might run warmer) -
+      // the palette stays itself; only a small hue turn is left for them below
+      cg = clamp(cg + 0.3 * clamp(SECTION_LOOK * uSecHue / 0.85 + HARMONY_HUE * uHarm * 0.6, -1.0, 1.0), 0.0, 1.0);
+      // heat: the hotter the spot, the more of its dots take the palette's hot colour (loud tips ~half, the core none)
+      cg = mix(cg, uHotMax, min(1.0, (0.4 + 0.6 * ACCENT) * COLOR_LEVEL * uHeatGain) * popDot(T * (0.6 + TEMP_AMOUNT), fract(h.y * 9.13 + u.x * 4.71)));
+      vec3 col = (uColMid.x < 0.0 ? mix(uColMin, uColMax, cg) : (cg < 0.5 ? mix(uColMin, uColMid, cg * 2.0) : mix(uColMid, uColMax, cg * 2.0 - 1.0))) * 0.12;
       if (uGrad == 3) col = (1.0 + 6.0 * (0.5 + 0.5 * cos(6.2832 * (C.y * 0.8 + vec3(0.0, 0.33, 0.67))))) * 0.12;
-      // a kick shifts the outer dots' hue, keeping their brightness: a colour change, not a flash
-      vec3 kickCol = uKick * 0.12;
-      const vec3 LUM = vec3(0.2126, 0.7152, 0.0722);
-      kickCol *= dot(col, LUM) / dot(kickCol, LUM);
-      col = mix(col, kickCol, clamp(KICK_COLOR * A.y * tipW + DYNAMICS * uDrop * 0.6 * tipW + TENSION * uTension * 0.5 * tipW, 0.0, 1.0));
-      // cool air: cool dots (the core, small rings, quiet columns) drift toward the cool colour - blue to violet by
-      // COOL_HUE - at the same brightness: the cool start of the scale that warms to magenta-red
-      vec3 airCol = mix(uCoolA, uCoolB, COOL_HUE) * 0.12;
-      airCol *= dot(col, LUM) / dot(airCol, LUM);
-      // ...and outer dots cooling off as their throw falls back (B.w: per column, quick in, lingering out)
-      // (added on top of the cool from temperature, so it shows on outer dots that already run a little cool)
+      // cool: the cooler the spot (the core, small rings, quiet columns) and while a throw settles back, the more of
+      // its dots take the palette's cool shade (Cool colour picks between its two)
       float coolT = 1.0 - smoothstep(0.0, 0.45, T);
-      col = mix(col, airCol, clamp(0.85 * COOL_AIR * (coolT + (1.0 - coolT) * MOVE_COOL * B.w * smoothstep(0.2, 0.8, tip)), 0.0, 1.0));
-      // breakdown colour: toward cool teal-blue in quiet sections, at the same brightness
-      vec3 calmCol = mix(uCalmA, uCalmB, fract(h.y * 3.7 + u.x * 1.9)) * 0.12;
-      calmCol *= dot(col, LUM) / dot(calmCol, LUM);
-      col = mix(col, calmCol, clamp(CALM_COLOR * calm, 0.0, 1.0));
+      float coolness = coolT + (1.0 - coolT) * MOVE_COOL * B.w * smoothstep(0.2, 0.8, tip);
+      vec3 airCol = soften(lumMatch(mix(uCoolA, uCoolB, COOL_HUE), col));
+      col = mix(col, airCol, clamp(ACCENT * COOL_AIR * uCoolGain, 0.0, 1.0) * popDot(coolness * (0.25 + 0.5 * TEMP_AMOUNT), fract(h.x * 6.37 + u.y * 2.93)));
+      // breakdown: in a quiet stretch with a weak beat, some dots take the palette's breakdown colours
+      vec3 calmCol = soften(lumMatch(mix(uCalmA, uCalmB, fract(h.y * 3.7 + u.x * 1.9)), col));
+      col = mix(col, calmCol, ACCENT * popDot(CALM_COLOR * calm * 0.6, fract(h.x * 3.31 + u.y * 8.17)));
+      // kick (and a drop, and a build-up's tension): some of the thrown outer dots take the kick colour
+      float kickAmt = (KICK_COLOR * A.y + DYNAMICS * uDrop * 0.6 + TENSION * uTension * 0.5) * tipW;
+      col = mix(col, soften(lumMatch(uKick, col)), min(1.0, ACCENT * 1.2) * popDot(kickAmt, fract(h.y * 7.71 + u.x * 2.57)));
       // hi-hat sparkle: in the treble columns, a changing few dots glint toward white-cyan with the hats - colour only
       float treble = smoothstep(0.58, 0.83, C.y);
       float ph = uTime * 4.0 + fract(h.x * 7.7 + u.y * 3.1);   // each dot's own quarter-second slot
       float pick = step(0.82, fract(h.x * 13.7 + u.y * 5.3 + floor(ph) * 0.37)) * pow(sin(3.14159 * fract(ph)), 2.0);
-      vec3 glint = uGlint * 0.12;
-      glint *= dot(col, LUM) / dot(glint, LUM);
+      vec3 glint = lumMatch(uGlint, col);
       col = mix(col, glint, clamp(DYNAMICS * SPARKLE * treble * pick * (A.y * 1.5 + TENSION * uTension * 0.6), 0.0, 1.0));
       // phrase colour drift: every 8 bars the hue turns a little (about the grey axis, so brightness holds)
-      float ang = PHRASE_HUE * 0.6 * sin(uPhrase * 2.39996) + HARMONY_HUE * 1.2 * uHarm + SECTION_LOOK * uSecHue;   // harmony, section
+      // phrase, harmony and section turn the hue only a little (at most ~12 degrees): more would carry every palette
+      // off its own colours (an orange palette went magenta at 60)
+      float ang = clamp(PHRASE_HUE * 0.6 * sin(uPhrase * 2.39996) + HARMONY_HUE * 1.2 * uHarm + SECTION_LOOK * uSecHue, -1.0, 1.0) * 0.21;
       vec3 kk = vec3(0.57735);
       col = col * cos(ang) + cross(kk, col) * sin(ang) + kk * dot(kk, col) * (1.0 - cos(ang));
       col = max(col, vec3(0.0));
@@ -1483,8 +1502,9 @@ void main() {
   // the glow's colour by temperature: the cool colour while the music runs cool, the palette's hot colour as it heats
   vec3 coolGlow = mix(uCoolA, uCoolB, COOL_HUE); coolGlow /= max(coolGlow.r, max(coolGlow.g, coolGlow.b));
   vec3 glowCol = mix(coolGlow, uGlowHot, uWarm);
-  // the wide bloom's tint follows it too, by Cool air (it was a fixed violet haze over every colour)
-  vec3 glow = b2 * BLOOM_NEAR + b3 * BLOOM_WIDE * mix(uBloomTint, glowCol, COOL_AIR);
+  // the wide bloom keeps mostly the palette's own tint, leaning a little with temperature (all the way, it hazed
+  // every palette in the cool colour)
+  vec3 glow = b2 * BLOOM_NEAR + b3 * BLOOM_WIDE * mix(uBloomTint, glowCol, 0.3 * COOL_AIR);
   vec2 d = (uv - 0.5) * vec2(0.8, 3.0);
   // the glow behind the line: violet while the music runs cool, warming toward the palette's hot colour only as the
   // columns heat up (it was a fixed red-pink - a red fog over every palette)
@@ -1560,13 +1580,18 @@ function blur(src, dst, tmp) {
 }
 const uArr = new Float32Array(PARAMS.length);
 let last = performance.now(), frames = 0, fpsT = last, fps = 0, simT = 0;
+// where a frame's CPU time goes (eased averages, ms): the engine, ticks/analysis scheduling, the graphs - shown on the HUD
+const perfMs = [0, 0, 0];
+const perfMark = (k, t0) => { perfMs[k] += (performance.now() - t0 - perfMs[k]) * 0.05; };
 function frame(now) {
   const speed = parseFloat(document.getElementById("speed").value);
   const dt = Math.min(0.1, (now - last) / 1000) * speed; last = now;
   simT += dt;
   const t = simT;
+  const pt0 = performance.now();
   try {
     engine(dt, t);
+    perfMark(0, pt0);
     resize();
     const QP = Q();
     PARAMS.forEach((p, i) => uArr[i] = QP[p[0]]);
@@ -1594,9 +1619,11 @@ function frame(now) {
     const sch = schemeOf(pal);
     gl.uniform3fv(gl.getUniformLocation(progScene, "uCoolA"), sch.cool[0]); gl.uniform3fv(gl.getUniformLocation(progScene, "uCoolB"), sch.cool[1]);
     gl.uniform3fv(gl.getUniformLocation(progScene, "uKick"), sch.kick);
+    gl.uniform3fv(gl.getUniformLocation(progScene, "uColMid"), sch.mid || [-1, -1, -1]);
     gl.uniform3fv(gl.getUniformLocation(progScene, "uCalmA"), sch.calm[0]); gl.uniform3fv(gl.getUniformLocation(progScene, "uCalmB"), sch.calm[1]);
     gl.uniform3fv(gl.getUniformLocation(progScene, "uGlint"), sch.glint);
     gl.uniform1f(gl.getUniformLocation(progScene, "uHotMax"), sch.hot === 2 ? 1 : 0);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uHeatGain"), sch.heatGain); gl.uniform1f(gl.getUniformLocation(progScene, "uCoolGain"), sch.coolGain);
     gl.uniform1i(gl.getUniformLocation(progScene, "uGrad"), (comparing ? pinned : P).GRADIENT || 0);
     useTex(progScene, "uHist", 0, texHist); useTex(progScene, "uColA", 1, texA); useTex(progScene, "uColB", 2, texB); useTex(progScene, "uColC", 3, texC);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -1621,12 +1648,17 @@ function frame(now) {
     useTex(progComp, "uScene", 0, T.scene.t); useTex(progComp, "uB1", 1, T.b1.t); useTex(progComp, "uB2", 2, T.b2.t); useTex(progComp, "uB3", 3, T.b3.t);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   } catch (e) { fail(e.stack || e.message); return; }
+  const pt1 = performance.now();
   drumsTick(now); scheduleTicks();
+  perfMark(1, pt1);
+  const pt2 = performance.now();
   drawGraphs();
+  perfMark(2, pt2);
   frames++;
   if (now - fpsT > 500) { fps = frames * 1000 / (now - fpsT); frames = 0; fpsT = now; }
   document.getElementById("hud").textContent =
     `${T.W}x${T.H}  ${fps.toFixed(0)} fps  ` + (sourceSel.value === "file" ? (buffer ? (playing ? "song" : "song paused") : "no song loaded - drop one") : (synthOn ? `synthetic ${P.BPM} bpm ${songPart}` : "synthetic paused"))
+    + `   cpu ms: engine ${perfMs[0].toFixed(1)} ticks ${perfMs[1].toFixed(1)} graphs ${perfMs[2].toFixed(1)}`
     + `   energy x${energyRatio.toFixed(2)}  section ${section.toFixed(2)}${lastQuiet > 2 && quietAgo < 10 ? "  drop armed" : ""}${tension > 0.05 ? "  tension " + tension.toFixed(2) : ""}${dropPulse > 0.2 ? "   DROP" : ""}   ${mapStatus}`;
   requestAnimationFrame(frame);
 }
@@ -1697,7 +1729,9 @@ function drawGraphs() {
       const y = y0 + li * lh;
       g2.fillStyle = "#9a98a4"; g2.font = "11px system-ui, sans-serif"; g2.fillText(k === "bass" ? "bass note" : k === "hat" ? "hats" : k, 12, y + 10);
       g2.fillStyle = "rgba(255,255,255,0.05)"; g2.fillRect(x0, y + 1, xw, lh - 2);
-      const each = (list, fn) => { for (const t0 of list || []) for (const t of [t0 - dur, t0, t0 + dur]) if (Math.abs(t - now) <= span) fn(xs(t)); };
+      // the events within the window, found by binary search (with the song's loop either side) - not a scan of the
+      // whole song every frame, which grew with its length
+      const each = (list, fn) => { if (!list) return; for (const sh of [-dur, 0, dur]) for (let ix = lowerBound(list, now - span - sh); ix < list.length && list[ix] + sh <= now + span; ix++) fn(xs(list[ix] + sh)); };
       g2.strokeStyle = "rgba(255,255,255,0.85)"; g2.lineWidth = 1;
       if (drumTruth) each(drumTruth[k], x => g2.strokeRect(x - 3, y + 1.5, 6, lh - 3));
       g2.fillStyle = col; const found = k === "beat" ? beatInfo && beatInfo.beats : drums && drums[k];
@@ -1764,9 +1798,11 @@ if (location.hash.indexOf("drumtest") >= 0) {
   const at = /at=(\d+(?:\.\d+)?)/.exec(location.hash); pause(); offset = at ? parseFloat(at[1]) : 0;
   if (location.hash.indexOf("play") >= 0) play();
 }
+// ...&song=URL loads a song by URL (headless checks; file:// needs --allow-file-access-from-files)
+{ const sm = /song=([^&]+)/.exec(location.hash); if (sm) fetch(decodeURIComponent(sm[1])).then(r => r.arrayBuffer()).then(ab => loadFile({ arrayBuffer: async () => ab })).catch(e => fail("song: " + e.message)); }
 // ...&preset=BUTTON_ID presses that preset button (e.g. #drumtest&play&preset=presetYours4Cool)
 { const pm = /preset=([A-Za-z0-9]+)/.exec(location.hash); const b = pm && document.getElementById(pm[1]); if (b) b.onclick(); }
-{ const pp = /pal=(\d+)/.exec(location.hash); if (pp) setColour(+pp[1], P.GRADIENT || 0); }
+{ const pp = /pal=(\d+)/.exec(location.hash), gg = /grad=(\d+)/.exec(location.hash); if (pp || gg) setColour(pp ? +pp[1] : P.PALETTE, gg ? +gg[1] : (P.GRADIENT || 0)); }
 // fountain-bench.html#live&ff=30 runs the model 30 s ahead before the first frame (jump to a part of the song)
 const ffMatch = /ff=(\d+(?:\.\d+)?)/.exec(location.hash);
 if (ffMatch) { const until = parseFloat(ffMatch[1]); while (simT < until) { simT += 1 / 60; engine(1 / 60, simT); } }
