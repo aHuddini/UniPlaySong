@@ -32,6 +32,15 @@
   h1 { font-size: 15px; margin: 0 0 8px; }
   h2 { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 16px 0 6px; border-top: 1px solid var(--line); padding-top: 10px; }
   .row { margin: 6px 0 8px; }
+  h2.sec { color: var(--text); font-size: 12px; }
+  button.main { border-color: var(--accent); }
+  #search { flex: 1; min-width: 0; background: #0c0c10; color: var(--text); border: 1px solid #3a3a44; border-radius: 6px; padding: 5px 8px; font: inherit; }
+  details.grp { border-top: 1px solid var(--line); }
+  details.grp > summary { cursor: pointer; list-style: none; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); padding: 9px 0 7px; user-select: none; }
+  details.grp > summary::before { content: "\25B8  "; }
+  details.grp[open] > summary::before { content: "\25BE  "; }
+  details.grp > summary .cnt { color: var(--accent); text-transform: none; letter-spacing: 0; margin-left: 6px; }
+  .row.changed .n { color: var(--accent); }
   .row label { display: flex; justify-content: space-between; gap: 8px; color: var(--text); cursor: pointer; }
   .row label span.v { color: var(--accent); font-variant-numeric: tabular-nums; }
   .row label span.n:hover { text-decoration: underline dotted; }
@@ -50,8 +59,13 @@
   <div id="stage"><canvas id="c"></canvas><canvas id="graph"></canvas><div id="hud"></div><div id="flash"></div><div id="ab">COMPARE (pinned values)</div><div id="err"></div></div>
   <div id="panel">
     <h1>Fountain bench</h1>
+    <h2 class="sec">Song &amp; analysis</h2>
     <div class="btns">
       <input type="file" id="file" accept="audio/*">
+    </div>
+    <div class="btns">
+      <button id="play">Play / pause</button>
+      <select id="source"><option value="synth">Synthetic beat</option><option value="song">Synthetic song (breakdown, build, drop)</option><option value="file">Loaded song</option></select>
     </div>
     <div class="btns">
       <button id="drumTest" title="A 32 s drum loop whose every hit is known - the lanes show the found hits against the real ones, with a score">Drum test track</button>
@@ -60,39 +74,43 @@
         <option value="snare">Ticks: snares</option><option value="hat">Ticks: hats</option><option value="bass">Ticks: bass notes (not kicks)</option></select>
       <select id="musicLvl"><option value="1">Music 100%</option><option value="0.35">Music 35%</option><option value="0">Music muted</option></select>
     </div>
+    <h2 class="sec">Presets</h2>
     <div class="btns">
-      <button id="play">Play / pause</button>
-      <select id="source"><option value="synth">Synthetic beat</option><option value="song">Synthetic song (breakdown, build, drop)</option><option value="file">Loaded song</option></select>
+      <button id="presetYours5" class="main" title="Your values from 2026-10-13 00:36, plus beads cooling as they settle">Your tune #5</button>
+      <button id="stompLayers" class="main" title="The chosen motion (Stomp ripple) plus the layers: held chords light the glow and swell the core, chords tint the colour">Stomp ripple + layers</button>
+      <select id="presetPick" title="Every other preset">
+        <option value="">More presets...</option>
+        <optgroup label="Your tunes">
+          <option value="presetYours">Your tune #1</option><option value="presetYours2">Your tune #2</option>
+          <option value="presetYours3">Your tune #3 (show + map)</option><option value="presetYours4">Your tune #4</option>
+          <option value="presetYours4Cool">Your tune #4, cooler</option></optgroup>
+        <optgroup label="Beat motion (loaded songs)">
+          <option value="stompRipple">Stomp ripple (chosen)</option><option value="beatPunch">Beat punch</option>
+          <option value="barStomp">Bar stomp</option><option value="beatPulse">Beat pulse</option><option value="beatRipple">Ripple</option></optgroup>
+        <optgroup label="Earlier">
+          <option value="presetShipped">19 as tested</option><option value="presetFling">Fling proposal</option>
+          <option value="presetLive">Live show</option><option value="presetMapped">Live show + song map</option></optgroup>
+      </select>
+    </div>
+    <div class="btns">
+      <button id="copy" title="Copy every value as JSON">Copy values</button>
+      <button id="pin" title="Remember the current values; hold C to see them again">Pin as compare</button>
+      <button id="resetAll" title="Every slider back to its default">Reset all</button>
+    </div>
+    <div hidden>
+      <button id="presetShipped"></button><button id="presetFling"></button><button id="presetYours"></button>
+      <button id="presetYours2"></button><button id="presetLive"></button><button id="presetMapped"></button>
+      <button id="presetYours3"></button><button id="beatPunch"></button><button id="barStomp"></button>
+      <button id="beatPulse"></button><button id="beatRipple"></button><button id="stompRipple"></button>
+      <button id="presetYours4"></button><button id="presetYours4Cool"></button>
+    </div>
+    <h2 class="sec">View</h2>
+    <div class="btns">
       <select id="palette" title="Palette: the two colours each dot blends between"></select>
       <select id="gradient" title="What picks each dot's blend between the palette's two colours">
         <option value="0">Colour: random per dot</option><option value="1">Colour: lows to highs across the line</option>
         <option value="2">Colour: core to tips</option><option value="3">Colour: spectrum across the line</option></select>
       <select id="bg"><option value="dark">Dark theme</option><option value="grey">Grey</option><option value="black">Black</option></select>
-    </div>
-    <div class="btns">
-      <button id="presetShipped">19 as tested</button>
-      <button id="presetFling">Fling proposal</button>
-      <button id="presetYours">Your tune #1</button>
-      <button id="presetYours2">Your tune #2</button>
-      <button id="presetLive">Live show</button>
-      <button id="presetMapped">Live show + song map</button>
-      <button id="presetYours3">Your tune #3 (show + map)</button>
-    </div>
-    <div class="btns" title="Your tune #3's look, moving on the song's beat - for loaded songs (on the synthetic beat they fall back to the old kick)">
-      <button id="beatPunch" title="A short, jagged stab on every beat - louder columns throw further">Beat punch</button>
-      <button id="barStomp" title="ONE-two-three-four: one big throw per bar, the other three beats small">Bar stomp</button>
-      <button id="beatPulse" title="The whole line swells and settles together on every beat - smooth, no spikes">Beat pulse</button>
-      <button id="beatRipple" title="Each beat starts at the cover and travels out to the tips">Ripple</button>
-      <button id="stompRipple" title="The chosen motion: Ripple with Bar stomp's shape - a big wave on the ONE of each bar, small ones on the other beats">Stomp ripple (chosen)</button>
-      <button id="presetYours4" title="Your values from 2026-10-13: Stomp ripple + layers, tuned">Your tune #4</button>
-      <button id="presetYours5" title="Your values from 2026-10-13 00:36, plus moving dots cooling">Your tune #5</button>
-      <button id="presetYours4Cool" title="Your tune #4 with less loudness heat - stays white-pink, only the loudest moments warm toward magenta">Your tune #4, cooler</button>
-      <button id="stompLayers" title="Stomp ripple, plus held chords lighting the glow and swelling the core, chords tinting the colour, and loudness heating only the outer dots">Stomp ripple + layers</button>
-      <button id="resetAll">Reset all</button>
-      <button id="copy">Copy values</button>
-    </div>
-    <div class="btns">
-      <button id="pin">Pin as compare</button>
       <select id="speed"><option value="1">Speed 1x</option><option value="0.5">Speed 1/2x</option><option value="0.25">Speed 1/4x</option></select>
       <select id="graphs"><option value="on">Signal graphs on</option><option value="off">Signal graphs off</option></select>
     </div>
@@ -106,6 +124,12 @@
       1.5 s either side of now. On the drum test, white outlines are the real hits. Ticks: kick low, snare mid, hats high,
       bass notes lowest. Found live, a kick is known ~110 ms after it lands (the kick-or-bass check), a snare ~40 ms, a
       hat ~25 ms.</p>
+    <h2 class="sec">Sliders</h2>
+    <div class="btns">
+      <input id="search" type="search" placeholder="Find a slider..." autocomplete="off">
+      <button id="openAll" title="Open every group">Open all</button><button id="closeAll" title="Close every group">Close all</button>
+    </div>
+    <p class="note">Highlighted names = moved off their default (the count is on each group). Click a name to reset it.</p>
     <div id="params"></div>
     <h2>Values</h2>
     <textarea id="out" readonly></textarea>
@@ -237,22 +261,56 @@ try { Object.assign(P, JSON.parse(localStorage.getItem("fountainBench") || "{}")
 // ---- UI --------------------------------------------------------------------------------------------------------
 const inputs = {};
 const fmt = (k, v) => { const step = PARAMS.find(p => p[0] === k)[6]; const d = Math.max(0, -Math.floor(Math.log10(step) + 1e-9)); return Number(v).toFixed(Math.min(d, 4)); };
+// The panel's groups, in this order (a group not listed goes at the end); colour and temperature pulled out of Look
+const COLOUR_KEYS = ["COLOR_LEVEL", "COLOR_TIPS", "COLOR_CURVE", "COLOR_EASE", "COOL_AIR", "COOL_HUE", "MOVE_COOL", "KICK_COLOR", "FLASH", "CALM_COLOR", "SPARKLE"];
+const GROUP_ORDER = ["Colour & temperature", "Beat (loaded songs)", "Layers (loaded songs)", "Live show", "Song map", "Fling & motion",
+  "Look", "Core", "Shape", "Stretch", "Levels", "Drum detection", "Synthetic beat"];
+const OPEN_DEFAULT = ["Colour & temperature", "Beat (loaded songs)", "Layers (loaded songs)"];
+const groupOf = (k, g) => COLOUR_KEYS.includes(k) ? "Colour & temperature" : g;
+const groups = {}, rows = {};
+let openState = {};
+try { openState = JSON.parse(localStorage.getItem("fountainBenchOpen") || "{}"); } catch (e) { }
+const saveOpen = () => { try { localStorage.setItem("fountainBenchOpen", JSON.stringify(openState)); } catch (e) { } };
+function markChanged(k) {
+  const p = PARAMS.find(q => q[0] === k); rows[k].classList.toggle("changed", Math.abs(P[k] - p[3]) > p[6] / 2);
+  const g = groups[groupOf(k, p[1])], n = g.querySelectorAll(".row.changed").length;
+  g.querySelector(".cnt").textContent = n ? `${n} changed` : "";
+}
 function buildPanel() {
   const host = document.getElementById("params");
-  let group = "";
+  const names = [...new Set(PARAMS.map(p => groupOf(p[0], p[1])))].sort((a, b) => (GROUP_ORDER.indexOf(a) + 1 || 99) - (GROUP_ORDER.indexOf(b) + 1 || 99));
+  for (const name of names) {
+    const d = document.createElement("details"); d.className = "grp";
+    d.open = name in openState ? openState[name] : OPEN_DEFAULT.includes(name);
+    d.innerHTML = `<summary>${name}<span class="cnt"></span></summary>`;
+    d.addEventListener("toggle", () => { if (!searching) { openState[name] = d.open; saveOpen(); } });
+    groups[name] = d; host.appendChild(d);
+  }
   for (const [k, g, label, def, min, max, step, hint] of PARAMS) {
-    if (g !== group) { group = g; const h = document.createElement("h2"); h.textContent = g; host.appendChild(h); }
     const row = document.createElement("div"); row.className = "row";
+    row.dataset.find = (label + " " + k + " " + (hint || "")).toLowerCase();
     row.innerHTML = `<label><span class="n" title="Click to reset to ${def}">${label}</span><span class="v"></span></label>
       <input type="range" min="${min}" max="${max}" step="${step}">${hint ? `<div class="hint">${hint}</div>` : ""}`;
     const input = row.querySelector("input"), val = row.querySelector(".v");
     input.value = P[k]; val.textContent = fmt(k, P[k]);
-    input.addEventListener("input", () => { const was = P[k]; P[k] = parseFloat(input.value); val.textContent = fmt(k, P[k]); saved(); flash(label, was, P[k], k); });
+    input.addEventListener("input", () => { const was = P[k]; P[k] = parseFloat(input.value); val.textContent = fmt(k, P[k]); saved(); flash(label, was, P[k], k); markChanged(k); });
     row.querySelector(".n").addEventListener("click", () => setParam(k, def));
     inputs[k] = { input, val };
-    host.appendChild(row);
+    rows[k] = row; groups[groupOf(k, g)].appendChild(row);
   }
+  for (const p of PARAMS) markChanged(p[0]);
   saved();
+}
+// search: show only matching sliders, opening their groups; clearing it restores the groups as they were
+let searching = false;
+function applySearch(q) {
+  q = q.trim().toLowerCase(); searching = !!q;
+  for (const name in groups) {
+    let any = false;
+    for (const row of groups[name].querySelectorAll(".row")) { const hit = !q || row.dataset.find.includes(q); row.style.display = hit ? "" : "none"; any = any || hit; }
+    groups[name].style.display = any ? "" : "none";
+    groups[name].open = q ? any : (name in openState ? openState[name] : OPEN_DEFAULT.includes(name));
+  }
 }
 let flashTimer = 0, flashFrom = null, flashKey = null;
 function flash(label, from, to, k) {
@@ -263,7 +321,7 @@ function flash(label, from, to, k) {
   clearTimeout(flashTimer);
   flashTimer = setTimeout(() => { el.classList.remove("on"); flashKey = null; }, 1600);
 }
-function setParam(k, v) { P[k] = v; inputs[k].input.value = v; inputs[k].val.textContent = fmt(k, v); saved(); }
+function setParam(k, v) { P[k] = v; inputs[k].input.value = v; inputs[k].val.textContent = fmt(k, v); saved(); markChanged(k); }
 function saved() {
   try { localStorage.setItem("fountainBench", JSON.stringify(P)); } catch (e) { }
   const o = {}; for (const p of PARAMS) o[p[0]] = +fmt(p[0], P[p[0]]);
@@ -271,6 +329,9 @@ function saved() {
   document.getElementById("out").value = JSON.stringify(o, null, 1);
 }
 buildPanel();
+document.getElementById("search").addEventListener("input", e => applySearch(e.target.value));
+document.getElementById("openAll").onclick = () => { for (const n in groups) { groups[n].open = true; openState[n] = true; } saveOpen(); };
+document.getElementById("closeAll").onclick = () => { for (const n in groups) { groups[n].open = false; openState[n] = false; } saveOpen(); };
 const palSel = document.getElementById("palette"), gradSel = document.getElementById("gradient");
 PALETTES.forEach((p, i) => { const o = document.createElement("option"); o.value = i; o.textContent = "Palette: " + p[0]; palSel.appendChild(o); });
 palSel.value = P.PALETTE; gradSel.value = P.GRADIENT;
@@ -338,6 +399,13 @@ const whiteToMagenta = () => setColour(PALETTES.findIndex(p => p[0] === "White t
 document.getElementById("presetYours4").onclick = () => { applyAll(YOUR_TUNE_4); whiteToMagenta(); };
 document.getElementById("presetYours5").onclick = () => { applyAll(YOUR_TUNE_5); whiteToMagenta(); };
 document.getElementById("presetYours4Cool").onclick = () => { applyAll(YOUR_TUNE_4_COOL); whiteToMagenta(); };
+document.getElementById("presetPick").onchange = e => {
+  const id = e.target.value, name = e.target.selectedOptions[0].textContent; e.target.value = "";
+  const b = id && document.getElementById(id); if (!b) return;
+  b.onclick();
+  const el = document.getElementById("flash"); el.textContent = "Preset: " + name; el.classList.add("on");
+  clearTimeout(flashTimer); flashTimer = setTimeout(() => el.classList.remove("on"), 1400);
+};
 for (const id in BEAT_PRESETS) document.getElementById(id).onclick = () => { applyAll({ ...BEAT_LOOK, ...BEAT_PRESETS[id] }); setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0); };
 document.getElementById("presetMapped").onclick = () => { applyAll(LIVE_MAPPED); setColour(0, 2); if (sourceSel.value === "synth") sourceSel.value = "song"; };
 document.getElementById("copy").onclick = async () => {
