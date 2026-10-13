@@ -12,7 +12,7 @@ const layersrc = cut("// ---- layers", "// ---- end layers");
 const factory = new Function("MOCK", `
   let { sourceSel, analyser, actx, buffer, playing, startAt, synthOn, songMap, synthMapKey, beatInfo } = MOCK;
   const synth = () => {}, mapSynthSong = () => {};
-  let layers = null, layersOf = null;
+  let layers = null, layersOf = null, analyserL = null, analyserR = null;
   const beatIndexAt = t => { if (!beatInfo) return -1; const bs = beatInfo.beats; let lo = 0, hi = bs.length; while (lo < hi) { const m = (lo + hi) >> 1; if (bs[m] <= t) lo = m + 1; else hi = m; } return lo - 1; };
   ${params}
   let P = {}; const Q = () => P;
