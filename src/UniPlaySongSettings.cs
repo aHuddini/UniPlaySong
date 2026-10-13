@@ -326,6 +326,13 @@ namespace UniPlaySong
         SharpPulse   // tight edge, fast heartbeat rhythm
     }
 
+    // Look of the theme music visualizer (UPS_MusicVisualControl); each is a preset in Visualizer\presets.
+    public enum MusicVisualizerStyle
+    {
+        GlowBars,    // slim bars with a cool gradient and drifting haze
+        Fountain     // columns of glowing sparks thrown up and down from the centre line
+    }
+
     public class UniPlaySongSettings : ObservableObject
     {
         // v1.6.8 crash tripwire. Reopening the settings dialog after a save StackOverflowed WPF (0xc00000fd) via a
@@ -2942,6 +2949,12 @@ namespace UniPlaySong
             set { musicVisualizerEnabled = value; OnPropertyChanged(); }
         }
 
+        public MusicVisualizerStyle MusicVisualizerStyle
+        {
+            get => musicVisualizerStyle;
+            set { musicVisualizerStyle = value; OnPropertyChanged(); }
+        }
+
         // Bar color theme for the spectrum visualizer. Classic (0) uses the original solid white brush. Other
         // themes use colored gradients.
         public int VizColorTheme
@@ -3040,6 +3053,7 @@ namespace UniPlaySong
         private bool vizFftTimerMode = false;    // false = signal-based (audio-driven), true = fixed 16ms timer (~62fps)
         private bool alternativeAudioReactiveVisualizerSync = false;
         private bool musicVisualizerEnabled = false;
+        private MusicVisualizerStyle musicVisualizerStyle = MusicVisualizerStyle.GlowBars;
         private VizPreset selectedVizPreset = VizPreset.Punchy; // Current visualizer preset
         private int vizColorTheme = 0;               // VizColorTheme enum — bar color theme (0=Dynamic)
         private bool vizGradientEnabled = true;      // true = gradient bars, false = solid color

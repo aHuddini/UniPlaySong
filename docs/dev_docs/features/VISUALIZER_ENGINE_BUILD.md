@@ -12,7 +12,7 @@ Playnite (x86)                                         UniPlaySongVisualizer.exe
 NAudio player ─► OutputClock.Read ─► VisualizerAudioFeed ══ <channel>_Audio ═══►  AudioRing ─► projectM
                                        (audio thread)            (ring)                  │
 MusicVisualControl (UI thread, per WPF frame):                                    WGL pbuffer (GL 3.3)
-  publish "frame being heard" ──────────────────────── <channel>_Audio.played           │ glReadPixels + luma key
+  publish "frame being heard" ──────────────────────── <channel>_Audio.played           │ key pass (GPU) + readback
   SetEvent ───────────────────────────────────────────── <channel>_Tick ──────►  one frame per signal
   read newest index ◄──────────────────────────────────── <channel>_Frames ◄──── 3 shared D3D11 textures
   bridge: D3D9Ex opens the shared texture, StretchRect ─► D3DImage (real transparency)
@@ -27,8 +27,13 @@ MusicVisualControl (UI thread, per WPF frame):                                  
   shared handles are global and fit 32 bits, so the x86 side can open what the x64 side shared) and `StretchRect`s
   the newest into one render target — GPU to GPU.
 - **Pacing is on demand.** The element signals `<channel>_Tick` from `CompositionTarget.Rendering`; the renderer
-  draws one frame per signal. Free-running both sides at 60 Hz aliased badly (25–117 skipped frames in 8 s; on demand:
-  1).
+  draws one frame per signal and **nothing without one**. Free-running both sides at 60 Hz aliased badly (25–117
+  skipped frames in 8 s; on demand: 1). Drawing anyway on a missed signal cost a third of a core while Playnite was
+  minimized.
+- **Idles when there is nothing to show.** The element stops signalling after 1.5 s of silence (paused, stopped,
+  between songs) and while Playnite isn't the active window (a game, another app); the last frame stays up. Silence
+  comes from the audio itself (`VisualizerAudioFeed.LastSoundTick`, anything above −80 dBFS): the player's clock keeps
+  running through a pause, because the always-on mixer plays silence.
 - **One element at a time.** The bridge holds one D3D9Ex device and one set of textures.
 - **Starts and stops with visibility.** The renderer runs only while the element is visible *and* the setting is on.
   A collapsed element stays loaded, so `IsVisibleChanged`, not `Loaded`, drives it. The frame size is fixed per
@@ -63,20 +68,91 @@ notifications too, and showed up to External Audio as "another app playing", pau
 
 ## Transparency
 
-`glReadPixels` → flip → premultiplied BGRA with coverage = the brightest channel (luma key): black is see-through,
-bright is solid. The presets are written for it — every style fades out before the frame edge and crushes faint haze
+A key pass on the GPU (`KeyPass` in `renderer.cpp`) flips the frame and writes premultiplied BGRA with coverage = the
+brightest channel (luma key), then it is read back and uploaded as is: black is see-through, bright is solid. The same
+per-pixel loop on the CPU cost ~1.5 ms a frame at 1728×712 and ~3 ms at 2560×1054; the pass puts back the GL state
+projectM keeps across frames. The presets are written for it — every style fades out before the frame edge and crushes faint haze
 to black, because any non-black pixel is partly visible and a faint tint over the whole frame shows the rectangle.
 
 ## Presets — [`native/visualizer/presets/make_presets.py`](../../../native/visualizer/presets/make_presets.py)
 
-UniPlaySong's own presets (MIT); community packs carry no licence and are never bundled. One generator, five styles
-(LED Bars, Glow Bars, Spark Bars, Aurora, Halo Ring); **only Glow Bars ships** for now — `build.cmd` copies it.
+UniPlaySong's own presets (MIT); community packs carry no licence and are never bundled. One generator, six styles
+(LED Bars, Glow Bars, Spark Bars, Aurora, Halo Ring, Fountain); **Glow Bars and Fountain ship** — `build.cmd` copies
+them, and the **Style** setting under Music Visualizer for Themes picks one.
 
 Each preset: per-frame code turns last frame's spectrum into log-spaced bars (auto-gain, 30 dB window, time-based
 rise/fall, peak hold) and packs them into `q1..q32`; the warp shader draws the bars per pixel with trails; the comp
 shader adds bloom from projectM's blur textures, a bass-driven backlight and the edge fade. A hidden spectrum wave
 copies the FFT bins into `gmem` for the next frame. Every style frames a centre **art slot** (0.30 of the height,
 wings start 0.19 out) so a page can put its cover art in the middle.
+
+**Fountain** is TEKKEN 8's jukebox visualiser, on the particle model read out of the game's own GPU shader (Lucid's
+`docs/tekken8-visualizer-spec.md`), with the look of its camera.
+
+**Layout.** One line of 96 columns, low to high across the frame: lows at the far left, highs at the far right, split
+around the art slot. Unlike the bar styles, its wings start under the slot's rim (0.11 of the height out, against the
+slot's 0.15) and run to 0.46 of the width: bigger columns, and the line passes behind the cover. The levels are packed
+three to a `q` at 8 bits each.
+
+**Particles** (30 per column):
+- **No flight.** Each dot sits at a fixed random fraction `k = u·p` of its column's level: two signed uniforms, so
+  |k| ≤ 0.5. The product peaks at 0, so a column is dense on the line and thins to its tips, mirrored above and below.
+  A full level at |k| = 0.5 reaches 18 column widths.
+- **Birth level → live level.** A dot's level eases from the level it was born with to the live one along the game's
+  curve B, so older dots follow a hit at once and young ones lag. That is the game's "lava-lamp pulse".
+- **Lifetimes** are 1–5 s, drawn as `L = sqrt(1 + 24h)` to match the game's live population. Opacity follows curve A,
+  which peaks at 0.6 at mid-life.
+- **Colour** is a random blend per dot between magenta (6, 1, 2) and violet (6.5, 4, 10), not set by loudness.
+- **Streaks.** A dot is stretched vertically by how fast its level is changing, up to 5×: hits flash as streaks,
+  steady tones stay round.
+- **On the axis.** There is no horizontal jitter. Dots are 0.5–0.8 of the column spacing across, so a pixel only ever
+  meets its own column's dots.
+
+**History corner.** MilkDrop has no data textures, so the birth levels live in a hidden 96×130-pixel corner of the main
+texture. The warp shader's output is the next frame's `sampler_main`, so those pixels persist: 128 rows of per-column
+levels shifted every 1/60 s, plus a mean-level row and a per-column-peak row (used to cull pixels no dot can reach).
+The comp shader never shows the corner and keeps it out of the bloom.
+
+**The look is the game's lens.** In the game the line sits far behind the focus, so every dot is a large bokeh disc
+under 10× bloom.
+- Each dot here is carried mostly by projectM's blur, with a little of the sharp dot left in its core
+  (`FOUNTAIN_DEFOCUS`; 0 = sharp dots).
+- Bloom is wide and tinted violet (0.80, 0.27, 0.96), with the red/blue fringe.
+- The magenta-red level light follows the mean of all columns.
+- ACES tone mapping at exposure 0.6.
+- The line's colour comes on over half a second.
+
+**Levels.** Linear magnitude, as the game's, which is what makes it dynamic: a hit towers over what's around it.
+- Point-sampled, 50 Hz to 16 kHz on a pow 1.5 curve, tilted up 4× toward the top.
+- Each column scaled to its own recent peak (half-life 3 s), never below 0.03 of the loudest column, on a 0.7 curve.
+- Then the game's per-tick smoothing (rise 80%, fall 50%, a two-tick peak), then an ease of 0.10 s up / 0.30 s down.
+
+Why not Lucid's decibels-from-200 Hz against a per-column average: on identical kicks over changing music, the kick's
+body sat below 200 Hz (kick columns rose 3%), and the average, itself raised by the kicks, made the same kick land
+anywhere from small to full (±47%). Peak-scaled linear: kicks rise 3× higher, within ±23%, and none are missed.
+
+**Drawing.** Dots are stateless (the clock, a per-dot hash and the history), so the warp shader draws them per pixel.
+Full size, 2560×1188: ~7 / ~12 ms render / p95 frame with Playnite drawing too.
+
+**Experiments (generated, not shipped):** `Fountain Lessons` adds exact history steps (the history moves by however
+many 1/60 s steps really passed, from a step index kept in the corner), streaks from a per-column change envelope
+that relaxes over ~0.12 s (the per-step version flickered between frames on a kick), and a faster 0.035 s ease in so a
+kick lands within 3–5 frames. `Fountain Lessons (default ease)` is the same without the faster ease.
+
+Shader gotcha: MilkDrop shaders already define `rad` and `ang` (the pixel's polar coordinates). Declaring a local
+`rad` fails to compile ("expected identifier near '('"), and projectM then draws nothing.
+
+## Frame size: 1:1, never stretched
+
+The frame is the element's size in device pixels, at most 2560×1440 (each side capped on its own), shown **pixel for
+pixel** and centred. Past the cap the rest of the element stays empty. The image is sized in code to the frame in
+device pixels, so at 200% display scaling a 2560-px frame isn't shown at twice its size.
+
+This is deliberate. A round of rendering Fountain smaller and stretching it to fill the element (0.6 scale, 1728 px
+over 2880) looked blurry all over. Filling the width also made every column wider than the page was laid out for.
+
+Smaller renders, test variants only, are stretched into the same box. Their width is a multiple of 64: at ~1700 px
+wide, readback took 2.5–3.2 ms against ~1.7 ms at 1664 or 1728, because odd widths fall off the driver's fast path.
 
 Costs measured at 1080p on an Intel Arc 140V (render / whole frame, p95): Glow Bars 3.8 / 11.1 ms; Halo Ring 5.4 /
 13.1; LED Bars (per-pixel) 6.5 / 14.4; Aurora 6.8 / 14.4; Spark Bars 9.0 / 16.7. **Shapes cost ~6 µs each on the
@@ -93,7 +169,7 @@ Needs Visual Studio 2022 (C++ workload) and CMake.
 ```
 native\visualizer\build_deps.cmd    GLEW 2.2.0 + projectM 4.1.8 (x64) from lib\source into native\visualizer\obj\deps
 native\visualizer\build.cmd         renderer (x64) + bridge (x86) into src\Audio\Native\Visualizer\, plus the libraries
-                                    and the shipped preset
+                                    and the shipped presets
 ```
 
 - **Sources, pinned:** `lib/source/projectm-source-4.1.8.tar.gz` (tag `v4.1.8` + its `projectm-eval` submodule;
@@ -125,15 +201,15 @@ UniPlaySongVisualizer.exe "<preset.milk>" 1920 760 --bench 5
 ```
 
 Renders unpaced for the given seconds, touches no named objects (so it can't disturb a running page), and prints
-average render / readback / convert times and the p95 frame. `VIS_PCM=<file>` feeds raw 48 kHz stereo float (make one
+average render / key+readback / upload times and the p95 frame. `VIS_PCM=<file>` feeds raw 48 kHz stereo float (make one
 with `ffmpeg -i song.mp3 -f f32le -ac 2 -ar 48000 test.pcm`), 800 frames per rendered frame; `VIS_DUMP=<file.bmp>`
 saves the last frame composited over grey, as a theme would show it.
 
 ## Known limits and next steps
 
-- **The frame copy costs more than the rendering:** GL readback + CPU keying + D3D11 upload ≈ 5.3 ms at 1080p.
-  Next: render straight into the shared texture through `WGL_NV_DX_interop2` and do the luma key in a shader pass,
-  keeping this path as the fallback.
+- **The frame still crosses the CPU:** GL readback + D3D11 upload, ~2.6 ms at 1728×712 and ~4 ms at 2560×1054 (the
+  keying moved to the GPU). Next: render straight into the shared texture through `WGL_NV_DX_interop2`, keeping this
+  path as the fallback.
 - One element at a time (one bridge device).
 - No device-loss handling yet beyond D3DImage's own front-buffer check.
 - Spotify: visualized only when Spotify's audio already runs through UPS (Spotify Live Effects or the spectrum

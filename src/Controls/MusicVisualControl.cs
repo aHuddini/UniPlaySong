@@ -1,12 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -28,8 +32,6 @@ namespace UniPlaySong.Controls
         private static readonly string Folder =
             Path.Combine(Path.GetDirectoryName(typeof(MusicVisualControl).Assembly.Location) ?? string.Empty, "Visualizer");
         private static readonly string RendererPath = Path.Combine(Folder, "UniPlaySongVisualizer.exe");
-        // The one style that ships for now; native/visualizer/presets/make_presets.py generates the others.
-        private static readonly string PresetPath = Path.Combine(Folder, "presets", "UPS - Glow Bars.milk");
 
         // The bridge holds one device and one set of shared textures, so only one element shows at a time.
         private static MusicVisualControl _owner;
@@ -38,7 +40,11 @@ namespace UniPlaySong.Controls
 
         private readonly ISettingsProvider _settings;
         private readonly FileLogger _log;
-        private readonly Image _image = new Image { Stretch = Stretch.Uniform };
+        // Sized in code to the frame's box in device pixels, centred: shown 1:1, never stretched to the element.
+        private readonly Image _image = new Image
+        {
+            Stretch = Stretch.Fill, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
+        };
         private readonly DispatcherTimer _resizeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
         private UniPlaySongSettings _subscribedTo;
         private Process _renderer;
@@ -51,6 +57,26 @@ namespace UniPlaySong.Controls
         private long _lastFrame;
         private int _generation;
         private Size _startedAt;
+        private string _startedPreset;
+        private Window _window;
+
+        // TEST BUILD ONLY - remove before committing. F9 / F8 step through Visualizer\presets\test\*.milk on the page,
+        // with the variant's name shown for a few seconds, so styles can be compared live.
+        private static readonly string TestFolder = Path.Combine(Folder, "presets", "test");
+        private static int _testIndex = -1;
+        private readonly TextBlock _testLabel = new TextBlock
+        {
+            Foreground = Brushes.White, Background = new SolidColorBrush(Color.FromArgb(170, 0, 0, 0)), FontSize = 26,
+            Padding = new Thickness(14, 6, 14, 6), Margin = new Thickness(24), Visibility = Visibility.Collapsed,
+            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top
+        };
+        private readonly DispatcherTimer _testLabelTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+        private Window _testWindow;
+        // In-scene tuning (TEST BUILD ONLY): per template, its parameters' current values; the one being adjusted.
+        private sealed class Tunable { public string Label, Token; public double Value, Default, Step, Min, Max; }
+        private static readonly Dictionary<string, List<Tunable>> _tuning = new Dictionary<string, List<Tunable>>();
+        private static Window _tuner;
+        private readonly DispatcherTimer _tuneTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
 
         public MusicVisualControl(ISettingsProvider settings, FileLogger log)
         {
@@ -58,7 +84,14 @@ namespace UniPlaySong.Controls
             _log = log;
             Focusable = false;
             IsHitTestVisible = false;
-            Content = _image;
+            // On whole device pixels: an image placed at a fractional offset is resampled, which softens every frame.
+            UseLayoutRounding = true;
+            var grid = new Grid();
+            grid.Children.Add(_image);
+            grid.Children.Add(_testLabel);
+            Content = grid;
+            _testLabelTimer.Tick += (s, e) => { _testLabelTimer.Stop(); _testLabel.Visibility = Visibility.Collapsed; };
+            _tuneTimer.Tick += (s, e) => { _tuneTimer.Stop(); if (_owner == this) { Stop(); Refresh(); } };
 
             // The renderer's frame size is fixed when it starts. When the element settles at another size (a page's text
             // loading, a resolution change), restart it so the frame matches again - the presets lay out around the
@@ -73,18 +106,205 @@ namespace UniPlaySong.Controls
             };
             // A collapsed element stays loaded, so visibility - not Loaded - decides whether the renderer runs.
             IsVisibleChanged += (s, e) => Refresh();
-            Loaded += (s, e) => { Subscribe(); Refresh(); };
-            Unloaded += (s, e) => { Unsubscribe(); Stop(); };
+            Loaded += (s, e) =>
+            {
+                Subscribe();
+                _testWindow = Window.GetWindow(this);
+                if (_testWindow != null) _testWindow.PreviewKeyDown += OnTestKey;
+                Refresh();
+            };
+            Unloaded += (s, e) =>
+            {
+                if (_testWindow != null) _testWindow.PreviewKeyDown -= OnTestKey;
+                _testWindow = null;
+                Unsubscribe();
+                Stop();
+            };
         }
 
+        // True while the visualizer is on screen and drawing. Themes can bind it (Content.IsRunning on the element) to show
+        // a fallback - a WPF effect, say - only when the visualizer is off or missing, never on top of it.
+        private static readonly DependencyPropertyKey IsRunningKey = DependencyProperty.RegisterReadOnly(
+            nameof(IsRunning), typeof(bool), typeof(MusicVisualControl), new PropertyMetadata(false));
+        public static readonly DependencyProperty IsRunningProperty = IsRunningKey.DependencyProperty;
+        public bool IsRunning => (bool)GetValue(IsRunningProperty);
+
         private bool Enabled => _settings?.Current?.MusicVisualizerEnabled == true;
+
+        // The chosen style's preset, made by native/visualizer/presets/make_presets.py.
+        private string PresetPath => TunedOrTest ?? Path.Combine(Folder, "presets",
+            _settings?.Current?.MusicVisualizerStyle == MusicVisualizerStyle.Fountain ? "UPS - Fountain.milk" : "UPS - Glow Bars.milk");
+
+        // Every style renders its box at full size. TEST BUILD ONLY: a variant's name can ask for less - "(2-3 res)" -
+        // drawn smaller and stretched into the same box.
+        private static double RenderScale => TestPreset?.Contains("(2-3 res)") == true ? 2.0 / 3 : 1.0;
+
+        // TEST BUILD ONLY (with the fields above).
+        private static string[] TestPresets =>
+            Directory.Exists(TestFolder) ? Directory.GetFiles(TestFolder, "*.milk").OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToArray() : new string[0];
+
+        private static string TestPreset
+        {
+            get
+            {
+                var files = TestPresets;
+                return _testIndex >= 0 && files.Length > 0 ? files[_testIndex % files.Length] : null;
+            }
+        }
+
+        // A test preset with a .tune sidecar is a template: what runs is its filled copy in _tuned\.
+        private static string TunedOrTest
+        {
+            get
+            {
+                var test = TestPreset;
+                var tune = Tuning(test);
+                return tune == null ? test : FillTemplate(test, tune);
+            }
+        }
+
+        // Label|TOKEN|default|step|min|max per line; loaded once per template, then kept as you change it.
+        private static List<Tunable> Tuning(string template)
+        {
+            if (template == null) return null;
+            if (_tuning.TryGetValue(template, out var known)) return known;
+            var sidecar = Path.ChangeExtension(template, ".tune");
+            if (!File.Exists(sidecar)) return null;
+            var list = new List<Tunable>();
+            foreach (var line in File.ReadAllLines(sidecar))
+            {
+                var p = line.Split('|');
+                if (p.Length < 6) continue;
+                double D(int i) => double.Parse(p[i], CultureInfo.InvariantCulture);
+                list.Add(new Tunable { Label = p[0], Token = p[1], Value = D(2), Default = D(2), Step = D(3), Min = D(4), Max = D(5) });
+            }
+            _tuning[template] = list;
+            return list;
+        }
+
+        private static string FillTemplate(string template, List<Tunable> tune)
+        {
+            var dir = Path.Combine(TestFolder, "_tuned");
+            Directory.CreateDirectory(dir);
+            var text = File.ReadAllText(template);
+            foreach (var t in tune) text = text.Replace("@" + t.Token + "@", t.Value.ToString("0.0#####", CultureInfo.InvariantCulture));
+            var path = Path.Combine(dir, Path.GetFileName(template));
+            File.WriteAllText(path, text);
+            File.WriteAllLines(Path.Combine(dir, "values.txt"), new[] { Path.GetFileNameWithoutExtension(template) }
+                .Concat(tune.Select(t => $"{t.Label} = {t.Value.ToString("0.0#####", CultureInfo.InvariantCulture)}   ({t.Token})")));
+            return path;
+        }
+
+        private static string Fmt(double v) => v.ToString("0.0#####", CultureInfo.InvariantCulture);
+
+        // A floating window with a slider per parameter; any change restarts the renderer with the new values after a
+        // short pause. Plain default control styles (an explicit empty Style), whatever the theme restyles.
+        private void ToggleTuner(string template, List<Tunable> tune)
+        {
+            if (_tuner != null) { _tuner.Close(); return; }
+            var white = Brushes.White;
+            var dim = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255));
+            var rows = new StackPanel { Margin = new Thickness(16, 12, 16, 16) };
+            rows.Children.Add(new TextBlock { Text = Path.GetFileNameWithoutExtension(template), Foreground = white, FontSize = 15,
+                FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) });
+            var sliders = new List<Slider>();
+            foreach (var t in tune)
+            {
+                var p = t;
+                var value = new TextBlock { Text = Fmt(p.Value), Foreground = white, Width = 70, TextAlignment = TextAlignment.Right,
+                    VerticalAlignment = VerticalAlignment.Center };
+                var slider = new Slider { Style = new Style(typeof(Slider)), Minimum = p.Min, Maximum = p.Max, Value = p.Value,
+                    SmallChange = p.Step, LargeChange = p.Step * 10, TickFrequency = p.Step, IsSnapToTickEnabled = true,
+                    VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0), Tag = p };
+                var reset = new Button { Style = new Style(typeof(Button)), Content = "Reset", Padding = new Thickness(6, 1, 6, 1),
+                    Margin = new Thickness(8, 0, 0, 0), ToolTip = "Back to " + Fmt(p.Default) };
+                slider.ValueChanged += (s, e) =>
+                {
+                    p.Value = Math.Round(slider.Value / p.Step) * p.Step;
+                    value.Text = Fmt(p.Value);
+                    _tuneTimer.Stop();
+                    _tuneTimer.Start();
+                };
+                reset.Click += (s, e) => slider.Value = p.Default;
+                sliders.Add(slider);
+                var line = new DockPanel();
+                DockPanel.SetDock(reset, Dock.Right);
+                DockPanel.SetDock(value, Dock.Right);
+                line.Children.Add(reset);
+                line.Children.Add(value);
+                line.Children.Add(slider);
+                rows.Children.Add(new TextBlock { Text = p.Label, Foreground = dim, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 2) });
+                rows.Children.Add(line);
+            }
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 16, 0, 0) };
+            var resetAll = new Button { Style = new Style(typeof(Button)), Content = "Reset all", Padding = new Thickness(10, 3, 10, 3) };
+            resetAll.Click += (s, e) => { foreach (var sl in sliders) sl.Value = ((Tunable)sl.Tag).Default; };
+            var copy = new Button { Style = new Style(typeof(Button)), Content = "Copy values", Padding = new Thickness(10, 3, 10, 3),
+                Margin = new Thickness(8, 0, 0, 0) };
+            copy.Click += (s, e) =>
+            {
+                var file = Path.Combine(TestFolder, "_tuned", "values.txt");
+                if (File.Exists(file)) Clipboard.SetText(File.ReadAllText(file));
+            };
+            buttons.Children.Add(resetAll);
+            buttons.Children.Add(copy);
+            rows.Children.Add(buttons);
+            rows.Children.Add(new TextBlock { Text = "Changes apply about a third of a second after you let go. Values: Visualizer\\presets\\test\\_tuned\\values.txt",
+                Foreground = dim, FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0) });
+            _tuner = new Window
+            {
+                Title = "Visualizer tuner", Width = 480, Height = 820, Left = 40, Top = 40, Topmost = true, ShowInTaskbar = false,
+                WindowStyle = WindowStyle.ToolWindow, Background = new SolidColorBrush(Color.FromRgb(24, 24, 30)),
+                Content = new ScrollViewer { Content = rows, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }
+            };
+            if (_testWindow != null && _testWindow.IsLoaded) _tuner.Owner = _testWindow;
+            _tuner.Closed += (s, e) => _tuner = null;
+            _tuner.Show();
+        }
+
+        private void OnTestKey(object sender, KeyEventArgs e)
+        {
+            if (_owner != this) return;
+            var tune = Tuning(TestPreset);
+            if (tune != null && tune.Count > 0 && e.Key == Key.F6)
+            {
+                e.Handled = true;
+                ToggleTuner(TestPreset, tune);
+                return;
+            }
+            if (e.Key != Key.F9 && e.Key != Key.F8) return;
+            _tuner?.Close();
+            e.Handled = true;
+            var files = TestPresets;
+            if (files.Length == 0)
+            {
+                ShowTestLabel($"No test presets in {TestFolder}");
+                return;
+            }
+            int step = e.Key == Key.F9 ? 1 : -1;
+            _testIndex = _testIndex < 0 ? (step > 0 ? 0 : files.Length - 1) : (_testIndex + step + files.Length) % files.Length;
+            ShowTestLabel($"{Path.GetFileNameWithoutExtension(files[_testIndex])}   ({_testIndex + 1}/{files.Length}, F8/F9)"
+                + (Tuning(files[_testIndex]) != null ? "   - F6 opens the tuner" : ""));
+            _log?.Debug($"[Visualizer] Test preset {files[_testIndex]}");
+            Refresh();
+        }
+
+        private void ShowTestLabel(string text)
+        {
+            _testLabel.Text = text;
+            _testLabel.Visibility = Visibility.Visible;
+            _testLabelTimer.Stop();
+            _testLabelTimer.Start();
+        }
 
         // Start or stop to match "on screen and switched on". Deferred to after layout, so the renderer can match the
         // element's real size.
         private void Refresh() => Dispatcher.BeginInvoke(new Action(() =>
         {
-            if (IsVisible && Enabled) Start();
-            else Stop();
+            if (!IsVisible || !Enabled) { Stop(); return; }
+            // A preset is loaded once at start, so a new style means a new renderer.
+            if (_owner == this && _startedPreset != PresetPath) Stop();
+            Start();
         }), DispatcherPriority.Loaded);
 
         // A settings save replaces the whole settings object, so follow it rather than the one seen at load.
@@ -114,7 +334,8 @@ namespace UniPlaySong.Controls
 
         private void OnSettingChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(UniPlaySongSettings.MusicVisualizerEnabled)) Refresh();
+            if (e.PropertyName == nameof(UniPlaySongSettings.MusicVisualizerEnabled)
+                || e.PropertyName == nameof(UniPlaySongSettings.MusicVisualizerStyle)) Refresh();
         }
 
         private void Start()
@@ -126,13 +347,15 @@ namespace UniPlaySong.Controls
                 _rendererExited.ContinueWith(_ => Refresh());
                 return;
             }
-            if (!File.Exists(RendererPath) || !File.Exists(PresetPath))
+            string preset = PresetPath;
+            if (!File.Exists(RendererPath) || !File.Exists(preset))
             {
                 _log?.Warn($"[Visualizer] Not installed: {RendererPath} or its preset is missing");
                 return;
             }
 
             _owner = this;
+            _startedPreset = preset;
             int generation = ++_generation;
             int pid = Process.GetCurrentProcess().Id;
             string channel = $@"Local\UniPlaySong_Visualizer_{pid}_{++_starts}";
@@ -148,17 +371,30 @@ namespace UniPlaySong.Controls
                 return;
             }
 
-            // Render at the element's size in device pixels, so nothing is scaled up.
+            // The frame's box: the element in device pixels, at most 2560x1440, centred and shown 1:1 - pixel for pixel is
+            // what keeps the visualizer sharp. Past the cap the rest of the element stays empty rather than upscaled (an
+            // upscaled frame - 1728 px stretched over 2880 - looked blurry all over, and filling the width also made every
+            // column wider than the page was laid out for).
             var toDevice = PresentationSource.FromVisual(this)?.CompositionTarget.TransformToDevice ?? Matrix.Identity;
-            int w = (int)(ActualWidth * toDevice.M11) & ~1, h = (int)(ActualHeight * toDevice.M22) & ~1;
-            if (w < 64 || h < 64) { w = 1280; h = 720; }
+            int ew = (int)(ActualWidth * toDevice.M11), eh = (int)(ActualHeight * toDevice.M22);
+            if (ew < 64 || eh < 64) { ew = 1280; eh = 720; }
             _startedAt = new Size(ActualWidth, ActualHeight);
-            w = Math.Min(w, 2560); h = Math.Min(h, 1440);
+            int bw = Math.Min(ew, 2560) & ~1, bh = Math.Min(eh, 1440) & ~1;
+            _image.Width = bw / toDevice.M11;
+            _image.Height = bh / toDevice.M22;
+            int w = bw, h = bh;
+            if (RenderScale < 1)
+            {
+                // A width that is a multiple of 64 stays on the driver's fast readback path (~1.7 ms at 1664 or 1728
+                // against 2.5-3.2 ms at ~1700).
+                w = Math.Max(64, (int)(bw * RenderScale) / 64 * 64);
+                h = (int)Math.Round(w * (double)bh / bw) & ~1;
+            }
 
             try
             {
                 // The parent pid lets the renderer exit with Playnite even if Playnite crashes.
-                _renderer = Process.Start(new ProcessStartInfo(RendererPath, $"\"{PresetPath}\" {w} {h} {channel} {pid}")
+                _renderer = Process.Start(new ProcessStartInfo(RendererPath, $"\"{preset}\" {w} {h} {channel} {pid}")
                     { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = Folder });
             }
             catch (Exception ex)
@@ -219,15 +455,21 @@ namespace UniPlaySong.Controls
             _d3d.SetBackBuffer(D3DResourceType.IDirect3DSurface9, back, true);
             _d3d.Unlock();
             _image.Source = _d3d;
+            _window = Window.GetWindow(this);
             _lastFrame = 0;
             CompositionTarget.Rendering += OnRendering;
+            SetValue(IsRunningKey, true);
         }
 
         // One renderer frame per WPF frame: tell it what's being heard, ask for the next frame, show the newest ready.
         private void OnRendering(object sender, EventArgs e)
         {
             _feed?.PublishPlayed();
-            SetEvent(_tick);
+            // Ask for a frame only while there is something to show: not after 1.5 s of silence (paused, stopped, between
+            // songs - the visuals have settled by then) and not while Playnite is in the background (a game, another app).
+            // The last frame stays up and the renderer waits, drawing nothing.
+            bool idle = _feed == null || unchecked(Environment.TickCount - _feed.LastSoundTick) > 1500 || _window?.IsActive == false;
+            if (!idle) SetEvent(_tick);
             long frame = _view.ReadInt64(OffFrame);
             if (frame == _lastFrame || frame <= 0 || !_d3d.IsFrontBufferAvailable) return;
             _lastFrame = frame;
@@ -241,6 +483,7 @@ namespace UniPlaySong.Controls
         {
             if (_owner != this) return;
             _generation++;
+            SetValue(IsRunningKey, false);
             CompositionTarget.Rendering -= OnRendering;
             if (_d3d != null)
             {
@@ -252,6 +495,8 @@ namespace UniPlaySong.Controls
             }
             vt_shutdown();
             if (_view != null) { _view.Write(OffStop, 1); SetEvent(_tick); }
+            // Our handle to the tick event; the renderer holds its own, so closing ours never strands it.
+            if (_tick != IntPtr.Zero) { CloseHandle(_tick); _tick = IntPtr.Zero; }
             var renderer = _renderer;
             _rendererExited = Task.Run(() =>
             {
@@ -276,6 +521,7 @@ namespace UniPlaySong.Controls
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern IntPtr LoadLibraryW(string path);
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] internal static extern IntPtr CreateEventW(IntPtr a, bool manual, bool initial, string name);
         [DllImport("kernel32.dll")] internal static extern bool SetEvent(IntPtr h);
+        [DllImport("kernel32.dll")] internal static extern bool CloseHandle(IntPtr h);
         [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] internal static extern int vt_init(IntPtr hwnd);
         [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] internal static extern int vt_open(int index, ulong handle, int w, int h);
         [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] internal static extern IntPtr vt_backbuffer(int w, int h);

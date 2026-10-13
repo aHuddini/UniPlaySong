@@ -181,14 +181,28 @@
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
 
-                                <!-- Backdrop: the song's album art, blurred and dimmed over the game art. The cached parent bakes the
-                                     blur in at quarter resolution, so it reruns when the song changes, not on every visualizer frame. -->
+                                <!-- The song's art, not shown: the cover disc's brush reads it from here by name ({PluginSettings} can't
+                                     go in a brush in Fullscreen's main view - see the theme guide's Troubleshooting). No backdrop
+                                     blur while the visualizer runs: it draws its own light and shade (fallback below). -->
+                                <Image x:Name="UpsArtSource" Source="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingAlbumArtPath}"
+                                       Visibility="Collapsed" />
+                                <!-- Fallback only: the song's art, blurred and dimmed, while the visualizer is NOT drawing (off, missing,
+                                     or UniPlaySong absent). Collapsed while it runs - no WPF effect ever sits on or around the
+                                     visualizer. The cached parent bakes the blur in at quarter resolution. -->
                                 <Border Grid.RowSpan="2" IsHitTestVisible="False" ClipToBounds="True">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Content.IsRunning, ElementName=UPS_MusicVisualControl}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
                                     <Border.CacheMode>
                                         <BitmapCache RenderAtScale="0.25" />
                                     </Border.CacheMode>
-                                    <Image x:Name="UpsArtSource" Source="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingAlbumArtPath}"
-                                           Stretch="UniformToFill" Opacity="0.5">
+                                    <Image Source="{Binding Source, ElementName=UpsArtSource}" Stretch="UniformToFill" Opacity="0.5">
                                         <Image.Effect>
                                             <BlurEffect Radius="60" KernelType="Gaussian" RenderingBias="Performance" />
                                         </Image.Effect>
@@ -227,7 +241,19 @@
                                          and a highlight circling the rim. Only the small light layers redraw while animating. -->
                                     <Grid Grid.Row="1" HorizontalAlignment="Center" IsHitTestVisible="False"
                                           Width="{Binding ActualHeight, RelativeSource={RelativeSource Self}}">
+
+                                        <!-- Fallback only: a drop shadow under the disc while the visualizer is NOT drawing; while it
+                                             runs, the visualizer shades its own light under the disc's rim instead -->
                                         <Ellipse Fill="Black">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Content.IsRunning, ElementName=UPS_MusicVisualControl}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
                                             <Ellipse.CacheMode>
                                                 <BitmapCache />
                                             </Ellipse.CacheMode>
@@ -362,7 +388,7 @@
                                 </Grid>
 
                                 <!-- Strip: title, artist, timeline, transport -->
-                                <StackPanel Grid.Row="1" HorizontalAlignment="Center" Width="760" Margin="0,4,0,22">
+                                <StackPanel Grid.Row="1" HorizontalAlignment="Center" Width="760" Margin="0,4,0,60">
                                     <TextBlock Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingTitle}"
                                                Style="{DynamicResource TextBlockBaseStyle}" Foreground="White"
                                                FontSize="34" FontWeight="SemiBold" TextAlignment="Center"

@@ -173,16 +173,29 @@ def lines(prefix, code):
 # swelling with bass - the part that makes the page around the visualizer react too. Everything fades out before the
 # frame's edge, and faint haze is crushed to black (= see-through): any light stopping at the boundary, or a faint tint
 # filling the frame, would show the rectangle.
-def comp(backlight, bloom=(0.9, 1.3), spread="0.8, 3.0"):
+# The art slot's shadow on the visualizer's own light: what passes under the cover dims toward its rim, over 0.06 of the
+# height. Drawn here, not by the page - the visualizer can't darken the theme behind it (black is see-through), and pages
+# should not need a WPF effect over a surface that changes every frame.
+SHADOW = " * lerp(0.25, 1.0, smoothstep(0.15, 0.21, length((uv - 0.5) * float2(texsize.x * texsize.w, 1.0))))"
+
+
+def comp(backlight, bloom=(0.9, 1.3), spread="0.8, 3.0", fringe=0.0, fade_x="0.10", shadow=False):
+    # fringe: a lens's chromatic aberration - red pushed right, blue left, by `fringe` of the width at the frame's edge,
+    # none at its centre
+    # sampler_pc_main (point, clamped), not sampler_main: projectM's filtered read lands between pixels, so every frame
+    # came out 2x2-blurred - a 1-pixel checkerboard read back as flat grey (0% exact pixels; point-sampled: 100%).
+    sample = "float3 c = tex2D(sampler_pc_main, uv).xyz;" if not fringe else (
+        f"float2 o = float2({fringe} * smoothstep(0.2, 1.0, length(uv - 0.5) * 2.0), 0.0);\n"
+        "  float3 c = float3(tex2D(sampler_pc_main, uv + o).x, tex2D(sampler_pc_main, uv).y, tex2D(sampler_pc_main, uv - o).z);")
     return shader("comp_", None, f"""
-  float3 c = tex2D(sampler_main, uv).xyz;
+  {sample}
   float3 glow = GetBlur1(uv) * {bloom[0]} + GetBlur2(uv) * {bloom[1]};
   float2 d = (uv - float2(0.5, 0.5)) * float2({spread});
   float pulse = saturate((bass_att - 0.6) * 0.7);
   float3 back = float3{backlight} * exp(-length(d) * 4.0) * (0.10 + 0.35 * pulse);
   float2 e = min(uv, 1.0 - uv);
-  float fade = smoothstep(0.0, 0.10, e.x) * smoothstep(0.0, 0.14, e.y);
-  ret = saturate((c + glow + back) * fade - 0.02) / 0.98;""")
+  float fade = smoothstep(0.0, {fade_x}, e.x) * smoothstep(0.0, 0.14, e.y);
+  ret = saturate((c + glow + back) * fade{SHADOW if shadow else ""} - 0.02) / 0.98;""")
 
 
 # Last frame, faded and drifted away from the centre line by `drift` per 60 fps frame (up in the top half, down in the
@@ -197,11 +210,12 @@ def trail(drift, fade, haze, sway=0.0):
 
 # Wings: bars either side of the art slot, bass next to the art, highs towards the edges; y is the distance from the
 # centre line (bars grow both ways), `down` marks the reflection half.
-def wing(n):
+def wing(n, gap=0.19, end=0.44):
+    # gap: where the wings start, from the centre in frame heights; end: where they stop, from the centre in widths
     return f"""
   float2 p = uv_orig;
-  float gap = 0.19 * texsize.y * texsize.z;
-  float wing = 0.44 - gap;
+  float gap = {gap} * texsize.y * texsize.z;
+  float wing = {end} - gap;
   float fx = (abs(p.x - 0.5) - gap) / wing * {n}.0;
   float inWing = step(0.0, fx) * step(fx, {n}.0);
   float i = clamp(floor(fx), 0.0, {n - 1}.0);
@@ -330,10 +344,364 @@ STYLES["Halo Ring"] = dict(n=64, pack=pack_pairs, comp=comp("(0.45, 0.4, 1.0)", 
   ret = max(prev, col * inA * inR + float3(0.6, 0.8, 1.0) * ring * (0.5 + pulse));"""))
 
 
+# Fountain: TEKKEN 8's jukebox visualiser, on the particle model read out of the game's own GPU shader (Lucid's
+# docs/tekken8-visualizer-spec.md). One line of 96 columns, low to high across the frame - lows at the far left, highs at
+# the far right, split around the art slot. Each column is a cloud of small glowing dots:
+#   - every dot sits at a FIXED random fraction k = u*p of its column's level (two signed uniforms, |k| <= 0.5): no
+#     launch, no flight. The product of two uniforms peaks at 0, so a column is dense on the line and thins to its tips,
+#     mirrored above and below;
+#   - a dot's level eases from the level it was born with to the live level along the game's curve B over its life, so
+#     older dots follow a hit at once and young ones lag - the "lava-lamp pulse";
+#   - lifetimes are 1-5 s (weighted as the live population is: L = sqrt(1 + 24h)), opacity follows the game's curve A
+#     (peak 0.6 at mid-life), colour is a random blend between magenta (6,1,2) and violet (6.5,4,10) per dot;
+#   - a dot whose level is changing fast is stretched vertically, up to 5x: hits flash as streaks, steady tones are
+#     round dots;
+#   - no horizontal jitter: dots sit on the column's axis, 0.5-0.8 of the column spacing across.
+# The game's softness is its lens: the line is far behind the focus, so every dot is a big bokeh disc, under 10x bloom
+# tinted violet, with a red/blue fringe. Here a defocus mix in the comp shader (FOUNTAIN_DEFOCUS) blends the sharp
+# frame toward projectM's blur.
+#
+# Levels are the game's kind, not Lucid's: LINEAR magnitude, which is what makes the game dynamic - a hit towers over
+# what is around it. Each column is scaled to its own recent peak (decaying, half-life 3 s; never below 0.03 of the
+# loudest column, so near-silent columns stay low instead of flickering at full height), on a 0.7 curve, point-sampled
+# 50 Hz .. 16 kHz on a pow 1.5 curve and tilted up 4x toward the top (music is quieter there; without the tilt the high
+# half of the line lay flat). Then the game's per-tick smoothing (rise 80%, fall 50%, a peak held two ticks) and an ease
+# of 0.10 s up / 0.30 s down. Why not Lucid's decibels from 200 Hz against a per-column average: on identical kicks over
+# changing music the kick's body sat below 200 Hz (kick columns rose 3%), and the average - raised by the kicks - made
+# the same kick land anywhere from small to full (+-47%). Peak-scaled linear: kicks 3x higher, +-18%, none missed.
+#
+# Dots are stateless - a pure function of the clock, a per-dot hash and the level history - so the warp shader draws
+# them per pixel. With no horizontal jitter and small dots, a pixel only ever meets its own column's dots.
+FOUNTAIN_COLS, FOUNTAIN_DOTS, FOUNTAIN_REACH = 96, 30, 18.0  # dots per column (the game: 10/s x mean life 3 s);
+                                                             # a full level at |k| = 0.5 reaches 18 column widths
+FOUNTAIN_HIST = 128      # history rows, one per 1/60 s: a dot's birth level is still read until ~0.4 of a 5 s life
+FOUNTAIN_DEFOCUS = 1.0   # 0 = sharp dots; 1 = the game's look, each dot carried mostly by projectM's blur (bokeh)
+
+
+def fountain_engine(n):
+    # gmem[0..n) eased level 0..1 (packed for the shader), [200..) magnitude, [400..) each column's recent peak, [500..)
+    # the game's smoothed value; reg00 the loudest column, decaying
+    return f"""dt=1/max(fps, 15); n={n}; b0=1.07; b1=340; loudest=0; bi=0;
+loop(n,
+  c=b0+pow(bi/n, 1.5)*(b1-b0); i=floor(c); t=c-i;
+  v=(gmem[1000+i]*(1-t) + gmem[1001+i]*t)*(1+3*bi/n);
+  gmem[200+bi]=v;
+  loudest=max(loudest, v);
+  bi+=1;
+);
+reg00=max(max(loudest, reg00*pow(0.5, dt/4)), 0.02);
+pd=pow(0.5, dt/3); up=1-pow(0.2, dt*60); dn=1-pow(0.5, dt*60); ea=1-exp(-dt/0.10); er=1-exp(-dt/0.30);
+total=0; bi=0;
+loop(n,
+  v=gmem[200+bi];
+  pk=max(max(gmem[400+bi]*pd, v), 0.03*reg00); gmem[400+bi]=pk;
+  tg=max(pow(min(1, max(0, (v/pk-0.08)/0.92)), 0.7), 0.0034);
+  pv=gmem[500+bi]; nx=pv+(tg-pv)*(tg > pv ? up : dn); gmem[500+bi]=nx;
+  o=max(nx, pv);
+  ez=gmem[bi]; ez+=(o-ez)*(o > ez ? ea : er); gmem[bi]=ez;
+  total+=ez;
+  bi+=1;
+);
+reg01=reg01+(total/n-reg01)*min(1, dt*6);
+reg02=0.19/aspecty; reg03=0.44-reg02;"""
+
+
+def pack_triples(n):
+    # q(k+1) = levels 3k, 3k+1, 3k+2 at 8 bits each - an integer under 2^24, which a float holds exactly
+    return "\n".join(f"q{k + 1}=floor(gmem[{3 * k}]*255)*65536+floor(gmem[{3 * k + 1}]*255)*256+floor(gmem[{3 * k + 2}]*255);"
+                     for k in range(n // 3))
+
+
+TRIPLE_HELPERS = q_select() + """
+float LV(float g) { float k = floor(g / 3.0); float q = Q(k); float r = g - 3.0 * k; float a = floor(q / 65536.0); float m = q - a * 65536.0; float b = floor(m / 256.0); float c = m - b * 256.0; return (a * (1.0 - step(0.5, r)) + b * (step(0.5, r) - step(1.5, r)) + c * step(1.5, r)) / 255.0; }
+float2 H2(float c, float s) { return frac(sin(float2(dot(float2(c, s), float2(12.9898, 78.233)), dot(float2(c, s), float2(39.3468, 11.135)))) * 43758.5453); }
+float3 ACES(float3 x) { return saturate(x * (2.51 * x + 0.03) / (x * (2.43 * x + 0.59) + 0.14)); }
+float CurveB(float x) { float s = saturate(x / 0.205); return x < 0.205 ? 0.745 * s * s * (3.0 - 2.0 * s) : 1.0 - 0.255 * exp(-5.3 * (x - 0.205)); }
+float CurveBd(float x) { float s = saturate(x / 0.205); return x < 0.205 ? 0.745 * 6.0 * s * (1.0 - s) / 0.205 : 0.255 * 5.3 * exp(-5.3 * (x - 0.205)); }
+float CurveA(float x) { float s = saturate(x / 0.49); return x < 0.49 ? 0.6 * s * s * (3.0 - 2.0 * s) : 0.6 * (1.0 - x) / 0.51; }
+float Hist(float g, float row) { return tex2D(sampler_pc_main, (float2(g, row) + 0.5) * texsize.zw).x; }"""
+
+# The data corner of the main texture: the warp shader's output is the next frame's sampler_main, so pixels written
+# there persist (MilkDrop has no data textures). Columns 0..95 by row: rows 0..HIST-1 the level history (newest in row 0,
+# shifted one row every 1/60 s), row HIST the mean level (the scene light), row HIST+1 each column's loudest in the
+# history (to cull pixels no dot can reach). The comp shader never shows the corner, nor lets it bloom.
+DATA_W, DATA_H = FOUNTAIN_COLS, FOUNTAIN_HIST + 4   # + 2 rows the Lessons variants use
+
+
+def fountain_comp():
+    return shader("comp_", None, f"""
+  float2 o = float2(0.0015 * smoothstep(0.2, 1.0, length(uv - 0.5) * 2.0), 0.0);
+  float3 c = float3(tex2D(sampler_pc_main, uv + o).x, tex2D(sampler_pc_main, uv).y, tex2D(sampler_pc_main, uv - o).z);
+  // The game's lens: the line is far behind the focus, so each dot is a soft bokeh disc - carried by the blur, with a
+  // little of the sharp dot left in its core.
+  float3 base = lerp(c, GetBlur1(uv) * 1.2 + GetBlur2(uv) * 0.6 + c * 0.25, {FOUNTAIN_DEFOCUS});
+  // The game's bloom: everything blooms (threshold -1), wide, tinted violet (0.80, 0.27, 0.96).
+  float3 glow = GetBlur2(uv) * 0.9 + GetBlur3(uv) * 1.3 * float3(0.80, 0.27, 0.96);
+  float2 P = uv * texsize.xy;
+  float inData = step(P.x, {DATA_W + 1}.0) * step(P.y, {DATA_H + 1}.0);
+  base *= 1.0 - inData;
+  glow *= 1.0 - (1.0 - smoothstep({DATA_W + 1}.0, 420.0, P.x)) * (1.0 - smoothstep({DATA_H + 1}.0, 420.0, P.y));
+  // The game's level light (magenta-red, the sum of every column): a soft glow behind the line.
+  float level = tex2D(sampler_pc_main, float2(0.5, {FOUNTAIN_HIST}.5) * texsize.zw).x;
+  float2 d = (uv - float2(0.5, 0.5)) * float2(0.8, 3.0);
+  float3 back = float3(1.0, 0.112, 0.248) * exp(-length(d) * 4.0) * (0.06 + 0.4 * saturate(level * 2.5));
+  float2 e = min(uv, 1.0 - uv);
+  float fade = smoothstep(0.0, 0.05, e.x) * smoothstep(0.0, 0.14, e.y);
+  ret = saturate((base + glow + back) * fade{SHADOW} - 0.02) / 0.98;""")
+
+
+HALF = FOUNTAIN_COLS // 2
+FOUNTAIN_WARP = f"""
+  float2 P = uv_orig * texsize.xy;
+  if (P.x < {DATA_W}.0 && P.y < {DATA_H}.0)
+  {{
+    float gx = floor(P.x);
+    float r = floor(P.y);
+    float shift = step(0.5, floor(time * 60.0) - floor((time - 1.0 / max(fps, 15.0)) * 60.0));
+    float v = 0.0;
+    if (r < 0.5) v = LV(gx);
+    else if (r < {FOUNTAIN_HIST}.0) v = Hist(gx, r - shift);
+    else if (r < {FOUNTAIN_HIST + 1}.0)
+    {{
+      for (float j = 0.0; j < {FOUNTAIN_COLS}.0; j += 1.0) v += LV(j);
+      v /= {FOUNTAIN_COLS}.0;
+    }}
+    else
+    {{
+      for (float j = 0.0; j < {FOUNTAIN_HIST}.0; j += 1.0) v = max(v, Hist(gx, j));
+    }}
+    ret = float3(v, 0.0, 0.0);
+  }}
+  else
+  {{
+    float colpx = wing * texsize.x / {HALF}.0;
+    float zy = (0.5 - p.y) * texsize.y / colpx;       // signed height above the line, in column widths
+    float dx = fx - i - 0.5;                          // from the column's axis
+    float g = step(p.x, 0.5) > 0.5 ? {HALF - 1}.0 - i : {HALF}.0 + i;
+    float3 acc = float3(0.0, 0.0, 0.0);
+    if (inWing > 0.5 && abs(dx) < 0.42)
+    {{
+      float live = LV(g);
+      float prev = Hist(g, 1.0);
+      if (abs(zy) < max(live, Hist(g, {FOUNTAIN_HIST + 1}.0)) * {FOUNTAIN_REACH} + 2.0)
+      for (float s = 0.0; s < {FOUNTAIN_DOTS}.0; s += 1.0)
+      {{
+        float2 h = H2(g, s);
+        float2 u = H2(g + 97.0, s + 13.0);
+        float life = sqrt(1.0 + 24.0 * h.x);          // 1-5 s, weighted as the game's live population is
+        float na = frac(time / life + h.y);           // normalized age
+        float born = Hist(g, min(floor(na * life * 60.0), {FOUNTAIN_HIST - 1}.0));
+        float b = CurveB(na);
+        float level = lerp(born, live, b);            // the game's PolarisTmp: birth level -> live level
+        float k = (1.0 - 2.0 * u.x) * (u.y - 0.5);    // fixed fraction of the level, |k| <= 0.5, dense near 0
+        float z = level * k * {2 * FOUNTAIN_REACH};
+        // Stretched vertically by how fast its level is changing (the game: up to 5x).
+        float dl = abs(b * (live - prev) + (live - born) * CurveBd(na) / (life * 60.0));
+        float stretch = 1.0 + 4.0 * saturate(dl * 1.6);
+        // 0.5-0.8 of the column spacing across. (Not "rad": MilkDrop shaders already have rad and ang.)
+        float size = 0.25 + 0.15 * frac(h.x * 7.31 + u.x * 3.17);
+        float2 d = float2(dx, (zy - z) / stretch) / size;
+        float disc = 1.0 - smoothstep(0.0, 1.0, length(d));
+        float3 col = lerp(float3(6.0, 1.0, 2.0), float3(6.5, 4.0, 10.0), frac(h.y * 5.17 + u.y * 2.31)) * 0.12;
+        acc += col * disc * disc * CurveA(na) * 6.0;
+      }}
+    }}
+    // The game's intro: the line comes on over half a second, not at once.
+    acc *= smoothstep(0.1, 0.5, time);
+    // Exposure 0.6: at 1 the white-hot cores and bloom were blinding.
+    ret = ACES(acc * 0.6);
+  }}"""
+
+STYLES["Fountain"] = dict(n=FOUNTAIN_COLS, pack=pack_triples, engine=fountain_engine, comp=fountain_comp(),
+    # The wings start under the art slot's rim (0.11 of the height out, the slot's edge is 0.15), so the line runs on
+    # behind the cover, and reach nearer the frame's sides: bigger columns, and the cover sits in front of the fountain.
+    warp=shader("warp_", TRIPLE_HELPERS, wing(HALF, gap=0.11, end=0.46) + FOUNTAIN_WARP))
+
+
+# ---- Fountain "Lessons" (test variants, not shipped) ---------------------------------------------------------------
+# The game's particles and look, with what testing taught:
+#   - exact history steps: the history moves by however many 1/60 s steps really passed since the last frame (the step
+#     index is kept in the data corner). Shifting once per frame on a clock boundary skipped and doubled steps whenever
+#     frames didn't land on them, nudging young dots' birth levels;
+#   - smoothed streaks: a dot's stretch comes from a per-column envelope of the level's speed of change that relaxes over
+#     ~0.12 s. Measured against the last history step, the stretch flicked on and off between frames on a kick;
+#   - a faster lock (optional): the level eases in over 0.035 s, not 0.10 s, so a kick lands within the spec's 3-5
+#     frames; it still eases out over 0.28 s.
+_LESSONS_DATA_OLD = f"""    float shift = step(0.5, floor(time * 60.0) - floor((time - 1.0 / max(fps, 15.0)) * 60.0));
+    float v = 0.0;
+    if (r < 0.5) v = LV(gx);
+    else if (r < {FOUNTAIN_HIST}.0) v = Hist(gx, r - shift);
+    else if (r < {FOUNTAIN_HIST + 1}.0)
+    {{
+      for (float j = 0.0; j < {FOUNTAIN_COLS}.0; j += 1.0) v += LV(j);
+      v /= {FOUNTAIN_COLS}.0;
+    }}
+    else
+    {{
+      for (float j = 0.0; j < {FOUNTAIN_HIST}.0; j += 1.0) v = max(v, Hist(gx, j));
+    }}
+    ret = float3(v, 0.0, 0.0);"""
+_LESSONS_DATA_NEW = f"""    // How many 1/60 s steps really passed since the last frame, from the step index kept here last frame.
+    float tick = fmod(floor(time * 60.0), 256.0);
+    float last = floor(tex2D(sampler_pc_main, float2(0.5, {FOUNTAIN_HIST + 3}.5) * texsize.zw).x * 255.0 + 0.5);
+    float n = min(fmod(tick - last + 256.0, 256.0), 4.0);
+    float3 o = float3(0.0, 0.0, 0.0);
+    if (r < {FOUNTAIN_HIST}.0) o.x = r < max(n, 1.0) ? LV(gx) : Hist(gx, r - n);
+    else if (r < {FOUNTAIN_HIST + 1}.0)
+    {{
+      for (float j = 0.0; j < {FOUNTAIN_COLS}.0; j += 1.0) o.x += LV(j);
+      o.x /= {FOUNTAIN_COLS}.0;
+    }}
+    else if (r < {FOUNTAIN_HIST + 2}.0)
+    {{
+      for (float j = 0.0; j < {FOUNTAIN_HIST}.0; j += 1.0) o.x = max(o.x, Hist(gx, j));
+    }}
+    else if (r < {FOUNTAIN_HIST + 3}.0)
+    {{
+      // The column's last level, and how fast it has been changing: a peak that relaxes over ~0.12 s.
+      float live = LV(gx);
+      float2 was = tex2D(sampler_pc_main, (float2(gx, r) + 0.5) * texsize.zw).xy;
+      float fr = max(fps, 15.0);
+      float rate = abs(live - was.x) * fr / 60.0;
+      o = float3(live, max(saturate(rate * 3.0), was.y * exp(-1.0 / (fr * 0.12))), 0.0);
+    }}
+    else o.x = gx < 0.5 ? tick / 255.0 : 0.0;
+    ret = o;"""
+_LESSONS_PAIRS = [
+    (_LESSONS_DATA_OLD, _LESSONS_DATA_NEW),
+    ("      float prev = Hist(g, 1.0);\n",
+     f"      float env = tex2D(sampler_pc_main, (float2(g, {FOUNTAIN_HIST + 2}.0) + 0.5) * texsize.zw).y / 3.0;\n"),
+    ("        float dl = abs(b * (live - prev) + (live - born) * CurveBd(na) / (life * 60.0));\n",
+     "        float dl = b * env + abs(live - born) * CurveBd(na) / (life * 60.0);\n"),
+]
+
+
+# Calm core: the stretch and the kick are carried by the outer dots, not the whole column. A dot's stretch scales with
+# how far from the line it sits (|k|), as the earlier fountain's did with a bead's own speed - so the white core stays
+# round and steady - and on a kick the outer dots briefly reach further out (the column's change envelope, squared
+# |k|) and settle back as it fades. The level light pulses a third as much: it lit the whole frame on every kick.
+_CALM_PAIRS = [
+    ("        float dl = b * env + abs(live - born) * CurveBd(na) / (life * 60.0);\n",
+     "        float dl = (b * env + abs(live - born) * CurveBd(na) / (life * 60.0)) * abs(k) * 2.8;\n"),
+    (f"        float z = level * k * {2 * FOUNTAIN_REACH};\n",
+     f"        float z = level * k * {2 * FOUNTAIN_REACH} * (1.0 + 0.6 * saturate(env * 3.0) * k * k * 4.0);\n"),
+]
+
+
+def fountain_lessons(ease_in, ease_out, calm_core=False):
+    w = FOUNTAIN_WARP
+    for old, new in _LESSONS_PAIRS + (_CALM_PAIRS if calm_core else []):
+        assert w.count(old) == 1, old[:60]
+        w = w.replace(old, new)
+    comp_text = STYLES["Fountain"]["comp"]
+    if calm_core:
+        old = "(0.06 + 0.4 * saturate(level * 2.5))"
+        assert comp_text.count(old) == 1
+        comp_text = comp_text.replace(old, "(0.06 + 0.13 * saturate(level * 2.5))")
+
+    def engine(n):
+        e = fountain_engine(n)
+        old = "ea=1-exp(-dt/0.10); er=1-exp(-dt/0.30);"
+        assert e.count(old) == 1
+        return e.replace(old, f"ea=1-exp(-dt/{ease_in}); er=1-exp(-dt/{ease_out});")
+    return dict(STYLES["Fountain"], engine=engine, comp=comp_text,
+                warp=shader("warp_", TRIPLE_HELPERS, wing(HALF, gap=0.11, end=0.46) + w))
+
+
+EXPERIMENTS = {
+    "Fountain Lessons": fountain_lessons(0.035, 0.28),
+    "Fountain Lessons (default ease)": fountain_lessons(0.10, 0.30),
+    "Fountain Calm Core": fountain_lessons(0.10, 0.30, calm_core=True),
+    "Fountain Calm Core (fast lock)": fountain_lessons(0.035, 0.28, calm_core=True),
+}
+
+# ---- Fountain "Tunable" (test variant, not shipped) ----------------------------------------------------------------
+# The spec look with 07/08's beat: every dot follows the live level (no birth lag - 07's beads did), stretch grows with
+# a dot's distance from the line so the core stays round while the tips streak, kicks drive the stretch through the
+# smoothed kick envelope, a slight outward fling of the tips on a kick, and a calm scene light. Every knob is an
+# @TOKEN@ with a default in TUNABLE, written as a .tune sidecar: the test build fills them live (F6/F7, [ ]).
+TUNABLE = [
+    # label, token, default, step, min, max
+    ("Follow the live level (1 = like 07, 0 = the game's birth lag)", "LIVE", 1.0, 0.1, 0.0, 1.0),
+    ("Stretch strength", "STRETCH_GAIN", 1.4, 0.2, 0.0, 6.0),
+    ("Stretch max (x)", "STRETCH_MAX", 4.0, 0.5, 0.0, 9.0),
+    ("Stretch tips-only (higher = only the outermost dots)", "STRETCH_TIP", 1.0, 0.25, 0.0, 4.0),
+    ("Kick relax time (s)", "KICK_DECAY", 0.12, 0.02, 0.02, 0.6),
+    ("Tip fling on a kick", "FLING", 0.3, 0.1, 0.0, 2.0),
+    ("Core density (higher = more dots hug the line)", "CORE", 1.0, 0.1, 0.4, 3.0),
+    ("Core hold (1 = the core ignores kicks)", "CORE_HOLD", 0.85, 0.05, 0.0, 1.0),
+    ("Core size (how far from the line counts as core)", "CORE_SIZE", 0.35, 0.05, 0.05, 1.0),
+    ("Core smoothing (s)", "CORE_SLOW", 1.0, 0.1, 0.1, 4.0),
+    ("Reach (column widths)", "REACH", 18.0, 1.0, 4.0, 30.0),
+    ("Life spread (longest life = sqrt(1 + this) s)", "LIFE_SPREAD", 24.0, 2.0, 0.0, 60.0),
+    ("Dot brightness", "BRIGHT", 6.0, 0.5, 1.0, 15.0),
+    ("Exposure", "EXPOSURE", 0.6, 0.05, 0.2, 1.5),
+    ("Defocus (0 = sharp dots, 1 = the game's bokeh)", "DEFOCUS", 1.0, 0.05, 0.0, 1.0),
+    ("Bloom, wide", "BLOOM_WIDE", 1.3, 0.1, 0.0, 3.0),
+    ("Scene glow pulse", "GLOW_PULSE", 0.13, 0.03, 0.0, 1.0),
+    ("Level ease in (s)", "EASE_IN", 0.10, 0.01, 0.01, 0.5),
+    ("Level ease out (s)", "EASE_OUT", 0.30, 0.02, 0.04, 1.2),
+]
+
+
+def fountain_tunable():
+    w = FOUNTAIN_WARP
+    for old, new in _LESSONS_PAIRS + _CALM_PAIRS:
+        assert w.count(old) == 1, old[:60]
+        w = w.replace(old, new)
+    warp_tokens = [
+        ("        float dl = (b * env + abs(live - born) * CurveBd(na) / (life * 60.0)) * abs(k) * 2.8;\n",
+         "        float dl = (b * env + abs(live - born) * CurveBd(na) / (life * 60.0)) * pow(abs(k) * 2.0, @STRETCH_TIP@) * @STRETCH_GAIN@;\n"),
+        ("float stretch = 1.0 + 4.0 * saturate(dl * 1.6);", "float stretch = 1.0 + @STRETCH_MAX@ * saturate(dl * 1.6);"),
+        (f"        float z = level * k * {2 * FOUNTAIN_REACH} * (1.0 + 0.6 * saturate(env * 3.0) * k * k * 4.0);\n",
+         "        float z = level * k * 2.0 * @REACH@ * (1.0 + @FLING@ * saturate(env * 3.0) * k * k * 4.0);\n"),
+        ("        float b = CurveB(na);\n", "        float b = lerp(CurveB(na), 1.0, @LIVE@);\n"),
+        ("float k = (1.0 - 2.0 * u.x) * (u.y - 0.5);",
+         "float k = (1.0 - 2.0 * u.x) * (u.y - 0.5); k = sign(k) * pow(abs(k) * 2.0, @CORE@) * 0.5;\n"
+         "        // Core hold: dots near the line follow the column's slow level, so the glowing core keeps its shape\n"
+         "        // through a kick and the outer dots carry it.\n"
+         "        level = lerp(level, slowL, @CORE_HOLD@ * (1.0 - smoothstep(0.0, @CORE_SIZE@, abs(k) * 2.0)));"),
+        (f"      float env = tex2D(sampler_pc_main, (float2(g, {FOUNTAIN_HIST + 2}.0) + 0.5) * texsize.zw).y / 3.0;\n",
+         f"      float3 kickRow = tex2D(sampler_pc_main, (float2(g, {FOUNTAIN_HIST + 2}.0) + 0.5) * texsize.zw).xyz;\n"
+         "      float env = kickRow.y / 3.0;\n"
+         "      float slowL = kickRow.z;\n"),
+        ("      float2 was = tex2D(sampler_pc_main, (float2(gx, r) + 0.5) * texsize.zw).xy;\n",
+         "      float3 was = tex2D(sampler_pc_main, (float2(gx, r) + 0.5) * texsize.zw).xyz;\n"),
+        ("sqrt(1.0 + 24.0 * h.x)", "sqrt(1.0 + @LIFE_SPREAD@ * h.x)"),
+        ("      o = float3(live, max(saturate(rate * 3.0), was.y * exp(-1.0 / (fr * 0.12))), 0.0);\n",
+         "      // z: the column's slow level, for the core hold\n"
+         "      o = float3(live, max(saturate(rate * 3.0), was.y * exp(-1.0 / (fr * @KICK_DECAY@))),\n"
+         "                 lerp(was.z, live, 1.0 - exp(-1.0 / (fr * @CORE_SLOW@))));\n"),
+        ("CurveA(na) * 6.0;", "CurveA(na) * @BRIGHT@;"),
+        ("ret = ACES(acc * 0.6);", "ret = ACES(acc * @EXPOSURE@);"),
+        (f"* {FOUNTAIN_REACH} + 2.0)", "* @REACH@ * 1.6 + 6.0)"),
+    ]
+    for old, new in warp_tokens:
+        assert w.count(old) == 1, old[:60]
+        w = w.replace(old, new)
+    c = STYLES["Fountain"]["comp"]
+    for old, new in [("(0.06 + 0.4 * saturate(level * 2.5))", "(0.06 + @GLOW_PULSE@ * saturate(level * 2.5))"),
+                     ("GetBlur2(uv) * 0.6 + c * 0.25, 1.0);", "GetBlur2(uv) * 0.6 + c * 0.25, @DEFOCUS@);"),
+                     ("GetBlur3(uv) * 1.3", "GetBlur3(uv) * @BLOOM_WIDE@")]:
+        assert c.count(old) == 1, old
+        c = c.replace(old, new)
+
+    def engine(n):
+        e = fountain_engine(n)
+        old = "ea=1-exp(-dt/0.10); er=1-exp(-dt/0.30);"
+        assert e.count(old) == 1
+        return e.replace(old, "ea=1-exp(-dt/@EASE_IN@); er=1-exp(-dt/@EASE_OUT@);")
+    return dict(STYLES["Fountain"], engine=engine, comp=c,
+                warp=shader("warp_", TRIPLE_HELPERS, wing(HALF, gap=0.11, end=0.46) + w))
+
+
+EXPERIMENTS["Fountain Tunable"] = fountain_tunable()
+TUNE_FILES = {"Fountain Tunable": TUNABLE}
+
 def write(name, s):
     n = s["n"]
     text = (HEADER + ANALYSIS_WAVE + s.get("shapes", "")
-            + lines("per_frame_", engine(n) + "\n" + s["pack"](n))
+            + lines("per_frame_", s.get("engine", engine)(n) + "\n" + s["pack"](n))
             + s["warp"] + s["comp"])
     with open(os.path.join(OUT, f"UPS - {name}.milk"), "w", newline="\r\n") as f:
         f.write(text)
@@ -349,3 +717,9 @@ if __name__ == "__main__":
             os.remove(os.path.join(OUT, old))
     for name, s in STYLES.items():
         write(name, s)
+    for name, s in EXPERIMENTS.items():
+        write(name, s)
+    for name, params in TUNE_FILES.items():
+        with open(os.path.join(OUT, f"UPS - {name}.tune"), "w", newline="\r\n") as f:
+            for label, token, default, step, lo, hi in params:
+                f.write(f"{label}|{token}|{default}|{step}|{lo}|{hi}\n")

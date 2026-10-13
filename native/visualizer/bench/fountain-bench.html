@@ -1,0 +1,1566 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fountain bench</title>
+<!--
+  Fountain bench: the UniPlaySong Fountain visualizer (native/visualizer/presets/make_presets.py, its "Tunable"
+  experiment) ported to WebGL, with every knob live. A dev tool - nothing here ships. Load a song or use the synthetic
+  beat, move sliders, and press "Copy values" to hand the numbers back for the real preset.
+
+  The model matches the preset's maths: the level engine (peak-scaled linear magnitude, the game's smoothing, ease),
+  a 60 Hz level history for birth levels, the kick envelope, core hold, the game's curves A/B, the k = u*p dot
+  fractions, defocus/bloom from a blur pyramid standing in for projectM's GetBlur1/2/3, fringe, level glow, edge fade,
+  the art slot's shadow, and the luma-keyed composite the page shows. Added here to prototype: a per-column fling
+  SPRING, a LAUNCH mix (07's fountain motion), and stretch from each dot's actual speed.
+-->
+<style>
+  :root { --bg: #101014; --panel: #18181d; --line: #2a2a31; --text: #e8e6ee; --dim: #9a98a4; --accent: #c86bff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.35 system-ui, "Segoe UI", sans-serif; height: 100vh; overflow: hidden; }
+  #wrap { display: grid; grid-template-columns: 1fr 360px; height: 100vh; }
+  #stage { position: relative; display: flex; align-items: center; justify-content: center; background: #000; min-width: 0; }
+  canvas { display: block; max-width: 100%; max-height: 100%; }
+  #hud { position: absolute; left: 10px; top: 8px; color: var(--dim); font: 12px ui-monospace, Consolas, monospace; pointer-events: none; }
+  #flash { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); background: rgba(20,18,28,.85); color: #fff; padding: 6px 14px; border-radius: 8px; font-size: 15px; opacity: 0; transition: opacity .25s; pointer-events: none; }
+  #flash.on { opacity: 1; transition: none; }
+  #ab { position: absolute; right: 12px; top: 8px; color: #ffcc66; font: 600 13px system-ui, sans-serif; display: none; }
+  #graph { position: absolute; left: 0; bottom: 0; width: 100%; height: 170px; pointer-events: none; }
+  #err { position: absolute; left: 10px; bottom: 10px; right: 10px; color: #ff8080; font: 12px ui-monospace, Consolas, monospace; white-space: pre-wrap; }
+  #panel { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; padding: 12px 14px 24px; }
+  h1 { font-size: 15px; margin: 0 0 8px; }
+  h2 { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin: 16px 0 6px; border-top: 1px solid var(--line); padding-top: 10px; }
+  .row { margin: 6px 0 8px; }
+  .row label { display: flex; justify-content: space-between; gap: 8px; color: var(--text); cursor: pointer; }
+  .row label span.v { color: var(--accent); font-variant-numeric: tabular-nums; }
+  .row label span.n:hover { text-decoration: underline dotted; }
+  .row .hint { color: var(--dim); font-size: 11px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+  button, select, input[type=file]::file-selector-button { background: #26262e; color: var(--text); border: 1px solid #3a3a44; border-radius: 6px; padding: 5px 10px; font: inherit; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  select { padding: 4px 6px; }
+  .note { color: var(--dim); font-size: 11px; margin: 4px 0; }
+  textarea { width: 100%; height: 90px; background: #0c0c10; color: var(--dim); border: 1px solid var(--line); border-radius: 6px; font: 11px ui-monospace, Consolas, monospace; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage"><canvas id="c"></canvas><canvas id="graph"></canvas><div id="hud"></div><div id="flash"></div><div id="ab">COMPARE (pinned values)</div><div id="err"></div></div>
+  <div id="panel">
+    <h1>Fountain bench</h1>
+    <div class="btns">
+      <input type="file" id="file" accept="audio/*">
+    </div>
+    <div class="btns">
+      <button id="drumTest" title="A 32 s drum loop whose every hit is known - the lanes show the found hits against the real ones, with a score">Drum test track</button>
+      <select id="ticks" title="A short tick on each hit found, over the music: if the ticks land on the drums, the detection is clean">
+        <option value="off">Ticks off</option><option value="beat">Ticks: the beat (metronome)</option><option value="drums">Ticks: all drums</option><option value="kick">Ticks: kicks</option>
+        <option value="snare">Ticks: snares</option><option value="hat">Ticks: hats</option><option value="bass">Ticks: bass notes (not kicks)</option></select>
+      <select id="musicLvl"><option value="1">Music 100%</option><option value="0.35">Music 35%</option><option value="0">Music muted</option></select>
+    </div>
+    <div class="btns">
+      <button id="play">Play / pause</button>
+      <select id="source"><option value="synth">Synthetic beat</option><option value="song">Synthetic song (breakdown, build, drop)</option><option value="file">Loaded song</option></select>
+      <select id="palette" title="Palette: the two colours each dot blends between"></select>
+      <select id="gradient" title="What picks each dot's blend between the palette's two colours">
+        <option value="0">Colour: random per dot</option><option value="1">Colour: lows to highs across the line</option>
+        <option value="2">Colour: core to tips</option><option value="3">Colour: spectrum across the line</option></select>
+      <select id="bg"><option value="dark">Dark theme</option><option value="grey">Grey</option><option value="black">Black</option></select>
+    </div>
+    <div class="btns">
+      <button id="presetShipped">19 as tested</button>
+      <button id="presetFling">Fling proposal</button>
+      <button id="presetYours">Your tune #1</button>
+      <button id="presetYours2">Your tune #2</button>
+      <button id="presetLive">Live show</button>
+      <button id="presetMapped">Live show + song map</button>
+      <button id="presetYours3">Your tune #3 (show + map)</button>
+    </div>
+    <div class="btns" title="Your tune #3's look, moving on the song's beat - for loaded songs (on the synthetic beat they fall back to the old kick)">
+      <button id="beatPunch" title="A short, jagged stab on every beat - louder columns throw further">Beat punch</button>
+      <button id="barStomp" title="ONE-two-three-four: one big throw per bar, the other three beats small">Bar stomp</button>
+      <button id="beatPulse" title="The whole line swells and settles together on every beat - smooth, no spikes">Beat pulse</button>
+      <button id="beatRipple" title="Each beat starts at the cover and travels out to the tips">Ripple</button>
+      <button id="stompRipple" title="The chosen motion: Ripple with Bar stomp's shape - a big wave on the ONE of each bar, small ones on the other beats">Stomp ripple (chosen)</button>
+      <button id="presetYours4" title="Your values from 2026-10-13: Stomp ripple + layers, tuned">Your tune #4</button>
+      <button id="presetYours5" title="Your values from 2026-10-13 00:36, plus moving dots cooling">Your tune #5</button>
+      <button id="presetYours4Cool" title="Your tune #4 with less loudness heat - stays white-pink, only the loudest moments warm toward magenta">Your tune #4, cooler</button>
+      <button id="stompLayers" title="Stomp ripple, plus held chords lighting the glow and swelling the core, chords tinting the colour, and loudness heating only the outer dots">Stomp ripple + layers</button>
+      <button id="resetAll">Reset all</button>
+      <button id="copy">Copy values</button>
+    </div>
+    <div class="btns">
+      <button id="pin">Pin as compare</button>
+      <select id="speed"><option value="1">Speed 1x</option><option value="0.5">Speed 1/2x</option><option value="0.25">Speed 1/4x</option></select>
+      <select id="graphs"><option value="on">Signal graphs on</option><option value="off">Signal graphs off</option></select>
+    </div>
+    <p class="note">Hold <b>C</b> to see the pinned values (pinned when the page loads, or with Pin as compare); let go to come back.
+      Graphs: one column's <span style="color:#7fd1ff">level</span>, <span style="color:#ffcc66">kick</span> and
+      <span style="color:#ff7ad9">fling</span> over the last 3 s - pick the column by hovering over the line. Drop an audio file
+      anywhere. Click a parameter's name to reset it. Values are remembered in this browser.</p>
+    <p class="note">Beat lane: the steady pulse you'd tap your foot to, found the way librosa (a standard music-analysis
+      library) does it - the easiest thing to check: pick "Ticks: the beat" and hear whether the metronome stays with the song.
+      Drum lanes (with a song or the drum test playing): the hits found for kick, snare, hats and bass notes,
+      1.5 s either side of now. On the drum test, white outlines are the real hits. Ticks: kick low, snare mid, hats high,
+      bass notes lowest. Found live, a kick is known ~110 ms after it lands (the kick-or-bass check), a snare ~40 ms, a
+      hat ~25 ms.</p>
+    <div id="params"></div>
+    <h2>Values</h2>
+    <textarea id="out" readonly></textarea>
+  </div>
+</div>
+<script>
+"use strict";
+// ---- parameters ------------------------------------------------------------------------------------------------
+// [key, group, label, default, min, max, step, hint]
+const PARAMS = [
+  ["LAUNCH", "Fling & motion", "Launch", 0.5, 0, 1, 0.05, "How much dots travel on their own. 0: each dot holds a fixed height in its column, as in Tekken. 1: every dot is born on the line and rises outward over its life, like 07's fountain."],
+  ["LAUNCH_SPEED", "Fling & motion", "Launch curve", 3.6, 0.5, 10, 0.1, "With Launch above 0: low = dots rise steadily all life; high = they shoot out at birth and then hang."],
+  ["FLING", "Fling & motion", "Fling on a kick", 0.8, 0, 3, 0.05, "How far a kick throws the outer dots away from the line. 0 = kicks don't throw anything."],
+  ["FLING_FREQ", "Fling & motion", "Fling speed (Hz)", 2.2, 0.3, 8, 0.1, "How fast the throw happens and returns. Low = a slow, floaty swell; high = a tight snap that follows the beat closely."],
+  ["FLING_DAMP", "Fling & motion", "Fling bounce", 0.55, 0.05, 2, 0.05, "Below 1 the thrown dots overshoot and bounce back past the start before settling; 1 and above = they return smoothly with no bounce."],
+  ["FLING_TIP", "Fling & motion", "Fling: outer dots only", 1.5, 0, 4, 0.1, "Which dots get thrown. 0 = the whole column moves together; higher = only the dots furthest from the line move, the core stays put."],
+  ["KICK_THRESHOLD", "Fling & motion", "Kick threshold", 0.03, 0, 0.2, 0.005, "How big a jump in loudness has to be to count as a kick. Raise it until only real hits light the amber bars in the graph; too low and every small wobble triggers fling, stretch and colour."],
+  ["KICK_GAIN", "Fling & motion", "Kick strength", 3.0, 0.5, 10, 0.1, "How hard a kick above the threshold hits: higher = smaller hits already give a full kick."],
+  ["KICK_DECAY", "Fling & motion", "Kick length (s)", 0.12, 0.02, 0.8, 0.01, "How long a kick's effect lasts before it fades: short = punchy, long = each hit lingers."],
+  ["STRETCH_GAIN", "Stretch", "Streak sensitivity", 0.03, 0, 0.15, 0.002, "How easily a moving dot turns into a vertical streak. Streaks come from each dot's own speed, so fast outer dots streak and the slow core stays round."],
+  ["STRETCH_MAX", "Stretch", "Longest streak (x)", 4.0, 0, 9, 0.1, "Cap on streak length, as a multiple of the dot's height. 0 = no streaks at all."],
+  ["CORE", "Core", "Core density", 1.0, 0.4, 3, 0.05, "How many dots crowd the line. Higher = a thicker, brighter core and fewer dots out at the tips."],
+  ["CORE_HOLD", "Core", "Core steadiness", 0.85, 0, 1, 0.05, "How much the core ignores kicks. 1 = dots near the line only follow the slow, smoothed level; 0 = they jump with every beat like the rest."],
+  ["CORE_SIZE", "Core", "Core width", 0.35, 0.05, 1, 0.05, "How far from the line still counts as core. Larger = more of each column stays steady."],
+  ["CORE_SLOW", "Core", "Core smoothing (s)", 1.0, 0.1, 4, 0.1, "How slowly the core follows the music. Higher = the core barely changes from beat to beat and only breathes with the song."],
+  ["LIVE", "Core", "Follow the music now", 1.0, 0, 1, 0.05, "1 = every dot follows the current level (snappy, like 07). 0 = each dot keeps the level it was born with and catches up over its life (Tekken: softer, trailing)."],
+  ["REACH", "Shape", "Height", 18, 4, 30, 0.5, "How tall a full-volume column gets, in column widths."],
+  ["LIFE_SPREAD", "Shape", "Dot lifetime range", 24, 0, 60, 1, "Dots live between 1 s and sqrt(1 + this) s. Higher = some dots linger much longer, so columns change more gradually."],
+  ["SIZE", "Shape", "Dot size", 1.0, 0.5, 1.0, 0.02, "Size of each dot. Smaller = finer, more separated beads."],
+  ["BRIGHT", "Look", "Dot brightness", 6.0, 1, 15, 0.1, "Overall light of the dots."],
+  ["EXPOSURE", "Look", "Exposure", 0.6, 0.2, 1.5, 0.01, "Final brightness after tone mapping. Higher = whiter, more blown-out cores."],
+  ["DEFOCUS", "Look", "Lens blur", 1.0, 0, 1, 0.05, "0 = crisp dots. 1 = the Tekken camera look: every dot is a soft out-of-focus disc."],
+  ["BLOOM_NEAR", "Look", "Glow, close", 0.9, 0, 3, 0.05, "Glow hugging the dots."],
+  ["BLOOM_WIDE", "Look", "Glow, wide", 1.3, 0, 3, 0.05, "The broad violet haze around the whole line."],
+  ["FRINGE", "Look", "Lens colour fringe", 0.0015, 0, 0.006, 0.0001, "Red/blue colour edges toward the sides, like a camera lens. 0 = none."],
+  ["KICK_COLOR", "Look", "Kick colour shift", 0.8, 0, 1, 0.05, "On a kick, the thrown dots shift toward violet-blue at the same brightness - the hit shows as colour, not a flash. The core never shifts."],
+  ["FLASH", "Look", "Kick brightness flash", 0, 0, 2, 0.05, "Extra brightness on kicked dots. Keep low: fast, large flashes of light can trigger photosensitive epilepsy - prefer the colour shift."],
+  ["STRETCH_DIM", "Look", "Streak dimming", 0.6, 0, 1, 0.05, "1 = a streak spreads its dot's light along its length (no flash); 0 = stretching adds light."],
+  ["GLOW_PULSE", "Look", "Background glow pulse", 0.13, 0, 1, 0.01, "How much the soft magenta glow behind the line swells with the music."],
+  ["GLOW_SMOOTH", "Look", "Background glow smoothing (s)", 0.5, 0.05, 2, 0.05, "How slowly that glow follows: higher = a gentle swell instead of a beat-by-beat pulse."],
+  ["COLOR_LEVEL", "Look", "Colour by loudness", 0, 0, 1, 0.05, "How much each dot's temperature picks its colour. 0 = each dot keeps its own random shade (Tekken). 1 = cool dots take the palette's first colour, hot ones its second - only the outer dots of loud columns get hot."],
+  ["COLOR_TIPS", "Look", "Loudness colour: outer dots", 0, 0, 1, 0.05, "How much cooler the core runs than the tips. 0 = a loud column heats all its dots alike. 1 = only the outer dots heat up; the core and small rings stay cool - hot air at the edges."],
+  ["COLOR_CURVE", "Look", "Loudness colour: only the loud parts", 1, 0.5, 4, 0.05, "Above 1, moderate loudness barely shifts the colour and only the loudest moments go all the way - the difference between hot and very hot."],
+  ["COLOR_EASE", "Look", "Colour change smoothing (s)", 0.3, 0.1, 1.5, 0.01, "How long every colour change takes to fade in - the beat's, the loudness heat, a drop's, the build-up's (fading out takes three times longer). Colour never snaps; the throw itself stays instant."],
+  ["COOL_AIR", "Look", "Cool air in quiet columns", 0, 0, 1, 0.05, "Cool dots - the core, small rings, quiet columns - drift toward violet-blue (same brightness), and quiet columns sway gently: cool air beside the hot, loud columns."],
+  ["COOL_HUE", "Look", "Cool colour: blue to violet", 0.5, 0, 1, 0.05, "The colour cool dots and the cool glow lean toward - the start of the scale that warms to the palette's hot colour. 0 = blue, 0.5 = blue-violet, 1 = violet."],
+  ["MOVE_COOL", "Look", "Cooling as beads settle", 0, 0, 1, 0.05, "As the outer beads fall back after a throw they take a tinge of the cool colour that lingers a moment - the fountain cooling off where it just fired. The outward throw stays warm."],
+  ["DYNAMICS", "Live show", "Song dynamics", 0, 0, 1, 0.05, "Master amount for everything in this group. 0 = off: the visualizer reacts beat by beat only. 1 = full song-aware reactions."],
+  ["SECTION_SENS", "Live show", "Section sensitivity", 1.2, 1.02, 2, 0.02, "How much louder than the song's recent average counts as a full section (chorus, drop). Lower = the full look kicks in sooner."],
+  ["CALM_COLOR", "Live show", "Breakdown colour", 0.7, 0, 1, 0.05, "In quiet sections the palette drifts toward cool teal-blue, and back to magenta when the energy returns."],
+  ["BREATH", "Live show", "Breakdown breathing", 0.25, 0, 1, 0.05, "In quiet sections the columns slowly swell and settle (every 4 s), so the line stays alive without a kick."],
+  ["WAVE", "Live show", "Kick shockwave", 0.9, 0, 2, 0.05, "Each bass kick sends a wave of fling outward from the cover across the whole line."],
+  ["WAVE_SPEED", "Live show", "Shockwave speed (columns/s)", 160, 20, 600, 5, "How fast that wave travels: low = a visible sweep, high = almost instant."],
+  ["DROP_FLING", "Live show", "Drop burst", 1.6, 0, 3, 0.05, "When the music slams back after a quiet stretch (a drop), every column is thrown out at once and swings to the kick colour."],
+  ["DROP_DECAY", "Live show", "Drop burst length (s)", 1.5, 0.3, 4, 0.1, "How long the drop burst takes to settle."],
+  ["ANALYSIS", "Song map", "Use the song map", 0, 0, 1, 1, "1 = the whole song is analysed when it loads, and sections, drops and build-ups come from that map: drops land exactly on the beat and build-ups can wind up before them. 0 = live detection only (reacts a beat late, can't anticipate)."],
+  ["TENSION", "Song map", "Build-up tension", 0.8, 0, 1.5, 0.05, "In the seconds before a drop the map knows is coming: columns slowly lift, outer dots warm toward the kick colour and sparkle more - the wind-up before the release."],
+  ["PINGPONG", "Song map", "Beat ping-pong", 0.5, 0, 1.5, 0.05, "In full sections, alternate beats throw the left and right wings - a call and response on the song's tempo."],
+  ["PHRASE_HUE", "Song map", "Phrase colour drift", 0.3, 0, 1, 0.05, "Every 8 bars the palette's hue shifts slightly, so a long track keeps evolving. 0 = the palette never moves."],
+  ["SPARKLE", "Live show", "Hi-hat sparkle", 0.6, 0, 1, 0.05, "Hi-hats and cymbals make small dots in the treble columns glint toward white-cyan - colour only, no brightness."],
+  ["EASE_IN", "Levels", "Rise smoothing (s)", 0.10, 0.01, 0.5, 0.005, "How quickly a column rises to a new sound. Low = instant and snappy; high = soft attacks."],
+  ["EASE_OUT", "Levels", "Fall smoothing (s)", 0.30, 0.04, 1.2, 0.01, "How slowly a column falls back after a sound. High = columns hang in the air between beats."],
+  ["TILT", "Levels", "Treble boost", 3.0, 0, 8, 0.1, "Lifts the high-frequency columns (right side of each wing's far end), which are naturally quieter in music."],
+  ["GAMMA", "Levels", "Quiet-sound lift", 0.7, 0.3, 1.5, 0.01, "Below 1 lifts quiet sounds so more columns move; above 1 keeps quiet parts low so only loud sounds stand out."],
+  ["PEAK_HOLD", "Levels", "Loudness memory (s)", 3.0, 0.5, 10, 0.1, "Each column measures sound against its own recent peak. Longer = after a loud part, quieter parts stay smaller for longer."],
+  ["BPM", "Synthetic beat", "Tempo (BPM)", 120, 60, 200, 1, "Tempo of the synthetic beat and song."],
+  ["KICK_LEVEL", "Synthetic beat", "Kick loudness", 1.0, 0, 2, 0.05, "Loudness of the synthetic kick."],
+  ["BEAT_DRIVE", "Beat (loaded songs)", "Throw on the beat", 1, 0, 1, 0.05, "1 = with a loaded song, the throws come from the beat you'd tap your foot to (the metronome's beat), sized by how hard each beat hits. 0 = the old way: a throw whenever a column gets louder fast. In between = a mix."],
+  ["BEAT_LEAD", "Beat (loaded songs)", "Land the throw on the beat", 1, 0, 1.5, 0.05, "A throw takes a moment to reach its peak, so it starts early. 1 = the peak lands exactly on the beat; 0 = it starts on the beat and peaks after it."],
+  ["BEAT_FLOOR", "Beat (loaded songs)", "Quiet-beat throw", 0.25, 0, 1, 0.05, "How big a throw the softest beats still get. 0 = quiet beats barely move; 1 = every beat throws as hard as the loudest."],
+  ["BEAT_SPRING", "Beat (loaded songs)", "Throw speed, in beats", 0, 0, 4, 0.05, "Ties the throw's speed to the song's tempo: 2 = the spring swings twice per beat (snappy at any tempo), 1 = once (a smooth pulse). 0 = use 'Fling speed' instead, whatever the tempo."],
+  ["BEAT_SNAP", "Beat (loaded songs)", "Throw length, in beats", 0, 0, 2, 0.05, "How long each beat's throw lasts, as a share of the gap between beats: 0.3 = a short stab that's gone well before the next beat, 1 = a swell that fills it. 0 = use 'Kick length' instead."],
+  ["BEAT_CONTRAST", "Beat (loaded songs)", "Big beats bigger", 1, 0.5, 3, 0.05, "Above 1 widens the gap between strong and weak beats, so the hard hits stand out; below 1 evens them out."],
+  ["BEAT_ACCENT", "Beat (loaded songs)", "First beat of the bar", 0, 0, 1.5, 0.05, "Extra throw on the first beat of every bar of four - the 'ONE, two, three, four'. 0 = all beats alike."],
+  ["BEAT_OTHERS", "Beat (loaded songs)", "Other beats of the bar", 1, 0, 1, 0.05, "How big beats two, three and four throw, against a normal throw. Low, with a big first beat = a ONE-two-three-four stomp."],
+  ["BEAT_EVEN", "Beat (loaded songs)", "Whole line together", 0, 0, 1, 0.05, "0 = each column throws by how loud it is right now - a jagged, spiky hit. 1 = the whole line moves as one - a smooth swell."],
+  ["BEAT_IN_PLACE", "Beat (loaded songs)", "Throw in place", 1, 0, 1, 0.05, "How much each column throws where it stands. Turn it down and the 'Kick shockwave' up, and each beat travels out from the cover as a ripple instead."],
+  ["PAD_GLOW", "Layers (loaded songs)", "Held chords: glow", 0, 0, 1.5, 0.05, "Pads, strings and held synth chords light the soft glow behind the line, so an intro or a quiet stretch with no drums still glows."],
+  ["PAD_SWELL", "Layers (loaded songs)", "Held chords: core swell", 0, 0, 1.5, 0.05, "Held chords slowly swell the inner part of each column, underneath the beat's throws."],
+  ["HARMONY_HUE", "Layers (loaded songs)", "Chords: colour", 0, 0, 1, 0.05, "The palette turns with the harmony - each chord gets its own tint and a chord change shifts it (brightness holds). It moves less where the harmony is unclear (dense mixes, drums only)."],
+  ["DET_KICK", "Drum detection", "Kick threshold", 0.12, 0.02, 0.6, 0.01, "How sharp a jump in the lows (40-150 Hz) counts as a kick or bass note. Lower = softer and quicker double kicks are caught, along with more false ones."],
+  ["DET_KICK_SUSTAIN", "Drum detection", "Kick or bass note", 0.65, 0.3, 1, 0.01, "60-100 ms after a low hit: a kick has faded below this share of its peak, a bass note hasn't. 1 = every low hit counts as a kick (long 808 kicks need it high)."],
+  ["DET_SNARE", "Drum detection", "Snare threshold", 0.3, 0.05, 1, 0.01, "How sharp a 1.5-5 kHz burst counts as a snare (or clap). Lower = ghost notes are caught, along with more false ones."],
+  ["DET_HAT", "Drum detection", "Hi-hat threshold", 0.3, 0.05, 1, 0.01, "How sharp a jump above 6 kHz counts as a hat or cymbal. Lower = quieter hats are caught; vocal 's' sounds too."],
+  ["DET_SPLIT", "Drum detection", "Snare: mid-high share", 0.5, 0.1, 3, 0.05, "A snare's noise sits mostly at 1.5-5 kHz, a hat's above 6 kHz. Higher = a hit needs more of its noise in the 1.5-5 kHz band to count as a snare."],
+  ["DET_HAT_SPLIT", "Drum detection", "Hat over a snare", 0.35, 0.05, 2, 0.05, "With a snare at the same moment, how far the top band must rise past the snare's own spill for a hat to count too. Higher = fewer hats found on snare beats."],
+];
+const SHIPPED = { LAUNCH: 0, FLING: 0.3, FLING_FREQ: 8, FLING_DAMP: 1, FLING_TIP: 2, STRETCH_GAIN: 0.03 };
+const FLING_PROPOSAL = { LAUNCH: 0.5, FLING: 0.8, FLING_FREQ: 2.2, FLING_DAMP: 0.55, FLING_TIP: 1.5, CORE_HOLD: 0.85 };
+// The values tuned on this bench (2026-10-12).
+const YOUR_TUNE = { LAUNCH: 0.3, LAUNCH_SPEED: 3, FLING: 1.5, FLING_FREQ: 8, FLING_DAMP: 0.8, FLING_TIP: 1.8, KICK_THRESHOLD: 0.015,
+  KICK_GAIN: 5.7, KICK_DECAY: 0.31, STRETCH_GAIN: 0.05, STRETCH_MAX: 6.5, CORE: 0.95, CORE_HOLD: 0.95, CORE_SIZE: 0.35, CORE_SLOW: 1,
+  LIVE: 0.5, REACH: 17, LIFE_SPREAD: 22, SIZE: 1, BRIGHT: 5, EXPOSURE: 0.52, DEFOCUS: 0.85, BLOOM_NEAR: 0.6, BLOOM_WIDE: 0.9,
+  FRINGE: 0.0008, KICK_COLOR: 0.7, FLASH: 0.15, STRETCH_DIM: 0.75, GLOW_PULSE: 0.21, GLOW_SMOOTH: 0.6, COLOR_LEVEL: 0.5,
+  EASE_IN: 0.055, EASE_OUT: 0.43, TILT: 5.5, GAMMA: 0.86, PEAK_HOLD: 7.8, BPM: 120, KICK_LEVEL: 1.3, DYNAMICS: 0 };
+// Your second tune: the Live show tuned on the bench (2026-10-12).
+const YOUR_TUNE_2 = { LAUNCH: 0.7, LAUNCH_SPEED: 3.7, FLING: 2, FLING_FREQ: 1.9, FLING_DAMP: 0.75, FLING_TIP: 2.7,
+  KICK_THRESHOLD: 0.025, KICK_GAIN: 7.9, KICK_DECAY: 0.28, STRETCH_GAIN: 0.052, STRETCH_MAX: 5, CORE: 0.95, CORE_HOLD: 0.85,
+  CORE_SIZE: 0.35, CORE_SLOW: 2.8, LIVE: 0.85, REACH: 19, LIFE_SPREAD: 6, SIZE: 0.98, BRIGHT: 4.2, EXPOSURE: 0.51, DEFOCUS: 0.75,
+  BLOOM_NEAR: 0.45, BLOOM_WIDE: 0.8, FRINGE: 0.0008, KICK_COLOR: 0.7, FLASH: 0.1, STRETCH_DIM: 0.8, GLOW_PULSE: 0.19,
+  GLOW_SMOOTH: 1.1, COLOR_LEVEL: 0.6, DYNAMICS: 1, SECTION_SENS: 1.24, CALM_COLOR: 0.75, BREATH: 0.6, WAVE: 0.65,
+  WAVE_SPEED: 410, DROP_FLING: 1.5, DROP_DECAY: 2, SPARKLE: 0.7, EASE_IN: 0.085, EASE_OUT: 0.55, TILT: 5, GAMMA: 1.15,
+  PEAK_HOLD: 8.8, BPM: 120, KICK_LEVEL: 1.3, ANALYSIS: 0 };
+// Live show: your tune, plus the song-aware layer. A slower, floatier fling so the shockwave and the drop read as sweeps,
+// the brightness flash off (colour carries the hits).
+const LIVE_SHOW = { ...YOUR_TUNE, DYNAMICS: 1, SECTION_SENS: 1.2, CALM_COLOR: 0.7, BREATH: 0.3, WAVE: 1.0, WAVE_SPEED: 140,
+  DROP_FLING: 1.8, DROP_DECAY: 1.6, SPARKLE: 0.65, FLING_FREQ: 4.5, FLING_DAMP: 0.6, FLASH: 0, KICK_COLOR: 0.8 };
+// [name, first colour, second colour] - HDR, as the preset's (the game's pair is (6,1,2) -> (6.5,4,10))
+const PALETTES = [
+  ["Tekken (magenta to violet)", [6.0, 1.0, 2.0], [6.5, 4.0, 10.0]],
+  ["Ice", [1.0, 3.0, 7.0], [4.0, 7.0, 10.0]],
+  ["Ember", [7.0, 2.0, 0.5], [9.0, 6.0, 2.0]],
+  ["Aurora", [1.0, 6.0, 3.0], [3.0, 6.0, 9.0]],
+  ["Sunset", [7.0, 1.0, 3.0], [9.0, 5.0, 1.5]],
+  ["Synthwave", [2.0, 1.5, 8.0], [8.0, 1.5, 5.0]],
+  ["Silver", [4.0, 4.0, 5.0], [7.0, 7.0, 9.0]],
+  ["Warm to cool", [7.5, 2.5, 0.6], [1.0, 3.5, 8.0]],
+  ["Pink to cyan", [7.0, 1.2, 3.0], [1.0, 5.0, 8.0]],
+  ["Gold to violet", [8.0, 5.0, 1.2], [4.0, 1.5, 9.0]],
+  ["White to magenta", [6.0, 5.0, 6.5], [7.0, 1.0, 4.0]],
+  ["Teal to gold", [1.0, 6.0, 5.0], [8.0, 5.5, 1.0]],
+];
+const P = {};
+const DEFAULTS = {};
+for (const p of PARAMS) { DEFAULTS[p[0]] = p[3]; P[p[0]] = p[3]; }
+P.PALETTE = 0; P.GRADIENT = 0;
+try { Object.assign(P, JSON.parse(localStorage.getItem("fountainBench") || "{}")); } catch (e) { }
+
+// ---- UI --------------------------------------------------------------------------------------------------------
+const inputs = {};
+const fmt = (k, v) => { const step = PARAMS.find(p => p[0] === k)[6]; const d = Math.max(0, -Math.floor(Math.log10(step) + 1e-9)); return Number(v).toFixed(Math.min(d, 4)); };
+function buildPanel() {
+  const host = document.getElementById("params");
+  let group = "";
+  for (const [k, g, label, def, min, max, step, hint] of PARAMS) {
+    if (g !== group) { group = g; const h = document.createElement("h2"); h.textContent = g; host.appendChild(h); }
+    const row = document.createElement("div"); row.className = "row";
+    row.innerHTML = `<label><span class="n" title="Click to reset to ${def}">${label}</span><span class="v"></span></label>
+      <input type="range" min="${min}" max="${max}" step="${step}">${hint ? `<div class="hint">${hint}</div>` : ""}`;
+    const input = row.querySelector("input"), val = row.querySelector(".v");
+    input.value = P[k]; val.textContent = fmt(k, P[k]);
+    input.addEventListener("input", () => { const was = P[k]; P[k] = parseFloat(input.value); val.textContent = fmt(k, P[k]); saved(); flash(label, was, P[k], k); });
+    row.querySelector(".n").addEventListener("click", () => setParam(k, def));
+    inputs[k] = { input, val };
+    host.appendChild(row);
+  }
+  saved();
+}
+let flashTimer = 0, flashFrom = null, flashKey = null;
+function flash(label, from, to, k) {
+  if (flashKey !== k) { flashFrom = from; flashKey = k; }
+  const el = document.getElementById("flash");
+  el.textContent = `${label}: ${fmt(k, flashFrom)} \u2192 ${fmt(k, to)}`;
+  el.classList.add("on");
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => { el.classList.remove("on"); flashKey = null; }, 1600);
+}
+function setParam(k, v) { P[k] = v; inputs[k].input.value = v; inputs[k].val.textContent = fmt(k, v); saved(); }
+function saved() {
+  try { localStorage.setItem("fountainBench", JSON.stringify(P)); } catch (e) { }
+  const o = {}; for (const p of PARAMS) o[p[0]] = +fmt(p[0], P[p[0]]);
+  o.PALETTE = PALETTES[P.PALETTE || 0][0]; o.GRADIENT = ["random", "across", "core-to-tips", "spectrum"][P.GRADIENT || 0];
+  document.getElementById("out").value = JSON.stringify(o, null, 1);
+}
+buildPanel();
+const palSel = document.getElementById("palette"), gradSel = document.getElementById("gradient");
+PALETTES.forEach((p, i) => { const o = document.createElement("option"); o.value = i; o.textContent = "Palette: " + p[0]; palSel.appendChild(o); });
+palSel.value = P.PALETTE; gradSel.value = P.GRADIENT;
+palSel.onchange = () => { P.PALETTE = +palSel.value; saved(); };
+gradSel.onchange = () => { P.GRADIENT = +gradSel.value; saved(); };
+let pinned = { ...P }, comparing = false;
+document.getElementById("pin").onclick = () => { pinned = { ...P }; const el = document.getElementById("flash"); el.textContent = "Pinned for compare (hold C)"; el.classList.add("on"); clearTimeout(flashTimer); flashTimer = setTimeout(() => el.classList.remove("on"), 1400); };
+addEventListener("keydown", e => { if (e.key === "c" || e.key === "C") { comparing = true; document.getElementById("ab").style.display = "block"; } });
+addEventListener("keyup", e => { if (e.key === "c" || e.key === "C") { comparing = false; document.getElementById("ab").style.display = "none"; } });
+const Q = () => comparing ? pinned : P;   // the values in effect this frame
+document.getElementById("resetAll").onclick = () => { for (const p of PARAMS) setParam(p[0], p[3]); };
+document.getElementById("presetShipped").onclick = () => { for (const p of PARAMS) setParam(p[0], p[3]); for (const k in SHIPPED) setParam(k, SHIPPED[k]); };
+document.getElementById("presetFling").onclick = () => { for (const k in FLING_PROPOSAL) setParam(k, FLING_PROPOSAL[k]); };
+const applyAll = o => { for (const p of PARAMS) setParam(p[0], o[p[0]] !== undefined ? o[p[0]] : p[3]); };
+const setColour = (pal, grad) => { P.PALETTE = pal; P.GRADIENT = grad; palSel.value = pal; gradSel.value = grad; saved(); };
+document.getElementById("presetYours").onclick = () => { applyAll(YOUR_TUNE); setColour(0, 0); };
+document.getElementById("presetLive").onclick = () => { applyAll(LIVE_SHOW); if (sourceSel.value === "synth") sourceSel.value = "song"; };
+document.getElementById("presetYours2").onclick = () => { applyAll(YOUR_TUNE_2); setColour(0, 2); };
+// Live show + song map: your second tune with the map on - exact drops, build tension, ping-pong, phrase drift.
+const LIVE_MAPPED = { ...YOUR_TUNE_2, ANALYSIS: 1, TENSION: 0.8, PINGPONG: 0.5, PHRASE_HUE: 0.3 };
+// Your third tune: the Live show with the song map, tuned on the bench (2026-10-12), white-to-magenta, random colour.
+const YOUR_TUNE_3 = { LAUNCH: 0.7, LAUNCH_SPEED: 3.7, FLING: 2, FLING_FREQ: 1.9, FLING_DAMP: 0.75, FLING_TIP: 2.6,
+  KICK_THRESHOLD: 0.025, KICK_GAIN: 8, KICK_DECAY: 0.28, STRETCH_GAIN: 0.046, STRETCH_MAX: 4.2, CORE: 0.95, CORE_HOLD: 0.8,
+  CORE_SIZE: 0.35, CORE_SLOW: 2.8, LIVE: 0.85, REACH: 19.5, LIFE_SPREAD: 10, SIZE: 0.96, BRIGHT: 4.2, EXPOSURE: 0.4, DEFOCUS: 0.7,
+  BLOOM_NEAR: 0.4, BLOOM_WIDE: 0.75, FRINGE: 0.0008, KICK_COLOR: 1, FLASH: 0.05, STRETCH_DIM: 0.8, GLOW_PULSE: 0.19,
+  GLOW_SMOOTH: 1, COLOR_LEVEL: 0.8, DYNAMICS: 1, SECTION_SENS: 1.5, CALM_COLOR: 0.8, BREATH: 0.45, WAVE: 1.3, WAVE_SPEED: 215,
+  DROP_FLING: 2.05, DROP_DECAY: 1.5, ANALYSIS: 1, TENSION: 1.15, PINGPONG: 0.7, PHRASE_HUE: 0.7, SPARKLE: 0.6, EASE_IN: 0.085,
+  EASE_OUT: 0.55, TILT: 5, GAMMA: 1.11, PEAK_HOLD: 8.6, BPM: 120, KICK_LEVEL: 1.3 };
+document.getElementById("presetYours3").onclick = () => { applyAll(YOUR_TUNE_3); setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0); if (sourceSel.value === "synth") sourceSel.value = "song"; };
+// Beat presets: Your tune #3's look, moving on the tracked beat. Measured on two drum-heavy songs (TroyLawman,
+// At Doom's Gate) with the engine run offline: how far the line falls back between beats, and when the throw peaks.
+//   Beat punch: a short, jagged stab every beat (louder columns throw further) - falls back ~90%, peaks ~20 ms after
+//   Bar stomp: ONE-two-three-four - one big, lingering throw per bar, the other three beats small
+//   Beat pulse: the whole line swells and settles together on every beat - smooth, even, no spikes
+//   Ripple: each beat starts at the cover and visibly travels out to the tips (about a third of a second)
+//   Stomp ripple: Ripple shaped like Bar stomp - a big wave on the ONE, small ones on the other three beats
+const BEAT_LOOK = { ...YOUR_TUNE_3, BEAT_DRIVE: 1, BEAT_LEAD: 1 };
+const BEAT_PRESETS = {
+  beatPunch: { BEAT_SPRING: 2.2, BEAT_SNAP: 0.3, FLING_DAMP: 0.7, BEAT_CONTRAST: 1.6, BEAT_ACCENT: 0.4, BEAT_FLOOR: 0.1, WAVE: 0.4, WAVE_SPEED: 600, PINGPONG: 0.3, FLING: 2.6 },
+  barStomp: { BEAT_SPRING: 1.6, BEAT_SNAP: 0.6, FLING_DAMP: 0.6, BEAT_CONTRAST: 1.2, BEAT_ACCENT: 1.0, BEAT_OTHERS: 0.2, BEAT_FLOOR: 0.03, WAVE: 0.4, WAVE_SPEED: 700, PINGPONG: 0, FLING: 2.6 },
+  beatPulse: { BEAT_SPRING: 1.0, BEAT_SNAP: 0.7, FLING_DAMP: 1.0, BEAT_CONTRAST: 1.0, BEAT_ACCENT: 0, BEAT_FLOOR: 0.3, BEAT_EVEN: 1, WAVE: 0, PINGPONG: 0, FLING: 1.8, BEAT_LEAD: 0.85 },
+  beatRipple: { BEAT_SPRING: 2.2, BEAT_SNAP: 0.3, FLING_DAMP: 0.75, BEAT_CONTRAST: 1.3, BEAT_ACCENT: 0.3, BEAT_FLOOR: 0.15, BEAT_EVEN: 0.5, BEAT_IN_PLACE: 0.15, WAVE: 1.4, WAVE_SPEED: 150, PINGPONG: 0, FLING: 2.4 },
+  stompRipple: { BEAT_SPRING: 2.0, BEAT_SNAP: 0.45, FLING_DAMP: 0.7, BEAT_CONTRAST: 1.2, BEAT_ACCENT: 1.0, BEAT_OTHERS: 0.3, BEAT_FLOOR: 0.05, BEAT_EVEN: 0.5, BEAT_IN_PLACE: 0.15, WAVE: 1.5, WAVE_SPEED: 150, PINGPONG: 0, FLING: 2.6 },
+};
+// the chosen motion with the layers: held chords glow and swell the core, chords tint the colour (instead of the
+// every-8-bars drift), and loudness heats mostly the outer dots, only the loud parts all the way
+BEAT_PRESETS.stompLayers = { ...BEAT_PRESETS.stompRipple, PAD_GLOW: 0.7, PAD_SWELL: 0.5, HARMONY_HUE: 0.5, PHRASE_HUE: 0, COLOR_TIPS: 0.8, COLOR_CURVE: 1.8 };
+// The user's tune #4 (2026-10-13): Stomp ripple + layers, tuned. The cooler copy keeps it but heats less - the red
+// comes from 'Colour by loudness' 0.95 pulling the outer dots almost all the way to magenta-red.
+const YOUR_TUNE_4 = { LAUNCH: 0.7, LAUNCH_SPEED: 3.7, FLING: 2.6, FLING_FREQ: 1.9, FLING_DAMP: 0.7, FLING_TIP: 2.6,
+  KICK_THRESHOLD: 0.025, KICK_GAIN: 8, KICK_DECAY: 0.28, STRETCH_GAIN: 0.046, STRETCH_MAX: 4.2, CORE: 0.95, CORE_HOLD: 0.8,
+  CORE_SIZE: 0.35, CORE_SLOW: 2.8, LIVE: 0.85, REACH: 19.5, LIFE_SPREAD: 10, SIZE: 0.96, BRIGHT: 3.6, EXPOSURE: 0.4, DEFOCUS: 0.65,
+  BLOOM_NEAR: 0.4, BLOOM_WIDE: 0.65, FRINGE: 0.0008, KICK_COLOR: 0.7, FLASH: 0.05, STRETCH_DIM: 0.8, GLOW_PULSE: 0.13,
+  GLOW_SMOOTH: 1.25, COLOR_LEVEL: 0.95, COLOR_TIPS: 0.95, COLOR_CURVE: 1.65, COLOR_EASE: 0.72, DYNAMICS: 1, SECTION_SENS: 1.5,
+  CALM_COLOR: 0.85, BREATH: 0.5, WAVE: 1.5, WAVE_SPEED: 160, DROP_FLING: 2.05, DROP_DECAY: 1.5, ANALYSIS: 1, TENSION: 1.15,
+  PINGPONG: 0, PHRASE_HUE: 0.15, SPARKLE: 0.6, EASE_IN: 0.085, EASE_OUT: 0.55, TILT: 5, GAMMA: 1.11, PEAK_HOLD: 8.6, BPM: 120,
+  KICK_LEVEL: 1.3, BEAT_DRIVE: 1, BEAT_LEAD: 1, BEAT_FLOOR: 0.05, BEAT_SPRING: 2, BEAT_SNAP: 0.45, BEAT_CONTRAST: 1.2,
+  BEAT_ACCENT: 1, BEAT_OTHERS: 0.3, BEAT_EVEN: 0.5, BEAT_IN_PLACE: 0.15, PAD_GLOW: 0.7, PAD_SWELL: 0.5, HARMONY_HUE: 0.5,
+  DET_KICK: 0.12, DET_KICK_SUSTAIN: 0.65, DET_SNARE: 0.3, DET_HAT: 0.3, DET_SPLIT: 0.5, DET_HAT_SPLIT: 0.35 };
+const YOUR_TUNE_4_COOL = { ...YOUR_TUNE_4, COLOR_LEVEL: 0.9, COLOR_TIPS: 1, COLOR_CURVE: 2.0, KICK_COLOR: 0.5, COOL_AIR: 0.8, GLOW_PULSE: 0.08 };
+// The user's tune #5 (2026-10-13): tune #4 cooler, retuned - plus moving dots cooling.
+const YOUR_TUNE_5 = { ...YOUR_TUNE_4, KICK_COLOR: 0.5, GLOW_PULSE: 0.08, COLOR_LEVEL: 0.9, COLOR_TIPS: 1, COLOR_CURVE: 2.6,
+  COLOR_EASE: 0.72, COOL_AIR: 0.9, COOL_HUE: 0.6, MOVE_COOL: 0.7 };
+const whiteToMagenta = () => setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0);
+document.getElementById("presetYours4").onclick = () => { applyAll(YOUR_TUNE_4); whiteToMagenta(); };
+document.getElementById("presetYours5").onclick = () => { applyAll(YOUR_TUNE_5); whiteToMagenta(); };
+document.getElementById("presetYours4Cool").onclick = () => { applyAll(YOUR_TUNE_4_COOL); whiteToMagenta(); };
+for (const id in BEAT_PRESETS) document.getElementById(id).onclick = () => { applyAll({ ...BEAT_LOOK, ...BEAT_PRESETS[id] }); setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0); };
+document.getElementById("presetMapped").onclick = () => { applyAll(LIVE_MAPPED); setColour(0, 2); if (sourceSel.value === "synth") sourceSel.value = "song"; };
+document.getElementById("copy").onclick = async () => {
+  const t = document.getElementById("out").value;
+  try { await navigator.clipboard.writeText(t); } catch (e) { document.getElementById("out").select(); document.execCommand("copy"); }
+};
+const errBox = document.getElementById("err");
+const fail = m => { errBox.textContent += m + "\n"; };
+window.addEventListener("error", e => fail(e.message));
+
+// ---- audio -----------------------------------------------------------------------------------------------------
+let actx = null, analyser = null, musicGain = null, srcNode = null, buffer = null, playing = false, startAt = 0, offset = 0;
+const sourceSel = document.getElementById("source");
+function ensureAudio() {
+  if (actx) return;
+  actx = new (window.AudioContext || window.webkitAudioContext)();
+  analyser = actx.createAnalyser(); analyser.fftSize = 1024; analyser.smoothingTimeConstant = 0;
+  musicGain = actx.createGain(); musicGain.gain.value = +document.getElementById("musicLvl").value;
+  analyser.connect(musicGain); musicGain.connect(actx.destination);
+}
+async function loadFile(f) {
+  ensureAudio();
+  buffer = await actx.decodeAudioData(await f.arrayBuffer());
+  drumTruth = null; drums = null; drumScore = "";
+  sourceSel.value = "file"; offset = 0; play();
+  mapBuffer(buffer);
+}
+function play() {
+  if (!buffer) return;
+  ensureAudio(); actx.resume();
+  if (srcNode) { srcNode.onended = null; srcNode.stop(); }
+  srcNode = actx.createBufferSource(); srcNode.buffer = buffer; srcNode.loop = true; srcNode.connect(analyser);
+  srcNode.start(0, offset % buffer.duration); startAt = actx.currentTime - offset; playing = true;
+  stopTicks(); tickFrom = offset;
+}
+function pause() { if (!srcNode) return; offset = actx.currentTime - startAt; srcNode.stop(); srcNode = null; playing = false; stopTicks(); }
+document.getElementById("file").onchange = e => { if (e.target.files[0]) loadFile(e.target.files[0]); };
+document.getElementById("play").onclick = () => { if (sourceSel.value === "file") (playing ? pause() : play()); else synthOn = !synthOn; };
+addEventListener("dragover", e => e.preventDefault());
+addEventListener("drop", e => { e.preventDefault(); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+
+// Synthetic beat: identical kicks at the chosen tempo over a pad and off-beat hats, on a linear-magnitude scale.
+let synthOn = true;
+// Song mode, a 48 s cycle: groove (0-16), breakdown with no kick (16-28), a build with a rising sweep and a snare roll
+// (28-34), then the drop (34-48).
+let songPart = "";
+function synth(t, out, binHz) {
+  const P = Q();
+  const beat = 60 / P.BPM, ph = t % beat;
+  let kickAmt = 1, hatAmt = 1, padAmt = 1, sweep = 0, roll = 0, bass = 0;
+  songPart = "";
+  if (sourceSel.value === "song") {
+    const c = t % 48;
+    if (c < 16) { songPart = "groove"; }
+    else if (c < 28) { songPart = "breakdown"; kickAmt = 0; hatAmt = 0; padAmt = 0.7; }
+    else if (c < 34) { songPart = "build"; kickAmt = 0; hatAmt = (c - 28) / 6; padAmt = 0.8; sweep = (c - 28) / 6;
+      const rate = 2 + 6 * sweep; roll = Math.exp(-((t * rate) % 1) * 12) * (0.3 + 0.7 * sweep); }
+    else { songPart = "drop"; kickAmt = 1.35; hatAmt = 1.2; bass = 1; }
+  }
+  const kick = Math.exp(-ph * 9) * P.KICK_LEVEL * kickAmt;
+  const hat = Math.exp(-((t + beat / 2) % beat) * 40) * hatAmt;
+  for (let i = 0; i < out.length; i++) {
+    const f = i * binHz;
+    let v = 0.02 * Math.exp(-f / 3000) + 0.004;
+    v += kick * 0.9 * Math.exp(-Math.pow((f - (55 + 90 * Math.exp(-ph * 30))) / 45, 2));   // the kick's body, pitch dropping
+    v += kick * 0.05 * Math.exp(-f / 6000);                                                  // its click
+    for (const c of [220, 277, 330, 440, 554, 660]) v += 0.06 * padAmt * Math.exp(-Math.pow((f - c) / 25, 2)) * (0.8 + 0.2 * Math.sin(t * 0.7 + c));
+    if (f > 6000) v += hat * 0.05;
+    if (sweep > 0) v += 0.05 * sweep * Math.exp(-Math.pow((f - (300 + 6000 * sweep)) / (400 + 2000 * sweep), 2));   // the riser
+    if (roll > 0 && f > 1500 && f < 9000) v += 0.06 * roll;                                                       // the snare roll
+    if (bass > 0) v += 0.35 * Math.exp(-Math.pow((f - 70) / 30, 2)) * (0.7 + 0.3 * Math.sin(t * 2.0));             // the drop's bass
+    out[i] = v * (0.97 + 0.06 * Math.sin(t * 3.1 + i * 1.7));   // a gentle shimmer, not per-frame noise
+  }
+}
+
+// ---- song map: the whole song, analysed ahead ----------------------------------------------------------------------
+// From per-frame spectra (~47 a second): loudness, bass and onsets. Sections = where the smoothed loudness sits in this
+// song's own range (10th..90th percentile). Tempo = the onset envelope's autocorrelation, 70-180 BPM, leaning to 120;
+// the beat grid's phase = the offset whose beats land on the most onsets. A drop = the section climbing past 0.6 after
+// dropping below 0.3 within the last 8 s, or climbing 0.3 above a dip below 0.15 (a drop in a quieter part of the
+// song), placed on the first strong bass onset after it and snapped to the beat. Tension
+// ramps from the end of the quiet (at most 10 s back) to each drop. Phrases are 32 beats.
+let songMap = null, mapStatus = "", synthMapKey = "";
+function makeFFT(n) {
+  const bits = Math.log2(n), rev = new Uint32Array(n), cs = new Float32Array(n / 2), sn = new Float32Array(n / 2);
+  for (let i = 0; i < n; i++) { let r = 0; for (let b = 0; b < bits; b++) r |= ((i >> b) & 1) << (bits - 1 - b); rev[i] = r; }
+  for (let i = 0; i < n / 2; i++) { cs[i] = Math.cos(2 * Math.PI * i / n); sn[i] = Math.sin(2 * Math.PI * i / n); }
+  return (re, im) => {
+    for (let i = 0; i < n; i++) { const j = rev[i]; if (j > i) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+    for (let size = 2; size <= n; size *= 2) {
+      const half = size / 2, step = n / size;
+      for (let i = 0; i < n; i += size) for (let j = 0, k = 0; j < half; j++, k += step) {
+        const l = i + j + half, tr = re[l] * cs[k] + im[l] * sn[k], ti = -re[l] * sn[k] + im[l] * cs[k];
+        re[l] = re[i + j] - tr; im[l] = im[i + j] - ti; re[i + j] += tr; im[i + j] += ti;
+      }
+    }
+  };
+}
+const smooth = (a, w) => { const o = new Float32Array(a.length); let sum = 0; const h = Math.max(1, Math.floor(w / 2));
+  for (let i = 0; i < a.length; i++) { let n = 0; sum = 0; for (let j = Math.max(0, i - h); j <= Math.min(a.length - 1, i + h); j++) { sum += a[j]; n++; } o[i] = sum / n; } return o; };
+const pct = (a, p) => { const s = Array.from(a).sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(p * s.length))]; };
+async function buildMap(frames, fr, binHz, mags, label) {
+  const E = new Float32Array(frames), B = new Float32Array(frames), On = new Float32Array(frames);
+  const bassTo = Math.max(2, Math.round(150 / binHz));
+  let prevB = 0;
+  for (let f = 0; f < frames; f++) {
+    const m = mags(f); let e = 0, b = 0;
+    for (let i = 1; i < m.length; i++) { e += m[i]; if (i <= bassTo) b += m[i]; }
+    E[f] = Math.log10(e + 1e-6); B[f] = b; On[f] = Math.max(0, b - prevB); prevB = b;
+    if (f % 400 === 0) { mapStatus = `analysing ${label}: ${Math.round(100 * f / frames)}%`; await new Promise(r => setTimeout(r)); }
+  }
+  // sections
+  const Es = smooth(E, Math.round(2 * fr)), lo = pct(Es, 0.1), hi = pct(Es, 0.9);
+  const section = smooth(Es.map(v => Math.min(1, Math.max(0, (v - lo) / Math.max(1e-6, hi - lo)))), Math.round(fr));
+  // tempo and beat phase, from the onset envelope less its local average
+  const Om = smooth(On, Math.round(fr)), O = On.map((v, i) => Math.max(0, v - Om[i]));
+  let best = 0, bestLag = Math.round(fr / 2);
+  for (let lag = Math.floor(60 * fr / 180); lag <= Math.ceil(60 * fr / 70); lag++) {
+    let sc = 0; for (let i = 0; i + lag < frames; i++) sc += O[i] * O[i + lag];
+    const bpm = 60 * fr / lag; sc *= Math.exp(-0.5 * Math.pow(Math.log2(bpm / 120), 2));
+    if (sc > best) { best = sc; bestLag = lag; }
+  }
+  const beat = bestLag / fr;
+  let bestOff = 0, bestSc = -1;
+  for (let ph = 0; ph < bestLag; ph++) { let sc = 0; for (let i = ph; i < frames; i += bestLag) sc += O[i]; if (sc > bestSc) { bestSc = sc; bestOff = ph; } }
+  const offset = bestOff / fr;
+  // drops
+  const drops = [], minWin = Math.round(8 * fr), onHi = pct(O.filter(v => v > 0), 0.9) || 0;
+  const cands = [];
+  for (let f = 1; f < frames; f++) {
+    if (f < 3 * fr || section[f] <= section[f - 1]) continue;   // the music starting isn't a drop
+    let mn = 1; for (let j = Math.max(0, f - minWin); j < f; j++) mn = Math.min(mn, section[j]);
+    // past the line after a dip below 0.3 - or, in a quieter stretch of the song, climbing 0.3 above a near-silent
+    // dip: the line is set by the song's loudest part, so a drop mid-song may never reach it
+    const crossed = section[f - 1] < 0.6 && section[f] >= 0.6 && mn < 0.3;
+    const rose = mn < 0.15 && section[f - 1] - mn < 0.3 && section[f] - mn >= 0.3;
+    if (!crossed && !rose) continue;
+    // the drop's downbeat: the first strong bass onset from 1 s before the climb to 6 s after it (a build-up can
+    // carry the loudness past the line well before the kick comes back)
+    let at = -1;
+    for (let j = Math.max(0, f - Math.round(fr)); j < Math.min(frames, f + Math.round(6 * fr)); j++) if (O[j] >= onHi * 0.5) { at = j; break; }
+    if (at < 0) continue;
+    let t = at / fr; t = offset + Math.round((t - offset) / beat) * beat;
+    let after = 0; for (let j = f; j < Math.min(frames, f + Math.round(3 * fr)); j++) after += section[j];
+    cands.push({ t, f, strength: after / Math.round(3 * fr) - mn });
+  }
+  // of candidates within 10 s of each other, the strongest (the biggest climb out of the dip) wins
+  cands.sort((x, y) => y.strength - x.strength);
+  for (const c of cands) if (drops.every(d => Math.abs(d - c.t) >= 10)) drops.push(c.t);
+  drops.sort((x, y) => x - y);
+  // build-up tension before each drop
+  const tension = new Float32Array(frames);
+  for (const d of drops) {
+    const df = Math.round(d * fr);
+    let st = df; while (st > 0 && df - st < 10 * fr && section[st] >= 0.3) st--;
+    st = Math.max(st, df - Math.round(10 * fr));
+    for (let f = st; f < Math.min(df, frames); f++) tension[f] = Math.max(tension[f], Math.pow((f - st) / Math.max(1, df - st), 1.5));
+  }
+  return { frames, fr, section, tension, drops, beat, offset, bpm: 60 / beat, label };
+}
+async function mapBuffer(buf) {
+  songMap = null;
+  const n = 1024, hop = 1024, fft = makeFFT(n), sr = buf.sampleRate;
+  const a = buf.getChannelData(0), b = buf.numberOfChannels > 1 ? buf.getChannelData(1) : a;
+  const frames = Math.floor((a.length - n) / hop), re = new Float32Array(n), im = new Float32Array(n), mag = new Float32Array(n / 2);
+  const win = new Float32Array(n).map((_, i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (n - 1)));
+  songMap = await buildMap(frames, sr / hop, sr / n, f => {
+    const o = f * hop;
+    for (let i = 0; i < n; i++) { re[i] = (a[o + i] + b[o + i]) * 0.5 * win[i]; im[i] = 0; }
+    fft(re, im);
+    for (let i = 0; i < n / 2; i++) mag[i] = Math.hypot(re[i], im[i]);
+    return mag;
+  }, "song");
+  mapStatus = `map: ${songMap.bpm.toFixed(0)} BPM, ${songMap.drops.length} drop${songMap.drops.length === 1 ? "" : "s"}`;
+}
+async function mapSynthSong() {
+  const fr = 46.875, binHz = 46.875, frames = Math.round(48 * fr), m = new Float32Array(512);
+  const map = await buildMap(frames, fr, binHz, f => { synth(f / fr, m, binHz); return m; }, "synthetic song");
+  songMap = map;
+  mapStatus = `map: ${map.bpm.toFixed(0)} BPM, ${map.drops.length} drop${map.drops.length === 1 ? "" : "s"}`;
+}
+
+// ---- drum detection ----------------------------------------------------------------------------------------------
+// One onset detector per drum, run over the whole decoded song so the hits can be drawn and ticked exactly - but each
+// decision uses only the past plus a short fixed look-ahead, so it behaves as it would live (latencies below).
+// Onsets: SuperFlux (Boeck & Widmer, DAFx 2013) per band - the log-magnitude spectrum, each bin compared with the max
+// of its neighbours two frames back, so a held or wobbling tone isn't a new hit. Peak picking as in Boeck, Krebs &
+// Schedl (ISMIR 2012), online form: a hit = the band's flux is the max of the last 30 ms and above its 100 ms average
+// by the threshold, and a refractory gap has passed since the last hit.
+//   Kick: 40-150 Hz; then, 60-100 ms on, a kick has faded and a bass note hasn't (known live ~110 ms after the hit).
+//   Snare: a 1.5-5 kHz burst that is still ringing 30 ms on (a kick's beater click isn't), with more of its energy
+//          there than above 6 kHz (a hat's is the other way round) (known ~40 ms after).
+//   Hats: above 6 kHz, still ringing 15 ms on, rising well past the snare band (known ~25 ms after).
+const DRUM_N = 1024, DRUM_HOP = 256;
+async function detectDrums(x, sr, o, progress) {
+  const n = DRUM_N, hop = DRUM_HOP, half = n / 2, fft = makeFFT(n), binHz = sr / n, fr = sr / hop;
+  const frames = Math.max(0, Math.floor((x.length - n) / hop));
+  const win = new Float32Array(n).map((_, i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (n - 1)));
+  const re = new Float32Array(n), im = new Float32Array(n), L = new Float32Array(half);
+  const band = (lo, hi) => [Math.max(1, Math.round(lo / binHz)), Math.min(half - 2, Math.round(hi / binHz))];
+  const B = { kick: band(40, 150), noise: band(1500, 5000), hat: band(6000, 16000) };
+  const names = Object.keys(B), flux = {}, E = {};
+  for (const k of names) { flux[k] = new Float32Array(frames); E[k] = new Float32Array(frames); }
+  const LAG = 3, ring = [], ref = new Float32Array(half);   // the max-filtered log spectra of the last LAG frames
+  for (let f = 0; f < frames; f++) {
+    const at = f * hop;
+    for (let i = 0; i < n; i++) { re[i] = x[at + i] * win[i]; im[i] = 0; }
+    fft(re, im);
+    for (let i = 0; i < half; i++) L[i] = Math.log1p(20 * Math.hypot(re[i], im[i]));
+    // the reference: each bin's max over the last 16 ms - a low note's energy swings within one window as its cycles
+    // fall, and against a single earlier frame that swing reads as a stream of new hits
+    ref.fill(0); for (const r of ring) for (let i = 0; i < half; i++) ref[i] = Math.max(ref[i], r[i]);
+    for (const k of names) {
+      const [a, b] = B[k]; let s = 0, e = 0;
+      for (let i = a; i <= b; i++) { if (ring.length === LAG) s += Math.max(0, L[i] - ref[i]); const m = Math.hypot(re[i], im[i]); e += m * m; }
+      flux[k][f] = s / (b - a + 1); E[k][f] = e / (b - a + 1);
+    }
+    const mf = ring.length === LAG ? ring.shift() : new Float32Array(half);
+    for (let i = 0; i < half; i++) mf[i] = Math.max(L[i], L[Math.max(0, i - 1)], L[Math.min(half - 1, i + 1)]);
+    ring.push(mf);
+    if (progress && f % 4000 === 0) await progress(f / frames);
+  }
+  const pick = (fx, delta, gap) => {
+    const preMax = Math.round(0.03 * fr), preAvg = Math.round(0.1 * fr), wait = Math.round(gap * fr), out = [];
+    let last = -1e9;
+    for (let f = 1; f < frames; f++) {
+      if (f - last < wait) continue;
+      let mx = 0, sum = 0, cnt = 0;
+      for (let j = Math.max(0, f - preMax); j < f; j++) mx = Math.max(mx, fx[j]);
+      for (let j = Math.max(0, f - preAvg); j < f; j++) { sum += fx[j]; cnt++; }
+      if (fx[f] >= mx && fx[f] >= sum / cnt + delta) { out.push(f); last = f; }
+    }
+    return out;
+  };
+  const peak = (e, f, s) => { let m = 0; for (let j = f; j <= Math.min(frames - 1, f + Math.round(s * fr)); j++) m = Math.max(m, e[j]); return m; };
+  const later = (e, f, s) => e[Math.min(frames - 1, f + Math.round(s * fr))];
+  // mean over a span: a low note's energy in one 21 ms window swings with where its cycles fall, so average it
+  const mean = (e, f, s0, s1) => { let m = 0, c = 0; for (let j = f + Math.round(s0 * fr); j <= Math.min(frames - 1, f + Math.round(s1 * fr)); j++) { m += e[j]; c++; } return m / Math.max(1, c); };
+  const rise = (e, f) => Math.max(0, peak(e, f, 0.01) - e[Math.max(0, f - 3)]);
+  const t = f => ((f + 1) * hop + n / 2) / sr;   // a hit's time: the flux peaks a hop before the hit reaches the window's middle
+  const out = { kick: [], snare: [], hat: [], bass: [] };
+  // what's left 60-100 ms on, as a share of the first 30 ms' peak: a kick has faded, a bass note hasn't, and a low hit that's
+  // all but gone (a snare's body leaking down, a note's release) is neither
+  for (const f of pick(flux.kick, o.kickDelta, 0.08)) {
+    const left = Math.sqrt(mean(E.kick, f, 0.06, 0.1) / Math.max(1e-12, peak(E.kick, f, 0.03)));
+    if (left >= 0.2) (left <= o.kickSustain ? out.kick : out.bass).push(t(f));
+  }
+  for (const f of pick(flux.noise, o.snareDelta, 0.08))
+    if (later(E.noise, f, 0.03) >= 0.25 * peak(E.noise, f, 0.01) && rise(E.noise, f) >= o.split * rise(E.hat, f)) out.snare.push(t(f));
+  // a hat with a snare: the snare's noise reaches above 6 kHz too, so the top band must rise by more than a snare
+  // alone lifts it - a share of the snare band's rise
+  for (const f of pick(flux.hat, o.hatDelta, 0.05))
+    if (later(E.hat, f, 0.015) >= 0.2 * peak(E.hat, f, 0.005) && rise(E.hat, f) >= o.hatSplit * rise(E.noise, f)) out.hat.push(t(f));
+  return out;
+}
+// Hits found vs the known ones, within 30 ms: hit, missed, extra, and the mean and spread of the timing error.
+function scoreHits(found, truth, tol = 0.03) {
+  const used = new Uint8Array(found.length), offs = [];
+  for (const t of truth) {
+    let bi = -1, bd = tol;
+    for (let i = 0; i < found.length; i++) { const d = Math.abs(found[i] - t); if (!used[i] && d <= bd) { bd = d; bi = i; } }
+    if (bi >= 0) { used[bi] = 1; offs.push(found[bi] - t); }
+  }
+  const mean = offs.reduce((a, b) => a + b, 0) / Math.max(1, offs.length);
+  const sd = Math.sqrt(offs.reduce((a, b) => a + (b - mean) * (b - mean), 0) / Math.max(1, offs.length));
+  return { hit: offs.length, total: truth.length, miss: truth.length - offs.length, extra: found.length - offs.length, mean, sd };
+}
+// A 32 s drum test at 120 BPM, every hit's time known. Bars 1-4: four-on-the-floor kick, snare on 2 and 4, closed
+// hats on the 8ths. 5-8: the same plus a bass line on the off-beats (low notes that are not kicks). 9-12: a syncopated
+// kick, a ghost snare, open hats and pad chords. 13-16: bars 5-8 again, 14 dB quieter.
+function makeDrumTest(sr) {
+  const beat = 0.5, x = new Float32Array(Math.round(32 * sr)), truth = { kick: [], snare: [], hat: [], bass: [] };
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647 * 2 - 1;
+  const add = (t0, len, fn) => { const s0 = Math.round(t0 * sr); for (let i = 0; i < len * sr && s0 + i < x.length; i++) x[s0 + i] += fn(i / sr); };
+  const kick = (t, g) => { truth.kick.push(t); let ph = 0;
+    add(t, 0.4, s => { ph += 2 * Math.PI * (50 + 110 * Math.exp(-s * 30)) / sr; return g * (0.9 * Math.sin(ph) * Math.exp(-s * 10) + 0.25 * rnd() * Math.exp(-s * 400)); }); };
+  const lp = hz => 1 - Math.exp(-2 * Math.PI * hz / sr);
+  const snare = (t, g) => { truth.snare.push(t); let a = 0, b = 0;   // noise band-passed to about 1-4 kHz, and a 185 Hz body
+    add(t, 0.3, s => { a += (rnd() - a) * lp(4000); b += (a - b) * lp(1000);
+      return g * (0.45 * Math.sin(2 * Math.PI * 185 * s) * Math.exp(-s * 25) + 1.2 * (a - b) * Math.exp(-s * 18)); }); };
+  const hat = (t, g, open) => { truth.hat.push(t); let p1 = 0, p2 = 0;
+    add(t, open ? 0.6 : 0.08, s => { const w = rnd(), d1 = w - p1, d2 = d1 - p2; p1 = w; p2 = d1; return g * 0.3 * d2 * Math.exp(-s * (open ? 7 : 70)); }); };
+  const bass = (t, len, f, g) => { truth.bass.push(t); let y = 0; const a = lp(250);
+    add(t, len + 0.04, s => { y += (2 * ((s * f) % 1) - 1 - y) * a; return g * 0.45 * y * Math.min(1, s / 0.004) * (s > len ? Math.exp(-(s - len) * 150) : 1); }); };
+  const pad = (t, g) => add(t, 1.6, s => g * 0.07 * [220, 277.2, 329.6, 440].reduce((a, f) => a + Math.sin(2 * Math.PI * f * s), 0) * Math.min(1, s / 0.006) * Math.exp(-s * 2));
+  for (let bar = 0; bar < 16; bar++) {
+    const t0 = bar * 4 * beat, part = Math.floor(bar / 4), g = part === 3 ? 0.2 : 1;
+    if (part === 2) {
+      for (const b of [0, 1.75, 2, 3.5]) kick(t0 + b * beat, g);
+      for (const b of [1, 3]) snare(t0 + b * beat, g);
+      snare(t0 + 3.75 * beat, g * 0.25);
+      for (let e = 0; e < 4; e++) hat(t0 + (e + 0.5) * beat, g * 0.8, true);
+      pad(t0, g);
+    } else {
+      for (let b = 0; b < 4; b++) kick(t0 + b * beat, g);
+      for (const b of [1, 3]) snare(t0 + b * beat, g);
+      for (let e = 0; e < 8; e++) hat(t0 + e * beat / 2, g, false);
+      if (part !== 0) for (let e = 0; e < 4; e++) bass(t0 + (e + 0.5) * beat, 0.2, [55, 55, 73.4, 65.4][e], g);
+    }
+  }
+  let pk = 0; for (const v of x) pk = Math.max(pk, Math.abs(v));
+  for (let i = 0; i < x.length; i++) x[i] *= 0.8 / pk;
+  for (const k in truth) truth[k].sort((a, b) => a - b);
+  return { x, truth, sr };
+}
+// ---- end drum detection ------------------------------------------------------------------------------------------
+// ---- beat tracking -----------------------------------------------------------------------------------------------
+// The steady pulse you'd tap your foot to, by the standard method (Ellis 2007, as librosa's beat_track, ported to
+// match it): an onset-strength curve (how much the mel spectrum's loudness rises, frame to frame), the tempo from its
+// autocorrelation over 8 s windows leaning toward 120 BPM, then dynamic programming for the beat times that best fit
+// both the onsets and a steady tempo - so a beat lands where the music implies one even when that beat is quiet.
+// The tempo may change through the song (librosa's dynamic-tempo beat_track does the same): each 8 s window's
+// autocorrelation scores every tempo from 40 to 240 BPM, and a Viterbi path through those scores picks the tempo over
+// time, charging for each change by how far it jumps - an octave costs ten times a 25% step - so it follows a real
+// change of tempo but doesn't flicker between a tempo and its double.
+async function trackBeats(x, sr, progress) {
+  const n = 2048, hop = 512, nM = 128, half = n / 2, fft = makeFFT(n), fr = sr / hop;
+  // Slaney mel filters (librosa's default), kept sparse
+  const hz2mel = f => f < 1000 ? f * 3 / 200 : 15 + Math.log(f / 1000) / (Math.log(6.4) / 27);
+  const mel2hz = m => m < 15 ? m * 200 / 3 : 1000 * Math.exp(Math.log(6.4) / 27 * (m - 15));
+  const top = hz2mel(sr / 2), pts = []; for (let i = 0; i < nM + 2; i++) pts.push(mel2hz(top * i / (nM + 1)));
+  const F = [];
+  for (let m = 0; m < nM; m++) {
+    const lo = pts[m], c = pts[m + 1], hi = pts[m + 2], norm = 2 / (hi - lo), w = [];
+    let k0 = -1;
+    for (let k = 0; k <= half; k++) {
+      const f = k * sr / n, v = Math.max(0, Math.min((f - lo) / (c - lo), (hi - f) / (hi - c)));
+      if (v > 0) { if (k0 < 0) k0 = k; w.push(v * norm); } else if (k0 >= 0) break;
+    }
+    F.push([Math.max(0, k0), Float32Array.from(w)]);
+  }
+  const T = 1 + Math.floor(x.length / hop), win = new Float32Array(n).map((_, i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / n));
+  const re = new Float32Array(n), im = new Float32Array(n), pw = new Float32Array(half + 1), mel = new Float32Array(T * nM);
+  let peak = -Infinity;
+  for (let t = 0; t < T; t++) {
+    const c = t * hop - half;   // centred frames, zero-padded at the ends
+    for (let i = 0; i < n; i++) { const j = c + i; re[i] = (j >= 0 && j < x.length ? x[j] : 0) * win[i]; im[i] = 0; }
+    fft(re, im);
+    for (let i = 0; i <= half; i++) pw[i] = re[i] * re[i] + im[i] * im[i];
+    for (let m = 0; m < nM; m++) {
+      const [k0, w] = F[m]; let s = 0;
+      for (let k = 0; k < w.length; k++) s += w[k] * pw[k0 + k];
+      const db = 10 * Math.log10(Math.max(1e-10, s)); mel[t * nM + m] = db; if (db > peak) peak = db;
+    }
+    if (progress && t % 2000 === 0) await progress(0.8 * t / T);
+  }
+  for (let i = 0; i < mel.length; i++) mel[i] = Math.max(mel[i], peak - 80);
+  // onset strength: the median rise across the mel bands (the median, as beat_track's: one busy band can't fake a
+  // beat), delayed two frames as librosa's centred-frame alignment
+  const env = new Float32Array(T), rises = new Float32Array(nM);
+  for (let t = 3; t < T; t++) {
+    for (let m = 0; m < nM; m++) rises[m] = Math.max(0, mel[(t - 2) * nM + m] - mel[(t - 3) * nM + m]);
+    rises.sort(); env[t] = 0.5 * (rises[nM / 2 - 1] + rises[nM / 2]);
+  }
+  // tempo: the autocorrelation of 8 s windows of it (every 4th frame, normalised), averaged, with a log-normal
+  // preference around 120 BPM
+  const W = Math.floor(8 * fr), A = 1 << Math.ceil(Math.log2(2 * W)), ar = new Float32Array(A), ai = new Float32Array(A), fa = makeFFT(A);
+  const hw = new Float32Array(W).map((_, i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / W)), tg = new Float64Array(W);
+  let cols = 0;
+  const STEP = 4, lagLo = Math.max(1, Math.floor(60 * fr / 240)), lagHi = Math.min(W - 1, Math.ceil(60 * fr / 40)), nL = lagHi - lagLo + 1;
+  const obs = [];
+  for (let t = 0; t < T; t += STEP) {
+    ar.fill(0); ai.fill(0);
+    for (let i = 0; i < W; i++) { const j = t - (W >> 1) + i; ar[i] = (j >= 0 && j < T ? env[j] : 0) * hw[i]; }
+    fa(ar, ai);
+    for (let i = 0; i < A; i++) { ar[i] = ar[i] * ar[i] + ai[i] * ai[i]; ai[i] = 0; }
+    fa(ar, ai);   // the power spectrum is real and even, so a forward transform gives the autocorrelation (times A)
+    const o = new Float32Array(nL);
+    if (ar[0] > 0) { for (let l = 0; l < W; l++) tg[l] += ar[l] / ar[0]; cols++; for (let k = 0; k < nL; k++) o[k] = Math.log1p(1e6 * Math.max(0, ar[lagLo + k] / ar[0])); }
+    else o.fill(-1e3);
+    obs.push(o);
+  }
+  let bestLag = Math.round(fr / 2), best = -Infinity;
+  for (let l = 1; l < W; l++) {
+    const bpm = 60 * fr / l; if (bpm > 320) continue;
+    const sc = Math.log1p(1e6 * tg[l] / Math.max(1, cols)) - 0.5 * Math.pow(Math.log2(bpm / 120), 2);
+    if (sc > best) { best = sc; bestLag = l; }
+  }
+  const bpm = 60 * fr / bestLag, period = Math.round(fr * 60 / bpm);
+  // the tempo over time: Viterbi through the windows' scores, each leaning toward the song's overall tempo (a change
+  // must be clear in the music, and a window's pull toward double or half time - a hat pattern, a half-time bar -
+  // isn't enough), charged per change by how far it jumps
+  const gLag = bestLag, LAM = 50;
+  for (const o of obs) for (let k = 0; k < nL; k++) o[k] += -0.5 * Math.pow(Math.log2(60 * fr / (lagLo + k) / 120), 2);
+  const cost = new Float32Array(nL * nL);
+  for (let a = 0; a < nL; a++) for (let b = 0; b < nL; b++) cost[a * nL + b] = LAM * Math.pow(Math.log2((lagLo + a) / (lagLo + b)), 2);
+  let acc = Float32Array.from(obs[0]); const from = [];
+  for (let c = 1; c < obs.length; c++) {
+    const nx = new Float32Array(nL), bk = new Int16Array(nL);
+    for (let b = 0; b < nL; b++) { let bs = -Infinity, ba = 0; for (let a = 0; a < nL; a++) { const v = acc[a] - cost[a * nL + b]; if (v > bs) { bs = v; ba = a; } } nx[b] = bs + obs[c][b]; bk[b] = ba; }
+    acc = nx; from.push(bk);
+  }
+  const path = new Int32Array(obs.length);
+  let end = 0; for (let k = 1; k < nL; k++) if (acc[k] > acc[end]) end = k;
+  path[obs.length - 1] = end; for (let c = obs.length - 1; c > 0; c--) path[c - 1] = from[c - 1][path[c]];
+  // ...but the path only counts where it holds a different tempo for 10 s or more, not double or half the song's
+  // (the same beat counted differently); elsewhere the one tempo stands.
+  // Without this the path wanders on songs whose tempo never changes (measured: 97-100% agreement with librosa fell
+  // to 31-99%).
+  const related = r => [0.5, 1, 2].some(q => Math.abs(Math.log2(r / q)) < 0.085);
+  // how well a beat period fits frames a..b: the mean onset strength on its best-phased comb
+  const comb = (p, a, b) => { let bestC = 0; for (let ph = 0; ph < p; ph++) { let sum = 0, n = 0; for (let f = a + ph; f < b; f += p) { sum += env[Math.round(f)]; n++; } if (n) bestC = Math.max(bestC, sum / n); } return bestC; };
+  const use = new Uint8Array(obs.length), minRun = Math.round(10 * fr / STEP);
+  for (let c = 0; c < obs.length;) {
+    let e = c; const r = (lagLo + path[c]) / gLag;
+    if (related(r)) { c++; continue; }
+    while (e < obs.length && Math.abs(Math.log2((lagLo + path[e]) / (lagLo + path[c]))) < 0.15) e++;
+    // ...and only where its beats sit on the hits better than the song's tempo's do
+    if (e - c >= minRun) { const a0 = c * STEP, b0 = Math.min(T, e * STEP); if (comb(lagLo + path[c], a0, b0) > 1.1 * comb(gLag, a0, b0)) use.fill(1, c, e); }
+    c = Math.max(e, c + 1);
+  }
+  const perAt = new Float32Array(T);
+  for (let i = 0; i < T; i++) { const c = Math.min(obs.length - 1, Math.round(i / STEP)); perAt[i] = use[c] ? lagLo + path[c] : gLag; }
+  // local score: the onsets normalised and smoothed by a Gaussian a beat wide
+  let mu = 0; for (const v of env) mu += v; mu /= T;
+  let sd = 0; for (const v of env) sd += (v - mu) * (v - mu); sd = Math.sqrt(sd / Math.max(1, T - 1)) || 1;
+  const g = []; for (let i = -period; i <= period; i++) g.push(Math.exp(-0.5 * Math.pow(i * 32 / period, 2)));
+  const local = new Float32Array(T);
+  for (let t = 0; t < T; t++) { let s = 0; for (let i = 0; i < g.length; i++) { const j = t + i - period; if (j >= 0 && j < T) s += env[j] / sd * g[g.length - 1 - i]; } local[t] = s; }
+  // dynamic programming: each frame's best previous beat 0.5-2 periods back, penalising tempo drift (tightness 100)
+  const back = new Int32Array(T), cum = new Float32Array(T);
+  let lmax = 0; for (const v of local) lmax = Math.max(lmax, v);
+  let first = true;
+  for (let i = 0; i < T; i++) {
+    let bs = -Infinity, bl = -1;
+    for (let loc = i - Math.round(perAt[i] / 2); loc >= i - 2 * perAt[i]; loc--) {
+      if (loc < 0) break;
+      const sc = cum[loc] - 100 * Math.pow(Math.log(i - loc) - Math.log(perAt[i]), 2);
+      if (sc > bs) { bs = sc; bl = loc; }
+    }
+    cum[i] = local[i] + (bl >= 0 ? bs : 0);
+    if (first && local[i] < 0.01 * lmax) back[i] = -1; else { back[i] = bl; first = false; }
+  }
+  // the last beat: the latest local max of the cumulative score above half the median of them; then trace back
+  const maxes = []; for (let i = 1; i < T - 1; i++) if (cum[i] > cum[i - 1] && cum[i] >= cum[i + 1]) maxes.push(i);
+  const med = maxes.map(i => cum[i]).sort((a, b) => a - b)[maxes.length >> 1] || 0;
+  let tail = -1; for (const i of maxes) if (cum[i] >= 0.5 * med) tail = i;
+  const beats = []; for (let i = tail; i >= 0; i = back[i]) beats.unshift(i);
+  // trim weak beats at the ends (fade-ins and outs), as librosa's trim
+  const sm = beats.map((b, k) => { let s = 0; for (let d = -2; d <= 2; d++) { const q = beats[k + d]; if (q !== undefined) s += local[q] * (0.5 - 0.5 * Math.cos(2 * Math.PI * (d + 3) / 6)); } return s; });
+  const thr = 0.5 * Math.sqrt(sm.reduce((a, v) => a + v * v, 0) / Math.max(1, sm.length));
+  let a = 0, b = beats.length - 1; while (a <= b && sm[a] <= thr) a++; while (b >= a && sm[b] <= thr) b--;
+  if (progress) await progress(1);
+  const changes = []; let lastP = -1;
+  for (let c = 0; c < path.length; c++) { const p = use[c] ? lagLo + path[c] : gLag; if (p !== lastP) { changes.push([c * STEP * hop / sr, 60 * fr / p]); lastP = p; } }
+  return { bpm, beats: beats.slice(a, b + 1).map(f => f * hop / sr), env, fr, tempos: changes };
+}
+// Each beat's strength (the onset strength around it, against the song's strong beats - the 90th percentile) and
+// which of the four beat positions is the bar's first: the one whose beats are strongest on average.
+function beatStrengths(r) {
+  const st = r.beats.map(t => { const f = Math.round(t * r.fr); let m = 0; for (let j = Math.max(0, f - 2); j <= Math.min(r.env.length - 1, f + 2); j++) m = Math.max(m, r.env[j]); return m; });
+  const strong = [...st].sort((a, b) => a - b)[Math.floor(st.length * 0.9)] || 1;
+  r.strength = st.map(v => Math.min(1.2, v / strong));
+  const sum = [0, 0, 0, 0]; r.strength.forEach((v, i) => sum[i % 4] += v);
+  r.barPhase = sum.indexOf(Math.max(...sum));
+  const gaps = r.beats.slice(1).map((t, i) => t - r.beats[i]).sort((a, b) => a - b);
+  r.period = gaps[gaps.length >> 1] || 0.5;
+  return r;
+}
+// How long the spring takes to reach its peak after a beat's throw starts (a pulse decaying over `len` s), found by
+// simulating it - the throw is started that much early so the peak lands on the beat.
+const peakCache = new Map();
+function springPeak(fq, z, len) {
+  const key = fq.toFixed(3) + "|" + z.toFixed(3) + "|" + len.toFixed(3);
+  if (peakCache.has(key)) return peakCache.get(key);
+  const w = 2 * Math.PI * fq, h = 1 / 960; let x = 0, v = 0, best = 0, at = 0;
+  for (let t = 0; t < 2; t += h) { const a = w * w * (Math.exp(-t / len) - x) - 2 * z * w * v; v += a * h; x += v * h; if (x > best) { best = x; at = t; } }
+  peakCache.set(key, at); return at;
+}
+// ---- end beat tracking -------------------------------------------------------------------------------------------
+
+// ---- drums in the bench: run on the loaded song (again after a detection slider moves), ticks scheduled ahead
+let drums = null, drumTruth = null, drumStatus = "", drumScore = "", drumKey = "", drumKeyAt = 0, drumBusy = false, mono = null, monoOf = null;
+const DET_KEYS = ["DET_KICK", "DET_KICK_SUSTAIN", "DET_SNARE", "DET_HAT", "DET_SPLIT", "DET_HAT_SPLIT"];
+async function runDrums() {
+  const buf = buffer;
+  if (monoOf !== buf) {
+    const a = buf.getChannelData(0), b = buf.numberOfChannels > 1 ? buf.getChannelData(1) : a;
+    mono = new Float32Array(a.length); for (let i = 0; i < a.length; i++) mono[i] = (a[i] + b[i]) * 0.5; monoOf = buf;
+  }
+  drumBusy = true;
+  const d = await detectDrums(mono, buf.sampleRate, { kickDelta: P.DET_KICK, kickSustain: P.DET_KICK_SUSTAIN, snareDelta: P.DET_SNARE,
+    hatDelta: P.DET_HAT, split: P.DET_SPLIT, hatSplit: P.DET_HAT_SPLIT }, async p => { drumStatus = `finding drums ${Math.round(p * 100)}%`; await new Promise(r => setTimeout(r)); });
+  drumBusy = false; drumStatus = "";
+  if (buf !== buffer) return;
+  drums = d;
+  const ms = v => (v >= 0 ? "+" : "") + (v * 1000).toFixed(0);
+  drumScore = drumTruth
+    ? ["kick", "snare", "hat", "bass"].map(k => { const r = scoreHits(d[k], drumTruth[k]); return `${k} ${r.hit}/${r.total}${r.miss ? " (" + r.miss + " missed)" : ""}${r.extra ? " +" + r.extra + " false" : ""} ${ms(r.mean)}\u00b1${(r.sd * 1000).toFixed(0)} ms`; }).join("   ")
+      + `   bass notes taken for kicks: ${scoreHits(d.kick, drumTruth.bass).hit}`
+    : `found ${d.kick.length} kicks, ${d.snare.length} snares, ${d.hat.length} hats, ${d.bass.length} bass notes`;
+  if (playing) tickFrom = actx.currentTime - startAt;
+}
+let beatInfo = null, beatsOf = null, beatBusy = false;
+async function runBeats() {
+  const buf = buffer; beatsOf = buf; beatBusy = true; beatInfo = null;
+  if (monoOf !== buf) {
+    const a = buf.getChannelData(0), b = buf.numberOfChannels > 1 ? buf.getChannelData(1) : a;
+    mono = new Float32Array(a.length); for (let i = 0; i < a.length; i++) mono[i] = (a[i] + b[i]) * 0.5; monoOf = buf;
+  }
+  const r = await trackBeats(mono, buf.sampleRate, async p => { drumStatus = `finding the beat ${Math.round(p * 100)}%`; await new Promise(q => setTimeout(q)); });
+  beatBusy = false; drumStatus = "";
+  // each beat's strength: the onset strength around it, against the song's strong beats (90th percentile)
+  beatStrengths(r);
+  if (buf === buffer) { beatInfo = r; beatAt = -1; if (playing) tickFrom = actx.currentTime - startAt; }
+}
+let layers = null, layersOf = null, layersBusy = false;
+async function runLayers() {
+  const buf = buffer; layersOf = buf; layersBusy = true; layers = null;
+  const r = await analyseLayers(mono, buf.sampleRate, beatInfo.beats, async p => { drumStatus = `finding the layers ${Math.round(p * 100)}%`; await new Promise(q => setTimeout(q)); });
+  layersBusy = false; drumStatus = "";
+  if (buf === buffer) layers = r;
+}
+const beatIndexAt = t => { if (!beatInfo) return -1; const bs = beatInfo.beats; let lo = 0, hi = bs.length; while (lo < hi) { const m = (lo + hi) >> 1; if (bs[m] <= t) lo = m + 1; else hi = m; } return lo - 1; };
+function drumsTick(now) {   // re-run once the detection sliders have been still for 300 ms
+  if (buffer && beatsOf !== buffer && !beatBusy && !drumBusy && !layersBusy) { runBeats(); return; }
+  if (buffer && beatInfo && beatsOf === buffer && layersOf !== buffer && !beatBusy && !drumBusy && !layersBusy) { runLayers(); return; }
+  if (!buffer || drumBusy || beatBusy || layersBusy) return;
+  const key = buffer.length + ":" + DET_KEYS.map(k => P[k]).join(",");
+  if (key === drumKey) { drumKeyAt = 0; return; }
+  if (!drumKeyAt) drumKeyAt = now;
+  if (now - drumKeyAt > 300) { drumKey = key; drumKeyAt = 0; runDrums(); }
+}
+const TICK_HZ = { beat: 1500, kick: 1000, snare: 2000, hat: 4000, bass: 500 }, tickCache = {}, tickNodes = [];
+let tickFrom = 0;   // song-relative play time ticks are scheduled up to
+const tickBuf = k => tickCache[k] || (tickCache[k] = (() => {
+  const sr = actx.sampleRate, b = actx.createBuffer(1, Math.round(0.03 * sr), sr), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = 0.35 * Math.sin(2 * Math.PI * TICK_HZ[k] * i / sr) * Math.exp(-i / sr * 160);
+  return b; })());
+function scheduleTicks() {
+  if (!playing || !buffer) return;
+  const sel = document.getElementById("ticks").value, now = actx.currentTime - startAt, end = now + 0.2, dur = buffer.duration;
+  const from = Math.max(tickFrom, now);
+  if (sel !== "off") for (const k of sel === "drums" ? ["kick", "snare", "hat"] : [sel])
+    for (let lap = Math.floor(from / dur); lap <= Math.floor(end / dur); lap++)
+      for (const t of (k === "beat" ? beatInfo && beatInfo.beats : drums && drums[k]) || []) {
+        const a = lap * dur + t; if (a <= from || a > end) continue;
+        const s = actx.createBufferSource(); s.buffer = tickBuf(k); s.connect(actx.destination); s.start(startAt + a);
+        tickNodes.push(s); s.onended = () => { const i = tickNodes.indexOf(s); if (i >= 0) tickNodes.splice(i, 1); };
+      }
+  tickFrom = end;
+}
+function stopTicks() { for (const s of tickNodes) { try { s.stop(); } catch (e) { } } tickNodes.length = 0; }
+document.getElementById("musicLvl").onchange = e => { if (musicGain) musicGain.gain.value = +e.target.value; };
+document.getElementById("drumTest").onclick = () => {
+  ensureAudio();
+  const d = makeDrumTest(actx.sampleRate);
+  buffer = actx.createBuffer(1, d.x.length, d.sr); buffer.copyToChannel(d.x, 0);
+  drumTruth = d.truth; drumTruth.beat = Array.from({ length: 64 }, (_, i) => i * 0.5); drums = null; drumScore = ""; sourceSel.value = "file"; offset = 0; play(); mapBuffer(buffer);
+};
+
+// ---- layers ------------------------------------------------------------------------------------------------------
+// The song split into what hits and what holds (harmonic/percussive separation by median filtering - Fitzgerald
+// 2010, as librosa's hpss): a held note is a line across time in the spectrogram, a hit a line across frequency, so a
+// median along time keeps the held parts and a median along frequency the hits. From the held part:
+//   pads - its energy from 200 Hz to 5 kHz averaged over a second (pads, strings, held synth chords), 0..1 for this
+//          song (against its 95th percentile)
+//   harmony - which notes are sounding (chroma), per beat, placed on the circle of fifths; its angle gives each chord
+//          a direction, so a chord change turns the colour and related chords sit near each other
+async function analyseLayers(x, sr, beats, progress) {
+  const n = 4096, hop = 2048, half = n / 2, fft = makeFFT(n), binHz = sr / n, fr = sr / hop;
+  const lo = Math.max(1, Math.round(60 / binHz)), hi = Math.min(half - 1, Math.round(5000 / binHz)), nb = hi - lo + 1;
+  const T = Math.max(1, Math.floor((x.length - n) / hop) + 1);
+  const win = new Float32Array(n).map((_, i) => 0.5 - 0.5 * Math.cos(2 * Math.PI * i / n));
+  const re = new Float32Array(n), im = new Float32Array(n), S = new Float32Array(T * nb);
+  for (let t = 0; t < T; t++) {
+    for (let i = 0; i < n; i++) { const j = t * hop + i; re[i] = (j < x.length ? x[j] : 0) * win[i]; im[i] = 0; }
+    fft(re, im);
+    for (let k = 0; k < nb; k++) { const b = lo + k; S[t * nb + k] = re[b] * re[b] + im[b] * im[b]; }
+    if (progress && t % 500 === 0) await progress(0.4 * t / T);
+  }
+  // medians: 9 frames (~0.4 s) along time, 17 bins (~200 Hz) along frequency; a soft mask keeps the held share
+  const med = (buf, m) => { for (let i = 1; i < m; i++) { const v = buf[i]; let j = i - 1; while (j >= 0 && buf[j] > v) { buf[j + 1] = buf[j]; j--; } buf[j + 1] = v; } return buf[m >> 1]; };
+  const bt = new Float32Array(9), bf = new Float32Array(17), Hp = new Float32Array(T * nb);
+  for (let t = 0; t < T; t++) {
+    for (let k = 0; k < nb; k++) {
+      let m = 0; for (let d = -4; d <= 4; d++) bt[m++] = S[Math.min(T - 1, Math.max(0, t + d)) * nb + k];
+      const h = med(bt, 9);
+      m = 0; for (let d = -8; d <= 8; d++) bf[m++] = S[t * nb + Math.min(nb - 1, Math.max(0, k + d))];
+      const p = med(bf, 17);
+      Hp[t * nb + k] = S[t * nb + k] * h * h / (h * h + p * p + 1e-20);
+    }
+    if (progress && t % 500 === 0) await progress(0.4 + 0.5 * t / T);
+  }
+  // pads: held energy 200 Hz - 5 kHz, as amplitude, averaged over ~1 s, against the song's 95th percentile
+  const k200 = Math.max(0, Math.round(200 / binHz) - lo), raw = new Float32Array(T);
+  for (let t = 0; t < T; t++) { let e = 0; for (let k = k200; k < nb; k++) e += Hp[t * nb + k]; raw[t] = Math.sqrt(e); }
+  const pad = new Float32Array(T), w = Math.round(fr / 2);
+  for (let t = 0; t < T; t++) { let s = 0, c = 0; for (let j = Math.max(0, t - w); j <= Math.min(T - 1, t + w); j++) { s += raw[j]; c++; } pad[t] = s / c; }
+  const p95 = [...pad].sort((a, b) => a - b)[Math.floor(T * 0.95)] || 1;
+  for (let t = 0; t < T; t++) pad[t] = Math.min(1.2, pad[t] / p95);
+  // chroma of the held part (bins from 100 Hz), as amplitude
+  // (bins from 60 Hz), each frame scaled to its loudest note
+  const cmin = 60;
+  // the song's tuning first (as librosa's estimate_tuning): how far its notes sit off A = 440, from the strong peaks of
+  // the held part - a song tuned a quarter-tone off would otherwise land every note between two pitch classes
+  let tx = 0, ty = 0;
+  for (let t = 0; t < T; t += 2) for (let k = 1; k < nb - 1; k++) {
+    const v = Hp[t * nb + k]; if (v <= Hp[t * nb + k - 1] || v < Hp[t * nb + k + 1]) continue;
+    // the peak's true frequency, from the bins either side (parabolic), then its offset from the nearest semitone
+    const l = Math.sqrt(Hp[t * nb + k - 1]), c = Math.sqrt(v), r = Math.sqrt(Hp[t * nb + k + 1]), dlt = 0.5 * (l - r) / (l - 2 * c + r || 1);
+    const f = (lo + k + dlt) * binHz; if (f < 200) continue;
+    const st = 12 * Math.log2(f / 440), a = 2 * Math.PI * (st - Math.round(st));
+    tx += c * Math.cos(a); ty += c * Math.sin(a);
+  }
+  const tuning = Math.atan2(ty, tx) / (2 * Math.PI);
+  const pc = new Int8Array(nb); for (let k = 0; k < nb; k++) { const f = (lo + k) * binHz; pc[k] = f < cmin ? -1 : ((Math.round(12 * Math.log2(f / 440) - tuning + 69) % 12) + 12) % 12; }
+  const chroma = new Float32Array(T * 12);
+  for (let t = 0; t < T; t++) {
+    for (let k = 0; k < nb; k++) if (pc[k] >= 0) chroma[t * 12 + pc[k]] += Math.sqrt(Hp[t * nb + k]);
+    let mx = 0; for (let q = 0; q < 12; q++) mx = Math.max(mx, chroma[t * 12 + q]);
+    if (mx > 0) for (let q = 0; q < 12; q++) chroma[t * 12 + q] /= mx;
+  }
+  // per beat: the chroma over the beat, on the circle of fifths - its angle, how clearly it points (0..1), and how
+  // much it moved from the beat before (a chord change)
+  const harm = [], clarity = [], change = [];
+  let prev = null;
+  for (let i = 0; i < beats.length; i++) {
+    const a = Math.max(0, Math.floor(beats[i] * fr)), b = Math.min(T, Math.max(a + 1, Math.floor((beats[i + 1] ?? beats[i] + 0.5) * fr)));
+    // the median over the beat, per note (a passing note doesn't count)
+    const c = new Float32Array(12), col = [];
+    for (let q = 0; q < 12; q++) { col.length = 0; for (let t = a; t < b; t++) col.push(chroma[t * 12 + q]); col.sort((p, r) => p - r); c[q] = col.length ? col[col.length >> 1] : 0; }
+    let vx = 0, vy = 0, sum = 0, nn = 0;
+    for (let q = 0; q < 12; q++) { const ang = 2 * Math.PI * ((q * 7) % 12) / 12; vx += c[q] * Math.cos(ang); vy += c[q] * Math.sin(ang); sum += c[q]; nn += c[q] * c[q]; }
+    harm.push(Math.atan2(vy, vx)); clarity.push(sum > 0 ? Math.min(1, 3 * Math.hypot(vx, vy) / sum) : 0);
+    const norm = Math.sqrt(nn) || 1;
+    if (prev) { let dot = 0; for (let q = 0; q < 12; q++) dot += prev[q] * c[q] / norm; change.push(1 - dot); } else change.push(0);
+    prev = c.map(v => v / norm);
+  }
+  if (progress) await progress(1);
+  return { fr, pad, harm, clarity, change };
+}
+// ---- end layers --------------------------------------------------------------------------------------------------
+
+// ---- level engine (the preset's per-frame code, in JS) -----------------------------------------------------------
+const N = 96, HIST = 128;
+const spec = new Float32Array(512);
+const pk = new Float32Array(N).fill(1e-3), pv = new Float32Array(N), ez = new Float32Array(N);
+const lastLive = new Float32Array(N), env = new Float32Array(N), slow = new Float32Array(N), rate = new Float32Array(N);
+const fl = new Float32Array(N), flv = new Float32Array(N);
+const hist = new Float32Array(N * HIST);
+const colA = new Float32Array(N * 4), colB = new Float32Array(N * 4);
+let reg00 = 0.02, acc60 = 0, meanLevel = 0;
+// song dynamics: short vs long loudness gives the section (0 = breakdown .. 1 = full); a drop is the music slamming
+// back after a quiet stretch; the bass kick feeds a shockwave that travels outward from the cover
+let tension = 0, beatIdx = 0, beatFrac = 0, phrase = 0, lastSongT = -1;
+let beatEnv = 0, beatAt = -1, padE = 0, harmX = 0, harmY = 0, harmE = 0;   // the beat throw's envelope; the song time (plus lead) beats have been taken up to
+const kv = new Float32Array(N);   // each column's throw: its own kick, or the beat's, by BEAT_DRIVE
+const kc = new Float32Array(N);   // the colour's copy of it, smoothed - the colour fades in where the throw snaps
+let dropC = 0, sectionC = 1;      // the drop's colour (fades in) and a slow section for the breakdown colour
+const heatC = new Float32Array(N);  // each column's loudness for the heat colour, faded (the live level moves in ~85 ms)
+let tensionC = 0, phraseC = 0;      // the build-up tint and the phrase drift, faded
+let actC = 0;                       // how strong the beat is around now (0..1), faded - a strong beat isn't a breakdown
+const settleC = new Float32Array(N);  // each column cooling off as its throw falls back (0..1): quick in, lingers out
+let eFast = 0, eSlow = 0, section = 1, quietFor = 0, quietAgo = 99, lastQuiet = 0, dropPulse = 0, bassKick = 0, energyRatio = 1;
+const WAVE_ROWS = 120, waveRing = new Float32Array(WAVE_ROWS);
+let waveAt = 0, waveAcc = 0;
+function engine(dt, t) {
+  const P = Q();
+  const sr = actx ? actx.sampleRate : 48000, binHz = sr / 1024;
+  if (sourceSel.value === "file" && analyser && playing) {
+    const db = new Float32Array(512); analyser.getFloatFrequencyData(db);
+    for (let i = 0; i < 512; i++) spec[i] = isFinite(db[i]) ? Math.pow(10, db[i] / 20) : 0;
+  } else if (synthOn && sourceSel.value !== "file") synth(t, spec, binHz);
+  else spec.fill(0);
+  const b0 = 50 / binHz, b1 = Math.min(510, 16000 / binHz);
+  const v = new Float32Array(N); let loudest = 0;
+  for (let c = 0; c < N; c++) {
+    const p = b0 + Math.pow(c / N, 1.5) * (b1 - b0), i = Math.floor(p), f = p - i;
+    v[c] = (spec[i] * (1 - f) + spec[i + 1] * f) * (1 + P.TILT * c / N);
+    loudest = Math.max(loudest, v[c]);
+  }
+  reg00 = Math.max(Math.max(loudest, reg00 * Math.pow(0.5, dt / 4)), 1e-4);
+  const pd = Math.pow(0.5, dt / P.PEAK_HOLD), up = 1 - Math.pow(0.2, dt * 60), dn = 1 - Math.pow(0.5, dt * 60);
+  const ea = 1 - Math.exp(-dt / P.EASE_IN), er = 1 - Math.exp(-dt / P.EASE_OUT);
+  const kd = Math.exp(-dt / P.KICK_DECAY), sl = 1 - Math.exp(-dt / P.CORE_SLOW);
+  let w = 2 * Math.PI * P.FLING_FREQ; const z = P.FLING_DAMP;
+  let total = 0;
+  // ---- song dynamics, from the absolute loudness - not scaled by the loudest column, which adapts within seconds and
+  // cancelled exactly the section changes this measures (the fast/slow ratio is scale-free anyway)
+  let raw = 0; for (let c = 0; c < N; c++) raw += v[c];
+  raw /= N;
+  eFast += (raw - eFast) * (1 - Math.exp(-dt / 0.4));
+  eSlow += (raw - eSlow) * (1 - Math.exp(-dt / 6.0));
+  const ratio = eFast / Math.max(eSlow, 1e-4); energyRatio = ratio;
+  const st = Math.min(1, Math.max(0, (ratio - 0.75) / Math.max(0.01, P.SECTION_SENS - 0.75)));
+  if (!(P.ANALYSIS >= 0.5 && songMap && ((sourceSel.value === "song") === (songMap.label === "synthetic song")) && (sourceSel.value === "song" || (buffer && playing))))
+    section += (st - section) * (1 - Math.exp(-dt / 1.5));
+  // A drop: the kick coming back after a quiet stretch of 2 s or more, within 10 s of it (a build-up in between is fine).
+  // A rise in energy alone isn't one - a build's riser and snare roll are loud too, but they bring no kick.
+  // With the song map: section, tension, drops (on the beat) and the beat grid come from the map instead.
+  let songT = null;
+  if (sourceSel.value === "file" && buffer && playing) songT = (actx.currentTime - startAt) % buffer.duration;
+  else if (sourceSel.value === "song") songT = t % 48;
+  if (P.ANALYSIS >= 0.5 && sourceSel.value === "song" && synthMapKey !== "song" + P.BPM) { synthMapKey = "song" + P.BPM; mapSynthSong(); }
+  const mapFor = songMap && songT !== null && ((sourceSel.value === "song") === (songMap.label === "synthetic song"));
+  const useMap = P.ANALYSIS >= 0.5 && mapFor;
+  if (useMap) {
+    const f = Math.min(songMap.frames - 1, Math.max(0, Math.floor(songT * songMap.fr)));
+    section += (songMap.section[f] - section) * (1 - Math.exp(-dt / 0.4));
+    tension = songMap.tension[f];
+    if (songT < lastSongT) lastSongT = -1;
+    for (const d of songMap.drops) if (lastSongT < d && songT >= d) dropPulse = 1;
+    const bp = (songT - songMap.offset) / songMap.beat;
+    beatIdx = Math.floor(bp); beatFrac = bp - beatIdx; phrase = Math.floor(bp / 32);
+  } else { tension = 0; }
+  if (songT !== null) lastSongT = songT;
+  // layers at this point of the song, eased: held chords (0..1) and the harmony's direction on the circle of fifths
+  // (eased as a vector weighted by how clear it is, so a change of chord turns the hue smoothly and unclear harmony
+  // barely moves it); the hue follows the vector's sine part - continuous, unlike its angle, which wraps at +-180
+  // degrees and jumped the hue in one frame whenever the harmony drifted across
+  const lyOn = layers && layersOf === buffer && sourceSel.value === "file" && songT !== null;
+  const padT = lyOn ? layers.pad[Math.min(layers.pad.length - 1, Math.floor(songT * layers.fr))] : 0;
+  padE += (padT - padE) * (1 - Math.exp(-dt / 0.25));
+  let hx = 0, hy = 0;
+  if (lyOn) { const bi = beatIndexAt(songT); if (bi >= 0 && bi < layers.harm.length) { hx = Math.cos(layers.harm[bi]) * layers.clarity[bi]; hy = Math.sin(layers.harm[bi]) * layers.clarity[bi]; } }
+  const hk = 1 - Math.exp(-dt / 1.0); harmX += (hx - harmX) * hk; harmY += (hy - harmY) * hk;
+  harmE = harmY;
+  if (useMap) { /* drops come from the map */ }
+  else if (section < 0.35) { quietFor += dt; quietAgo = 0; }
+  else { if (quietFor > 0) { lastQuiet = quietFor; quietFor = 0; } quietAgo += dt; }
+  // the tracked beat: fire each beat a little early (a quarter of the spring's swing) so the throw peaks on it
+  const beatOn = beatInfo && sourceSel.value === "file" && songT !== null && P.BEAT_DRIVE > 0;
+  // tempo-locked: the spring's speed and the throw's length in beats, when set
+  const fq = beatOn && P.BEAT_SPRING > 0 ? P.BEAT_SPRING / beatInfo.period : P.FLING_FREQ;
+  const bLen = beatOn && P.BEAT_SNAP > 0 ? P.BEAT_SNAP * beatInfo.period : P.KICK_DECAY;
+  if (beatOn) w = 2 * Math.PI * fq;
+  beatEnv *= Math.exp(-dt / bLen);
+  if (beatOn) {
+    const tt = songT + P.BEAT_LEAD * springPeak(fq, z, bLen), bs = beatInfo.beats;
+    if (tt < beatAt) beatAt = -1;   // looped
+    for (let i = 0; i < bs.length; i++) if (bs[i] > beatAt && bs[i] <= tt) {
+      const hit = Math.pow(beatInfo.strength[i], P.BEAT_CONTRAST) * (i % 4 === beatInfo.barPhase ? 1 + P.BEAT_ACCENT : P.BEAT_OTHERS);
+      beatEnv = Math.max(beatEnv, P.BEAT_FLOOR + (1 - P.BEAT_FLOOR) * hit);
+    }
+    beatAt = tt;
+    // the beat grid for ping-pong and phrases: the tracked beats, not the map's estimate
+    let lo = 0, hi = bs.length; while (lo < hi) { const m = (lo + hi) >> 1; if (bs[m] <= songT) lo = m + 1; else hi = m; }
+    if (lo > 0 && lo < bs.length) { beatIdx = lo - 1; beatFrac = (songT - bs[lo - 1]) / Math.max(1e-3, bs[lo] - bs[lo - 1]); phrase = Math.floor(beatIdx / 32); }
+  }
+  const bd = beatOn ? P.BEAT_DRIVE : 0;
+  let bk = 0; for (let c = 0; c < 8; c++) bk += env[c]; bassKick = bk / 8 + (beatEnv - bk / 8) * bd;
+  if (!useMap && lastQuiet > 2 && quietAgo < 10 && bassKick > 0.25 && ratio > 1.1) { dropPulse = 1; lastQuiet = 0; }
+  // beat ping-pong: in full sections, alternate beats throw the left and right wings (decaying through the beat)
+  const ppAmt = useMap ? P.PINGPONG * P.DYNAMICS * section * Math.exp(-beatFrac * 4) : 0;
+  dropPulse *= Math.exp(-dt / P.DROP_DECAY);
+  waveAcc += dt;
+  while (waveAcc >= 1 / 60) { waveAt = (waveAt + 1) % WAVE_ROWS; waveRing[waveAt] = bassKick; waveAcc -= 1 / 60; }
+  const dyn = P.DYNAMICS;
+  for (let c = 0; c < N; c++) {
+    pk[c] = Math.max(Math.max(pk[c] * pd, v[c]), 0.03 * reg00);
+    const tg = Math.max(Math.pow(Math.min(1, Math.max(0, (v[c] / pk[c] - 0.08) / 0.92)), P.GAMMA), 0.0034);
+    const nx = pv[c] + (tg - pv[c]) * (tg > pv[c] ? up : dn);
+    const o = Math.max(nx, pv[c]); pv[c] = nx;
+    ez[c] += (o - ez[c]) * (o > ez[c] ? ea : er);
+    const live = ez[c];
+    rate[c] = (live - lastLive[c]) / Math.max(dt, 1e-3) / 60;           // change per 1/60 s
+    lastLive[c] = live;
+    env[c] = Math.max(Math.min(1, Math.max(0, rate[c] - P.KICK_THRESHOLD) * P.KICK_GAIN), env[c] * kd);
+    slow[c] += (live - slow[c]) * sl;
+    // the fling spring follows the kick envelope: thrown out, then back, with the chosen bounce
+    // the spring's target: this column's kick, the shockwave passing by, and the drop burst
+    const back = Math.min(WAVE_ROWS - 1, Math.round(Math.abs(c - 47.5) / P.WAVE_SPEED * 60));
+    const wave = waveRing[(waveAt - back + WAVE_ROWS) % WAVE_ROWS];
+    const side = c < 48 ? 0 : 1, pp = ppAmt * ((Math.abs(beatIdx) % 2) === side ? 1 : -0.5);
+    // on the beat, each column throws by what's sounding in it - a silent column stays put
+    const sh = Math.min(1, live * 1.4);
+    kv[c] = env[c] + (beatEnv * (sh + (1 - sh) * P.BEAT_EVEN) - env[c]) * bd;
+    const target = Math.max(kv[c] * (beatOn ? P.BEAT_IN_PLACE : 1) * (1 + pp), dyn * P.WAVE * wave * (1 + pp), dyn * P.DROP_FLING * dropPulse) + Math.max(0, pp) * 0.35;
+    const steps = 4, h = dt / steps;
+    for (let s = 0; s < steps; s++) { const a = w * w * (target - fl[c]) - 2 * z * w * flv[c]; flv[c] += a * h; fl[c] += flv[c] * h; }
+    total += live;
+  }
+  meanLevel += (total / N - meanLevel) * (1 - Math.exp(-dt / P.GLOW_SMOOTH));
+  const ca = P.COLOR_EASE > 0 ? 1 - Math.exp(-dt / P.COLOR_EASE) : 1, cr = P.COLOR_EASE > 0 ? 1 - Math.exp(-dt / (3 * P.COLOR_EASE)) : 1;
+  for (let c = 0; c < N; c++) { const k1 = Math.min(1, kv[c]); kc[c] += (k1 - kc[c]) * (k1 > kc[c] ? ca : cr); }   // capped: an accented beat throws past 1
+  dropC += (dropPulse - dropC) * (dropPulse > dropC ? ca : cr);
+  sectionC += (section - sectionC) * (1 - Math.exp(-dt / 1.2));
+  // the breakdown colour (and breathing) needs quiet AND a weak beat: the section is loudness against the whole song,
+  // so a verse with full drums under a louder finale read as a breakdown (Troy 0:06-0:15: section ~0, beat 0.6-1.1).
+  // The beat's strength within 2 s either side, 0.3 (lone stabs) .. 0.55 (a groove)
+  let act = 0;
+  if (beatInfo && sourceSel.value === "file" && songT !== null) {
+    const bs = beatInfo.beats; let sum = 0, cnt = 0;
+    for (let i = Math.max(0, beatIndexAt(songT - 2)); i < bs.length && bs[i] < songT + 2; i++) if (bs[i] >= songT - 2) { sum += beatInfo.strength[i]; cnt++; }
+    if (cnt) act = Math.min(1, Math.max(0, (sum / cnt - 0.3) / 0.25));
+  }
+  actC += (act - actC) * (1 - Math.exp(-dt / 1.2));
+  for (let c = 0; c < N; c++) { const h1 = Math.min(1, ez[c]); heatC[c] += (h1 - heatC[c]) * (h1 > heatC[c] ? ca : cr); }
+  tensionC += (tension - tensionC) * (tension > tensionC ? ca : cr);
+  // cooling off: while a column's throw falls back (out and moving inward), by how fast; in over ~0.3 s, out over ~0.8 s
+  const sIn = 1 - Math.exp(-dt / 0.3), sOut = 1 - Math.exp(-dt / 0.8);
+  for (let c = 0; c < N; c++) { const st = fl[c] > 0.02 ? Math.min(1, Math.max(0, -flv[c] * 0.35)) : 0; settleC[c] += (st - settleC[c]) * (st > settleC[c] ? sIn : sOut); }
+  phraseC += ((Q().ANALYSIS >= 0.5 ? phrase : 0) - phraseC) * (1 - Math.exp(-dt / 1.5));
+  acc60 += dt;
+  while (acc60 >= 1 / 60) {
+    hist.copyWithin(N, 0, N * (HIST - 1));
+    acc60 -= 1 / 60;
+  }
+  for (let c = 0; c < N; c++) {
+    hist[c] = ez[c];
+    colA.set([ez[c], kc[c], slow[c], rate[c]], c * 4);
+    colB.set([fl[c], flv[c], heatC[c], settleC[c]], c * 4);
+  }
+}
+
+// ---- WebGL -----------------------------------------------------------------------------------------------------
+const canvas = document.getElementById("c");
+const gl = canvas.getContext("webgl2", { alpha: false, antialias: false, premultipliedAlpha: false });
+if (!gl) fail("WebGL2 is not available in this browser.");
+const VS = `#version 300 es
+void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }`;
+const DEFS = PARAMS.map((p, i) => `#define ${p[0]} uP[${i}]`).join("\n");
+const SCENE_FS = `#version 300 es
+precision highp float;
+uniform vec2 uRes;
+uniform float uTime;
+uniform float uP[${PARAMS.length}];
+uniform sampler2D uHist, uColA, uColB;
+uniform float uSection, uDrop, uTension, uPhrase, uPad, uHarm;
+uniform vec3 uColMin, uColMax;
+uniform int uGrad;
+out vec4 outColor;
+${DEFS}
+vec2 H2(float c, float s) { return fract(sin(vec2(dot(vec2(c, s), vec2(12.9898, 78.233)), dot(vec2(c, s), vec2(39.3468, 11.135)))) * 43758.5453); }
+vec3 ACES(vec3 x) { return clamp(x * (2.51 * x + 0.03) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }
+float CurveB(float x) { float s = clamp(x / 0.205, 0.0, 1.0); return x < 0.205 ? 0.745 * s * s * (3.0 - 2.0 * s) : 1.0 - 0.255 * exp(-5.3 * (x - 0.205)); }
+float CurveA(float x) { float s = clamp(x / 0.49, 0.0, 1.0); return x < 0.49 ? 0.6 * s * s * (3.0 - 2.0 * s) : 0.6 * (1.0 - x) / 0.51; }
+void main() {
+  vec2 p = vec2(gl_FragCoord.x / uRes.x, 1.0 - gl_FragCoord.y / uRes.y);
+  float gap = 0.11 * uRes.y / uRes.x;
+  float wing = 0.46 - gap;
+  float fx = (abs(p.x - 0.5) - gap) / wing * 48.0;
+  float i = clamp(floor(fx), 0.0, 47.0);
+  float colpx = wing * uRes.x / 48.0;
+  float zy = (0.5 - p.y) * uRes.y / colpx;
+  float dx = fx - i - 0.5;
+  float g = p.x < 0.5 ? 47.0 - i : 48.0 + i;
+  vec3 acc = vec3(0.0);
+  if (fx >= 0.0 && fx <= 48.0 && abs(dx) < 0.42) {
+    vec4 A = texelFetch(uColA, ivec2(int(g), 0), 0);   // live, kick envelope, slow level, rate
+    vec4 B = texelFetch(uColB, ivec2(int(g), 0), 0);   // fling, fling velocity
+    float live = A.x;
+    for (float s = 0.0; s < 30.0; s += 1.0) {
+      vec2 h = H2(g, s);
+      vec2 u = H2(g + 97.0, s + 13.0);
+      float life = sqrt(1.0 + LIFE_SPREAD * h.x);
+      float na = fract(uTime / life + h.y);
+      float born = texelFetch(uHist, ivec2(int(g), int(min(floor(na * life * 60.0), ${HIST - 1}.0))), 0).r;
+      float b = mix(CurveB(na), 1.0, LIVE);
+      float level = mix(born, live, b);
+      float k = (1.0 - 2.0 * u.x) * (u.y - 0.5);
+      k = sign(k) * pow(abs(k) * 2.0, CORE) * 0.5;
+      float tip = abs(k) * 2.0;
+      level = mix(level, A.z, CORE_HOLD * (1.0 - smoothstep(0.0, CORE_SIZE, tip)));
+      // launch: 07's motion - the dot leaves the line and rises over its life
+      float ls = LAUNCH_SPEED, e1 = 1.0 - exp(-ls);
+      float travel = mix(1.0, (1.0 - exp(-ls * na)) / e1, LAUNCH);
+      float travelD = LAUNCH * ls * exp(-ls * na) / e1 / life;
+      // fling: the column's spring, felt by the outer dots
+      float tipW = pow(tip, FLING_TIP);
+      float flm = 1.0 + FLING * B.x * tipW;
+      float flD = FLING * B.y * tipW;
+      // breakdown breathing: in quiet sections the columns slowly swell and settle (every 4 s)
+      float calm = DYNAMICS * (1.0 - uSection);
+      float cool = COOL_AIR * (1.0 - smoothstep(0.0, 0.35, B.z));   // how quiet this column is right now (faded)
+      float base = level * k * 2.0 * REACH * (1.0 + BREATH * calm * sin(uTime * 1.5708)) * (1.0 + 0.35 * TENSION * uTension);
+      base *= 1.0 + 0.18 * cool * sin(uTime * 1.3 + g * 0.35);   // a slow sway travelling along the quiet columns
+      base *= 1.0 + PAD_SWELL * uPad * (1.0 - smoothstep(0.0, 0.6, tip));   // held chords swell the inner dots
+      float z = base * travel * flm;
+      // the dot's own speed (column widths a second): launch, fling and level change
+      float vz = base * (travelD * flm + travel * flD) + k * 2.0 * REACH * travel * flm * A.w * 60.0 * b;
+      float stretch = 1.0 + STRETCH_MAX * clamp(abs(vz) * STRETCH_GAIN, 0.0, 1.0);
+      float size = (0.25 + 0.15 * fract(h.x * 7.31 + u.x * 3.17)) * SIZE;
+      vec2 d = vec2(dx, (zy - z) / stretch) / size;
+      float disc = 1.0 - smoothstep(0.0, 1.0, length(d));
+      // the blend between the palette's two colours: random per dot, across the line, or core to tips
+      float cg = uGrad == 1 ? g / 95.0 : (uGrad == 2 ? tip : fract(h.y * 5.17 + u.y * 2.31));
+      // loudness heats the colour toward the palette's second one - the outer dots most (COLOR_TIPS), and only the
+      // loud parts all the way (COLOR_CURVE)
+      // temperature: the column's faded loudness, cooler toward the core - the core and small rings run cool, only
+      // the outer dots of a loud column run hot. It picks the colour: the palette's first colour when cool, its second
+      // (hot) colour only at the hottest (COLOR_LEVEL = how strongly); below that, Cool air tints toward violet-blue
+      float T = pow(clamp(B.z * 1.5, 0.0, 1.0), COLOR_CURVE) * mix(1.0, smoothstep(0.1, 0.9, tip), COLOR_TIPS);
+      cg = mix(cg, T, COLOR_LEVEL);
+      vec3 col = mix(uColMin, uColMax, cg) * 0.12;
+      if (uGrad == 3) col = (1.0 + 6.0 * (0.5 + 0.5 * cos(6.2832 * (g / 95.0 * 0.8 + vec3(0.0, 0.33, 0.67))))) * 0.12;
+      // a kick shifts the outer dots' hue, keeping their brightness: a colour change, not a flash
+      vec3 kickCol = vec3(3.0, 5.0, 10.0) * 0.12;
+      const vec3 LUM = vec3(0.2126, 0.7152, 0.0722);
+      kickCol *= dot(col, LUM) / dot(kickCol, LUM);
+      col = mix(col, kickCol, clamp(KICK_COLOR * A.y * tipW + DYNAMICS * uDrop * 0.6 * tipW + TENSION * uTension * 0.5 * tipW, 0.0, 1.0));
+      // cool air: cool dots (the core, small rings, quiet columns) drift toward the cool colour - blue to violet by
+      // COOL_HUE - at the same brightness: the cool start of the scale that warms to magenta-red
+      vec3 airCol = mix(vec3(3.0, 3.8, 10.0), vec3(7.8, 2.0, 10.0), COOL_HUE) * 0.12;
+      airCol *= dot(col, LUM) / dot(airCol, LUM);
+      // ...and outer dots cooling off as their throw falls back (B.w: per column, quick in, lingering out)
+      // (added on top of the cool from temperature, so it shows on outer dots that already run a little cool)
+      float coolT = 1.0 - smoothstep(0.0, 0.45, T);
+      col = mix(col, airCol, clamp(0.85 * COOL_AIR * (coolT + (1.0 - coolT) * MOVE_COOL * B.w * smoothstep(0.2, 0.8, tip)), 0.0, 1.0));
+      // breakdown colour: toward cool teal-blue in quiet sections, at the same brightness
+      vec3 calmCol = mix(vec3(1.2, 4.5, 6.5), vec3(2.5, 5.0, 10.0), fract(h.y * 3.7 + u.x * 1.9)) * 0.12;
+      calmCol *= dot(col, LUM) / dot(calmCol, LUM);
+      col = mix(col, calmCol, clamp(CALM_COLOR * calm, 0.0, 1.0));
+      // hi-hat sparkle: in the treble columns, a changing few dots glint toward white-cyan with the hats - colour only
+      float treble = smoothstep(56.0, 80.0, g);
+      float ph = uTime * 4.0 + fract(h.x * 7.7 + u.y * 3.1);   // each dot's own quarter-second slot
+      float pick = step(0.82, fract(h.x * 13.7 + u.y * 5.3 + floor(ph) * 0.37)) * pow(sin(3.14159 * fract(ph)), 2.0);
+      vec3 glint = vec3(5.0, 8.0, 10.0) * 0.12;
+      glint *= dot(col, LUM) / dot(glint, LUM);
+      col = mix(col, glint, clamp(DYNAMICS * SPARKLE * treble * pick * (A.y * 1.5 + TENSION * uTension * 0.6), 0.0, 1.0));
+      // phrase colour drift: every 8 bars the hue turns a little (about the grey axis, so brightness holds)
+      float ang = PHRASE_HUE * 0.6 * sin(uPhrase * 2.39996) + HARMONY_HUE * 1.2 * uHarm;   // and with the harmony
+      vec3 kk = vec3(0.57735);
+      col = col * cos(ang) + cross(kk, col) * sin(ang) + kk * dot(kk, col) * (1.0 - cos(ang));
+      col = max(col, vec3(0.0));
+      // only the kicked outer dots flash; a streak spreads its light rather than adding to it
+      acc += col * disc * disc * CurveA(na) * BRIGHT * (1.0 + FLASH * A.y * tipW) / mix(1.0, stretch, STRETCH_DIM);
+    }
+  }
+  outColor = vec4(ACES(acc * EXPOSURE), 1.0);
+}`;
+const BLUR_FS = `#version 300 es
+precision highp float;
+uniform sampler2D uSrc;
+uniform vec2 uDir;      // one destination texel along the blur
+uniform vec2 uDst;      // destination size
+out vec4 outColor;
+void main() {
+  vec2 uv = gl_FragCoord.xy / uDst;
+  float w[5] = float[](0.227, 0.194, 0.122, 0.054, 0.016);
+  vec3 c = texture(uSrc, uv).rgb * w[0];
+  for (int i = 1; i < 5; i++) { c += texture(uSrc, uv + uDir * float(i)).rgb * w[i]; c += texture(uSrc, uv - uDir * float(i)).rgb * w[i]; }
+  outColor = vec4(c, 1.0);
+}`;
+const COMP_FS = `#version 300 es
+precision highp float;
+uniform vec2 uRes;
+uniform float uP[${PARAMS.length}];
+uniform float uLevel, uPad, uWarm;
+uniform vec3 uGlowHot;
+uniform int uBg;
+uniform sampler2D uScene, uB1, uB2, uB3;
+out vec4 outColor;
+${DEFS}
+void main() {
+  vec2 uv = gl_FragCoord.xy / uRes;
+  vec2 o = vec2(FRINGE * smoothstep(0.2, 1.0, length(uv - 0.5) * 2.0), 0.0);
+  vec3 c = vec3(texture(uScene, uv + o).r, texture(uScene, uv).g, texture(uScene, uv - o).b);
+  vec3 b1 = texture(uB1, uv).rgb, b2 = texture(uB2, uv).rgb, b3 = texture(uB3, uv).rgb;
+  vec3 base = mix(c, b1 * 1.2 + b2 * 0.6 + c * 0.25, DEFOCUS);
+  // the glow's colour by temperature: the cool colour while the music runs cool, the palette's hot colour as it heats
+  vec3 glowCol = mix(mix(vec3(0.30, 0.38, 1.0), vec3(0.78, 0.20, 1.0), COOL_HUE), uGlowHot, uWarm);
+  // the wide bloom's tint follows it too, by Cool air (it was a fixed violet haze over every colour)
+  vec3 glow = b2 * BLOOM_NEAR + b3 * BLOOM_WIDE * mix(vec3(0.80, 0.27, 0.96), glowCol, COOL_AIR);
+  vec2 d = (uv - 0.5) * vec2(0.8, 3.0);
+  // the glow behind the line: violet while the music runs cool, warming toward the palette's hot colour only as the
+  // columns heat up (it was a fixed red-pink - a red fog over every palette)
+  vec3 back = glowCol * exp(-length(d) * 4.0) * (0.06 + GLOW_PULSE * clamp(uLevel * 2.5, 0.0, 1.0) + PAD_GLOW * 0.35 * uPad);
+  vec2 e = min(uv, 1.0 - uv);
+  float fade = smoothstep(0.0, 0.05, e.x) * smoothstep(0.0, 0.14, e.y);
+  float r = length((uv - 0.5) * vec2(uRes.x / uRes.y, 1.0));
+  float shadow = mix(0.25, 1.0, smoothstep(0.15, 0.21, r));
+  vec3 col = clamp((base + glow + back) * fade * shadow - 0.02, 0.0, 1.0) / 0.98;
+  // luma key over the background, as the page shows the visualizer
+  vec3 bg = uBg == 0 ? mix(vec3(0.035, 0.03, 0.05), vec3(0.09, 0.07, 0.12), uv.y) : (uBg == 1 ? vec3(0.376) : vec3(0.0));
+  float a = max(col.r, max(col.g, col.b));
+  vec3 outc = col + (1.0 - a) * bg;
+  // the cover disc in the art slot
+  float disc = 1.0 - smoothstep(0.149, 0.151, r);
+  outc = mix(outc, vec3(0.082, 0.09, 0.11) + 0.06 * smoothstep(0.14, 0.15, r), disc);
+  outColor = vec4(outc, 1.0);
+}`;
+function program(fs) {
+  const p = gl.createProgram();
+  for (const [type, src] of [[gl.VERTEX_SHADER, VS], [gl.FRAGMENT_SHADER, fs]]) {
+    const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) fail("shader: " + gl.getShaderInfoLog(s));
+    gl.attachShader(p, s);
+  }
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) fail("link: " + gl.getProgramInfoLog(p));
+  return p;
+}
+const progScene = program(SCENE_FS), progBlur = program(BLUR_FS), progComp = program(COMP_FS);
+const vao = gl.createVertexArray();
+function dataTex(fmt, w, h) {
+  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, fmt, w, h);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  return t;
+}
+const texHist = dataTex(gl.R32F, N, HIST), texA = dataTex(gl.RGBA32F, N, 1), texB = dataTex(gl.RGBA32F, N, 1);
+function target(w, h) {
+  const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, w, h);
+  for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
+  const f = gl.createFramebuffer(); gl.bindFramebuffer(gl.FRAMEBUFFER, f);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+  return { t, f, w, h };
+}
+let T = null;
+const ASPECT = 2560 / 1188;   // the Playnite element this was tuned on
+function resize() {
+  const stage = document.getElementById("stage").getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let w = stage.width, h = w / ASPECT;
+  if (h > stage.height) { h = stage.height; w = h * ASPECT; }
+  canvas.style.width = w + "px"; canvas.style.height = h + "px";
+  const W = Math.round(w * dpr), H = Math.round(h * dpr);
+  if (T && T.W === W && T.H === H) return;
+  canvas.width = W; canvas.height = H;
+  const lv = s => [Math.max(1, Math.round(W / s)), Math.max(1, Math.round(H / s))];
+  T = { W, H, scene: target(W, H) };
+  for (const [name, s] of [["b1", 2], ["b2", 4], ["b3", 8]]) { T[name] = target(...lv(s)); T[name + "t"] = target(...lv(s)); }
+}
+addEventListener("resize", resize);
+function useTex(prog, name, unit, tex) { gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, tex); gl.uniform1i(gl.getUniformLocation(prog, name), unit); }
+function blur(src, dst, tmp) {
+  gl.useProgram(progBlur);
+  for (const [from, to, dir] of [[src, tmp, [1 / tmp.w, 0]], [tmp, dst, [0, 1 / dst.h]]]) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, to.f); gl.viewport(0, 0, to.w, to.h);
+    useTex(progBlur, "uSrc", 0, from.t);
+    gl.uniform2f(gl.getUniformLocation(progBlur, "uDir"), dir[0], dir[1]);
+    gl.uniform2f(gl.getUniformLocation(progBlur, "uDst"), to.w, to.h);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+}
+const uArr = new Float32Array(PARAMS.length);
+let last = performance.now(), frames = 0, fpsT = last, fps = 0, simT = 0;
+function frame(now) {
+  const speed = parseFloat(document.getElementById("speed").value);
+  const dt = Math.min(0.1, (now - last) / 1000) * speed; last = now;
+  simT += dt;
+  const t = simT;
+  try {
+    engine(dt, t);
+    resize();
+    const QP = Q();
+    PARAMS.forEach((p, i) => uArr[i] = QP[p[0]]);
+    gl.bindVertexArray(vao);
+    gl.bindTexture(gl.TEXTURE_2D, texHist); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, N, HIST, gl.RED, gl.FLOAT, hist);
+    gl.bindTexture(gl.TEXTURE_2D, texA); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, N, 1, gl.RGBA, gl.FLOAT, colA);
+    gl.bindTexture(gl.TEXTURE_2D, texB); gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, N, 1, gl.RGBA, gl.FLOAT, colB);
+    // scene
+    gl.useProgram(progScene);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, T.scene.f); gl.viewport(0, 0, T.W, T.H);
+    gl.uniform2f(gl.getUniformLocation(progScene, "uRes"), T.W, T.H);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uTime"), t);
+    gl.uniform1fv(gl.getUniformLocation(progScene, "uP"), uArr);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uSection"), Math.max(sectionC, actC));   // full if loud OR drumming
+    gl.uniform1f(gl.getUniformLocation(progScene, "uDrop"), dropC);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uTension"), tensionC);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uPad"), padE);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uHarm"), harmE);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uPhrase"), phraseC);
+    const pal = PALETTES[(comparing ? pinned : P).PALETTE || 0];
+    gl.uniform3fv(gl.getUniformLocation(progScene, "uColMin"), pal[1]);
+    gl.uniform3fv(gl.getUniformLocation(progScene, "uColMax"), pal[2]);
+    gl.uniform1i(gl.getUniformLocation(progScene, "uGrad"), (comparing ? pinned : P).GRADIENT || 0);
+    useTex(progScene, "uHist", 0, texHist); useTex(progScene, "uColA", 1, texA); useTex(progScene, "uColB", 2, texB);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    // blur pyramid: projectM's GetBlur1 / 2 / 3
+    blur(T.scene, T.b1, T.b1t); blur(T.b1, T.b2, T.b2t); blur(T.b2, T.b3, T.b3t);
+    // composite
+    gl.useProgram(progComp);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, T.W, T.H);
+    gl.uniform2f(gl.getUniformLocation(progComp, "uRes"), T.W, T.H);
+    gl.uniform1fv(gl.getUniformLocation(progComp, "uP"), uArr);
+    gl.uniform1f(gl.getUniformLocation(progComp, "uLevel"), meanLevel);
+    gl.uniform1f(gl.getUniformLocation(progComp, "uPad"), padE);
+    {   // the glow's warmth: the columns' mean (faded) loudness through the same curve as the dots' temperature
+      const QQ = comparing ? pinned : P; let m = 0; for (let c = 0; c < N; c++) m += heatC[c]; m /= N;
+      gl.uniform1f(gl.getUniformLocation(progComp, "uWarm"), Math.min(1, Math.pow(Math.min(1, m * 1.5), QQ.COLOR_CURVE) * QQ.COLOR_LEVEL));
+      const hot = PALETTES[QQ.PALETTE || 0][2], hm = Math.max(...hot);
+      gl.uniform3f(gl.getUniformLocation(progComp, "uGlowHot"), hot[0] / hm, hot[1] / hm, hot[2] / hm);
+    }
+    gl.uniform1i(gl.getUniformLocation(progComp, "uBg"), { dark: 0, grey: 1, black: 2 }[document.getElementById("bg").value]);
+    useTex(progComp, "uScene", 0, T.scene.t); useTex(progComp, "uB1", 1, T.b1.t); useTex(progComp, "uB2", 2, T.b2.t); useTex(progComp, "uB3", 3, T.b3.t);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  } catch (e) { fail(e.stack || e.message); return; }
+  drumsTick(now); scheduleTicks();
+  drawGraphs();
+  frames++;
+  if (now - fpsT > 500) { fps = frames * 1000 / (now - fpsT); frames = 0; fpsT = now; }
+  document.getElementById("hud").textContent =
+    `${T.W}x${T.H}  ${fps.toFixed(0)} fps  ` + (sourceSel.value === "file" ? (buffer ? (playing ? "song" : "song paused") : "no song loaded - drop one") : (synthOn ? `synthetic ${P.BPM} bpm ${songPart}` : "synthetic paused"))
+    + `   energy x${energyRatio.toFixed(2)}  section ${section.toFixed(2)}${lastQuiet > 2 && quietAgo < 10 ? "  drop armed" : ""}${tension > 0.05 ? "  tension " + tension.toFixed(2) : ""}${dropPulse > 0.2 ? "   DROP" : ""}   ${mapStatus}`;
+  requestAnimationFrame(frame);
+}
+// ---- signal graphs ---------------------------------------------------------------------------------------------
+const graph = document.getElementById("graph"), g2 = graph.getContext("2d");
+const TRACE = 180, trace = { level: new Float32Array(TRACE), kick: new Float32Array(TRACE), fling: new Float32Array(TRACE) };
+let traceAt = 0, traceCol = 4, traceAcc = 0;
+canvas.addEventListener("mousemove", e => {
+  const r = canvas.getBoundingClientRect(), x = (e.clientX - r.left) / r.width;
+  const gap = 0.11 * r.height / r.width, wing = 0.46 - gap, fx = (Math.abs(x - 0.5) - gap) / wing * 48;
+  if (fx >= 0 && fx < 48) traceCol = x < 0.5 ? 47 - Math.floor(fx) : 48 + Math.floor(fx);
+});
+function drawGraphs() {
+  const on = document.getElementById("graphs").value === "on";
+  graph.style.display = on ? "block" : "none";
+  if (!on) return;
+  const lanes = sourceSel.value === "file" && !!buffer, off = lanes ? 123 : 0;
+  graph.style.height = (170 + off) + "px";
+  traceAcc += 1;
+  if (traceAcc >= 1) {   // one sample per frame
+    traceAcc = 0;
+    trace.level[traceAt] = ez[traceCol]; trace.kick[traceAt] = kv[traceCol]; trace.fling[traceAt] = fl[traceCol];
+    traceAt = (traceAt + 1) % TRACE;
+  }
+  const r = graph.getBoundingClientRect();
+  if (graph.width !== Math.round(r.width) || graph.height !== Math.round(r.height)) { graph.width = Math.round(r.width); graph.height = Math.round(r.height); }
+  const W = graph.width, H = graph.height;
+  g2.clearRect(0, 0, W, H);
+  g2.fillStyle = "rgba(8,8,12,0.72)"; g2.fillRect(0, 0, W, H);
+  // left: one column over time
+  const gw = Math.min(520, W * 0.45), top = 34 + off, gh = H - top - 10;
+  g2.fillStyle = "#9a98a4"; g2.font = "12px system-ui, sans-serif";
+  g2.fillText(`column ${traceCol} (${traceCol < 48 ? "left wing" : "right wing"}, ~${Math.round(50 + Math.pow(traceCol / 96, 1.5) * 15950)} Hz) - last 3 s`, 10, 29 + off);
+  g2.strokeStyle = "rgba(255,255,255,0.12)"; g2.strokeRect(10, top, gw, gh);
+  const lines = [["level", "#7fd1ff", 1], ["kick", "#ffcc66", 1], ["fling", "#ff7ad9", 1]];
+  for (const [name, color, scale] of lines) {
+    g2.strokeStyle = color; g2.lineWidth = 1.6; g2.beginPath();
+    for (let j = 0; j < TRACE; j++) {
+      const v = trace[name][(traceAt + j) % TRACE] * scale;
+      const x = 10 + j / (TRACE - 1) * gw, y = top + gh - Math.max(-0.3, Math.min(1.3, v)) / 1.3 * gh;
+      j ? g2.lineTo(x, y) : g2.moveTo(x, y);
+    }
+    g2.stroke();
+  }
+  // the song map, when there is one for what's playing: section (violet), tension (amber), drops (white), playhead
+  if (songMap && lastSongT >= 0 && ((sourceSel.value === "song") === (songMap.label === "synthetic song"))) {
+    const ty = 2, th = 14, dur = songMap.frames / songMap.fr;
+    g2.fillStyle = "rgba(255,255,255,0.06)"; g2.fillRect(10, ty, W - 22, th);
+    for (let x = 0; x < W - 22; x++) {
+      const f = Math.floor(x / (W - 22) * songMap.frames);
+      g2.fillStyle = `rgba(160,110,255,${0.25 + 0.6 * songMap.section[f]})`; g2.fillRect(10 + x, ty + th * (1 - songMap.section[f]), 1, th * songMap.section[f]);
+      if (songMap.tension[f] > 0.02) { g2.fillStyle = `rgba(255,190,90,${songMap.tension[f]})`; g2.fillRect(10 + x, ty, 1, 3); }
+    }
+    g2.fillStyle = "#fff"; for (const d of songMap.drops) g2.fillRect(10 + d / dur * (W - 22) - 1, ty - 1, 2, th + 2);
+    g2.fillStyle = "#7fd1ff"; g2.fillRect(10 + lastSongT / dur * (W - 22) - 1, ty - 2, 2, th + 4);
+  }
+  // drum lanes: the hits found 1.5 s either side of now (the line), with the real hits outlined on the drum test
+  if (lanes) {
+    const y0 = 20, lh = 13, span = 1.5, x0 = 74, xw = W - x0 - 12, dur = buffer.duration;
+    const now = (playing ? actx.currentTime - startAt : offset) % dur, xs = t => x0 + (t - now + span) / (2 * span) * xw;
+    [["beat", "#ffffff"], ["kick", "#ffcc66"], ["snare", "#7fd1ff"], ["hat", "#c8ff7a"], ["bass", "#b9a4ff"]].forEach(([k, col], li) => {
+      const y = y0 + li * lh;
+      g2.fillStyle = "#9a98a4"; g2.font = "11px system-ui, sans-serif"; g2.fillText(k === "bass" ? "bass note" : k === "hat" ? "hats" : k, 12, y + 10);
+      g2.fillStyle = "rgba(255,255,255,0.05)"; g2.fillRect(x0, y + 1, xw, lh - 2);
+      const each = (list, fn) => { for (const t0 of list || []) for (const t of [t0 - dur, t0, t0 + dur]) if (Math.abs(t - now) <= span) fn(xs(t)); };
+      g2.strokeStyle = "rgba(255,255,255,0.85)"; g2.lineWidth = 1;
+      if (drumTruth) each(drumTruth[k], x => g2.strokeRect(x - 3, y + 1.5, 6, lh - 3));
+      g2.fillStyle = col; const found = k === "beat" ? beatInfo && beatInfo.beats : drums && drums[k];
+      if (found) each(found, x => g2.fillRect(x - 1.5, y + 3, 3, lh - 6));
+    });
+    // layers: held chords as a level, the harmony as each beat's tint (paler where it's unclear)
+    if (layers && layersOf === buffer) {
+      const yP = y0 + 5 * lh, yH = y0 + 6 * lh;
+      g2.fillStyle = "#9a98a4"; g2.fillText("pads", 12, yP + 10); g2.fillText("harmony", 12, yH + 10);
+      for (let x = 0; x < xw; x += 2) {
+        const tt = now - span + x / xw * 2 * span; if (tt < 0 || tt >= dur) continue;
+        const v = Math.min(1, layers.pad[Math.min(layers.pad.length - 1, Math.floor(tt * layers.fr))]);
+        g2.fillStyle = "rgba(127,209,255,0.8)"; g2.fillRect(x0 + x, yP + lh - 1 - v * (lh - 3), 2, v * (lh - 3));
+        const bi = beatIndexAt(tt);
+        if (bi >= 0 && bi < layers.harm.length) { g2.fillStyle = `hsla(${Math.round((layers.harm[bi] * 180 / Math.PI + 360) % 360)}, ${Math.round(20 + 70 * layers.clarity[bi])}%, 55%, 0.9)`; g2.fillRect(x0 + x, yH + 2, 2, lh - 4); }
+      }
+    }
+    g2.fillStyle = "#fff"; g2.fillRect(xs(now) - 0.5, y0, 1, 7 * lh);
+    g2.fillStyle = "#9a98a4"; g2.font = "12px ui-monospace, Consolas, monospace";
+    let beatTxt = "";
+    if (beatInfo) {
+      const mmss = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+      beatTxt = `beat ${beatInfo.bpm.toFixed(0)} BPM` + (beatInfo.tempos.length > 1 ? " (" + beatInfo.tempos.slice(1).map(([t, b]) => `${b.toFixed(0)} from ${mmss(t)}`).join(", ") + ")" : "");
+      if (drumTruth) { const r = scoreHits(beatInfo.beats, drumTruth.beat); beatTxt += ` ${r.hit}/${r.total}${r.extra ? " +" + r.extra + " false" : ""}`; }
+      beatTxt += "   ";
+    }
+    g2.fillText(drumStatus || (beatTxt + (drumScore || "finding drums...")), 12, y0 + 7 * lh + 14);
+    g2.font = "12px system-ui, sans-serif";
+  }
+  // right: kick and fling along the whole line, as the screen lays it out (lows at the far left, highs far right)
+  const bx = gw + 40, bw = W - bx - 12;
+  g2.fillStyle = "#9a98a4"; g2.fillText("kick (amber) and fling (pink) along the line", bx, 29 + off);
+  for (let c = 0; c < 96; c++) {
+    const x = bx + (c / 96) * bw, w = Math.max(1, bw / 96 - 1);
+    const kh = kv[c] * gh, fh = Math.max(0, fl[c]) * gh * 0.8;
+    g2.fillStyle = "rgba(255,204,102,0.75)"; g2.fillRect(x, top + gh - kh, w, kh);
+    g2.fillStyle = "rgba(255,122,217,0.75)"; g2.fillRect(x, top + gh - fh, w * 0.5, fh);
+    if (c === traceCol) { g2.strokeStyle = "#fff"; g2.strokeRect(x - 1, top, w + 2, gh); }
+  }
+}
+// fountain-bench.html#live opens straight into the Live show on the synthetic song
+if (location.hash.indexOf("mapped") >= 0) { applyAll(LIVE_MAPPED); setColour(0, 2); sourceSel.value = "song"; }
+else if (location.hash.indexOf("live") >= 0) { applyAll(LIVE_SHOW); setColour(0, 0); sourceSel.value = "song"; }
+// seek: click or drag on the song map's timeline strip (the purple band at the top of the graphs)
+// (while dragging the song holds still, and plays on from where it's let go)
+let seeking = false, resumeAfter = false;
+function seekFromEvent(e) {
+  if (!buffer || sourceSel.value !== "file" || !songMap || songMap.label === "synthetic song") return false;
+  const r = graph.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  if (!seeking && (y < 0 || y > 20 || x < 10 || x > r.width - 12)) return false;
+  if (playing) { pause(); resumeAfter = true; }
+  const t = Math.min(1, Math.max(0, (x - 10) / (r.width - 22))) * songMap.frames / songMap.fr;
+  offset = t; beatAt = t; lastSongT = t;   // no throws or drops for the beats skipped over
+  return true;
+}
+addEventListener("mousedown", e => { if (seekFromEvent(e)) { seeking = true; e.preventDefault(); } });
+addEventListener("mousemove", e => { if (seeking) seekFromEvent(e); });
+addEventListener("mouseup", () => { if (seeking && resumeAfter) play(); seeking = false; resumeAfter = false; });
+// fountain-bench.html#drumtest&at=17 opens the drum test track paused at 17 s
+if (location.hash.indexOf("drumtest") >= 0) {
+  document.getElementById("drumTest").onclick();
+  const at = /at=(\d+(?:\.\d+)?)/.exec(location.hash); pause(); offset = at ? parseFloat(at[1]) : 0;
+  if (location.hash.indexOf("play") >= 0) play();
+}
+// ...&preset=BUTTON_ID presses that preset button (e.g. #drumtest&play&preset=presetYours4Cool)
+{ const pm = /preset=([A-Za-z0-9]+)/.exec(location.hash); const b = pm && document.getElementById(pm[1]); if (b) b.onclick(); }
+// fountain-bench.html#live&ff=30 runs the model 30 s ahead before the first frame (jump to a part of the song)
+const ffMatch = /ff=(\d+(?:\.\d+)?)/.exec(location.hash);
+if (ffMatch) { const until = parseFloat(ffMatch[1]); while (simT < until) { simT += 1 / 60; engine(1 / 60, simT); } }
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

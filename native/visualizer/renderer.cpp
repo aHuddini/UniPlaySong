@@ -3,8 +3,9 @@
 // UniPlaySong itself, through a shared ring - nothing is captured from the speakers.
 //
 //   UniPlaySongVisualizer.exe <preset.milk> <width> <height> <channel> [parentPid]
-//       Paced by UniPlaySong: one frame each time it signals <channel>_Tick. Exits when <channel>_Frames says stop,
-//       or when the parent process exits (so a crashed Playnite never leaves it running).
+//       Paced by UniPlaySong: one frame each time it signals <channel>_Tick, and none while it doesn't (minimized,
+//       idle, in the background). Exits when <channel>_Frames says stop, or when the parent process exits (so a crashed
+//       Playnite never leaves it running).
 //
 //   UniPlaySongVisualizer.exe <preset.milk> <width> <height> --bench <seconds>
 //       For preset work: renders unpaced for <seconds>, touches no named objects, prints timings.
@@ -72,6 +73,98 @@ static void CreateGl(int w, int h)
     glGetError(); // glewInit on a core profile leaves a harmless GL_INVALID_ENUM
     std::printf("GL: %s | %s\n", (const char*)glGetString(GL_RENDERER), (const char*)glGetString(GL_VERSION));
 }
+
+// ---- the key pass: the frame as UniPlaySong shows it, made on the GPU ---------------------------------------------
+// Top row first (GL's rows run bottom-up), premultiplied BGRA with coverage = the brightest channel, so black is
+// see-through and the theme shows behind. Done per pixel on the CPU this took ~1.5 ms a frame at 1728x712; here the CPU
+// only uploads what it reads back. projectM keeps its GL state across frames, so the pass puts back what it touches.
+struct KeyPass
+{
+    GLuint src = 0, dst = 0, fbo = 0, prog = 0, vao = 0;
+
+    static GLuint Shader(GLenum type, const char* code)
+    {
+        GLuint sh = glCreateShader(type);
+        glShaderSource(sh, 1, &code, nullptr);
+        glCompileShader(sh);
+        GLint ok = 0; glGetShaderiv(sh, GL_COMPILE_STATUS, &ok);
+        if (!ok) { char log[1024] = {}; glGetShaderInfoLog(sh, sizeof(log), nullptr, log); std::fprintf(stderr, "%s\n", log); Fail("key pass shader"); }
+        return sh;
+    }
+
+    static GLuint Target(int w, int h)
+    {
+        GLuint t = 0;
+        glGenTextures(1, &t);
+        glBindTexture(GL_TEXTURE_2D, t);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        return t;
+    }
+
+    void Create(int w, int h)
+    {
+        src = Target(w, h);
+        dst = Target(w, h);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glGenFramebuffers(1, &fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst, 0);
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) Fail("key pass framebuffer");
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // One triangle covering the target; each pixel takes the source pixel from the mirrored row.
+        GLuint vs = Shader(GL_VERTEX_SHADER, "#version 330 core\n"
+            "void main() { vec2 p = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2); gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0); }");
+        GLuint fs = Shader(GL_FRAGMENT_SHADER, "#version 330 core\n"
+            "uniform sampler2D src; out vec4 color;\n"
+            "void main() { ivec2 p = ivec2(gl_FragCoord.xy);\n"
+            "  vec3 c = texelFetch(src, ivec2(p.x, textureSize(src, 0).y - 1 - p.y), 0).rgb;\n"
+            "  color = vec4(c, max(c.r, max(c.g, c.b))); }");
+        prog = glCreateProgram();
+        glAttachShader(prog, vs); glAttachShader(prog, fs);
+        glLinkProgram(prog);
+        GLint ok = 0; glGetProgramiv(prog, GL_LINK_STATUS, &ok);
+        if (!ok) Fail("key pass link");
+        glDeleteShader(vs); glDeleteShader(fs);
+        glGenVertexArrays(1, &vao);
+    }
+
+    // projectM's finished frame (framebuffer 0) -> out, w*h BGRA, top row first.
+    void Run(int w, int h, uint8_t* out)
+    {
+        GLint active, tex, program, array, view[4];
+        glGetIntegerv(GL_ACTIVE_TEXTURE, &active);
+        glActiveTexture(GL_TEXTURE0);
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &tex);
+        glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+        glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &array);
+        glGetIntegerv(GL_VIEWPORT, view);
+        const GLenum caps[] = { GL_BLEND, GL_SCISSOR_TEST, GL_DEPTH_TEST, GL_CULL_FACE };
+        GLboolean was[4];
+        for (int i = 0; i < 4; i++) { was[i] = glIsEnabled(caps[i]); glDisable(caps[i]); }
+
+        // Presets with a composite shader leave projectM's own framebuffer bound for reading; the finished image is
+        // always in framebuffer 0. Reading the bound one returns black.
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+        glBindTexture(GL_TEXTURE_2D, src);
+        glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, w, h);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glViewport(0, 0, w, h);
+        glUseProgram(prog);
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glReadPixels(0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, out);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindVertexArray(array);
+        glUseProgram(program);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glActiveTexture(active);
+        glViewport(view[0], view[1], view[2], view[3]);
+        for (int i = 0; i < 4; i++) if (was[i]) glEnable(caps[i]);
+    }
+};
 
 // ---- the music, from UniPlaySong's ring ----------------------------------------------------------------------
 struct AudioRing
@@ -189,6 +282,8 @@ int main(int argc, char** argv)
     projectm_set_preset_switch_failed_event_callback(pm, [](const char* file, const char* message, void*) {
         std::printf("preset failed: %s\n  %s\n", file, message); std::fflush(stdout); }, nullptr);
     projectm_load_preset_file(pm, preset, false);
+    KeyPass key;
+    key.Create(w, h);
     std::printf("projectM %dx%d, preset %s\n", w, h, preset);
     std::fflush(stdout);
 
@@ -204,9 +299,9 @@ int main(int argc, char** argv)
             std::fclose(f);
         }
 
-    std::vector<uint8_t> gl(frameBytes), out(frameBytes);
+    std::vector<uint8_t> out(frameBytes);
     LARGE_INTEGER freq, start, t0, t1, t2, t3; QueryPerformanceFrequency(&freq); QueryPerformanceCounter(&start);
-    double sumRender = 0, sumRead = 0, sumConvert = 0;
+    double sumRender = 0, sumRead = 0, sumUpload = 0;
     std::vector<double> totals;
     int64_t frame = 0;
     while (!hdr->stop)
@@ -216,8 +311,13 @@ int main(int argc, char** argv)
             LARGE_INTEGER now; QueryPerformanceCounter(&now);
             if (Ms(start, now, freq) > benchSeconds * 1000.0) break;
         }
-        else
-            WaitForSingleObject(tick, 50); // one frame per displayed frame on UniPlaySong's side
+        else if (WaitForSingleObject(tick, 50) != WAIT_OBJECT_0)
+        {
+            // No frame asked for: UniPlaySong isn't showing one (minimized, idle, in the background). Don't draw for
+            // nobody - just make sure Playnite is still there. (Drawing anyway cost a third of a core while minimized.)
+            if (parent && WaitForSingleObject(parent, 0) == WAIT_OBJECT_0) break;
+            continue;
+        }
         if (parent && WaitForSingleObject(parent, 0) == WAIT_OBJECT_0) break;
         if (hdr->stop) break;
         int i = (int)(frame % VIS_BUFFERS);
@@ -233,24 +333,8 @@ int main(int argc, char** argv)
         projectm_opengl_render_frame(pm);
         glFinish();
         QueryPerformanceCounter(&t1);
-        // Presets with a composite shader leave projectM's own framebuffer bound for reading; the finished image is
-        // always in framebuffer 0. Reading the bound one returns black.
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-        glReadPixels(0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, gl.data());
+        key.Run(w, h, out.data()); // the presets crush faint haze to black, for the keying
         QueryPerformanceCounter(&t2);
-
-        // GL rows run bottom-up: flip, and key out the dark. Premultiplied BGRA with coverage = the brightest channel,
-        // so black is see-through and the theme shows behind; the presets crush faint haze to black for this.
-        for (int y = 0; y < h; y++)
-        {
-            const uint8_t* s = gl.data() + (size_t)(h - 1 - y) * w * 4;
-            uint8_t* d = out.data() + (size_t)y * w * 4;
-            for (int x = 0; x < w; x++, s += 4, d += 4)
-            {
-                d[0] = s[0]; d[1] = s[1]; d[2] = s[2];
-                d[3] = std::max(s[0], std::max(s[1], s[2]));
-            }
-        }
         d3d->UpdateSubresource(tex[i], 0, nullptr, out.data(), w * 4, 0);
         d3d->Flush();
         QueryPerformanceCounter(&t3);
@@ -259,7 +343,7 @@ int main(int argc, char** argv)
         hdr->latest = i;
         MemoryBarrier();
         hdr->frame = ++frame;
-        sumRender += Ms(t0, t1, freq); sumRead += Ms(t1, t2, freq); sumConvert += Ms(t2, t3, freq);
+        sumRender += Ms(t0, t1, freq); sumRead += Ms(t1, t2, freq); sumUpload += Ms(t2, t3, freq);
         if (bench) totals.push_back(Ms(t0, t3, freq));
     }
 
@@ -271,8 +355,8 @@ int main(int argc, char** argv)
         if (frame > 0)
         {
             std::sort(totals.begin(), totals.end());
-            std::printf("frames %lld in %.1f s (%.1f fps); per frame: render %.2f ms, readback %.2f ms, convert+upload %.2f ms; p95 total %.2f ms\n",
-                        (long long)frame, secs, frame / secs, sumRender / frame, sumRead / frame, sumConvert / frame,
+            std::printf("frames %lld in %.1f s (%.1f fps); per frame: render %.2f ms, key+readback %.2f ms, upload %.2f ms; p95 total %.2f ms\n",
+                        (long long)frame, secs, frame / secs, sumRender / frame, sumRead / frame, sumUpload / frame,
                         totals[totals.size() * 95 / 100]);
         }
     }

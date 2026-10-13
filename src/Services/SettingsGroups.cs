@@ -324,6 +324,7 @@ namespace UniPlaySong.Services
                 {
                     nameof(UniPlaySongSettings.AlternativeAudioReactiveVisualizerSync),
                     nameof(UniPlaySongSettings.MusicVisualizerEnabled),
+                    nameof(UniPlaySongSettings.MusicVisualizerStyle),
                     nameof(UniPlaySongSettings.AudioBufferSamples),
                     nameof(UniPlaySongSettings.EnableDebugLogging),
                     nameof(UniPlaySongSettings.EnableMediaKeyControl),

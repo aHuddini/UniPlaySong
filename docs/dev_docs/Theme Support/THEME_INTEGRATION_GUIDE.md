@@ -973,9 +973,34 @@ view shows behind it. It reacts only to the music UniPlaySong plays — never to
   (`MyArt` is an `Image` on the page with its `Source` bound to `NowPlayingAlbumArtPath`; see
   [Troubleshooting](#troubleshooting) for why the brush doesn't bind `{PluginSettings}` directly.)
 - **Dark backgrounds suit it best.** Black is see-through and bright is solid, so the glow reads strongest over a dimmed
-  backdrop — a blurred, darkened copy of the album art works well.
-- **One style for now** (Glow Bars: slim bars either side of the centre with a reflection and bloom); more will come
-  and will keep the same centre slot.
+  backdrop.
+- **No WPF effects while it runs.** Don't put a `BlurEffect` or `DropShadowEffect` over or around it. The visualizer
+  runs in its own process to keep that kind of work off Playnite's UI thread and renderer, and an effect over a surface
+  that changes every frame is re-run every frame. The visualizer draws its own glow, bloom and shade, including a soft
+  shadow from the centre slot onto its light.
+
+  Effects are fine as a **fallback**, for when the visualizer is off, missing, or UniPlaySong isn't installed. The
+  element's `Content.IsRunning` is `True` only while it is drawing, so collapse the fallback on that:
+
+  ```xml
+  <Border.Style>
+      <Style TargetType="Border">
+          <Style.Triggers>
+              <DataTrigger Binding="{Binding Content.IsRunning, ElementName=UPS_MusicVisualControl}" Value="True">
+                  <Setter Property="Visibility" Value="Collapsed" />
+              </DataTrigger>
+          </Style.Triggers>
+      </Style>
+  </Border.Style>
+  ```
+
+  Trigger on `True`, not on `False`: without UniPlaySong the binding has nothing to read, and the fallback should still
+  show.
+- **Two styles**, picked by the user in UniPlaySong's settings:
+  - **Glow Bars**: slim bars either side of the centre, with a reflection and bloom.
+  - **Fountain**: columns of glowing sparks thrown up and down from the centre line.
+
+  Both keep the same centre slot, so a page works with either. Future styles will keep it too.
 - **Cost:** it uses the graphics card while on screen — a few milliseconds a frame on integrated graphics at 1080p.
 
 A complete Fullscreen example page — visualizer, centred spinning cover, seekable timeline, title and transport — is

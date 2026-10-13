@@ -33,7 +33,7 @@ copies and the hashes below.
 | `SDL2_mixer.dll` | 306,688 | Committed | `lib/SDL2_mixer.dll` — see the sourcing warning below | zlib |
 | `z.dll` | 78,336 | Committed | `src/Audio/Native/RetroChiptune/z.dll` | zlib |
 | `psf.dll` | 185,344 | Committed (first-party) | `src/Audio/Native/RetroChiptune/psf.dll`, built from `native/psf/` | ISC + BSD-2 |
-| `Visualizer/UniPlaySongVisualizer.exe` | 187,392 | Committed (first-party) | `src/Audio/Native/Visualizer/`, built from `native/visualizer/` (x64) | MIT |
+| `Visualizer/UniPlaySongVisualizer.exe` | 189,952 | Committed (first-party) | `src/Audio/Native/Visualizer/`, built from `native/visualizer/` (x64) | MIT |
 | `Visualizer/UniPlaySongVisualizerBridge.dll` | 86,528 | Committed (first-party) | `src/Audio/Native/Visualizer/`, built from `native/visualizer/` (x86) | MIT |
 | `Visualizer/projectM-4.dll` | 1,279,488 | Committed | `src/Audio/Native/Visualizer/`, projectM 4.1.8 built from `lib/source/` (x64) | LGPL-2.1 |
 | `Visualizer/glew32.dll` | 500,224 | Committed | `src/Audio/Native/Visualizer/`, GLEW 2.2.0 built from `lib/source/` (x64) | Modified BSD + MIT + Khronos |
@@ -88,7 +88,7 @@ ddddfe7a7f87c87f29419f493d83ccf679bf9e1c276532a268a3687509f62875  psf.dll
 b1f8e01096a7a0585a7a3738e3f371e332d8de4ddd88d8dab1ab51dfd8432560  z.dll
 763fc6ad9da9948a37f9e7a61e109406e41f3b7e18473796442de394f7bfe60a  Visualizer/glew32.dll
 6ec38fa4ca701918fac274f1dfe0ba420f3ae76f16e09d0ae6e9ae1a3c6f3656  Visualizer/projectM-4.dll
-6a1a92a7825a6ca51747d70391ef97714e43f2698919ea4d06eb80b5bfacc986  Visualizer/UniPlaySongVisualizer.exe
+ed38cd5e99c1ea8b0d978536013059c3cdc1368c35665c9204b18478fa58bbfe  Visualizer/UniPlaySongVisualizer.exe
 d247a35ca19ee7adc3b513c7797e1d7ec6160b39259c4a3b753e290d436a49d2  Visualizer/UniPlaySongVisualizerBridge.dll
 ```
 
@@ -99,7 +99,7 @@ d247a35ca19ee7adc3b513c7797e1d7ec6160b39259c4a3b753e290d436a49d2  Visualizer/Uni
 | `lib/SDL2.dll`, `lib/SDL2_mixer.dll` | packaging script, direct path — fails if missing |
 | `src/Audio/Native/RetroChiptune/{gme,z,psf}.dll` | packaging script, direct path |
 | `src/Audio/Native/SpotifyLoopback.dll` | csproj copy to build output, then packaged |
-| `src/Audio/Native/Visualizer/` (four binaries + the shipped preset) | packaging script, direct path, into `Visualizer\` in the `.pext` |
+| `src/Audio/Native/Visualizer/` (four binaries + the shipped presets) | packaging script, direct path, into `Visualizer\` in the `.pext` |
 
 ## Binary transparency
 
@@ -114,8 +114,9 @@ to a publisher. Four are compiled by the maintainer:
 | `psf.dll` | `native/psf/` (first-party bridges over ares @ `17813a3` and aopsf @ `f0371db`) | [`features/PSF_ENGINE_BUILD.md`](features/PSF_ENGINE_BUILD.md); `native/psf/build.cmd` |
 | `Visualizer/*` | renderer + bridge from `native/visualizer/` (first-party); projectM `v4.1.8` and GLEW 2.2.0 from `lib/source/` | [`features/VISUALIZER_ENGINE_BUILD.md`](features/VISUALIZER_ENGINE_BUILD.md); `native/visualizer/build_deps.cmd` then `build.cmd` |
 
-The visualizer's four binaries are unsigned too; all four are scanned at their current hashes (reports in its
-`VIRUSTOTAL-AUDIT` file).
+The visualizer's four binaries are unsigned too. The bridge, projectM and GLEW are scanned; the renderer was rebuilt
+and is **not yet submitted** at its current hash - submit it before the visualizer ships in a release (status per file
+in its `VIRUSTOTAL-AUDIT` file).
 
 `SDL2.dll` and `SDL2_mixer.dll` are upstream libsdl-org release builds (2.30.5 / 2.8.0), unsigned as
 shipped by that project.

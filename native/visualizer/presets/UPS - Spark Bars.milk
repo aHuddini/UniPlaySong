@@ -191,7 +191,7 @@ warp_27=`  ret = max(prev, (col * inX * inY + float3(1.0, 0.85, 0.55) * cap) * (
 warp_28=`}
 comp_1=`shader_body
 comp_2=`{
-comp_3=`  float3 c = tex2D(sampler_main, uv).xyz;
+comp_3=`  float3 c = tex2D(sampler_pc_main, uv).xyz;
 comp_4=`  float3 glow = GetBlur1(uv) * 0.8 + GetBlur2(uv) * 0.5;
 comp_5=`  float2 d = (uv - float2(0.5, 0.5)) * float2(0.8, 3.0);
 comp_6=`  float pulse = saturate((bass_att - 0.6) * 0.7);

@@ -27,6 +27,7 @@ namespace UniPlaySong.Audio
         private readonly IntPtr _base;
         private float[] _stereo = new float[0];
         private bool _formatWritten;
+        private int _lastSoundTick = Environment.TickCount;
 
         private VisualizerAudioFeed(string name)
         {
@@ -55,6 +56,10 @@ namespace UniPlaySong.Audio
             feed.Append(clock.WaveFormat.SampleRate, clock.WaveFormat.Channels, startFrame, buffer, offset, samples);
         }
 
+        // Environment.TickCount when the ring last carried anything audible. The player's clock can't say when the music
+        // stopped - the always-on mixer keeps playing silence - so the visualizer idles on this instead.
+        public int LastSoundTick => Volatile.Read(ref _lastSoundTick);
+
         // Once per displayed frame, on the UI thread: which frame the listener is hearing now.
         public void PublishPlayed()
         {
@@ -74,6 +79,7 @@ namespace UniPlaySong.Audio
             if (frames <= 0) return;
             if (_stereo.Length < frames * 2) _stereo = new float[frames * 2];
             Interleave(buffer, offset, frames, channels, _stereo);
+            if (Audible(_stereo, frames * 2)) Volatile.Write(ref _lastSoundTick, Environment.TickCount);
 
             // Copy into the ring in up to two pieces (the second when it wraps), then move `written`: the renderer only
             // reads up to `written`, so it never sees a half-copied block.
@@ -85,6 +91,14 @@ namespace UniPlaySong.Audio
                 Marshal.Copy(_stereo, first * 2, _base + OffData, (frames - first) * 2);
             Thread.MemoryBarrier();
             Marshal.WriteInt32(_base, OffWritten, unchecked((int)(start + (uint)frames)));
+        }
+
+        // Anything above -80 dBFS.
+        internal static bool Audible(float[] samples, int count)
+        {
+            for (int i = 0; i < count; i++)
+                if (samples[i] > 1e-4f || samples[i] < -1e-4f) return true;
+            return false;
         }
 
         // Any channel count to interleaved stereo: mono doubles, more than two keeps the first pair.

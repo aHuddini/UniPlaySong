@@ -1,0 +1,19 @@
+Follow the live level (1 = like 07, 0 = the game's birth lag)|LIVE|1.0|0.1|0.0|1.0
+Stretch strength|STRETCH_GAIN|1.4|0.2|0.0|6.0
+Stretch max (x)|STRETCH_MAX|4.0|0.5|0.0|9.0
+Stretch tips-only (higher = only the outermost dots)|STRETCH_TIP|1.0|0.25|0.0|4.0
+Kick relax time (s)|KICK_DECAY|0.12|0.02|0.02|0.6
+Tip fling on a kick|FLING|0.3|0.1|0.0|2.0
+Core density (higher = more dots hug the line)|CORE|1.0|0.1|0.4|3.0
+Core hold (1 = the core ignores kicks)|CORE_HOLD|0.85|0.05|0.0|1.0
+Core size (how far from the line counts as core)|CORE_SIZE|0.35|0.05|0.05|1.0
+Core smoothing (s)|CORE_SLOW|1.0|0.1|0.1|4.0
+Reach (column widths)|REACH|18.0|1.0|4.0|30.0
+Life spread (longest life = sqrt(1 + this) s)|LIFE_SPREAD|24.0|2.0|0.0|60.0
+Dot brightness|BRIGHT|6.0|0.5|1.0|15.0
+Exposure|EXPOSURE|0.6|0.05|0.2|1.5
+Defocus (0 = sharp dots, 1 = the game's bokeh)|DEFOCUS|1.0|0.05|0.0|1.0
+Bloom, wide|BLOOM_WIDE|1.3|0.1|0.0|3.0
+Scene glow pulse|GLOW_PULSE|0.13|0.03|0.0|1.0
+Level ease in (s)|EASE_IN|0.1|0.01|0.01|0.5
+Level ease out (s)|EASE_OUT|0.3|0.02|0.04|1.2

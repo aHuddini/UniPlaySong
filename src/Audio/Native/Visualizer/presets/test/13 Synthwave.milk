@@ -1,0 +1,225 @@
+[preset00]
+MILKDROP_PRESET_VERSION=201
+PSVERSION=2
+PSVERSION_WARP=2
+PSVERSION_COMP=2
+fRating=5.0
+fGammaAdj=1.0
+fDecay=1.0
+fVideoEchoZoom=1.0
+fVideoEchoAlpha=0.0
+nVideoEchoOrientation=0
+nWaveMode=0
+bAdditiveWaves=0
+bWaveDots=0
+bWaveThick=0
+bModWaveAlphaByVolume=0
+bMaximizeWaveColor=0
+bTexWrap=0
+bDarkenCenter=0
+bRedBlueStereo=0
+bBrighten=0
+bDarken=0
+bSolarize=0
+bInvert=0
+fWaveAlpha=0.0
+fWaveScale=1.0
+fWaveSmoothing=0.0
+fWaveParam=0.0
+fWarpAnimSpeed=1.0
+fWarpScale=1.0
+fZoomExponent=1.0
+fShader=0.0
+zoom=1.0
+rot=0.0
+cx=0.5
+cy=0.5
+dx=0.0
+dy=0.0
+warp=0.0
+sx=1.0
+sy=1.0
+wave_r=0.0
+wave_g=0.0
+wave_b=0.0
+wave_a=0.0
+ob_size=0.0
+ob_a=0.0
+ib_size=0.0
+ib_a=0.0
+nMotionVectorsX=0.0
+nMotionVectorsY=0.0
+mv_a=0.0
+b1ed=0.0
+wavecode_0_enabled=1
+wavecode_0_samples=512
+wavecode_0_sep=0
+wavecode_0_bSpectrum=1
+wavecode_0_bUseDots=0
+wavecode_0_bDrawThick=0
+wavecode_0_bAdditive=0
+wavecode_0_scaling=1.0
+wavecode_0_smoothing=0.0
+wavecode_0_r=0
+wavecode_0_g=0
+wavecode_0_b=0
+wavecode_0_a=0
+wave_0_per_point1=i=floor(sample*511+0.5);
+wave_0_per_point2=gmem[1000+i]=(value1+value2)*0.5;
+wave_0_per_point3=a=0;
+per_frame_1=dt=1/max(fps, 15); n=96; b0=1.07; b1=340; loudest=0; bi=0;
+per_frame_2=loop(n,
+per_frame_3=  c=b0+pow(bi/n, 1.5)*(b1-b0); i=floor(c); t=c-i;
+per_frame_4=  v=(gmem[1000+i]*(1-t) + gmem[1001+i]*t)*(1+3*bi/n);
+per_frame_5=  gmem[200+bi]=v;
+per_frame_6=  loudest=max(loudest, v);
+per_frame_7=  bi+=1;
+per_frame_8=);
+per_frame_9=reg00=max(max(loudest, reg00*pow(0.5, dt/4)), 0.02);
+per_frame_10=pd=pow(0.5, dt/3); up=1-pow(0.2, dt*60); dn=1-pow(0.5, dt*60); ea=1-exp(-dt/0.10); er=1-exp(-dt/0.30);
+per_frame_11=total=0; bi=0;
+per_frame_12=loop(n,
+per_frame_13=  v=gmem[200+bi];
+per_frame_14=  pk=max(max(gmem[400+bi]*pd, v), 0.03*reg00); gmem[400+bi]=pk;
+per_frame_15=  tg=max(pow(min(1, max(0, (v/pk-0.08)/0.92)), 0.7), 0.0034);
+per_frame_16=  pv=gmem[500+bi]; nx=pv+(tg-pv)*(tg > pv ? up : dn); gmem[500+bi]=nx;
+per_frame_17=  o=max(nx, pv);
+per_frame_18=  ez=gmem[bi]; ez+=(o-ez)*(o > ez ? ea : er); gmem[bi]=ez;
+per_frame_19=  total+=ez;
+per_frame_20=  bi+=1;
+per_frame_21=);
+per_frame_22=reg01=reg01+(total/n-reg01)*min(1, dt*6);
+per_frame_23=reg02=0.19/aspecty; reg03=0.44-reg02;
+per_frame_24=q1=floor(gmem[0]*255)*65536+floor(gmem[1]*255)*256+floor(gmem[2]*255);
+per_frame_25=q2=floor(gmem[3]*255)*65536+floor(gmem[4]*255)*256+floor(gmem[5]*255);
+per_frame_26=q3=floor(gmem[6]*255)*65536+floor(gmem[7]*255)*256+floor(gmem[8]*255);
+per_frame_27=q4=floor(gmem[9]*255)*65536+floor(gmem[10]*255)*256+floor(gmem[11]*255);
+per_frame_28=q5=floor(gmem[12]*255)*65536+floor(gmem[13]*255)*256+floor(gmem[14]*255);
+per_frame_29=q6=floor(gmem[15]*255)*65536+floor(gmem[16]*255)*256+floor(gmem[17]*255);
+per_frame_30=q7=floor(gmem[18]*255)*65536+floor(gmem[19]*255)*256+floor(gmem[20]*255);
+per_frame_31=q8=floor(gmem[21]*255)*65536+floor(gmem[22]*255)*256+floor(gmem[23]*255);
+per_frame_32=q9=floor(gmem[24]*255)*65536+floor(gmem[25]*255)*256+floor(gmem[26]*255);
+per_frame_33=q10=floor(gmem[27]*255)*65536+floor(gmem[28]*255)*256+floor(gmem[29]*255);
+per_frame_34=q11=floor(gmem[30]*255)*65536+floor(gmem[31]*255)*256+floor(gmem[32]*255);
+per_frame_35=q12=floor(gmem[33]*255)*65536+floor(gmem[34]*255)*256+floor(gmem[35]*255);
+per_frame_36=q13=floor(gmem[36]*255)*65536+floor(gmem[37]*255)*256+floor(gmem[38]*255);
+per_frame_37=q14=floor(gmem[39]*255)*65536+floor(gmem[40]*255)*256+floor(gmem[41]*255);
+per_frame_38=q15=floor(gmem[42]*255)*65536+floor(gmem[43]*255)*256+floor(gmem[44]*255);
+per_frame_39=q16=floor(gmem[45]*255)*65536+floor(gmem[46]*255)*256+floor(gmem[47]*255);
+per_frame_40=q17=floor(gmem[48]*255)*65536+floor(gmem[49]*255)*256+floor(gmem[50]*255);
+per_frame_41=q18=floor(gmem[51]*255)*65536+floor(gmem[52]*255)*256+floor(gmem[53]*255);
+per_frame_42=q19=floor(gmem[54]*255)*65536+floor(gmem[55]*255)*256+floor(gmem[56]*255);
+per_frame_43=q20=floor(gmem[57]*255)*65536+floor(gmem[58]*255)*256+floor(gmem[59]*255);
+per_frame_44=q21=floor(gmem[60]*255)*65536+floor(gmem[61]*255)*256+floor(gmem[62]*255);
+per_frame_45=q22=floor(gmem[63]*255)*65536+floor(gmem[64]*255)*256+floor(gmem[65]*255);
+per_frame_46=q23=floor(gmem[66]*255)*65536+floor(gmem[67]*255)*256+floor(gmem[68]*255);
+per_frame_47=q24=floor(gmem[69]*255)*65536+floor(gmem[70]*255)*256+floor(gmem[71]*255);
+per_frame_48=q25=floor(gmem[72]*255)*65536+floor(gmem[73]*255)*256+floor(gmem[74]*255);
+per_frame_49=q26=floor(gmem[75]*255)*65536+floor(gmem[76]*255)*256+floor(gmem[77]*255);
+per_frame_50=q27=floor(gmem[78]*255)*65536+floor(gmem[79]*255)*256+floor(gmem[80]*255);
+per_frame_51=q28=floor(gmem[81]*255)*65536+floor(gmem[82]*255)*256+floor(gmem[83]*255);
+per_frame_52=q29=floor(gmem[84]*255)*65536+floor(gmem[85]*255)*256+floor(gmem[86]*255);
+per_frame_53=q30=floor(gmem[87]*255)*65536+floor(gmem[88]*255)*256+floor(gmem[89]*255);
+per_frame_54=q31=floor(gmem[90]*255)*65536+floor(gmem[91]*255)*256+floor(gmem[92]*255);
+per_frame_55=q32=floor(gmem[93]*255)*65536+floor(gmem[94]*255)*256+floor(gmem[95]*255);
+warp_1=`float Q(float k) { return q1 * (step(-0.5, k) - step(0.5, k)) + q2 * (step(0.5, k) - step(1.5, k)) + q3 * (step(1.5, k) - step(2.5, k)) + q4 * (step(2.5, k) - step(3.5, k)) + q5 * (step(3.5, k) - step(4.5, k)) + q6 * (step(4.5, k) - step(5.5, k)) + q7 * (step(5.5, k) - step(6.5, k)) + q8 * (step(6.5, k) - step(7.5, k)) + q9 * (step(7.5, k) - step(8.5, k)) + q10 * (step(8.5, k) - step(9.5, k)) + q11 * (step(9.5, k) - step(10.5, k)) + q12 * (step(10.5, k) - step(11.5, k)) + q13 * (step(11.5, k) - step(12.5, k)) + q14 * (step(12.5, k) - step(13.5, k)) + q15 * (step(13.5, k) - step(14.5, k)) + q16 * (step(14.5, k) - step(15.5, k)) + q17 * (step(15.5, k) - step(16.5, k)) + q18 * (step(16.5, k) - step(17.5, k)) + q19 * (step(17.5, k) - step(18.5, k)) + q20 * (step(18.5, k) - step(19.5, k)) + q21 * (step(19.5, k) - step(20.5, k)) + q22 * (step(20.5, k) - step(21.5, k)) + q23 * (step(21.5, k) - step(22.5, k)) + q24 * (step(22.5, k) - step(23.5, k)) + q25 * (step(23.5, k) - step(24.5, k)) + q26 * (step(24.5, k) - step(25.5, k)) + q27 * (step(25.5, k) - step(26.5, k)) + q28 * (step(26.5, k) - step(27.5, k)) + q29 * (step(27.5, k) - step(28.5, k)) + q30 * (step(28.5, k) - step(29.5, k)) + q31 * (step(29.5, k) - step(30.5, k)) + q32 * (step(30.5, k) - step(31.5, k)); }
+warp_2=`float LV(float g) { float k = floor(g / 3.0); float q = Q(k); float r = g - 3.0 * k; float a = floor(q / 65536.0); float m = q - a * 65536.0; float b = floor(m / 256.0); float c = m - b * 256.0; return (a * (1.0 - step(0.5, r)) + b * (step(0.5, r) - step(1.5, r)) + c * step(1.5, r)) / 255.0; }
+warp_3=`float2 H2(float c, float s) { return frac(sin(float2(dot(float2(c, s), float2(12.9898, 78.233)), dot(float2(c, s), float2(39.3468, 11.135)))) * 43758.5453); }
+warp_4=`float3 ACES(float3 x) { return saturate(x * (2.51 * x + 0.03) / (x * (2.43 * x + 0.59) + 0.14)); }
+warp_5=`float CurveB(float x) { float s = saturate(x / 0.205); return x < 0.205 ? 0.745 * s * s * (3.0 - 2.0 * s) : 1.0 - 0.255 * exp(-5.3 * (x - 0.205)); }
+warp_6=`float CurveBd(float x) { float s = saturate(x / 0.205); return x < 0.205 ? 0.745 * 6.0 * s * (1.0 - s) / 0.205 : 0.255 * 5.3 * exp(-5.3 * (x - 0.205)); }
+warp_7=`float CurveA(float x) { float s = saturate(x / 0.49); return x < 0.49 ? 0.6 * s * s * (3.0 - 2.0 * s) : 0.6 * (1.0 - x) / 0.51; }
+warp_8=`float Hist(float g, float row) { return tex2D(sampler_pc_main, (float2(g, row) + 0.5) * texsize.zw).x; }
+warp_9=`shader_body
+warp_10=`{
+warp_11=`  float2 p = uv_orig;
+warp_12=`  float gap = 0.11 * texsize.y * texsize.z;
+warp_13=`  float wing = 0.46 - gap;
+warp_14=`  float fx = (abs(p.x - 0.5) - gap) / wing * 48.0;
+warp_15=`  float inWing = step(0.0, fx) * step(fx, 48.0);
+warp_16=`  float i = clamp(floor(fx), 0.0, 47.0);
+warp_17=`  float f = frac(fx) - 0.5;
+warp_18=`  float px = texsize.z * 48.0 / wing;
+warp_19=`  float y = abs(p.y - 0.5);
+warp_20=`  float down = step(0.5, p.y);
+warp_21=`  float2 P = uv_orig * texsize.xy;
+warp_22=`  if (P.x < 96.0 && P.y < 132.0)
+warp_23=`  {
+warp_24=`    float gx = floor(P.x);
+warp_25=`    float r = floor(P.y);
+warp_26=`    float shift = step(0.5, floor(time * 60.0) - floor((time - 1.0 / max(fps, 15.0)) * 60.0));
+warp_27=`    float v = 0.0;
+warp_28=`    if (r < 0.5) v = LV(gx);
+warp_29=`    else if (r < 128.0) v = Hist(gx, r - shift);
+warp_30=`    else if (r < 129.0)
+warp_31=`    {
+warp_32=`      for (float j = 0.0; j < 96.0; j += 1.0) v += LV(j);
+warp_33=`      v /= 96.0;
+warp_34=`    }
+warp_35=`    else
+warp_36=`    {
+warp_37=`      for (float j = 0.0; j < 128.0; j += 1.0) v = max(v, Hist(gx, j));
+warp_38=`    }
+warp_39=`    ret = float3(v, 0.0, 0.0);
+warp_40=`  }
+warp_41=`  else
+warp_42=`  {
+warp_43=`    float colpx = wing * texsize.x / 48.0;
+warp_44=`    float zy = (0.5 - p.y) * texsize.y / colpx;       // signed height above the line, in column widths
+warp_45=`    float dx = fx - i - 0.5;                          // from the column's axis
+warp_46=`    float g = step(p.x, 0.5) > 0.5 ? 47.0 - i : 48.0 + i;
+warp_47=`    float3 acc = float3(0.0, 0.0, 0.0);
+warp_48=`    if (inWing > 0.5 && abs(dx) < 0.42)
+warp_49=`    {
+warp_50=`      float live = LV(g);
+warp_51=`      float prev = Hist(g, 1.0);
+warp_52=`      if (abs(zy) < max(live, Hist(g, 129.0)) * 18.0 + 2.0)
+warp_53=`      for (float s = 0.0; s < 30.0; s += 1.0)
+warp_54=`      {
+warp_55=`        float2 h = H2(g, s);
+warp_56=`        float2 u = H2(g + 97.0, s + 13.0);
+warp_57=`        float life = sqrt(1.0 + 24.0 * h.x);          // 1-5 s, weighted as the game's live population is
+warp_58=`        float na = frac(time / life + h.y);           // normalized age
+warp_59=`        float born = Hist(g, min(floor(na * life * 60.0), 127.0));
+warp_60=`        float b = CurveB(na);
+warp_61=`        float level = lerp(born, live, b);            // the game's PolarisTmp: birth level -> live level
+warp_62=`        float k = (1.0 - 2.0 * u.x) * (u.y - 0.5);    // fixed fraction of the level, |k| <= 0.5, dense near 0
+warp_63=`        float z = level * k * 36.0;
+warp_64=`        // Stretched vertically by how fast its level is changing (the game: up to 5x).
+warp_65=`        float dl = abs(b * (live - prev) + (live - born) * CurveBd(na) / (life * 60.0));
+warp_66=`        float stretch = 1.0 + 4.0 * saturate(dl * 1.6);
+warp_67=`        // 0.5-0.8 of the column spacing across. (Not "rad": MilkDrop shaders already have rad and ang.)
+warp_68=`        float size = 0.25 + 0.15 * frac(h.x * 7.31 + u.x * 3.17);
+warp_69=`        float2 d = float2(dx, (zy - z) / stretch) / size;
+warp_70=`        float disc = 1.0 - smoothstep(0.0, 1.0, length(d));
+warp_71=`        float3 col = lerp(float3(2.0, 1.5, 8.0), float3(8.0, 1.5, 5.0), frac(h.y * 5.17 + u.y * 2.31)) * 0.12;
+warp_72=`        acc += col * disc * disc * CurveA(na) * 6.0;
+warp_73=`      }
+warp_74=`    }
+warp_75=`    // The game's intro: the line comes on over half a second, not at once.
+warp_76=`    acc *= smoothstep(0.1, 0.5, time);
+warp_77=`    // Exposure 0.6: at 1 the white-hot cores and bloom were blinding.
+warp_78=`    ret = ACES(acc * 0.6);
+warp_79=`  }
+warp_80=`}
+comp_1=`shader_body
+comp_2=`{
+comp_3=`  float2 o = float2(0.0015 * smoothstep(0.2, 1.0, length(uv - 0.5) * 2.0), 0.0);
+comp_4=`  float3 c = float3(tex2D(sampler_pc_main, uv + o).x, tex2D(sampler_pc_main, uv).y, tex2D(sampler_pc_main, uv - o).z);
+comp_5=`  // The game's lens: the line is far behind the focus, so each dot is a soft bokeh disc - carried by the blur, with a
+comp_6=`  // little of the sharp dot left in its core.
+comp_7=`  float3 base = lerp(c, GetBlur1(uv) * 1.2 + GetBlur2(uv) * 0.6 + c * 0.25, 1.0);
+comp_8=`  // The game's bloom: everything blooms (threshold -1), wide, tinted violet (0.80, 0.27, 0.96).
+comp_9=`  float3 glow = GetBlur2(uv) * 0.9 + GetBlur3(uv) * 1.3 * float3(0.80, 0.27, 0.96);
+comp_10=`  float2 P = uv * texsize.xy;
+comp_11=`  float inData = step(P.x, 97.0) * step(P.y, 133.0);
+comp_12=`  base *= 1.0 - inData;
+comp_13=`  glow *= 1.0 - (1.0 - smoothstep(97.0, 420.0, P.x)) * (1.0 - smoothstep(133.0, 420.0, P.y));
+comp_14=`  // The game's level light (magenta-red, the sum of every column): a soft glow behind the line.
+comp_15=`  float level = tex2D(sampler_pc_main, float2(0.5, 128.5) * texsize.zw).x;
+comp_16=`  float2 d = (uv - float2(0.5, 0.5)) * float2(0.8, 3.0);
+comp_17=`  float3 back = float3(1.0, 0.112, 0.248) * exp(-length(d) * 4.0) * (0.06 + 0.4 * saturate(level * 2.5));
+comp_18=`  float2 e = min(uv, 1.0 - uv);
+comp_19=`  float fade = smoothstep(0.0, 0.05, e.x) * smoothstep(0.0, 0.14, e.y);
+comp_20=`  ret = saturate((base + glow + back) * fade * lerp(0.25, 1.0, smoothstep(0.15, 0.21, length((uv - 0.5) * float2(texsize.x * texsize.w, 1.0)))) - 0.02) / 0.98;
+comp_21=`}

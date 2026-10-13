@@ -58,5 +58,28 @@ namespace UniPlaySong.Tests.Audio
             VisualizerAudioFeed.Interleave(new[] { 1f, 2f, 9f, 3f, 4f, 9f }, 0, 2, 3, stereo);
             CollectionAssert.AreEqual(new[] { 1f, 2f, 3f, 4f }, stereo);
         }
+
+        [Test]
+        public void Audible_SilenceAndDitherAreNot_AnythingAboveMinus80dBIs()
+        {
+            Assert.IsFalse(VisualizerAudioFeed.Audible(new float[512], 512));
+            Assert.IsFalse(VisualizerAudioFeed.Audible(new[] { 5e-5f, -5e-5f }, 2));
+            Assert.IsTrue(VisualizerAudioFeed.Audible(new[] { 0f, -2e-4f }, 2));
+            Assert.IsFalse(VisualizerAudioFeed.Audible(new[] { 0f, 0.5f }, 1)); // only the first `count` samples
+        }
+
+        [Test]
+        public void Append_OnlySoundMovesTheLastSoundTick()
+        {
+            using (var feed = VisualizerAudioFeed.Open(NewName()))
+            {
+                int start = feed.LastSoundTick;
+                System.Threading.Thread.Sleep(60); // TickCount moves in ~16 ms steps
+                feed.Append(48000, 2, 0, new float[256], 0, 256);
+                Assert.AreEqual(start, feed.LastSoundTick, "silence must not count as sound");
+                feed.Append(48000, 2, 128, new[] { 0.3f, 0.3f }, 0, 2);
+                Assert.Greater(unchecked(feed.LastSoundTick - start), 30);
+            }
+        }
     }
 }

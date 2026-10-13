@@ -134,6 +134,18 @@
                        Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
                        Margin="32,0,0,5"/>
+            <StackPanel Orientation="Horizontal" Margin="32,5,0,5" IsEnabled="{Binding Settings.MusicVisualizerEnabled}">
+                <TextBlock Style="{StaticResource UpsLabel}" Text="Style: " VerticalAlignment="Center" Width="120"/>
+                <ComboBox Style="{StaticResource UpsComboBox}" SelectedValue="{Binding Settings.MusicVisualizerStyle}"
+                          SelectedValuePath="Tag" Width="200">
+                    <ComboBoxItem Content="Glow Bars" Tag="{x:Static local:MusicVisualizerStyle.GlowBars}"/>
+                    <ComboBoxItem Content="Fountain" Tag="{x:Static local:MusicVisualizerStyle.Fountain}"/>
+                </ComboBox>
+            </StackPanel>
+            <TextBlock Text="Glow Bars: slim glowing bars. Fountain: columns of sparks that leap with each beat — busier, and harder on your graphics card."
+                       Style="{StaticResource UpsHint}"
+                       TextWrapping="Wrap"
+                       Margin="32,0,0,5"/>
             <TextBlock Text="&#x26A0; Experimental: uses your graphics card while it's on screen."
                        Style="{StaticResource UpsWarning}"/>
 

@@ -227,7 +227,7 @@ if (Test-Path $spotifyLoopbackPath) {
 # native/visualizer/build.cmd) so the shipped bytes are the documented ones. Fail-soft: without it the element stays empty.
 Write-Host "Copying music visualizer..." -ForegroundColor Yellow
 $visualizerDir = Join-Path $projectRoot "src\Audio\Native\Visualizer"
-$visualizerFiles = @("UniPlaySongVisualizer.exe", "UniPlaySongVisualizerBridge.dll", "projectM-4.dll", "glew32.dll", "presets\UPS - Glow Bars.milk")
+$visualizerFiles = @("UniPlaySongVisualizer.exe", "UniPlaySongVisualizerBridge.dll", "projectM-4.dll", "glew32.dll", "presets\UPS - Glow Bars.milk", "presets\UPS - Fountain.milk")
 $visualizerDest = Join-Path $packageDir "Visualizer"
 $visualizerMissing = $visualizerFiles | Where-Object { -not (Test-Path (Join-Path $visualizerDir $_)) }
 if ($visualizerMissing) {
@@ -238,6 +238,15 @@ if ($visualizerMissing) {
         Copy-Item (Join-Path $visualizerDir $file) -Destination (Join-Path $visualizerDest $file) -Force
     }
     Write-Host "  Copied: Visualizer\ ($($visualizerFiles.Count) files)" -ForegroundColor Gray
+    # TEST BUILD ONLY - remove with the F8/F9 code in MusicVisualControl. Style variants for live comparison, shipped
+    # only while the folder exists.
+    $visualizerTests = Join-Path $visualizerDir "presets\test"
+    if (Test-Path $visualizerTests) {
+        New-Item -ItemType Directory -Force -Path (Join-Path $visualizerDest "presets\test") | Out-Null
+        Copy-Item (Join-Path $visualizerTests "*.milk") -Destination (Join-Path $visualizerDest "presets\test") -Force
+        Copy-Item (Join-Path $visualizerTests "*.tune") -Destination (Join-Path $visualizerDest "presets\test") -Force -ErrorAction SilentlyContinue
+        Write-Host "  Copied: Visualizer\presets\test\ ($(@(Get-ChildItem $visualizerTests -Filter *.milk).Count) TEST presets)" -ForegroundColor Yellow
+    }
 }
 
 # Copy dependencies from the build output - i.e. the assemblies NuGet actually restored.
