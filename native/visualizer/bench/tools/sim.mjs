@@ -12,14 +12,14 @@ const layersrc = cut("// ---- layers", "// ---- end layers");
 const factory = new Function("MOCK", `
   let { sourceSel, analyser, actx, buffer, playing, startAt, synthOn, songMap, synthMapKey, beatInfo } = MOCK;
   const synth = () => {}, mapSynthSong = () => {};
-  let layers = null, layersOf = null, analyserL = null, analyserR = null;
+  let layers = null, layersOf = null, analyserL = null, analyserR = null; const fixedDt = 0;
   const beatIndexAt = t => { if (!beatInfo) return -1; const bs = beatInfo.beats; let lo = 0, hi = bs.length; while (lo < hi) { const m = (lo + hi) >> 1; if (bs[m] <= t) lo = m + 1; else hi = m; } return lo - 1; };
   ${params}
   let P = {}; const Q = () => P;
   let mapStatus = "";
   ${fft} ${mapsrc} ${beats} ${layersrc} ${eng}
   return { engine, trackBeats, buildMap, beatStrengths, analyseLayers, setLayers: (l, b) => { layers = l; layersOf = b; }, setMap: m => { songMap = m; }, setP: o => { P = {}; for (const p of PARAMS) P[p[0]] = p[3]; Object.assign(P, o); }, presets: { YOUR_TUNE_2, YOUR_TUNE_3 },
-    setBeat: b => { beatInfo = b; }, state: () => ({ fl, flv, kv, kc, ez, beatEnv, dropPulse, dropC, heatC, tensionC, phraseC, sectionC, actC, harmE, padE, settleC }) };`);
+    setBeat: b => { beatInfo = b; }, state: () => ({ fl, flv, kv, kc, ez, beatEnv, dropPulse, dropC, heatC, tensionC, phraseC, sectionC, actC, harmE, padE, settleC, layoutA, layoutB, morphT }) };`);
 export async function run(file, preset, from = 30, len = 40, label = "", record = false) {
   const b = fs.readFileSync(file), x = new Float32Array(b.buffer, b.byteOffset, b.length / 4), sr = 48000;
   const n = 1024, F = (() => { const m = new Function(fft + "; return makeFFT;")(); return m(n); })();

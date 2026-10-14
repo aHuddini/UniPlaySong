@@ -101,6 +101,13 @@
       <button id="showBlockbuster" title="A movie trailer: anamorphic lens flares, a zoom punch on every bar, shockwave rings on drops, focus pulls, grain">Blockbuster</button>
       <button id="showMirage" title="Heat over sand: the air shimmers above the line and an inverted mirage wavers below it">Desert Mirage</button>
       <button id="showBass" title="Built for low end: the bass bows the wings, every bar punches outward, drops fire a shockwave, stereo tilts the line">Bass Cannon</button>
+      <button id="showHalo" title="The fountain wraps into a halo around the cover: bass at the top, treble at the bottom, light bursting outward like a corona">Sun Halo</button>
+      <button id="showArch" title="An arch over the cover like a rainbow, the beat rippling along it">Rainbow Arch</button>
+      <button id="showGalaxy" title="Spiral arms turning once per bar, stars streaming outward with trails">Galaxy</button>
+      <button id="showShift" title="Every part of the song takes its own shape - line, ring, arch, spiral - cross-fading at each change">Shapeshifter</button>
+      <button id="showString" title="Each wing is a plucked string: bass sets off the slow, wide sway, treble the fine fast ripples">Guitar String</button>
+      <button id="showMonsoon" title="Rain: every drop shoots up, falls through the line and bounces on the floor below, over the water's reflection">Monsoon</button>
+      <button id="showPulse" title="A heart monitor: each beat spikes out along the line, a slow wave rolling underneath, CRT glow">Vital Signs</button>
     </div>
     <div class="btns">
       <select id="presetPick" title="Every other preset">
@@ -174,6 +181,15 @@ const PARAMS = [
   ["FLING_FREQ", "Fling & motion", "Fling speed (Hz)", 2.2, 0.3, 8, 0.1, "How fast the throw happens and returns. Low = a slow, floaty swell; high = a tight snap that follows the beat closely."],
   ["FLING_DAMP", "Fling & motion", "Fling bounce", 0.55, 0.05, 2, 0.05, "Below 1 the thrown dots overshoot and bounce back past the start before settling; 1 and above = they return smoothly with no bounce."],
   ["LIQUID", "Fling & motion", "Liquid surface", 0, 0, 1, 0.05, "Links each column to its neighbours like a water surface: a throw spreads sideways as a travelling ripple, ripples pass through and interfere. With low 'Fling bounce' it wobbles like liquid metal. 0 = columns move on their own."],
+  ["LAYOUT", "Shape & gravity", "Shape (line, ring, arch, spiral)", 0, 0, 3, 1, "0 = the line. 1 = a halo ring around the cover, dots flying outward. 2 = an arch over the cover. 3 = a spiral turning once per bar."],
+  ["SPIRAL_TWIST", "Shape & gravity", "Spiral twist", 12, 0, 30, 0.5, "How tightly the spiral winds (with Shape 3)."],
+  ["SHAPE_BY_SECTION", "Shape & gravity", "Shape follows the song", 0, 0, 1, 1, "1 = each part of the song takes its own shape (A line, B ring, C arch, D spiral...), cross-fading at each change. Overrides Shape."],
+  ["WAVE_LINE", "Shape & gravity", "Travelling wave", 0, 0, 3, 0.05, "The line ripples like a flag - a wave rolling out from the cover once per bar, taller as the music gets louder."],
+  ["HEARTBEAT", "Shape & gravity", "Heartbeat line", 0, 0, 3, 0.05, "Each beat sends a spike running out along the line, like a heart monitor."],
+  ["STRING", "Shape & gravity", "Plucked string", 0, 0, 2, 0.05, "Each wing vibrates like a string pinned at both ends: the bass sets off its slow, wide sway, the treble its fast, fine ripples - the music's harmonics, visible."],
+  ["RAIN", "Shape & gravity", "Rain (one-sided gravity)", 0, 0, 1, 0.05, "Every dot shoots up, falls back through the line and on down to a floor below it, bouncing - instead of a mirrored fountain."],
+  ["FLOOR", "Shape & gravity", "Rain floor depth", 0.7, 0.2, 1.5, 0.05, "How far below the line the floor is, against how high the dots rise."],
+  ["BOUNCE", "Shape & gravity", "Bounce", 0.45, 0, 0.8, 0.05, "How much of its speed a dot keeps when it bounces off the floor (0 = it stops dead)."],
   ["GRAVITY", "Effects", "Fountain arc (gravity)", 0, 0, 1, 0.05, "Dots arc up and fall back to the line under gravity over their life, like water from a fountain - instead of rising and fading. 0 = off."],
   ["SPLASH", "Effects", "Splash on landing", 0, 0, 1, 0.05, "With the fountain arc: as a dot lands back on the line it splashes - a small bounce and a scatter sideways."],
   ["TRAILS", "Effects", "Motion trails (s)", 0, 0, 1.5, 0.05, "Moving dots leave fading afterimages, like a long-exposure photo; this is how long they take to fade. 0 = off."],
@@ -392,7 +408,7 @@ const inputs = {};
 const fmt = (k, v) => { const step = PARAMS.find(p => p[0] === k)[6]; const d = Math.max(0, -Math.floor(Math.log10(step) + 1e-9)); return Number(v).toFixed(Math.min(d, 4)); };
 // The panel's groups, in this order (a group not listed goes at the end); colour and temperature pulled out of Look
 const COLOUR_KEYS = ["ACCENT", "TEMP_AMOUNT", "COLOR_LEVEL", "COLOR_TIPS", "COLOR_CURVE", "COLOR_EASE", "COOL_AIR", "COOL_HUE", "MOVE_COOL", "KICK_COLOR", "FLASH", "CALM_COLOR", "SPARKLE"];
-const GROUP_ORDER = ["Colour & temperature", "Beat (loaded songs)", "Layers (loaded songs)", "Effects", "Live show", "Song map", "Fling & motion",
+const GROUP_ORDER = ["Colour & temperature", "Beat (loaded songs)", "Layers (loaded songs)", "Shape & gravity", "Effects", "Live show", "Song map", "Fling & motion",
   "Look", "Core", "Shape", "Stretch", "Levels", "Drum detection", "Synthetic beat"];
 const OPEN_DEFAULT = ["Colour & temperature", "Beat (loaded songs)", "Layers (loaded songs)"];
 const groupOf = (k, g) => COLOUR_KEYS.includes(k) ? "Colour & temperature" : g;
@@ -553,6 +569,13 @@ const SHOWCASE = {
   showBlockbuster: { name: "Blockbuster", palette: "Paragon / Renegade", grad: 4, values: { STREAKS: 1.0, ZOOM_PULSE: 0.8, SHOCK_RING: 1, FOCUS_PULL: 0.8, GRAIN: 0.25, DEFOCUS: 0.8, BEAT_ACCENT: 1.3, BEAT_OTHERS: 0.3, DROP_FLING: 2.8, TENSION: 1.4, BLOOM_WIDE: 1.2 } },
   showMirage: { name: "Desert Mirage", palette: "Sunset", grad: 4, values: { HAZE: 1, REFLECT: 0.45, REFLECT_RIPPLE: 1, TRAILS: 0.2, BEND: 0.3, DEFOCUS: 0.7, BLOOM_WIDE: 1.3, COLOR_LEVEL: 1, TEMP_AMOUNT: 0.6 } },
   showBass: { name: "Bass Cannon", palette: "Hellfire", grad: 1, values: { BEND: 1, BALANCE: 0.8, ZOOM_PULSE: 1, SHOCK_RING: 1, BEAT_ACCENT: 1.4, BEAT_OTHERS: 0.3, FLING: 2.9, WAVE: 1.8, WAVE_SPEED: 220, DROP_FLING: 3 } },
+  showHalo: { name: "Sun Halo", palette: "Solar", grad: 1, values: { LAYOUT: 1, REACH: 16, FLING: 2.6, WAVE: 1.2, WAVE_SPEED: 180, BLOOM_WIDE: 1.4, TRAILS: 0.15, SHOCK_RING: 0.8 } },
+  showArch: { name: "Rainbow Arch", palette: "Aurora", grad: 0, values: { LAYOUT: 2, REACH: 14, WAVE_LINE: 0.8, BLOOM_WIDE: 1.2, HARMONY_HUE: 0.7, PAD_GLOW: 0.9 } },
+  showGalaxy: { name: "Galaxy", palette: "Plasma", grad: 0, values: { LAYOUT: 3, SPIRAL_TWIST: 14, REACH: 14, TRAILS: 0.3, TRAIL_DRIFT: 0.006, LIFE_SPREAD: 20, SPARKLE: 0.9, BLOOM_WIDE: 1.5, DEFOCUS: 0.9 } },
+  showShift: { name: "Shapeshifter", palette: "Neon Noir", grad: 4, values: { SHAPE_BY_SECTION: 1, SPIRAL_TWIST: 12, REACH: 16, TRAILS: 0.12, SECTION_LOOK: 0.6 } },
+  showString: { name: "Guitar String", palette: "Amber CRT", grad: 0, values: { STRING: 1.2, FLING: 1.6, BEAT_IN_PLACE: 0.5, WAVE: 0.3, CORE_HOLD: 0.9, BLOOM_WIDE: 1.0 } },
+  showMonsoon: { name: "Monsoon", palette: "Ancient Tech", grad: 0, values: { RAIN: 1, FLOOR: 0.7, BOUNCE: 0.45, LIFE_SPREAD: 6, REFLECT: 0.4, REFLECT_RIPPLE: 0.7, TRAILS: 0.1, SPARKLE: 0.6 } },
+  showPulse: { name: "Vital Signs", palette: "Phosphor", grad: 0, values: { HEARTBEAT: 1.6, WAVE_LINE: 0.5, CRT: 0.6, GRAIN: 0.2, FLING: 1.4, BEAT_IN_PLACE: 0.4, TRAILS: 0.2 } },
 };
 const whiteToMagenta = () => setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0);
 document.getElementById("presetYours4").onclick = () => { applyAll(YOUR_TUNE_4); whiteToMagenta(); };
@@ -1334,7 +1357,13 @@ let reg00 = 0.02, acc60 = 0, meanLevel = 0;
 let tension = 0, beatIdx = 0, beatFrac = 0, phrase = 0, lastSongT = -1;
 let dropColL = 24, dropColR = 71;
 // zoom pulse (the bar's ONE, eased), the last drop's time (for the ring), bass bend and stereo balance (eased)
-let zoomHit = 0, zoomE = 0, ringStart = -99, lastDropP = 0, bendE = 0, balE = 0, balT = 0;   // where the last beat's drop landed on each wing (Liquid)
+let zoomHit = 0, zoomE = 0, ringStart = -99, lastDropP = 0, bendE = 0, balE = 0, balT = 0;
+// shapes: spiral angle, bar phase, the last four beats (time, strength) for the heartbeat, each wing's six string modes
+// (position, velocity), and the layout cross-fade (from A to B)
+let spinA = 0, barPh = 0, synthBeatN = -1, layoutA = 0, layoutB = 0, morphT = 0;
+const hbTime = [-99, -99, -99, -99], hbAmp = [0, 0, 0, 0];
+const modeY = new Float32Array(12), modeV = new Float32Array(12);
+const pushBeat = (tm, amp) => { hbTime.unshift(tm); hbTime.length = 4; hbAmp.unshift(amp); hbAmp.length = 4; };   // where the last beat's drop landed on each wing (Liquid)
 let beatEnv = 0, beatAt = -1, padE = 0, harmX = 0, harmY = 0, harmE = 0;   // the beat throw's envelope; the song time (plus lead) beats have been taken up to
 const liqTmp = new Float32Array(N), targ = new Float32Array(N);   // the liquid's copy of the throws; each spring's target
 const kv = new Float32Array(N);   // each column's throw: its own kick, or the beat's, by BEAT_DRIVE
@@ -1444,6 +1473,7 @@ function engine(dt, t) {
     for (let i = Math.max(0, beatIndexAt(beatAt) + 1); i < bs.length && bs[i] <= tt; i++) if (bs[i] > beatAt) {
       const hit = Math.pow(beatInfo.strength[i], P.BEAT_CONTRAST) * (i % 4 === beatInfo.barPhase ? 1 + P.BEAT_ACCENT : P.BEAT_OTHERS);
       if (i % 4 === beatInfo.barPhase) zoomHit = 1;
+      pushBeat(t, Math.min(1.2, hit));
       beatEnv = Math.max(beatEnv, P.BEAT_FLOOR + (1 - P.BEAT_FLOOR) * hit);
       // with Liquid, the beat lands as a drop where the music is loudest on each wing, and the surface carries it out
       let bl = -1, br = -1;
@@ -1512,6 +1542,24 @@ function engine(dt, t) {
   dropC += (dropPulse - dropC) * (dropPulse > dropC ? ca : cr);
   sectionC += (section - sectionC) * (1 - Math.exp(-dt / 1.2));
   zoomE += (zoomHit - zoomE) * (1 - Math.exp(-dt / 0.06)); zoomHit *= Math.exp(-dt / 0.22);
+  // shapes: one spiral turn and one wave per bar; the synthetic beat's beats for the heartbeat
+  { const per = beatOn ? beatInfo.period : 60 / P.BPM;
+    spinA += dt * 2 * Math.PI / (4 * per);
+    if (beatOn && beatInfo.beats.length) barPh = (((beatIdx - beatInfo.barPhase) % 4 + 4) % 4 + beatFrac) / 4;
+    else { barPh = (t / (4 * per)) % 1; const nb = Math.floor(t / per); if (nb !== synthBeatN) { synthBeatN = nb; if (!beatOn) pushBeat(t, 1); } } }
+  // plucked string: each wing's modes 1..6 are damped oscillators (mode m at m x 1.4 Hz, damping 0.08), driven by the
+  // kick envelope of that wing's sixth of the spectrum, low to high - so the bass sets off the fundamental
+  { const drive = new Float32Array(12), cnt = new Float32Array(12);
+    for (let c = 0; c < N; c++) { const w = c < N / 2 ? 0 : 6, m = Math.min(5, Math.floor(bandPos[c] * 6)); drive[w + m] += kv[c]; cnt[w + m]++; }
+    const sub = 4, hh = dt / sub;
+    for (let q = 0; q < 12; q++) { const om = 2 * Math.PI * 1.4 * (q % 6 + 1), f = 4 * drive[q] / Math.max(1, cnt[q]) / (q % 6 + 1);
+      for (let st = 0; st < sub; st++) { modeV[q] += (om * om * (f - modeY[q]) - 2 * 0.08 * om * modeV[q]) * hh; modeY[q] += modeV[q] * hh; } } }
+  // layout: the chosen shape, or the current section's (A line, B ring, C arch, D spiral, E ring, F arch); a change
+  // cross-fades over 1.5 s
+  { let want = Math.round(P.LAYOUT);
+    if (P.SHAPE_BY_SECTION >= 0.5 && layers && layersOf === buffer && layers.sections && songT !== null) { const sc = layers.sections.find(x => songT >= x.start && songT < x.end); if (sc) want = [0, 1, 2, 3, 1, 2][Math.min(5, sc.label)]; }
+    if (morphT > 0) { morphT += dt / (fixedDt ? 0.05 : 1.5); if (morphT >= 1) { layoutA = layoutB; morphT = 0; } }   // (captures: near-instant)
+    else if (want !== layoutA) { layoutB = want; morphT = 1e-6; } }
   if (dropPulse > lastDropP + 0.4) ringStart = t; lastDropP = dropPulse;
   { let bs = 0, nb = 0; for (let c = 0; c < N; c++) if (bandPos[c] < 0.15) { bs += ez[c]; nb++; } bendE += (bs / Math.max(1, nb) - bendE) * (1 - Math.exp(-dt / 0.12)); }
   balE += (Math.max(-1, Math.min(1, balT * 3)) - balE) * (1 - Math.exp(-dt / 0.4));
@@ -1561,7 +1609,9 @@ uniform sampler2D uHist, uColA, uColB, uColC;
 uniform float uSection, uDrop, uTension, uPhrase, uPad, uHarm, uSecHue;
 uniform vec3 uColMin, uColMax;
 uniform vec3 uCoolA, uCoolB, uKick, uCalmA, uCalmB, uGlint, uColMid;   // uColMid: (-1) = no middle colour   // the palette's scheme
-uniform float uHotMax, uHeatGain, uCoolGain, uSplit, uBend, uBal;   // 1 = loudness heats toward the second palette colour, 0 = toward the first
+uniform float uHotMax, uHeatGain, uCoolGain, uSplit, uBend, uBal;
+uniform float uLayoutA, uLayoutB, uMorph, uSpin, uLevelL, uBarPhase;   // shapes: the layouts cross-fading, spiral turn, level, bar phase
+uniform float uBeatAge[4], uBeatAmp[4], uModesL[6], uModesR[6];        // heartbeat: recent beats; plucked string: each wing's modes   // 1 = loudness heats toward the second palette colour, 0 = toward the first
 uniform int uGrad;
 out vec4 outColor;
 ${DEFS}
@@ -1577,19 +1627,13 @@ vec3 lumMatch(vec3 c, vec3 ref) { return c * dot(ref, LUM) / max(dot(c, LUM), 1e
 // an accent softened toward its own grey (30% less saturated), so it comes in naturally over the palette
 vec3 soften(vec3 c) { return mix(vec3(dot(c, LUM)), c, 0.7); }
 float CurveA(float x) { float s = clamp(x / 0.49, 0.0, 1.0); return x < 0.49 ? 0.6 * s * s * (3.0 - 2.0 * s) : 0.6 * (1.0 - x) / 0.51; }
-void main() {
-  vec2 p = vec2(gl_FragCoord.x / uRes.x, 1.0 - gl_FragCoord.y / uRes.y);
-  float gap = 0.11 * uRes.y / uRes.x;
-  float wing = 0.46 - gap;
-  float fx = (abs(p.x - 0.5) - gap) / wing * 48.0;
+// The fountain at one point in column space: fx = along the wing (0 at the cover .. 48 at the tip), zy = across it in
+// column widths (out from the line), left = which wing, dxs = how wide a column is here against its base width (a ring's
+// columns widen outward; scaling dx keeps the dots their size)
+vec3 fountain(float fx, float zy, bool left, float dxs) {
   float i = clamp(floor(fx), 0.0, 47.0);
-  float colpx = wing * uRes.x / 48.0;
-  float zy = (0.5 - p.y) * uRes.y / colpx;
-  // wing bend: the bass lifts the wing tips (a bow), and the line tilts toward the louder stereo side
-  float wf = clamp(fx / 48.0, 0.0, 1.0);
-  zy -= BEND * uBend * 6.0 * wf * wf + BALANCE * uBal * 6.0 * wf * (p.x < 0.5 ? 1.0 : -1.0);
-  float dx = fx - i - 0.5;
-  float g = p.x < 0.5 ? 47.0 - i : 48.0 + i;
+  float dx = (fx - i - 0.5) * dxs;
+  float g = left ? 47.0 - i : 48.0 + i;
   vec3 acc = vec3(0.0);
   if (fx >= 0.0 && fx <= 48.0 && abs(dx) < 0.42) {
     vec4 A = texelFetch(uColA, ivec2(int(g), 0), 0);   // live, kick envelope, slow level, rate
@@ -1615,6 +1659,23 @@ void main() {
       // fountain arc: up and back down under gravity over the dot's life (a parabola, peak at mid-life)
       travel = mix(travel, 4.0 * na * (1.0 - na), GRAVITY);
       travelD = mix(travelD, 4.0 * (1.0 - 2.0 * na) / life, GRAVITY);
+      // rain: one-sided gravity - up first (whichever side the dot started on), peak at 0.3 of its life, back through
+      // the line, down to a floor FLOOR below it, bouncing with BOUNCE of its speed each time (three bounces)
+      if (RAIN > 0.0) {
+        float gv = 22.2, v0 = 6.67, tt = na, zr = v0 * tt - 0.5 * gv * tt * tt, vr = v0 - gv * tt;
+        float t1 = (v0 + sqrt(v0 * v0 + 2.0 * gv * FLOOR)) / gv;
+        if (tt > t1) {
+          float vb = -(v0 - gv * t1) * BOUNCE, ts = t1;
+          for (int bb = 0; bb < 3; bb++) {
+            float tn = ts + 2.0 * vb / gv, u2 = min(tt, tn) - ts;
+            zr = -FLOOR + vb * u2 - 0.5 * gv * u2 * u2; vr = vb - gv * u2;
+            if (tt <= tn) break;
+            vb *= BOUNCE; ts = tn; zr = -FLOOR; vr = 0.0;
+          }
+        }
+        travel = mix(travel, zr * sign(k), RAIN);
+        travelD = mix(travelD, vr * sign(k) / life, RAIN);
+      }
       // fling: the column's spring, felt by the outer dots
       float tipW = pow(tip, FLING_TIP);
       float flm = 1.0 + FLING * B.x * tipW;
@@ -1682,10 +1743,53 @@ void main() {
       col = col * cos(ang) + cross(kk, col) * sin(ang) + kk * dot(kk, col) * (1.0 - cos(ang));
       col = max(col, vec3(0.0));
       // only the kicked outer dots flash; a streak spreads its light rather than adding to it
-      float alpha = mix(CurveA(na), 0.6 * smoothstep(0.0, 0.08, na) * (1.0 - smoothstep(0.94, 1.0, na)), GRAVITY);
+      float alpha = mix(CurveA(na), 0.6 * smoothstep(0.0, 0.08, na) * (1.0 - smoothstep(0.94, 1.0, na)), max(GRAVITY, RAIN));
       acc += col * disc * disc * alpha * BRIGHT * (1.0 + FLASH * A.y * tipW + 0.8 * MELODY * C.x) / mix(1.0, stretch, STRETCH_DIM);
     }
   }
+  return acc;
+}
+// the line's own shape, as an offset from straight in column widths: wing bend and tilt, a travelling wave, heartbeat
+// spikes, a plucked string's modes
+float lineShape(float fx, bool left) {
+  float wf = clamp(fx / 48.0, 0.0, 1.0);
+  // wing bend: the bass lifts the wing tips (a bow); tilt toward the louder stereo side
+  float y = BEND * uBend * 6.0 * wf * wf + BALANCE * uBal * 6.0 * wf * (left ? 1.0 : -1.0);
+  // travelling wave: two crests across a wing, rolling out from the cover once per bar, taller with the music
+  y += WAVE_LINE * (0.6 + 2.4 * uLevelL) * sin(6.2832 * (wf * 2.0 - uBarPhase));
+  // heartbeat: each recent beat is a spike (and a small dip behind it) running out along the line
+  for (int b = 0; b < 4; b++) { float x = wf - uBeatAge[b] * 1.4; y += HEARTBEAT * uBeatAmp[b] * 3.0 * (exp(-x * x / 0.0004) - 0.4 * exp(-(x + 0.035) * (x + 0.035) / 0.0009)); }
+  // plucked string: the wing's six modes, pinned at the cover and the tip
+  for (int m = 0; m < 6; m++) y += STRING * (left ? uModesL[m] : uModesR[m]) * sin(float(m + 1) * 3.14159 * wf);
+  return y;
+}
+// a layout: where in column space this pixel is, for the line (0), a halo ring (1), an arch (2) or a spiral (3)
+vec3 layoutAt(float L, vec2 p) {
+  float aspect = uRes.x / uRes.y;
+  if (L < 0.5) {
+    float gap = 0.11 / aspect, wing = 0.46 - gap;
+    float fx = (abs(p.x - 0.5) - gap) / wing * 48.0;
+    float zy = (0.5 - p.y) * uRes.y / (wing * uRes.x / 48.0);
+    bool left = p.x < 0.5;
+    return fountain(fx, zy - lineShape(fx, left), left, 1.0);
+  }
+  // rings: polar about the cover, in frame heights; each wing runs from the top (its bass) round to the bottom (treble)
+  // - or, for the arch, to the horizon. The spiral turns the angle with the radius, and with time (once per bar)
+  vec2 q = vec2((p.x - 0.5) * aspect, 0.5 - p.y);
+  float r = length(q);
+  float R0 = L < 1.5 ? 0.23 : (L < 2.5 ? 0.27 : 0.22);
+  if (L > 2.5) { float a = atan(q.y, q.x) + (r - R0) * SPIRAL_TWIST + uSpin; q = r * vec2(cos(a), sin(a)); }
+  float ang = acos(clamp(q.y / max(r, 1e-5), -1.0, 1.0));   // 0 at the top .. pi at the bottom
+  float span = (L > 1.5 && L < 2.5) ? 1.5708 : 3.14159;
+  if (ang > span + 0.05) return vec3(0.0);
+  float fx = ang / span * 48.0, colw = span * R0 / 48.0;
+  bool left = q.x < 0.0;
+  return fountain(fx, (r - R0) / colw - lineShape(fx, left), left, r / R0);
+}
+void main() {
+  vec2 p = vec2(gl_FragCoord.x / uRes.x, 1.0 - gl_FragCoord.y / uRes.y);
+  vec3 acc = layoutAt(uLayoutA, p);
+  if (uMorph > 0.001) acc = mix(acc, layoutAt(uLayoutB, p), uMorph);   // changing shape: a cross-fade
   outColor = vec4(ACES(acc * EXPOSURE), 1.0);
 }`;
 const BLUR_FS = `#version 300 es
@@ -1898,6 +2002,13 @@ function frame(now) {
     gl.uniform3fv(gl.getUniformLocation(progScene, "uGlint"), sch.glint);
     gl.uniform1f(gl.getUniformLocation(progScene, "uHotMax"), sch.hot === 2 ? 1 : 0);
     gl.uniform1f(gl.getUniformLocation(progScene, "uBend"), bendE); gl.uniform1f(gl.getUniformLocation(progScene, "uBal"), balE);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uLayoutA"), layoutA); gl.uniform1f(gl.getUniformLocation(progScene, "uLayoutB"), layoutB);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uMorph"), morphT > 0 ? morphT * morphT * (3 - 2 * morphT) : 0);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uSpin"), spinA % (2 * Math.PI)); gl.uniform1f(gl.getUniformLocation(progScene, "uLevelL"), meanLevel);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uBarPhase"), barPh);
+    gl.uniform1fv(gl.getUniformLocation(progScene, "uBeatAge"), hbTime.map(x => Math.min(9, t - x)));
+    gl.uniform1fv(gl.getUniformLocation(progScene, "uBeatAmp"), hbAmp);
+    gl.uniform1fv(gl.getUniformLocation(progScene, "uModesL"), modeY.subarray(0, 6)); gl.uniform1fv(gl.getUniformLocation(progScene, "uModesR"), modeY.subarray(6, 12));
     gl.uniform1f(gl.getUniformLocation(progScene, "uHeatGain"), sch.heatGain); gl.uniform1f(gl.getUniformLocation(progScene, "uSplit"), sch.split); gl.uniform1f(gl.getUniformLocation(progScene, "uCoolGain"), sch.coolGain);
     gl.uniform1i(gl.getUniformLocation(progScene, "uGrad"), (comparing ? pinned : P).GRADIENT || 0);
     useTex(progScene, "uHist", 0, texHist); useTex(progScene, "uColA", 1, texA); useTex(progScene, "uColB", 2, texB); useTex(progScene, "uColC", 3, texC);
