@@ -108,6 +108,11 @@
       <button id="showString" title="Each wing is a plucked string: bass sets off the slow, wide sway, treble the fine fast ripples">Guitar String</button>
       <button id="showMonsoon" title="Rain: every drop shoots up, falls through the line and bounces on the floor below, over the water's reflection">Monsoon</button>
       <button id="showPulse" title="A heart monitor: each beat spikes out along the line, a slow wave rolling underneath, CRT glow">Vital Signs</button>
+      <button id="showHorizon" title="A black hole: the halo ring around a heavy cover, light bending and swirling into it, beads in orbit">Event Horizon</button>
+      <button id="showHighway" title="A neon road into the distance: the wings recede toward a horizon, a wave rolling along them, CRT glow">Highway</button>
+      <button id="showWildfire" title="Flames in a draught: the fountain leans and gusts, embers fly off the hits, heat shimmers above">Wildfire</button>
+      <button id="showSiren" title="The melody leads: its path rises above the line as a ribbon of light, held chords glow underneath">Siren Song</button>
+      <button id="showVictory" title="Wings that rise in the big moments and droop in the quiet ones, spread by a wide mix; each new section's colour sweeps out from the cover">Victory Wings</button>
     </div>
     <div class="btns">
       <select id="presetPick" title="Every other preset">
@@ -181,12 +186,16 @@ const PARAMS = [
   ["FLING_FREQ", "Fling & motion", "Fling speed (Hz)", 2.2, 0.3, 8, 0.1, "How fast the throw happens and returns. Low = a slow, floaty swell; high = a tight snap that follows the beat closely."],
   ["FLING_DAMP", "Fling & motion", "Fling bounce", 0.55, 0.05, 2, 0.05, "Below 1 the thrown dots overshoot and bounce back past the start before settling; 1 and above = they return smoothly with no bounce."],
   ["LIQUID", "Fling & motion", "Liquid surface", 0, 0, 1, 0.05, "Links each column to its neighbours like a water surface: a throw spreads sideways as a travelling ripple, ripples pass through and interfere. With low 'Fling bounce' it wobbles like liquid metal. 0 = columns move on their own."],
-  ["LAYOUT", "Shape & gravity", "Shape (line, ring, arch, spiral)", 0, 0, 3, 1, "0 = the line. 1 = a halo ring around the cover, dots flying outward. 2 = an arch over the cover. 3 = a spiral turning once per bar."],
+  ["LAYOUT", "Shape & gravity", "Shape (line, ring, arch, spiral, horizon)", 0, 0, 4, 1, "0 = the line. 1 = a halo ring around the cover, dots flying outward. 2 = an arch over the cover. 3 = a spiral turning once per bar. 4 = the wings recede toward a horizon, like a road into the distance."],
   ["SPIRAL_TWIST", "Shape & gravity", "Spiral twist", 12, 0, 30, 0.5, "How tightly the spiral winds (with Shape 3)."],
   ["SHAPE_BY_SECTION", "Shape & gravity", "Shape follows the song", 0, 0, 1, 1, "1 = each part of the song takes its own shape (A line, B ring, C arch, D spiral...), cross-fading at each change. Overrides Shape."],
   ["WAVE_LINE", "Shape & gravity", "Travelling wave", 0, 0, 3, 0.05, "The line ripples like a flag - a wave rolling out from the cover once per bar, taller as the music gets louder."],
   ["HEARTBEAT", "Shape & gravity", "Heartbeat line", 0, 0, 3, 0.05, "Each beat sends a spike running out along the line, like a heart monitor."],
   ["STRING", "Shape & gravity", "Plucked string", 0, 0, 2, 0.05, "Each wing vibrates like a string pinned at both ends: the bass sets off its slow, wide sway, the treble its fast, fine ripples - the music's harmonics, visible."],
+  ["WINGS", "Shape & gravity", "Raised wings", 0, 0, 1, 0.05, "The wings angle up into a V in full sections and on drops, and droop in breakdowns."],
+  ["STEREO_SPREAD", "Shape & gravity", "Stereo width spreads the wings", 0, 0, 1, 0.05, "A wide stereo mix pushes the wings apart from the cover; a mono passage draws them in."],
+  ["WELL", "Shape & gravity", "Gravity well", 0, 0, 1, 0.05, "The cover is a heavy mass: light bends and swirls around it, like a black hole."],
+  ["WIND", "Shape & gravity", "Wind", 0, 0, 1, 0.05, "The fountain leans in a wind that gusts and swings toward the louder stereo side - like flames in a draught."],
   ["RAIN", "Shape & gravity", "Rain (one-sided gravity)", 0, 0, 1, 0.05, "Every dot shoots up, falls back through the line and on down to a floor below it, bouncing - instead of a mirrored fountain."],
   ["FLOOR", "Shape & gravity", "Rain floor depth", 0.7, 0.2, 1.5, 0.05, "How far below the line the floor is, against how high the dots rise."],
   ["BOUNCE", "Shape & gravity", "Bounce", 0.45, 0, 0.8, 0.05, "How much of its speed a dot keeps when it bounces off the floor (0 = it stops dead)."],
@@ -204,6 +213,10 @@ const PARAMS = [
   ["FOCUS_PULL", "Effects", "Focus pull by section", 0, 0, 1, 0.05, "Full, busy sections come into sharp focus; quiet ones go soft - with Defocus above 0."],
   ["BEND", "Effects", "Wing bend with the bass", 0, 0, 1, 0.05, "The bass bows the line: the wing tips lift with every bass swell, like a speaker cone."],
   ["BALANCE", "Effects", "Tilt to the louder side", 0, 0, 1, 0.05, "The line tilts toward whichever stereo side is louder right now."],
+  ["EMBERS", "Effects", "Embers", 0, 0, 1, 0.05, "A second, lighter layer: small sparks thrown up from the line on the hits, drifting as they rise and fade."],
+  ["ORBIT", "Effects", "Orbit ring", 0, 0, 1, 0.05, "Beads circle the cover, one turn per bar, glowing with the music."],
+  ["MELODY_RIBBON", "Effects", "Melody ribbon", 0, 0, 1, 0.05, "The tune leaves a trail: where the melody has been over the last two seconds rises above the line as a ribbon of light."],
+  ["SECTION_SWEEP", "Effects", "Section change sweep", 0, 0, 1, 1, "A new section's tint sweeps out from the cover along the line, instead of fading in everywhere at once (with Sections: own tint)."],
   ["CRT", "Effects", "CRT screen", 0, 0, 1, 0.05, "Old-monitor finish: scanlines, a slight curve to the picture and darker edges."],
   ["GRAIN", "Effects", "Film grain", 0, 0, 1, 0.05, "Fine moving film grain over the picture (very faint - texture, not flicker)."],
   ["FLING_TIP", "Fling & motion", "Fling: outer dots only", 1.5, 0, 4, 0.1, "Which dots get thrown. 0 = the whole column moves together; higher = only the dots furthest from the line move, the core stays put."],
@@ -576,6 +589,11 @@ const SHOWCASE = {
   showString: { name: "Guitar String", palette: "Amber CRT", grad: 0, values: { STRING: 1.2, FLING: 1.6, BEAT_IN_PLACE: 0.5, WAVE: 0.3, CORE_HOLD: 0.9, BLOOM_WIDE: 1.0 } },
   showMonsoon: { name: "Monsoon", palette: "Ancient Tech", grad: 0, values: { RAIN: 1, FLOOR: 0.7, BOUNCE: 0.45, LIFE_SPREAD: 6, REFLECT: 0.4, REFLECT_RIPPLE: 0.7, TRAILS: 0.1, SPARKLE: 0.6 } },
   showPulse: { name: "Vital Signs", palette: "Phosphor", grad: 0, values: { HEARTBEAT: 1.6, WAVE_LINE: 0.5, CRT: 0.6, GRAIN: 0.2, FLING: 1.4, BEAT_IN_PLACE: 0.4, TRAILS: 0.2 } },
+  showHorizon: { name: "Event Horizon", palette: "Abyss", grad: 0, values: { LAYOUT: 1, WELL: 1, ORBIT: 1, REACH: 15, TRAILS: 0.2, BLOOM_WIDE: 1.6, DEFOCUS: 0.9, SPARKLE: 0.6 } },
+  showHighway: { name: "Highway", palette: "Synthwave", grad: 4, values: { LAYOUT: 4, WAVE_LINE: 0.4, CRT: 0.35, STREAKS: 0.4, REACH: 20, BLOOM_WIDE: 1.2, TRAILS: 0.12 } },
+  showWildfire: { name: "Wildfire", palette: "Hellfire", grad: 1, values: { WIND: 1, EMBERS: 1, HAZE: 0.6, GRAVITY: 0.3, BLOOM_WIDE: 1.3, COLOR_LEVEL: 1, TEMP_AMOUNT: 0.6 } },
+  showSiren: { name: "Siren Song", palette: "Moonlit Ruins", grad: 0, values: { MELODY_RIBBON: 1, MELODY: 1.2, PAD_GLOW: 1.0, PAD_SWELL: 0.8, BEAT_DRIVE: 0.5, FLING: 1.6, BLOOM_WIDE: 1.3, HARMONY_HUE: 0.6 } },
+  showVictory: { name: "Victory Wings", palette: "Gold to violet", grad: 4, values: { WINGS: 1, STEREO_SPREAD: 1, SECTION_SWEEP: 1, SECTION_LOOK: 0.8, DROP_FLING: 2.6, BLOOM_WIDE: 1.2, TRAILS: 0.1 } },
 };
 const whiteToMagenta = () => setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0);
 document.getElementById("presetYours4").onclick = () => { applyAll(YOUR_TUNE_4); whiteToMagenta(); };
@@ -1372,7 +1390,10 @@ let dropC = 0, sectionC = 1;      // the drop's colour (fades in) and a slow sec
 const heatC = new Float32Array(N);  // each column's loudness for the heat colour, faded (the live level moves in ~85 ms)
 let tensionC = 0, phraseC = 0;      // the build-up tint and the phrase drift, faded
 let actC = 0;                       // how strong the beat is around now (0..1), faded - a strong beat isn't a breakdown
-let secHueC = 0, melPos = 0.3, mT = 0;      // the section's hue turn, faded; the melody's place along the wing, gliding
+let secHueC = 0, melPos = 0.3, mT = 0;
+// section sweep (the previous and next section hue, how far the change has run out), stereo width, the melody's recent path
+let secPrev = 0, secNext = 0, secSweep = 1, widthE = 0, widthT = 0, melAcc = 0;
+const melPath = new Float32Array(32), melPathS = new Float32Array(32);      // the section's hue turn, faded; the melody's place along the wing, gliding
 const settleC = new Float32Array(N);  // each column cooling off as its throw falls back (0..1): quick in, lingers out
 let eFast = 0, eSlow = 0, section = 1, quietFor = 0, quietAgo = 99, lastQuiet = 0, dropPulse = 0, bassKick = 0, energyRatio = 1;
 const WAVE_ROWS = 120, waveRing = new Float32Array(WAVE_ROWS);
@@ -1389,7 +1410,8 @@ function engine(dt, t) {
     // a mono song splits into one live channel and one silent one - use the mix for both
     if (stereo && analyserL && buffer && buffer.numberOfChannels > 1) { lin(analyserL, specL); lin(analyserR, specR); srcL = specL; srcR = specR; }
     // stereo balance (-1 left .. 1 right... as left minus right over both)
-    { let sl = 0, sr2 = 0; if (srcL !== srcR) for (let i = 0; i < 512; i++) { sl += srcL[i]; sr2 += srcR[i]; } balT = srcL !== srcR ? (sl - sr2) / Math.max(1e-9, sl + sr2) : 0; }
+    { let sl = 0, sr2 = 0, sd = 0; if (srcL !== srcR) for (let i = 0; i < 512; i++) { sl += srcL[i]; sr2 += srcR[i]; sd += Math.abs(srcL[i] - srcR[i]); }
+      balT = srcL !== srcR ? (sl - sr2) / Math.max(1e-9, sl + sr2) : 0; widthT = srcL !== srcR ? sd / Math.max(1e-9, sl + sr2) : 0; }
   } else if (synthOn && sourceSel.value !== "file") synth(t, spec, binHz);
   else spec.fill(0);
   const b0 = 50 / binHz, b1 = Math.min(510, 16000 / binHz);
@@ -1445,6 +1467,8 @@ function engine(dt, t) {
   let secT = 0;
   if (lyOn && layers.sections) { const sc = layers.sections.find(x => songT >= x.start && songT < x.end); if (sc) secT = [0, 0.35, -0.35, 0.6, -0.6, 0.85][Math.min(5, sc.label)]; }
   secHueC += (secT - secHueC) * (1 - Math.exp(-dt / 2.0));
+  if (secT !== secNext) { secPrev = secPrev + (secNext - secPrev) * Math.min(1, secSweep); secNext = secT; secSweep = 0; }
+  secSweep = Math.min(1.2, secSweep + dt / 1.8);
   // melody: its pitch -> a place along the wing (as the columns map frequency), gliding; its strength, faded
   mT = 0;
   if (lyOn && layers.melF) {
@@ -1563,6 +1587,9 @@ function engine(dt, t) {
   if (dropPulse > lastDropP + 0.4) ringStart = t; lastDropP = dropPulse;
   { let bs = 0, nb = 0; for (let c = 0; c < N; c++) if (bandPos[c] < 0.15) { bs += ez[c]; nb++; } bendE += (bs / Math.max(1, nb) - bendE) * (1 - Math.exp(-dt / 0.12)); }
   balE += (Math.max(-1, Math.min(1, balT * 3)) - balE) * (1 - Math.exp(-dt / 0.4));
+  widthE += (Math.min(1, widthT * 2) - widthE) * (1 - Math.exp(-dt / 0.5));
+  // the melody's path: a sample every 1/16 s, newest first
+  melAcc += dt; while (melAcc >= 1 / 16) { melAcc -= 1 / 16; melPath.copyWithin(1, 0, 31); melPathS.copyWithin(1, 0, 31); melPath[0] = melPos; melPathS[0] = mT; }
   // the breakdown colour (and breathing) needs quiet AND a weak beat: the section is loudness against the whole song,
   // so a verse with full drums under a louder finale read as a breakdown (Troy 0:06-0:15: section ~0, beat 0.6-1.1).
   // The beat's strength within 2 s either side, 0.3 (lone stabs) .. 0.55 (a groove)
@@ -1610,7 +1637,7 @@ uniform float uSection, uDrop, uTension, uPhrase, uPad, uHarm, uSecHue;
 uniform vec3 uColMin, uColMax;
 uniform vec3 uCoolA, uCoolB, uKick, uCalmA, uCalmB, uGlint, uColMid;   // uColMid: (-1) = no middle colour   // the palette's scheme
 uniform float uHotMax, uHeatGain, uCoolGain, uSplit, uBend, uBal;
-uniform float uLayoutA, uLayoutB, uMorph, uSpin, uLevelL, uBarPhase;   // shapes: the layouts cross-fading, spiral turn, level, bar phase
+uniform float uLayoutA, uLayoutB, uMorph, uSpin, uLevelL, uBarPhase, uWidth, uSecPrev, uSecNext, uSweep;   // shapes: the layouts cross-fading, spiral turn, level, bar phase
 uniform float uBeatAge[4], uBeatAmp[4], uModesL[6], uModesR[6];        // heartbeat: recent beats; plucked string: each wing's modes   // 1 = loudness heats toward the second palette colour, 0 = toward the first
 uniform int uGrad;
 out vec4 outColor;
@@ -1738,13 +1765,29 @@ vec3 fountain(float fx, float zy, bool left, float dxs) {
       // phrase colour drift: every 8 bars the hue turns a little (about the grey axis, so brightness holds)
       // phrase, harmony and section turn the hue only a little (at most ~12 degrees): more would carry every palette
       // off its own colours (an orange palette went magenta at 60)
-      float ang = clamp(PHRASE_HUE * 0.6 * sin(uPhrase * 2.39996) + HARMONY_HUE * 1.2 * uHarm + SECTION_LOOK * uSecHue, -1.0, 1.0) * 0.21;
+      // (with the section sweep, a new section's hue reaches each column as a front running out from the cover)
+      float secH = SECTION_SWEEP > 0.5 ? mix(uSecPrev, uSecNext, smoothstep(fx / 48.0 - 0.15, fx / 48.0, uSweep * 1.15)) : uSecHue;
+      float ang = clamp(PHRASE_HUE * 0.6 * sin(uPhrase * 2.39996) + HARMONY_HUE * 1.2 * uHarm + SECTION_LOOK * secH, -1.0, 1.0) * 0.21;
       vec3 kk = vec3(0.57735);
       col = col * cos(ang) + cross(kk, col) * sin(ang) + kk * dot(kk, col) * (1.0 - cos(ang));
       col = max(col, vec3(0.0));
       // only the kicked outer dots flash; a streak spreads its light rather than adding to it
       float alpha = mix(CurveA(na), 0.6 * smoothstep(0.0, 0.08, na) * (1.0 - smoothstep(0.94, 1.0, na)), max(GRAVITY, RAIN));
       acc += col * disc * disc * alpha * BRIGHT * (1.0 + FLASH * A.y * tipW + 0.8 * MELODY * C.x) / mix(1.0, stretch, STRETCH_DIM);
+    }
+  }
+  // embers: six small sparks per column, thrown up on the hits (the column's kick), drifting side to side as they rise
+  // and fade; mostly upward. Colour: the palette's sparkle, at a fixed modest brightness
+  if (EMBERS > 0.0 && fx >= 0.0 && fx <= 48.0) {
+    vec4 Ae = texelFetch(uColA, ivec2(int(g), 0), 0);
+    for (float s = 0.0; s < 6.0; s += 1.0) {
+      vec2 h = H2(g + 311.0, s);
+      float life = 1.2 + 1.2 * h.x, na = fract(uTime / life + h.y);
+      float z = (h.y > 0.2 ? 1.0 : -1.0) * pow(na, 0.8) * (8.0 + 18.0 * h.x);
+      float ex = dx - 0.25 * sin(na * 12.0 + h.x * 6.2832);
+      vec2 de = vec2(ex, zy - z) / 0.12;
+      float glow = max(0.0, 1.0 - dot(de, de));
+      acc += uGlint * 0.12 * 0.6 * glow * glow * pow(1.0 - na, 1.5) * smoothstep(0.0, 0.1, na) * (0.15 + Ae.y) * EMBERS * BRIGHT;
     }
   }
   return acc;
@@ -1759,6 +1802,8 @@ float lineShape(float fx, bool left) {
   y += WAVE_LINE * (0.6 + 2.4 * uLevelL) * sin(6.2832 * (wf * 2.0 - uBarPhase));
   // heartbeat: each recent beat is a spike (and a small dip behind it) running out along the line
   for (int b = 0; b < 4; b++) { float x = wf - uBeatAge[b] * 1.4; y += HEARTBEAT * uBeatAmp[b] * 3.0 * (exp(-x * x / 0.0004) - 0.4 * exp(-(x + 0.035) * (x + 0.035) / 0.0009)); }
+  // raised wings: a V in full sections and on drops, a droop in breakdowns
+  y += WINGS * (uSection * 1.4 - 0.4 + uDrop * 1.2) * wf * 10.0;
   // plucked string: the wing's six modes, pinned at the cover and the tip
   for (int m = 0; m < 6; m++) y += STRING * (left ? uModesL[m] : uModesR[m]) * sin(float(m + 1) * 3.14159 * wf);
   return y;
@@ -1766,8 +1811,19 @@ float lineShape(float fx, bool left) {
 // a layout: where in column space this pixel is, for the line (0), a halo ring (1), an arch (2) or a spiral (3)
 vec3 layoutAt(float L, vec2 p) {
   float aspect = uRes.x / uRes.y;
+  if (L > 3.5) {
+    // horizon: the wings recede toward the distance - the tips smaller, and the line rising toward a horizon. Screen
+    // position u along a wing maps to depth fxn by u = fxn (1 + a) / (1 + a fxn), things there are 1 / (1 + a fxn) the size
+    float gap = 0.11 / aspect, wing = 0.46 - gap, a = 2.0;
+    float u = (abs(p.x - 0.5) - gap) / wing;
+    float fxn = u / (1.0 + a - a * u), sc = 1.0 / (1.0 + a * fxn);
+    float lift = 0.15 * (1.0 - sc) * (1.0 + a) / a;
+    float zy = ((0.5 - lift) - p.y) * uRes.y / (wing * uRes.x / 48.0) / sc;
+    bool left = p.x < 0.5; float fx = fxn * 48.0;
+    return fountain(fx, zy - lineShape(fx, left), left, 1.0);
+  }
   if (L < 0.5) {
-    float gap = 0.11 / aspect, wing = 0.46 - gap;
+    float gap = 0.11 / aspect + STEREO_SPREAD * (uWidth - 0.25) * 0.08, wing = 0.46 - gap;   // stereo width pushes the wings out
     float fx = (abs(p.x - 0.5) - gap) / wing * 48.0;
     float zy = (0.5 - p.y) * uRes.y / (wing * uRes.x / 48.0);
     bool left = p.x < 0.5;
@@ -1822,7 +1878,8 @@ const COMP_FS = `#version 300 es
 precision highp float;
 uniform vec2 uRes;
 uniform float uP[${PARAMS.length}];
-uniform float uLevel, uPad, uWarm, uTime, uFull, uZoom, uRingT, uHasCover;
+uniform float uLevel, uPad, uWarm, uTime, uFull, uZoom, uRingT, uHasCover, uSpinC, uBalC;
+uniform float uMelPos[32], uMelStr[32];   // the melody's place along a wing (0 low .. 1 high) and strength, newest first, 1/16 s apart
 uniform vec3 uGlowHot, uCoolA, uCoolB, uBloomTint, uGlint;
 uniform int uBg;
 uniform sampler2D uScene, uB1, uB2, uB3, uCover;
@@ -1836,6 +1893,16 @@ void main() {
   // heat haze: the air shimmers - more above the line, and the hotter and louder the music runs
   float hz = HAZE * (uv.y > 0.5 ? 1.0 : 0.45) * clamp(uWarm * 0.7 + uLevel * 1.5, 0.0, 1.0);
   vec2 suv = uv + hz * 0.006 * vec2(sin(uv.y * 70.0 + uTime * 3.1 + sin(uv.x * 23.0 + uTime)), 0.5 * sin(uv.x * 55.0 - uTime * 2.3));
+  // wind: the fountain leans - the further from the line, the further over - in a gust that swings with the stereo side
+  suv.x += WIND * 0.22 * (uv.y - 0.5) * (0.45 + 0.35 * sin(uTime * 0.7) + 0.6 * uBalC);
+  // gravity well: the cover is a mass - each point's light comes from nearer the centre and turned a little, so the
+  // picture stretches and swirls around the cover
+  if (WELL > 0.0) {
+    vec2 cv = (suv - 0.5) * vec2(uRes.x / uRes.y, 1.0); float rw = length(cv);
+    float pull = WELL * 0.014 / max(rw, 0.12), tw = WELL * 0.05 / max(rw, 0.12);
+    cv = (cv - normalize(cv) * pull) * mat2(cos(tw), -sin(tw), sin(tw), cos(tw));
+    suv = cv / vec2(uRes.x / uRes.y, 1.0) + 0.5;
+  }
   vec2 o = vec2(FRINGE * smoothstep(0.2, 1.0, length(suv - 0.5) * 2.0), 0.0);
   vec3 c = vec3(texture(uScene, suv + o).r, texture(uScene, suv).g, texture(uScene, suv - o).b);
   vec3 b1 = texture(uB1, suv).rgb, b2 = texture(uB2, suv).rgb, b3 = texture(uB3, suv).rgb;
@@ -1875,6 +1942,22 @@ void main() {
   if (SHOCK_RING > 0.0 && uRingT < 4.0) {
     float ring = exp(-pow((r - (0.16 + uRingT * 0.55)) / 0.012, 2.0)) * smoothstep(0.0, 0.12, uRingT) * exp(-uRingT * 1.6);
     glow += glowCol * ring * SHOCK_RING * 0.8;
+  }
+  // orbit ring: 24 beads circling the cover once per bar, glowing with the music
+  if (ORBIT > 0.0 && abs(r - 0.205) < 0.03) {
+    vec2 cvo = (uv - 0.5) * vec2(uRes.x / uRes.y, 1.0);
+    for (float k = 0.0; k < 24.0; k += 1.0) { float an = k / 24.0 * 6.2832 + uSpinC; vec2 bp = 0.205 * vec2(cos(an), sin(an));
+      glow += glowCol * ORBIT * (0.35 + 0.9 * clamp(uLevel * 2.0, 0.0, 1.0)) * exp(-dot(cvo - bp, cvo - bp) / 0.000025) * 0.6; }
+  }
+  // melody ribbon: the last two seconds of the melody's place, on both wings, rising above the line as they age
+  if (MELODY_RIBBON > 0.0 && uv.y > 0.5) {
+    float gapM = 0.11 * uRes.y / uRes.x, wingM = 0.46 - gapM;
+    for (int k = 0; k < 32; k++) {
+      if (uMelStr[k] < 0.02) continue;
+      float age = float(k) / 16.0, yy = 0.5 + 0.04 + age * 0.2, xo = gapM + wingM * uMelPos[k];
+      vec2 d1 = (uv - vec2(0.5 - xo, yy)) * vec2(uRes.x / uRes.y, 1.0), d2 = (uv - vec2(0.5 + xo, yy)) * vec2(uRes.x / uRes.y, 1.0);
+      glow += mix(glowCol, vec3(1.0), 0.4) * MELODY_RIBBON * uMelStr[k] * (1.0 - age / 2.0) * (exp(-dot(d1, d1) / 0.00003) + exp(-dot(d2, d2) / 0.00003)) * 0.7;
+    }
   }
   vec2 d = (uv - 0.5) * vec2(0.8, 3.0);
   // the glow behind the line: violet while the music runs cool, warming toward the palette's hot colour only as the
@@ -2006,6 +2089,9 @@ function frame(now) {
     gl.uniform1f(gl.getUniformLocation(progScene, "uMorph"), morphT > 0 ? morphT * morphT * (3 - 2 * morphT) : 0);
     gl.uniform1f(gl.getUniformLocation(progScene, "uSpin"), spinA % (2 * Math.PI)); gl.uniform1f(gl.getUniformLocation(progScene, "uLevelL"), meanLevel);
     gl.uniform1f(gl.getUniformLocation(progScene, "uBarPhase"), barPh);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uWidth"), widthE);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uSecPrev"), secPrev); gl.uniform1f(gl.getUniformLocation(progScene, "uSecNext"), secNext);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uSweep"), Math.min(1.2, secSweep));
     gl.uniform1fv(gl.getUniformLocation(progScene, "uBeatAge"), hbTime.map(x => Math.min(9, t - x)));
     gl.uniform1fv(gl.getUniformLocation(progScene, "uBeatAmp"), hbAmp);
     gl.uniform1fv(gl.getUniformLocation(progScene, "uModesL"), modeY.subarray(0, 6)); gl.uniform1fv(gl.getUniformLocation(progScene, "uModesR"), modeY.subarray(6, 12));
@@ -2039,6 +2125,8 @@ function frame(now) {
     gl.uniform1f(gl.getUniformLocation(progComp, "uFull"), Math.max(sectionC, actC));
     gl.uniform1f(gl.getUniformLocation(progComp, "uZoom"), (comparing ? pinned : P).ZOOM_PULSE * zoomE);
     gl.uniform1f(gl.getUniformLocation(progComp, "uRingT"), t - ringStart);
+    gl.uniform1f(gl.getUniformLocation(progComp, "uSpinC"), spinA % (2 * Math.PI)); gl.uniform1f(gl.getUniformLocation(progComp, "uBalC"), balE);
+    gl.uniform1fv(gl.getUniformLocation(progComp, "uMelPos"), melPath); gl.uniform1fv(gl.getUniformLocation(progComp, "uMelStr"), melPathS);
     gl.uniform1f(gl.getUniformLocation(progComp, "uHasCover"), coverTex ? 1 : 0);
     if (coverTex) useTex(progComp, "uCover", 4, coverTex);
     gl.uniform1f(gl.getUniformLocation(progComp, "uPad"), padE);
