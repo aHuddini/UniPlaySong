@@ -123,7 +123,7 @@
       <button id="specToxic" title="Lime: green to chartreuse, a slow wave along the line, a touch of grain">Toxic</button>
       <button id="specPhosphor" title="Green: phosphor greens on a soft CRT">Phosphor</button>
       <button id="specAurora" title="Teal: green to teal to blue like the northern lights, held chords glowing, the line rippling">Aurora</button>
-      <button id="specAncient" title="Blue and cyan relic-tech interface: segmented readouts, a scanner sweeping each bar, HUD rails, a rune ring orbiting the cover, energy pulsing along the line, an orange warning on the kick">Ancient Tech</button>
+      <button id="specAncient" title="Blue and cyan relic-tech interface: your tune: crisp, faintly segmented, a soft scanner, energy pulsing along the line, a touch of CRT, an orange warning on the kick">Ancient Tech</button>
       <button id="specPlasma" title="Violet: violet to blue to plasma green, light drifting off the fountain">Plasma</button>
       <button id="specVapor" title="Pink: hot pink to lavender to cyan, a soft liquid surface over a faint reflection">Vapor</button>
       <button id="specMagenta" title="Magenta: your tune #5's own look, unchanged">White to Magenta</button>
@@ -131,6 +131,24 @@
       <button id="specMercury" title="Neutral: liquid chrome over its reflection">Mercury</button>
       <button id="specFull" title="All colours, crisp: the spectrum across the line on your calm tune #5 motion, sharp and without haze - the everyday one">Full Spectrum</button>
       <button id="specFestival" title="All colours, party mode: the spectrum across the line with the wings alternating, a big wave every beat, oversized drops and wind-ups, sparkle (also in Showcase)">Festival</button>
+    </div>
+    <h2 class="sec">Ancient Tech</h2>
+    <div class="btns" title="All on the Ancient Tech palette: relic-tech stories built on your Ancient Tech tune">
+      <button id="atHolo" title="The Hologram look in Ancient Tech colours: crisp short-lived pixels, a colour split at the edges, even scan-like pulses">Relic Hologram</button>
+      <button id="atShrine" title="A shrine's glowing seal: your Ancient Tech wrapped into a rune ring around the cover, beads in orbit, a slow scan">Shrine Seal</button>
+      <button id="atTower" title="A tower activating: energy rising off the line, wings lifting in the big moments, light streaming outward, a scanner each bar">Tower Rising</button>
+      <button id="atGuardian" title="A sentinel locking on: a strong scanner sweep, orange warning kicks, a targeting pulse on each bar and a ring on drops">Guardian Lock-on</button>
+      <button id="atRunes" title="Glowing runes on a dot-matrix lattice: stepped LEDs, segmented heights, a soft scan">Rune Lattice</button>
+      <button id="atWaters" title="A relic beneath still water: its reflection below, energy streams flowing behind, orbs of light rising">Ancient Waters</button>
+      <button id="atCore" title="A reactor's core: spiral arms turning once per bar around a heavy centre that bends the light, beads in orbit">Ancient Core</button>
+    </div>
+    <h2 class="sec">Handheld</h2>
+    <div class="btns" title="Inspired by a handheld console's music player - LED light displays, menu waves, bubble lights">
+      <button id="psLed" title="Your fountain shown on a board of round LEDs - each lit in the colour behind it, unlit ones faintly visible, softly glowing">LED Board</button>
+      <button id="psVu" title="A segmented LED level meter: green at the line, yellow, red at the peaks, each LED lighting in steps">VU Matrix</button>
+      <button id="psWaves" title="Soft ribbons of light flowing behind a calm fountain, like a console menu, swelling with the music">Menu Waves</button>
+      <button id="psBubbles" title="Out-of-focus light orbs drifting up behind small glowing LEDs">Bubble Lights</button>
+      <button id="psNight" title="An LED road into the distance under drifting menu waves">Night Drive</button>
     </div>
     <div class="btns">
       <select id="presetPick" title="Every other preset">
@@ -237,7 +255,12 @@ const PARAMS = [
   ["SECTION_SWEEP", "Effects", "Section change sweep", 0, 0, 1, 1, "A new section's tint sweeps out from the cover along the line, instead of fading in everywhere at once (with Sections: own tint)."],
   ["QUANTIZE", "Effects", "Digital steps", 0, 0, 1, 0.05, "Dots snap to stepped heights, like the segments of a digital meter or a HUD readout. Higher = coarser steps."],
   ["SCAN", "Effects", "Scan sweep", 0, 0, 1, 0.05, "A scanner band crosses the line once per bar, lighting up the dots it passes."],
-  ["HUD_LINES", "Effects", "HUD guides", 0, 0, 1, 0.05, "Faint guide rails above and below the fountain with tick marks along them, glowing with the music - an interface frame."],
+  ["LED", "Effects", "LED board", 0, 0, 1, 0.05, "The picture shown through a grid of round LEDs: each lit with the colour of what's behind it, unlit ones faintly visible, each with a small glint and a soft halo - like a handheld music player's light display."],
+  ["LED_SIZE", "Effects", "LED size", 1.4, 0.6, 4, 0.05, "How big each LED is (a share of the frame's height, in %)."],
+  ["LED_LEVELS", "Effects", "LED brightness steps", 0, 0, 8, 1, "0 = each LED glows smoothly; 3-8 = it lights in that many brightness steps, like a segmented meter."],
+  ["LED_OFF", "Effects", "Unlit LEDs", 0.5, 0, 1, 0.05, "How visible the unlit LEDs are - the board behind the light."],
+  ["MENU_WAVES", "Effects", "Menu waves", 0, 0, 1, 0.05, "Soft ribbons of light flowing across behind the fountain, like a console menu's wave background, swelling with the music."],
+  ["ORBS", "Effects", "Bubble lights", 0, 0, 1, 0.05, "Soft out-of-focus orbs of light drifting slowly upward behind the fountain, brighter with the music."],
   ["CRT", "Effects", "CRT screen", 0, 0, 1, 0.05, "Old-monitor finish: scanlines, a slight curve to the picture and darker edges."],
   ["GRAIN", "Effects", "Film grain", 0, 0, 1, 0.05, "Fine moving film grain over the picture (very faint - texture, not flicker)."],
   ["FLING_TIP", "Fling & motion", "Fling: outer dots only", 1.5, 0, 4, 0.1, "Which dots get thrown. 0 = the whole column moves together; higher = only the dots furthest from the line move, the core stays put."],
@@ -382,6 +405,9 @@ const PALETTES = [
   ["Crimson", [6.0, 0.4, 1.0], [10.0, 6.5, 7.0], "Pure red: deep crimson, red, rose-white highlights"],
   ["Gilded", [6.0, 3.5, 0.4], [10.0, 9.5, 6.5], "Gold: bronze, bright gold, cream"],
   ["Toxic", [2.0, 7.0, 0.5], [8.5, 10.0, 6.0], "Lime: green, chartreuse, pale lime"],
+  // ---- handheld palettes: a classic LED meter, and a console menu's deep blue
+  ["VU Meter", [1.0, 9.0, 1.5], [10.0, 1.0, 0.8], "Green to yellow to red, like an LED level meter"],
+  ["Menu Blue", [0.5, 1.5, 7.0], [9.0, 9.5, 10.0], "A console menu's deep blue to cobalt to silver-white"],
 ];
 const CLASSIC_PALETTES = 12;   // the ones before Game styles
 let coverTex = null;           // the dropped cover image (shown in the disc), once one is picked
@@ -435,6 +461,8 @@ const SCHEMES = {
   "Hologram": { mid: [0.5, 9.0, 10.0], kick: [10.0, 10.0, 10.0], cool: [[0.0, 3.5, 6.0], [0.5, 3.0, 8.0]], calm: [[0.0, 2.5, 4.0], [0.3, 3.0, 5.0]], glint: [10.0, 10.0, 10.0], bloom: [0.3, 0.9, 1.0], heatGain: 1.2, grad: 0 },
   "Crimson": { mid: [10.0, 1.2, 2.2], kick: [10.0, 8.0, 6.0], cool: [[4.0, 0.5, 2.5], [5.0, 0.6, 4.0]], calm: [[3.5, 0.6, 1.2], [4.5, 1.0, 2.0]], glint: [10.0, 9.0, 9.0], bloom: [1.0, 0.25, 0.3], grad: 0 },
   "Gilded": { mid: [10.0, 8.0, 1.5], kick: [10.0, 10.0, 8.0], cool: [[5.0, 3.5, 1.5], [4.5, 3.5, 2.5]], calm: [[4.0, 3.0, 1.0], [5.0, 3.8, 1.5]], glint: [10.0, 10.0, 8.0], bloom: [1.0, 0.8, 0.3], heatGain: 1.1, coolGain: 0.8, grad: 0 },
+  "VU Meter": { mid: [10.0, 9.0, 1.0], kick: [10.0, 10.0, 8.0], cool: [[1.0, 7.0, 2.0], [1.5, 6.0, 3.0]], calm: [[1.0, 5.0, 1.0], [3.0, 5.0, 1.0]], glint: [10.0, 10.0, 9.0], bloom: [0.6, 1.0, 0.3], heatGain: 0.9, grad: 2 },
+  "Menu Blue": { mid: [1.5, 4.5, 10.0], kick: [8.0, 9.0, 10.0], cool: [[0.4, 1.2, 6.0], [1.0, 1.0, 7.0]], calm: [[0.4, 1.5, 4.0], [0.6, 2.0, 5.0]], glint: [9.0, 9.5, 10.0], bloom: [0.4, 0.6, 1.0], grad: 0 },
   "Toxic": { mid: [6.0, 10.0, 0.8], kick: [10.0, 10.0, 4.0], cool: [[1.0, 6.0, 2.0], [0.8, 5.0, 3.5]], calm: [[1.0, 4.0, 0.6], [1.5, 5.0, 1.0]], glint: [9.0, 10.0, 8.0], bloom: [0.5, 1.0, 0.2], heatGain: 1.1, grad: 0 },
   "Teal to gold": { mid: [7.0, 8.0, 6.0], heatGain: 0.9, coolGain: 0.85, cool: [[1.0, 6.0, 5.5], [1.0, 5.0, 7.0]], kick: [6.0, 10.0, 10.0], calm: [[1.0, 4.0, 5.0], [1.5, 5.0, 7.0]], glint: [9.0, 10.0, 8.0], bloom: [0.30, 0.80, 0.70] },
 };
@@ -630,13 +658,18 @@ const SHOWCASE = {
   specToxic: { name: "Toxic", palette: "Toxic", grad: 0, values: { WAVE_LINE: 0.3, TRAILS: 0.12, GRAIN: 0.1 } },
   specPhosphor: { name: "Phosphor", palette: "Phosphor", grad: 0, values: { CRT: 0.35, TRAILS: 0.15 } },
   specAurora: { name: "Aurora", palette: "Aurora", grad: 4, values: { WAVE_LINE: 0.4, PAD_GLOW: 0.9, HARMONY_HUE: 0.6, BLOOM_WIDE: 1.3 } },
-  specAncient: { name: "Ancient Tech", palette: "Ancient Tech", grad: 0, values: { QUANTIZE: 0.45, SCAN: 0.8, HUD_LINES: 0.7, ORBIT: 0.6, HEARTBEAT: 0.7, DEFOCUS: 0.25, BLOOM_WIDE: 0.5, BLOOM_NEAR: 0.5, GLOW_PULSE: 0.05, PAD_GLOW: 0.2, SPARKLE: 0.5, KICK_COLOR: 0.8, TRAILS: 0.08, LIFE_SPREAD: 6 } },
+  specAncient: { name: "Ancient Tech", palette: "Ancient Tech", grad: 0, values: { LAUNCH: 0.7, LAUNCH_SPEED: 3.7, FLING: 2.6, FLING_FREQ: 1.9, FLING_DAMP: 0.7, LIQUID: 0, LAYOUT: 0, SPIRAL_TWIST: 12, SHAPE_BY_SECTION: 0, WAVE_LINE: 0, HEARTBEAT: 0.7, STRING: 0.05, WINGS: 0, STEREO_SPREAD: 0, WELL: 0, WIND: 0, RAIN: 0, FLOOR: 0.7, BOUNCE: 0.45, GRAVITY: 0.15, SPLASH: 0.3, TRAILS: 0.05, TRAIL_DRIFT: -0.014, REFLECT: 0, REFLECT_Y: 0, REFLECT_RIPPLE: 0.15, STREAKS: 0, HAZE: 0, ZOOM_PULSE: 0, SHOCK_RING: 0, FOCUS_PULL: 0, BEND: 0, BALANCE: 0, EMBERS: 0, ORBIT: 0, MELODY_RIBBON: 0, SECTION_SWEEP: 0, QUANTIZE: 0.05, SCAN: 0.1, CRT: 0.2, GRAIN: 0, FLING_TIP: 2.6, KICK_THRESHOLD: 0.025, KICK_GAIN: 8, KICK_DECAY: 0.28, STRETCH_GAIN: 0.046, STRETCH_MAX: 4.2, CORE: 0.95, CORE_HOLD: 0.8, CORE_SIZE: 0.35, CORE_SLOW: 2.8, LIVE: 0.85, REACH: 19.5, LIFE_SPREAD: 6, SIZE: 0.96, BRIGHT: 3.6, EXPOSURE: 0.4, DEFOCUS: 0.25, BLOOM_NEAR: 0.5, BLOOM_WIDE: 0.5, FRINGE: 0.0008, KICK_COLOR: 0.8, FLASH: 0.05, STRETCH_DIM: 0.8, GLOW_PULSE: 0.05, GLOW_SMOOTH: 1.25, ACCENT: 0.5, TEMP_AMOUNT: 0.4, COLOR_LEVEL: 0.9, COLOR_TIPS: 1, COLOR_CURVE: 2.6, COLOR_EASE: 0.72, COOL_AIR: 0.9, COOL_HUE: 0.6, MOVE_COOL: 0.7, STEREO: 1, SECTION_LOOK: 0.4, MELODY: 0.7, DYNAMICS: 1, SECTION_SENS: 1.5, CALM_COLOR: 0.85, BREATH: 0.5, WAVE: 1.5, WAVE_SPEED: 160, DROP_FLING: 2.05, DROP_DECAY: 1.5, ANALYSIS: 1, TENSION: 1.15, PINGPONG: 0, PHRASE_HUE: 0.15, SPARKLE: 0.5, EASE_IN: 0.085, EASE_OUT: 0.55, TILT: 5, GAMMA: 1.11, PEAK_HOLD: 8.6, BPM: 120, KICK_LEVEL: 1.3, BEAT_DRIVE: 1, BEAT_LEAD: 1, BEAT_FLOOR: 0.05, BEAT_SPRING: 2, BEAT_SNAP: 0.45, BEAT_CONTRAST: 1.2, BEAT_ACCENT: 1, BEAT_OTHERS: 0.3, BEAT_EVEN: 0.5, BEAT_IN_PLACE: 0.15, PAD_GLOW: 0.2, PAD_SWELL: 0.5, HARMONY_HUE: 0.5, DET_KICK: 0.12, DET_KICK_SUSTAIN: 0.65, DET_SNARE: 0.3, DET_HAT: 0.3, DET_SPLIT: 0.5, DET_HAT_SPLIT: 0.35 } },   // the user's tune (2026-10-15)
   specPlasma: { name: "Plasma", palette: "Plasma", grad: 4, values: { TRAILS: 0.2, TRAIL_DRIFT: 0.005, BLOOM_WIDE: 1.3 } },
   specVapor: { name: "Vapor", palette: "Vapor", grad: 4, values: { LIQUID: 0.4, TRAILS: 0.15, REFLECT: 0.25, BLOOM_WIDE: 1.2 } },
   specMagenta: { name: "White to Magenta", palette: "White to magenta", grad: 0, values: {  } },
   specParagon: { name: "Paragon / Renegade", palette: "Paragon / Renegade", grad: 4, values: { WINGS: 0.4, SECTION_SWEEP: 1, STREAKS: 0.3 } },
   specMercury: { name: "Mercury", palette: "Mercury", grad: 0, values: { LIQUID: 0.6, REFLECT: 0.5, REFLECT_RIPPLE: 0.6, BLOOM_WIDE: 1.1 } },
   specFull: { name: "Full Spectrum", palette: "Vapor", grad: 3, values: { SPARKLE: 0.6, PAD_GLOW: 0.15, HARMONY_HUE: 0.6, BLOOM_WIDE: 0.4, BLOOM_NEAR: 0.3, DEFOCUS: 0.3, GLOW_PULSE: 0.04, SECTION_LOOK: 0.6 } },
+  psLed: { name: "LED Board", palette: "Warm to cool", grad: 4, values: { LED: 1, LED_SIZE: 1.3, LED_OFF: 0.6, DEFOCUS: 0.5, BLOOM_WIDE: 0.9, BLOOM_NEAR: 0.6 } },
+  psVu: { name: "VU Matrix", palette: "VU Meter", grad: 2, values: { LED: 1, LED_SIZE: 1.1, LED_LEVELS: 5, LED_OFF: 0.7, QUANTIZE: 0.35, DEFOCUS: 0.4, BLOOM_WIDE: 0.8, COLOR_LEVEL: 0, COOL_AIR: 0, KICK_COLOR: 0.3 } },
+  psWaves: { name: "Menu Waves", palette: "Menu Blue", grad: 0, values: { MENU_WAVES: 1, PAD_GLOW: 0.4, BLOOM_WIDE: 0.8, DEFOCUS: 0.5, TRAILS: 0.1 } },
+  psBubbles: { name: "Bubble Lights", palette: "Vapor", grad: 4, values: { ORBS: 1, LED: 0.7, LED_SIZE: 0.9, LED_OFF: 0.3, BLOOM_WIDE: 1.0, DEFOCUS: 0.6 } },
+  psNight: { name: "Night Drive", palette: "Synthwave", grad: 4, values: { LED: 1, LED_SIZE: 1.0, LED_OFF: 0.4, LAYOUT: 4, MENU_WAVES: 0.6, BLOOM_WIDE: 0.9, DEFOCUS: 0.5 } },
 };
 const whiteToMagenta = () => setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0);
 document.getElementById("presetYours4").onclick = () => { applyAll(YOUR_TUNE_4); whiteToMagenta(); };
@@ -646,7 +679,7 @@ document.getElementById("presetYours4Cool").onclick = () => { applyAll(YOUR_TUNE
 // every preset button says what it applied (two presets can differ only in what a loaded song shows - this confirms the
 // click landed)
 document.getElementById("panel").addEventListener("click", e => {
-  const b = e.target.closest("button"); if (!b || !/^(show|spec|preset|beat|bar|stomp)/.test(b.id)) return;
+  const b = e.target.closest("button"); if (!b || !/^(show|spec|preset|beat|bar|stomp|ps|at)/.test(b.id)) return;
   const el = document.getElementById("flash"); el.textContent = "Preset: " + b.textContent; el.classList.add("on");
   clearTimeout(flashTimer); flashTimer = setTimeout(() => el.classList.remove("on"), 1400);
 });
@@ -658,6 +691,17 @@ document.getElementById("presetPick").onchange = e => {
   clearTimeout(flashTimer); flashTimer = setTimeout(() => el.classList.remove("on"), 1400);
 };
 SHOWCASE.specFestival = SHOWCASE.showFestival;
+// Ancient Tech: all on the Ancient Tech palette, each a different relic-tech story built on the user's Ancient Tech
+// tune (Relic Hologram is the Hologram look in these colours)
+{ const ancient = SHOWCASE.specAncient.values;
+  SHOWCASE.atHolo = { name: "Relic Hologram", palette: "Ancient Tech", grad: 0, values: { ...SHOWCASE.showHolo.values, ...{} } };
+  SHOWCASE.atShrine = { name: "Shrine Seal", palette: "Ancient Tech", grad: 0, values: { ...ancient, ...{ LAYOUT: 1, ORBIT: 0.7, SCAN: 0.3, REACH: 15, QUANTIZE: 0.15, BLOOM_WIDE: 0.7, HEARTBEAT: 0.4 } } };
+  SHOWCASE.atTower = { name: "Tower Rising", palette: "Ancient Tech", grad: 0, values: { ...ancient, ...{ LAUNCH: 1, LAUNCH_SPEED: 2.5, WINGS: 0.6, TRAILS: 0.25, TRAIL_DRIFT: 0.01, STREAKS: 0.4, SCAN: 0.5, REACH: 22 } } };
+  SHOWCASE.atGuardian = { name: "Guardian Lock-on", palette: "Ancient Tech", grad: 0, values: { ...ancient, ...{ SCAN: 1, KICK_COLOR: 1, ZOOM_PULSE: 0.4, QUANTIZE: 0.25, CRT: 0.3, FRINGE: 0.003, SHOCK_RING: 0.6 } } };
+  SHOWCASE.atRunes = { name: "Rune Lattice", palette: "Ancient Tech", grad: 0, values: { ...ancient, ...{ LED: 1, LED_SIZE: 1.1, LED_LEVELS: 4, LED_OFF: 0.5, QUANTIZE: 0.3, SCAN: 0.4 } } };
+  SHOWCASE.atWaters = { name: "Ancient Waters", palette: "Ancient Tech", grad: 0, values: { ...ancient, ...{ REFLECT: 0.6, REFLECT_RIPPLE: 0.5, MENU_WAVES: 0.5, ORBS: 0.4 } } };
+  SHOWCASE.atCore = { name: "Ancient Core", palette: "Ancient Tech", grad: 0, values: { ...ancient, ...{ LAYOUT: 3, WELL: 0.6, ORBIT: 0.5, TRAILS: 0.2, SPIRAL_TWIST: 16, REACH: 14 } } };
+}
 for (const id in SHOWCASE) document.getElementById(id).onclick = () => {
   const sc = SHOWCASE[id]; applyAll({ ...SHOWCASE_BASE, ...sc.values }); setColour(PALETTES.findIndex(p => p[0] === sc.palette), sc.grad);
 };
@@ -1978,6 +2022,22 @@ void main() {
   }
   // focus pull: full, busy sections sharper, quiet ones softer
   vec3 base = mix(c, b1 * 1.2 + b2 * 0.6 + c * 0.25, DEFOCUS * mix(1.0, 0.35, FOCUS_PULL * uFull));
+  // LED board: the picture through a grid of round LEDs. Each LED shows the colour at its cell's centre (picture plus
+  // its first blur, so it glows smoothly) at full hue - a dim area lights its LED dimly but in its true colour; unlit
+  // LEDs keep a faint cool base; a glint at the top left of the lens and a soft halo into the gap
+  if (LED > 0.0) {
+    float cell = max(3.0, LED_SIZE * uRes.y / 100.0);
+    vec2 pxl = gl_FragCoord.xy / cell, ci = floor(pxl) + 0.5, f = pxl - ci, cuv = ci * cell / uRes;
+    vec3 src = texture(uScene, cuv).rgb + texture(uB1, cuv).rgb * 0.6;
+    float lum = max(src.r, max(src.g, src.b)), on = clamp(lum * 1.4, 0.0, 1.0);
+    if (LED_LEVELS > 0.5) on = ceil(on * LED_LEVELS - 0.15) / LED_LEVELS;
+    vec3 hue = src / max(lum, 1e-3);
+    float dd = length(f), lens = smoothstep(0.42, 0.34, dd);
+    vec3 led = lens * (hue * on * (0.85 + 0.3 * (1.0 - dd * 2.0)) + LED_OFF * 0.05 * vec3(0.6, 0.65, 0.8));
+    led += lens * smoothstep(0.2, 0.0, length(f - vec2(-0.12, 0.12))) * on * 0.3;
+    led += hue * exp(-dd * dd * 10.0) * on * 0.25;
+    base = mix(base, led, LED);
+  }
   // scan sweep: a band crossing the frame left to right once per bar; the dots under it brighten (the background
   // doesn't), and a faint scan line marks it
   float scanX = fract(uSpinC / 6.2832), scanB = SCAN * exp(-pow((uv.x - scanX) / 0.018, 2.0));
@@ -2001,13 +2061,6 @@ void main() {
     glow += glowCol * ring * SHOCK_RING * 0.8;
   }
   if (SCAN > 0.0) glow += uGlint / max(uGlint.r, max(uGlint.g, uGlint.b)) * scanB * 0.05 * smoothstep(0.42, 0.2, abs(uv.y - 0.5));
-  // HUD guides: rails 0.3 of the frame above and below the line, along the wings, with a tick every 1/12 of a wing
-  if (HUD_LINES > 0.0) {
-    float gapH = 0.11 * uRes.y / uRes.x, ax = abs(uv.x - 0.5), onWing = step(gapH, ax) * step(ax, 0.46);
-    float rail = exp(-pow((abs(uv.y - 0.5) - 0.3) / 0.0016, 2.0));
-    float tick = step(fract((ax - gapH) / (0.46 - gapH) * 12.0), 0.06) * step(abs(abs(uv.y - 0.5) - 0.3), 0.012) * step(0.0, 0.3 - abs(uv.y - 0.5) + 0.0);
-    glow += mix(glowCol, uGlint / max(uGlint.r, max(uGlint.g, uGlint.b)), 0.5) * HUD_LINES * onWing * (rail * 0.35 + tick * 0.25) * (0.5 + clamp(uLevel * 2.0, 0.0, 1.0));
-  }
   // orbit ring: 24 beads circling the cover once per bar, glowing with the music
   if (ORBIT > 0.0 && abs(r - 0.205) < 0.03) {
     vec2 cvo = (uv - 0.5) * vec2(uRes.x / uRes.y, 1.0);
@@ -2028,6 +2081,25 @@ void main() {
   // the glow behind the line: violet while the music runs cool, warming toward the palette's hot colour only as the
   // columns heat up (it was a fixed red-pink - a red fog over every palette)
   vec3 back = glowCol * exp(-length(d) * 4.0) * (0.06 + GLOW_PULSE * clamp(uLevel * 2.5, 0.0, 1.0) + PAD_GLOW * 0.35 * uPad);
+  // menu waves: three soft ribbons of light flowing across behind the fountain, each a thin bright line in a wide soft
+  // band, their swell growing with the music
+  if (MENU_WAVES > 0.0) {
+    float wv = 0.0;
+    for (int k = 0; k < 3; k++) { float fk = float(k);
+      float y0 = 0.5 + (0.10 + 0.05 * fk) * sin(uv.x * (2.0 + fk * 0.7) + uTime * (0.25 + 0.1 * fk) + fk * 2.0) * (0.6 + 0.8 * clamp(uLevel * 2.0, 0.0, 1.0));
+      float dy = uv.y - y0; wv += exp(-dy * dy / (0.0008 + 0.0006 * fk)) * (0.32 - 0.08 * fk) + exp(-dy * dy / 0.02) * 0.05; }
+    back += mix(glowCol, vec3(1.0), 0.35) * wv * MENU_WAVES;
+  }
+  // bubble lights: 14 out-of-focus orbs drifting up at their own pace, a bright rim like a lens's bokeh, brighter with
+  // the music
+  if (ORBS > 0.0) {
+    for (int k = 0; k < 14; k++) { float fk = float(k);
+      vec2 hs = fract(sin(vec2(fk * 12.9898 + 1.3, fk * 78.233 + 4.1)) * 43758.5453);
+      vec2 c0 = vec2(hs.x, fract(hs.y + uTime * (0.015 + 0.03 * fract(hs.x * 5.7))));
+      float rad = 0.03 + 0.05 * fract(hs.x * 7.3), od = length((uv - c0) * vec2(uRes.x / uRes.y, 1.0));
+      float orb = smoothstep(rad, rad * 0.85, od) * (0.5 + 0.5 * smoothstep(rad * 0.3, rad, od));
+      back += mix(glowCol, uGlint / max(uGlint.r, max(uGlint.g, uGlint.b)), fract(hs.x * 3.1)) * orb * ORBS * 0.1 * (0.4 + 1.5 * clamp(uLevel, 0.0, 1.0)); }
+  }
   vec2 e = min(uv, 1.0 - uv);
   float fade = smoothstep(0.0, 0.05, e.x) * smoothstep(0.0, 0.14, e.y);
   float shadow = mix(0.25, 1.0, smoothstep(0.15, 0.21, r));
