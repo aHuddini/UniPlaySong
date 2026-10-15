@@ -2230,10 +2230,43 @@ canvas.addEventListener("mousemove", e => {
   const gap = 0.11 * r.height / r.width, wing = 0.46 - gap, fx = (Math.abs(x - 0.5) - gap) / wing * 48;
   if (fx >= 0 && fx < 48) traceCol = x < 0.5 ? 47 - Math.floor(fx) : 48 + Math.floor(fx);
 });
+// the song map strip - also the seek bar: section (violet), tension (amber), drops (white), the song's parts, playhead
+const stripFor = () => songMap && ((sourceSel.value === "song") === (songMap.label === "synthetic song"));
+function drawStrip(W) {
+  if (stripFor()) {
+    const nowT = sourceSel.value === "file" && buffer ? (playing ? actx.currentTime - startAt : offset) % buffer.duration : Math.max(0, lastSongT);
+    const ty = 2, th = 14, dur = songMap.frames / songMap.fr;
+    g2.fillStyle = "rgba(255,255,255,0.06)"; g2.fillRect(10, ty, W - 22, th);
+    for (let x = 0; x < W - 22; x++) {
+      const f = Math.floor(x / (W - 22) * songMap.frames);
+      g2.fillStyle = `rgba(160,110,255,${0.25 + 0.6 * songMap.section[f]})`; g2.fillRect(10 + x, ty + th * (1 - songMap.section[f]), 1, th * songMap.section[f]);
+      if (songMap.tension[f] > 0.02) { g2.fillStyle = `rgba(255,190,90,${songMap.tension[f]})`; g2.fillRect(10 + x, ty, 1, 3); }
+    }
+    g2.fillStyle = "#fff"; for (const d of songMap.drops) g2.fillRect(10 + d / dur * (W - 22) - 1, ty - 1, 2, th + 2);
+    // the song's parts: a letter at each start (same letter = sounds alike)
+    if (layers && layersOf === buffer && layers.sections) {
+      g2.font = "bold 10px system-ui, sans-serif";
+      for (const sc of layers.sections) { const x = 10 + sc.start / dur * (W - 22); g2.fillStyle = "rgba(255,255,255,0.55)"; g2.fillRect(x, ty, 1, th); g2.fillStyle = "#fff"; g2.fillText("ABCDEF"[sc.label], x + 3, ty + 11); }
+      g2.font = "12px system-ui, sans-serif";
+    }
+    g2.fillStyle = "#7fd1ff"; g2.fillRect(10 + nowT / dur * (W - 22) - 1, ty - 2, 2, th + 4);
+  }
+}
 function drawGraphs() {
   const on = document.getElementById("graphs").value === "on";
-  graph.style.display = on ? "block" : "none";
-  if (!on) return;
+  if (!on) {
+    // graphs off: only the strip, as a slim seek bar along the bottom (click or drag it, as with the graphs on)
+    graph.style.display = stripFor() ? "block" : "none";
+    if (!stripFor()) return;
+    graph.style.height = "20px";
+    const rr = graph.getBoundingClientRect();
+    if (graph.width !== Math.round(rr.width) || graph.height !== Math.round(rr.height)) { graph.width = Math.round(rr.width); graph.height = Math.round(rr.height); }
+    g2.clearRect(0, 0, graph.width, graph.height);
+    g2.fillStyle = "rgba(8,8,12,0.72)"; g2.fillRect(0, 0, graph.width, graph.height);
+    drawStrip(graph.width);
+    return;
+  }
+  graph.style.display = "block";
   const lanes = sourceSel.value === "file" && !!buffer, off = lanes ? 136 : 0;
   graph.style.height = (170 + off) + "px";
   traceAcc += 1;
@@ -2262,24 +2295,7 @@ function drawGraphs() {
     }
     g2.stroke();
   }
-  // the song map, when there is one for what's playing: section (violet), tension (amber), drops (white), playhead
-  if (songMap && lastSongT >= 0 && ((sourceSel.value === "song") === (songMap.label === "synthetic song"))) {
-    const ty = 2, th = 14, dur = songMap.frames / songMap.fr;
-    g2.fillStyle = "rgba(255,255,255,0.06)"; g2.fillRect(10, ty, W - 22, th);
-    for (let x = 0; x < W - 22; x++) {
-      const f = Math.floor(x / (W - 22) * songMap.frames);
-      g2.fillStyle = `rgba(160,110,255,${0.25 + 0.6 * songMap.section[f]})`; g2.fillRect(10 + x, ty + th * (1 - songMap.section[f]), 1, th * songMap.section[f]);
-      if (songMap.tension[f] > 0.02) { g2.fillStyle = `rgba(255,190,90,${songMap.tension[f]})`; g2.fillRect(10 + x, ty, 1, 3); }
-    }
-    g2.fillStyle = "#fff"; for (const d of songMap.drops) g2.fillRect(10 + d / dur * (W - 22) - 1, ty - 1, 2, th + 2);
-    // the song's parts: a letter at each start (same letter = sounds alike)
-    if (layers && layersOf === buffer && layers.sections) {
-      g2.font = "bold 10px system-ui, sans-serif";
-      for (const sc of layers.sections) { const x = 10 + sc.start / dur * (W - 22); g2.fillStyle = "rgba(255,255,255,0.55)"; g2.fillRect(x, ty, 1, th); g2.fillStyle = "#fff"; g2.fillText("ABCDEF"[sc.label], x + 3, ty + 11); }
-      g2.font = "12px system-ui, sans-serif";
-    }
-    g2.fillStyle = "#7fd1ff"; g2.fillRect(10 + lastSongT / dur * (W - 22) - 1, ty - 2, 2, th + 4);
-  }
+  drawStrip(W);
   // drum lanes: the hits found 1.5 s either side of now (the line), with the real hits outlined on the drum test
   if (lanes) {
     const y0 = 20, lh = 13, span = 1.5, x0 = 74, xw = W - x0 - 12, dur = buffer.duration;
