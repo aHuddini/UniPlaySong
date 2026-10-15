@@ -114,6 +114,24 @@
       <button id="showSiren" title="The melody leads: its path rises above the line as a ribbon of light, held chords glow underneath">Siren Song</button>
       <button id="showVictory" title="Wings that rise in the big moments and droop in the quiet ones, spread by a wide mix; each new section's colour sweeps out from the cover">Victory Wings</button>
     </div>
+    <h2 class="sec">Spectrum</h2>
+    <div class="btns" title="One polished, everyday look per colour family round the colour wheel - your Tune #5 + sections + melody motion with effects that suit each palette">
+      <button id="specCrimson" title="Red: deep crimson to rose-white, a faint heat shimmer and a few embers">Crimson</button>
+      <button id="specEmber" title="Red-orange: embers arcing back down, short warm trails">Ember</button>
+      <button id="specWarmCool" title="Orange on the left, warm white between, blue on the right - lens streaks and a faint reflection">Warm to Cool</button>
+      <button id="specGilded" title="Gold: bronze to bright gold to cream, glinting, with lens streaks">Gilded</button>
+      <button id="specToxic" title="Lime: green to chartreuse, a slow wave along the line, a touch of grain">Toxic</button>
+      <button id="specPhosphor" title="Green: phosphor greens on a soft CRT">Phosphor</button>
+      <button id="specAurora" title="Teal: green to teal to blue like the northern lights, held chords glowing, the line rippling">Aurora</button>
+      <button id="specAncient" title="Blue and cyan: glowing relic tech over water, beads in orbit, an orange warning pulse on the kick">Ancient Tech</button>
+      <button id="specPlasma" title="Violet: violet to blue to plasma green, light drifting off the fountain">Plasma</button>
+      <button id="specVapor" title="Pink: hot pink to lavender to cyan, a soft liquid surface over a faint reflection">Vapor</button>
+      <button id="specMagenta" title="Magenta: your tune #5's own look, unchanged">White to Magenta</button>
+      <button id="specParagon" title="Blue against red with white between: wings that rise in the big moments, each section's colour sweeping out from the cover">Paragon / Renegade</button>
+      <button id="specMercury" title="Neutral: liquid chrome over its reflection">Mercury</button>
+      <button id="specFull" title="All colours: the spectrum across the line, every effect kept gentle - Festival's everyday version">Full Spectrum</button>
+      <button id="specFestival" title="All colours, everything on: the spectrum across the line, ping-pong wings, big drops, sparkle (also in Showcase)">Festival</button>
+    </div>
     <div class="btns">
       <select id="presetPick" title="Every other preset">
         <option value="">More presets...</option>
@@ -357,10 +375,15 @@ const PALETTES = [
   ["Lava", [4.0, 0.5, 4.0], [10.0, 7.0, 1.0], "Lava lamp: deep purple wax, magenta-red, glowing orange"],
   ["Mercury", [3.0, 3.6, 5.0], [10.0, 10.0, 10.0], "Liquid chrome: gunmetal, polished silver, white highlights"],
   ["Hologram", [0.0, 4.0, 6.0], [9.0, 10.0, 10.0], "Projected hologram: deep cyan to bright cyan to white"],
+  // ---- Spectrum palettes: fill the gaps in the colour wheel (pure red, gold, lime)
+  ["Crimson", [6.0, 0.4, 1.0], [10.0, 6.5, 7.0], "Pure red: deep crimson, red, rose-white highlights"],
+  ["Gilded", [6.0, 3.5, 0.4], [10.0, 9.5, 6.5], "Gold: bronze, bright gold, cream"],
+  ["Toxic", [2.0, 7.0, 0.5], [8.5, 10.0, 6.0], "Lime: green, chartreuse, pale lime"],
 ];
 const CLASSIC_PALETTES = 12;   // the ones before Game styles
 let coverTex = null;           // the dropped cover image (shown in the disc), once one is picked
 const GAME_END = 28;           // Game styles run up to here; the Showcase palettes follow
+const SPECTRUM_START = 36;     // ...and the Spectrum palettes from here
 // Each palette's colour scheme for the temperature model (HDR like the palette; the shader keeps every shift at the
 // dot's brightness, so these set hue and saturation): hot = which palette colour loudness heats toward (2 = the second,
 // 1 = the first); cool = the two cool shades 'Cool colour' blends between (the cold end of the scale); kick = the beat's
@@ -407,6 +430,9 @@ const SCHEMES = {
   "Lava": { mid: [10.0, 2.0, 1.5], kick: [10.0, 8.0, 3.0], cool: [[3.0, 0.5, 5.0], [4.5, 0.5, 4.5]], calm: [[3.0, 0.5, 3.0], [4.0, 0.8, 3.5]], glint: [10.0, 8.0, 5.0], bloom: [1.0, 0.3, 0.5], grad: 2 },
   "Mercury": { mid: [7.0, 7.6, 9.0], kick: [8.0, 9.0, 10.0], cool: [[2.5, 3.2, 5.5], [3.5, 3.5, 6.0]], calm: [[2.5, 3.0, 4.0], [3.0, 3.5, 4.5]], glint: [10.0, 10.0, 10.0], bloom: [0.7, 0.75, 0.9], heatGain: 1.3, coolGain: 0.8, grad: 0 },
   "Hologram": { mid: [0.5, 9.0, 10.0], kick: [10.0, 10.0, 10.0], cool: [[0.0, 3.5, 6.0], [0.5, 3.0, 8.0]], calm: [[0.0, 2.5, 4.0], [0.3, 3.0, 5.0]], glint: [10.0, 10.0, 10.0], bloom: [0.3, 0.9, 1.0], heatGain: 1.2, grad: 0 },
+  "Crimson": { mid: [10.0, 1.2, 2.2], kick: [10.0, 8.0, 6.0], cool: [[4.0, 0.5, 2.5], [5.0, 0.6, 4.0]], calm: [[3.5, 0.6, 1.2], [4.5, 1.0, 2.0]], glint: [10.0, 9.0, 9.0], bloom: [1.0, 0.25, 0.3], grad: 0 },
+  "Gilded": { mid: [10.0, 8.0, 1.5], kick: [10.0, 10.0, 8.0], cool: [[5.0, 3.5, 1.5], [4.5, 3.5, 2.5]], calm: [[4.0, 3.0, 1.0], [5.0, 3.8, 1.5]], glint: [10.0, 10.0, 8.0], bloom: [1.0, 0.8, 0.3], heatGain: 1.1, coolGain: 0.8, grad: 0 },
+  "Toxic": { mid: [6.0, 10.0, 0.8], kick: [10.0, 10.0, 4.0], cool: [[1.0, 6.0, 2.0], [0.8, 5.0, 3.5]], calm: [[1.0, 4.0, 0.6], [1.5, 5.0, 1.0]], glint: [9.0, 10.0, 8.0], bloom: [0.5, 1.0, 0.2], heatGain: 1.1, grad: 0 },
   "Teal to gold": { mid: [7.0, 8.0, 6.0], heatGain: 0.9, coolGain: 0.85, cool: [[1.0, 6.0, 5.5], [1.0, 5.0, 7.0]], kick: [6.0, 10.0, 10.0], calm: [[1.0, 4.0, 5.0], [1.5, 5.0, 7.0]], glint: [9.0, 10.0, 8.0], bloom: [0.30, 0.80, 0.70] },
 };
 const schemeOf = pal => ({ ...SCHEME_DEFAULT, ...(SCHEMES[pal[0].split(" (")[0]] || SCHEMES[pal[0]] || {}) });
@@ -492,9 +518,9 @@ document.getElementById("openAll").onclick = () => { for (const n in groups) { g
 document.getElementById("closeAll").onclick = () => { for (const n in groups) { groups[n].open = false; openState[n] = false; } saveOpen(); };
 const palSel = document.getElementById("palette"), gradSel = document.getElementById("gradient");
 // two groups in the select: the classics, then the game styles (with their inspiration as the tooltip)
-{ const groups = [document.createElement("optgroup"), document.createElement("optgroup"), document.createElement("optgroup")];
-  groups[0].label = "Classic"; groups[1].label = "Game styles"; groups[2].label = "Showcase";
-  PALETTES.forEach((p, i) => { const o = document.createElement("option"); o.value = i; o.textContent = "Palette: " + p[0]; if (p[3]) o.title = p[3]; groups[i < CLASSIC_PALETTES ? 0 : i < GAME_END ? 1 : 2].appendChild(o); });
+{ const groups = [document.createElement("optgroup"), document.createElement("optgroup"), document.createElement("optgroup"), document.createElement("optgroup")];
+  groups[0].label = "Classic"; groups[1].label = "Game styles"; groups[2].label = "Showcase"; groups[3].label = "Spectrum";
+  PALETTES.forEach((p, i) => { const o = document.createElement("option"); o.value = i; o.textContent = "Palette: " + p[0]; if (p[3]) o.title = p[3]; groups[i < CLASSIC_PALETTES ? 0 : i < GAME_END ? 1 : i < SPECTRUM_START ? 2 : 3].appendChild(o); });
   groups.forEach(gp => palSel.appendChild(gp)); }
 palSel.value = P.PALETTE; gradSel.value = P.GRADIENT;
 // a game style comes with its suggested gradient (it's part of the look); the gradient can be changed after
@@ -594,6 +620,20 @@ const SHOWCASE = {
   showWildfire: { name: "Wildfire", palette: "Hellfire", grad: 1, values: { WIND: 1, EMBERS: 1, HAZE: 0.6, GRAVITY: 0.3, BLOOM_WIDE: 1.3, COLOR_LEVEL: 1, TEMP_AMOUNT: 0.6 } },
   showSiren: { name: "Siren Song", palette: "Moonlit Ruins", grad: 0, values: { MELODY_RIBBON: 1, MELODY: 1.2, PAD_GLOW: 1.0, PAD_SWELL: 0.8, BEAT_DRIVE: 0.5, FLING: 1.6, BLOOM_WIDE: 1.3, HARMONY_HUE: 0.6 } },
   showVictory: { name: "Victory Wings", palette: "Gold to violet", grad: 4, values: { WINGS: 1, STEREO_SPREAD: 1, SECTION_SWEEP: 1, SECTION_LOOK: 0.8, DROP_FLING: 2.6, BLOOM_WIDE: 1.2, TRAILS: 0.1 } },
+  specCrimson: { name: "Crimson", palette: "Crimson", grad: 0, values: { HAZE: 0.25, EMBERS: 0.3, TRAILS: 0.1, BLOOM_WIDE: 1.0 } },
+  specEmber: { name: "Ember", palette: "Ember", grad: 1, values: { GRAVITY: 0.35, EMBERS: 0.25, TRAILS: 0.15 } },
+  specWarmCool: { name: "Warm to Cool", palette: "Warm to cool", grad: 4, values: { STREAKS: 0.25, TRAILS: 0.1, REFLECT: 0.2 } },
+  specGilded: { name: "Gilded", palette: "Gilded", grad: 0, values: { STREAKS: 0.5, SPARKLE: 0.8, BLOOM_WIDE: 1.2 } },
+  specToxic: { name: "Toxic", palette: "Toxic", grad: 0, values: { WAVE_LINE: 0.3, TRAILS: 0.12, GRAIN: 0.1 } },
+  specPhosphor: { name: "Phosphor", palette: "Phosphor", grad: 0, values: { CRT: 0.35, TRAILS: 0.15 } },
+  specAurora: { name: "Aurora", palette: "Aurora", grad: 4, values: { WAVE_LINE: 0.4, PAD_GLOW: 0.9, HARMONY_HUE: 0.6, BLOOM_WIDE: 1.3 } },
+  specAncient: { name: "Ancient Tech", palette: "Ancient Tech", grad: 0, values: { REFLECT: 0.4, ORBIT: 0.4, BLOOM_WIDE: 1.2, SPARKLE: 0.7 } },
+  specPlasma: { name: "Plasma", palette: "Plasma", grad: 4, values: { TRAILS: 0.2, TRAIL_DRIFT: 0.005, BLOOM_WIDE: 1.3 } },
+  specVapor: { name: "Vapor", palette: "Vapor", grad: 4, values: { LIQUID: 0.4, TRAILS: 0.15, REFLECT: 0.25, BLOOM_WIDE: 1.2 } },
+  specMagenta: { name: "White to Magenta", palette: "White to magenta", grad: 0, values: {  } },
+  specParagon: { name: "Paragon / Renegade", palette: "Paragon / Renegade", grad: 4, values: { WINGS: 0.4, SECTION_SWEEP: 1, STREAKS: 0.3 } },
+  specMercury: { name: "Mercury", palette: "Mercury", grad: 0, values: { LIQUID: 0.6, REFLECT: 0.5, REFLECT_RIPPLE: 0.6, BLOOM_WIDE: 1.1 } },
+  specFull: { name: "Full Spectrum", palette: "Vapor", grad: 3, values: { SPARKLE: 0.8, PAD_GLOW: 0.8, HARMONY_HUE: 0.6, BLOOM_WIDE: 1.2, TRAILS: 0.1, SECTION_LOOK: 0.6 } },
 };
 const whiteToMagenta = () => setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0);
 document.getElementById("presetYours4").onclick = () => { applyAll(YOUR_TUNE_4); whiteToMagenta(); };
@@ -607,6 +647,7 @@ document.getElementById("presetPick").onchange = e => {
   const el = document.getElementById("flash"); el.textContent = "Preset: " + name; el.classList.add("on");
   clearTimeout(flashTimer); flashTimer = setTimeout(() => el.classList.remove("on"), 1400);
 };
+SHOWCASE.specFestival = SHOWCASE.showFestival;
 for (const id in SHOWCASE) document.getElementById(id).onclick = () => {
   const sc = SHOWCASE[id]; applyAll({ ...SHOWCASE_BASE, ...sc.values }); setColour(PALETTES.findIndex(p => p[0] === sc.palette), sc.grad);
 };
