@@ -152,7 +152,7 @@
     </div>
     <h2 class="sec">PSP originals</h2>
     <div class="btns" title="The PSP music player's own visualizers, rebuilt from footage of a PSP-2000 - they replace the fountain">
-      <button id="pspDots" title="The firmware's LED meter: 12 columns of pill LEDs over black, blue at the bottom, yellow, red at the top, each with a soft halo; a peak LED falls slowly">Dot Spectrum</button>
+      <button id="pspDots" title="The PSP firmware's LED meter, as it runs: 12 bands in 5 dB steps, 8 rows of pill LEDs (4 blue, 3 yellow, 1 red), bars and peaks falling under gravity, LEDs fading out">Dot Spectrum</button>
       <button id="pspStrings" title="Fourteen glowing strings pinned at both ends, swelling in the middle with the music; the colour drifts blue, violet, pink">Strings</button>
       <button id="pspSwirl" title="Multicolour smoke - red, magenta, violet, yellow - turning round a wandering centre, wider with the bass">Swirl</button>
       <button id="pspTiles" title="A band of square tiles, drifting between blue on sky and pink on grey, growing with the music, pale tiles where the level just was">Tile Band</button>
@@ -1735,7 +1735,42 @@ function engine(dt, t) {
 const pspSum = new Float32Array(48), pspCnt = new Float32Array(48), pspE = new Float32Array(48), pspPk = new Float32Array(48);
 const pspTrail = new Float32Array(96), pspPh = [0, 0, 0];
 let pspAcc = 0;
+// The PSP's LED meter as visualizer_plugin.prx runs it, 60 steps a second: 12 bands, each the loudest bin of its
+// range on the PSP's 512-point FFT (86 Hz bins; the edges below, each about half an octave), in dB (0 = a full-scale
+// sine; WebAudio's analyser reads 13.5 dB lower for the same tone) at 5 dB an LED from -40. Per column a bar and a
+// peak fall under gravity (0.1 and 0.01 dB per step squared) and snap up to the top of the LED a louder band reaches.
+// Every LED's brightness fades x0.85 a step; while lit it is refreshed to 208 (the bar), 224 (the peak) or 240 (the
+// bottom row, always on) - a little less the taller the column - plus 0..15 of flicker
+const PSP_EDGES = [3, 5, 7, 11, 15, 22, 31, 45, 63, 90, 127, 181, 256];
+const ledA = new Float32Array(12).fill(-40), ledVA = new Float32Array(12), ledB = new Float32Array(12).fill(-40), ledVB = new Float32Array(12);
+const ledI = new Float32Array(96);
+let ledAcc = 0;
+function ledStep(dt) {
+  ledAcc += dt;
+  const binHz = (actx ? actx.sampleRate : 48000) / 1024, off = 13.5 + 20 * Math.log10(Math.max(0.05, Q().PSP_GAIN));
+  while (ledAcc >= 1 / 60) {
+    ledAcc -= 1 / 60;
+    for (let i = 0; i < 96; i++) ledI[i] *= 0.85;
+    for (let c = 0; c < 12; c++) {
+      let mx = 0;
+      for (let b = Math.round(PSP_EDGES[c] * 86.13 / binHz), e = Math.round(PSP_EDGES[c + 1] * 86.13 / binHz); b < Math.min(e, 512); b++) mx = Math.max(mx, spec[b]);
+      const lv = mx > 1e-7 ? 20 * Math.log10(mx) + off : -40;
+      ledA[c] += ledVA[c]; ledVA[c] -= 0.01; ledB[c] += ledVB[c]; ledVB[c] -= 0.1;
+      if (ledA[c] < -40) { ledA[c] = -40; ledVA[c] = 0; }
+      if (ledB[c] < -40) { ledB[c] = -40; ledVB[c] = 0; }
+      const top = (Math.trunc(lv * 8 / 40) + 1) * 5 - 0.001;
+      if (ledA[c] < lv) { ledA[c] = top; ledVA[c] = 0; }
+      if (ledB[c] < lv) { ledB[c] = top; ledVB[c] = 0; }
+      const rb = Math.min(7, Math.trunc((ledB[c] + 40) / 40 * 8)), ra = Math.min(7, Math.trunc((ledA[c] + 40) / 40 * 8));
+      const fl = () => Math.floor(Math.random() * 16);
+      for (let r = 1; r <= rb; r++) ledI[r * 12 + c] = 208 * (1 - rb / 32) + fl();
+      ledI[ra * 12 + c] = 224 * (1 - rb / 40) + fl();
+      ledI[c] = 240 * (1 - rb / 40) + fl();
+    }
+  }
+}
 function pspStep(dt, t) {
+  ledStep(dt);
   pspSum.fill(0); pspCnt.fill(0);
   for (let c = 0; c < N; c++) { const k = Math.min(47, Math.floor(bandPos[c] * 48)); pspSum[k] += ez[c]; pspCnt[k]++; }
   const up = 1 - Math.exp(-dt / 0.03), down = 1 - Math.exp(-dt / 0.2);
@@ -2021,7 +2056,8 @@ uniform float uMelPos[32], uMelStr[32];   // the melody's place along a wing (0 
 uniform vec3 uGlowHot, uCoolA, uCoolB, uBloomTint, uGlint;
 uniform int uBg;
 uniform sampler2D uScene, uB1, uB2, uB3, uCover;
-uniform float uPsp[48], uPspPk[48], uPspHue;   // PSP visualizers: the bands (low .. high), their falling peaks, the hue drift
+uniform float uPsp[48], uPspPk[48], uPspHue;
+uniform float uLed[96];                        // the LED meter: each LED's brightness 0..255, row by row from the bottom   // PSP visualizers: the bands (low .. high), their falling peaks, the hue drift
 uniform vec2 uTrail[48];                       // the light trail, newest first, 1/40 s apart
 out vec4 outColor;
 ${DEFS}
@@ -2031,36 +2067,39 @@ float pspBand(float x) { float f = clamp(x, 0.0, 1.0) * 47.0; int i = int(f); re
 float vnoise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
   return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y); }
 float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int k = 0; k < 4; k++) { v += a * vnoise(p); p *= 2.03; a *= 0.5; } return v; }
-// 1 dot spectrum - the firmware's own LED meter (its textures: music_tex_led_{blu,yel,red}_{norml,light}). 12
-// columns x 9 rows of pill-shaped LEDs over black, bass on the left: blue rows at the bottom, yellow above, red at the
-// top, like a VU meter. An unlit LED is a dim pill in its own colour; a lit one has a white-hot core, a bright rim and
-// a wide soft halo. The LED at the edge of the level fades in with the fraction; a peak LED hangs above each column
-// and falls slowly
-vec3 pspLedCol(float row) { return row >= 8.0 ? vec3(1.0, 0.16, 0.12) : row >= 6.0 ? vec3(1.0, 0.72, 0.18) : vec3(0.22, 0.85, 0.95); }
+// 1 dot spectrum - the firmware's LED meter, drawn as it draws it, in the PSP's 480x272 pixels (scaled to the height,
+// centred): 12 columns 37 px apart from x 18, 8 rows 21 px apart from y 209 up, each LED a 38 px sprite. Rows 0-3 use
+// the blue LED, 4-6 the yellow, 7 the red. Both layers add: the unlit pill at alpha max(b, 32) and the lit pill at
+// b^2/255, b the LED's brightness. Last, the XMB theme colour washes over the whole screen, additively, 0.3 of it at the
+// top left to 0.65 at the bottom right, at alpha 0.7. Pill colours are the textures' (music_tex_led_*), measured
+float sdRBox(vec2 p, vec2 h, float r) { vec2 q = abs(p) - h + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
 vec3 pspDots() {
-  vec3 col = vec3(0.012, 0.012, 0.016);
-  const float NC = 12.0, NR = 9.0;
-  vec2 g0 = vec2(0.13, 0.15) * uRes, g1 = vec2(0.87, 0.82) * uRes, cell = (g1 - g0) / vec2(NC, NR);
-  float hy = min(cell.x / 1.7, cell.y) * 0.17, hx = hy * 1.65;
-  vec2 ci = floor((gl_FragCoord.xy - g0) / cell);
-  for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) {
-    vec2 cc = ci + vec2(dx, dy);
-    if (cc.x < 0.0 || cc.x >= NC || cc.y < 0.0 || cc.y >= NR) continue;
-    float lv = 0.0, pk = 0.0;
-    for (int k = 0; k < 4; k++) { lv += uPsp[int(cc.x) * 4 + k] * 0.25; pk = max(pk, uPspPk[int(cc.x) * 4 + k]); }
-    float lit = 1.0 + clamp(lv * PSP_GAIN, 0.0, 1.0) * (NR - 1.0), on = clamp(lit - cc.y, 0.0, 1.0);
-    float pkRow = floor(clamp(pk * PSP_GAIN, 0.0, 1.0) * (NR - 1.0) + 0.5);
-    if (cc.y == pkRow && cc.y >= lit) on = max(on, 0.85);
-    vec2 p = gl_FragCoord.xy - (g0 + (cc + 0.5) * cell);
-    float d = length(max(abs(p) - vec2(hx - hy, 0.0), 0.0)) - hy;      // a capsule: the pill
-    vec3 c = pspLedCol(cc.y);
-    float body = smoothstep(1.0, -1.0, d);
-    // unlit: the dim pill, a little lighter along its top edge like the texture
-    col += body * c * (0.16 + 0.06 * smoothstep(0.0, hy, p.y)) * (1.0 - on);
-    // lit: the colour, a white-hot core, and the halo (about two pill-heights wide)
-    float core = smoothstep(hy * 0.1, -hy * 0.55, d);
-    col += on * (body * mix(c * 1.1, vec3(1.0, 0.98, 0.95), core) + c * 0.55 * exp(-max(d, 0.0) / (hy * 1.3)) * (1.0 - body));
+  float sc = uRes.y / 272.0;
+  vec2 q = vec2((gl_FragCoord.x - uRes.x * 0.5) / sc + 240.0, 272.0 - gl_FragCoord.y / sc);   // PSP pixels, y down
+  vec3 col = vec3(0.0);
+  float ci = floor((q.x - 18.0) / 37.0), ri = floor((209.0 + 38.0 - q.y) / 21.0);
+  for (int dr = -1; dr <= 1; dr++) for (int dc = -1; dc <= 1; dc++) {
+    float c = ci + float(dc), r = ri + float(dr);
+    if (c < 0.0 || c > 11.0 || r < 0.0 || r > 7.0) continue;
+    float b = uLed[int(r) * 12 + int(c)];
+    vec2 p = q - vec2(18.0 + 37.0 * c + 18.5, 209.0 - 21.0 * r + 18.0);
+    vec3 body = r >= 7.0 ? vec3(181, 30, 27) : r >= 4.0 ? vec3(190, 141, 43) : vec3(61, 171, 140);
+    vec3 core = r >= 7.0 ? vec3(251, 222, 221) : r >= 4.0 ? vec3(216, 196, 170) : vec3(213, 243, 240);
+    vec3 halo = r >= 7.0 ? vec3(229, 30, 22) : r >= 4.0 ? vec3(241, 145, 24) : vec3(86, 190, 191);
+    body /= 255.0; core /= 255.0; halo /= 255.0;
+    float d = sdRBox(p, vec2(5.5, 3.5), 2.0), dc2 = sdRBox(p, vec2(4.0, 2.0), 1.5);
+    float inBody = smoothstep(0.5, -0.5, d), rim = smoothstep(-1.5, -0.5, d);
+    // unlit pill: the body colour, its 1 px rim dark
+    vec3 norml = body * inBody * mix(0.7, 0.25, rim);
+    // lit pill: a near-white core (white along its middle), a saturated rim, and the halo fading out over ~12 px
+    vec3 lit = mix(halo, mix(core, vec3(1.0), smoothstep(1.0, 0.0, abs(p.y + 0.5))), smoothstep(0.5, -0.5, dc2)) * inBody
+             + halo * (1.0 - inBody) * 0.52 * pow(max(0.0, 1.0 - max(d, 0.0) / 12.0), 1.3);
+    col += norml * max(b, 32.0) / 255.0 + lit * b * b / 65025.0;
   }
+  // the theme wash (the PSP's XMB colour - the user's theme on a PSP; a cool silver-blue here, at a third of the
+  // firmware's strength since the PSP's own colour value isn't known)
+  vec2 uvw = gl_FragCoord.xy / uRes;
+  col += vec3(0.55, 0.62, 0.75) * mix(mix(0.5, 0.65, uvw.x), mix(0.3, 0.4, uvw.x), uvw.y) * 0.7 * 0.35;
   return col;
 }
 // 2 glowing strings: 14 thin lines pinned at both ends, swelling toward the middle, each a pair of moving waves sized by
@@ -2417,6 +2456,7 @@ function frame(now) {
     gl.uniform1f(gl.getUniformLocation(progComp, "uZoom"), (comparing ? pinned : P).ZOOM_PULSE * zoomE);
     gl.uniform1f(gl.getUniformLocation(progComp, "uRingT"), t - ringStart);
     gl.uniform1f(gl.getUniformLocation(progComp, "uSpinC"), spinA % (2 * Math.PI)); gl.uniform1f(gl.getUniformLocation(progComp, "uBalC"), balE);
+    gl.uniform1fv(gl.getUniformLocation(progComp, "uLed"), ledI);
     gl.uniform1fv(gl.getUniformLocation(progComp, "uPsp"), pspE); gl.uniform1fv(gl.getUniformLocation(progComp, "uPspPk"), pspPk);
     gl.uniform2fv(gl.getUniformLocation(progComp, "uTrail"), pspTrail);
     gl.uniform1f(gl.getUniformLocation(progComp, "uPspHue"), 0.5 - 0.5 * Math.cos(t * 2 * Math.PI / 90));
