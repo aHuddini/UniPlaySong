@@ -150,6 +150,14 @@
       <button id="psBubbles" title="Out-of-focus light orbs drifting up behind small glowing LEDs">Bubble Lights</button>
       <button id="psNight" title="An LED road into the distance under drifting menu waves">Night Drive</button>
     </div>
+    <h2 class="sec">PSP originals</h2>
+    <div class="btns" title="The PSP music player's own visualizers, rebuilt from footage of a PSP-2000 - they replace the fountain">
+      <button id="pspDots" title="12 columns of round LEDs over dark grey, bass on the left; the top dot shrinks with the level, tall columns' tops run warm white">Dot Spectrum</button>
+      <button id="pspStrings" title="Fourteen glowing strings pinned at both ends, swelling in the middle with the music; the colour drifts blue, violet, pink">Strings</button>
+      <button id="pspSwirl" title="Underwater: a ring of cyan specks turning round a wandering centre, wider with the bass">Swirl</button>
+      <button id="pspTiles" title="A band of square tiles across pale sky blue, growing with the music, pale tiles where the level just was">Tile Band</button>
+      <button id="pspTrail" title="One glowing ribbon looping over lime green, faster and curlier with the music">Light Trail</button>
+    </div>
     <div class="btns">
       <select id="presetPick" title="Every other preset">
         <option value="">More presets...</option>
@@ -260,6 +268,8 @@ const PARAMS = [
   ["LED_LEVELS", "Effects", "LED brightness steps", 0, 0, 8, 1, "0 = each LED glows smoothly; 3-8 = it lights in that many brightness steps, like a segmented meter."],
   ["LED_OFF", "Effects", "Unlit LEDs", 0.5, 0, 1, 0.05, "How visible the unlit LEDs are - the board behind the light."],
   ["MENU_WAVES", "Effects", "Menu waves", 0, 0, 1, 0.05, "Soft ribbons of light flowing across behind the fountain, like a console menu's wave background, swelling with the music."],
+  ["PSP_GAIN", "Effects", "PSP visualizer level", 1.6, 0.5, 4, 0.1, "How high the PSP visualizers reach for the same music."],
+  ["PSP", "Effects", "PSP visualizer", 0, 0, 5, 1, "Replaces the fountain with one of the PSP music player's own visualizers: 1 dot spectrum, 2 glowing strings, 3 swirl, 4 tile band, 5 light trail. 0 = the fountain."],
   ["ORBS", "Effects", "Bubble lights", 0, 0, 1, 0.05, "Soft out-of-focus orbs of light drifting slowly upward behind the fountain, brighter with the music."],
   ["CRT", "Effects", "CRT screen", 0, 0, 1, 0.05, "Old-monitor finish: scanlines, a slight curve to the picture and darker edges."],
   ["GRAIN", "Effects", "Film grain", 0, 0, 1, 0.05, "Fine moving film grain over the picture (very faint - texture, not flicker)."],
@@ -669,6 +679,11 @@ const SHOWCASE = {
   psVu: { name: "VU Matrix", palette: "VU Meter", grad: 2, values: { LED: 1, LED_SIZE: 1.1, LED_LEVELS: 5, LED_OFF: 0.7, QUANTIZE: 0.35, DEFOCUS: 0.4, BLOOM_WIDE: 0.8, COLOR_LEVEL: 0, COOL_AIR: 0, KICK_COLOR: 0.3 } },
   psWaves: { name: "Menu Waves", palette: "Menu Blue", grad: 0, values: { MENU_WAVES: 1, PAD_GLOW: 0.4, BLOOM_WIDE: 0.8, DEFOCUS: 0.5, TRAILS: 0.1 } },
   psBubbles: { name: "Bubble Lights", palette: "Vapor", grad: 4, values: { ORBS: 1, LED: 0.7, LED_SIZE: 0.9, LED_OFF: 0.3, BLOOM_WIDE: 1.0, DEFOCUS: 0.6 } },
+  pspDots: { name: "PSP Dot Spectrum", palette: "Warm to cool", grad: 4, values: { PSP: 1 } },
+  pspStrings: { name: "PSP Strings", palette: "Warm to cool", grad: 4, values: { PSP: 2 } },
+  pspSwirl: { name: "PSP Swirl", palette: "Warm to cool", grad: 4, values: { PSP: 3 } },
+  pspTiles: { name: "PSP Tile Band", palette: "Warm to cool", grad: 4, values: { PSP: 4 } },
+  pspTrail: { name: "PSP Light Trail", palette: "Warm to cool", grad: 4, values: { PSP: 5 } },
   psNight: { name: "Night Drive", palette: "Synthwave", grad: 4, values: { LED: 1, LED_SIZE: 1.0, LED_OFF: 0.4, LAYOUT: 4, MENU_WAVES: 0.6, BLOOM_WIDE: 0.9, DEFOCUS: 0.5 } },
 };
 const whiteToMagenta = () => setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0);
@@ -1715,6 +1730,32 @@ function engine(dt, t) {
   }
 }
 
+// ---- PSP visualizers: 48 bands low to high (both wings share them), eased like a meter - quick up, ~0.2 s down;
+// a slowly falling peak per band (the tile band's pale tiles); the light trail's last 1.2 s; the strings' hue drift
+const pspSum = new Float32Array(48), pspCnt = new Float32Array(48), pspE = new Float32Array(48), pspPk = new Float32Array(48);
+const pspTrail = new Float32Array(96), pspPh = [0, 0, 0];
+let pspAcc = 0;
+function pspStep(dt, t) {
+  pspSum.fill(0); pspCnt.fill(0);
+  for (let c = 0; c < N; c++) { const k = Math.min(47, Math.floor(bandPos[c] * 48)); pspSum[k] += ez[c]; pspCnt[k]++; }
+  const up = 1 - Math.exp(-dt / 0.03), down = 1 - Math.exp(-dt / 0.2);
+  let hi = 0;
+  for (let k = 0; k < 48; k++) {
+    const v = pspCnt[k] ? pspSum[k] / pspCnt[k] : 0;
+    pspE[k] += (v - pspE[k]) * (v > pspE[k] ? up : down);
+    pspPk[k] = Math.max(pspE[k], pspPk[k] - dt * 0.35);
+    if (k >= 24) hi += pspE[k] / 24;
+  }
+  // the trail's head: two slow sweeps (faster with the music) plus a small fast curl (wider and faster with the highs)
+  pspPh[0] += dt * (0.55 + meanLevel * 1.4); pspPh[1] += dt * (0.9 + meanLevel * 1.8); pspPh[2] += dt * (2.5 + hi * 10);
+  pspAcc += dt;
+  while (pspAcc >= 1 / 40) {
+    pspAcc -= 1 / 40; pspTrail.copyWithin(2, 0, 94);
+    const r = 0.04 + Math.min(0.1, hi * 0.15);
+    pspTrail[0] = 0.33 * Math.sin(pspPh[0]) + r * Math.cos(pspPh[2]); pspTrail[1] = 0.2 * Math.sin(pspPh[1]) + r * Math.sin(pspPh[2]);
+  }
+}
+
 // ---- WebGL -----------------------------------------------------------------------------------------------------
 const canvas = document.getElementById("c");
 const gl = canvas.getContext("webgl2", { alpha: false, antialias: false, premultipliedAlpha: false });
@@ -1980,9 +2021,108 @@ uniform float uMelPos[32], uMelStr[32];   // the melody's place along a wing (0 
 uniform vec3 uGlowHot, uCoolA, uCoolB, uBloomTint, uGlint;
 uniform int uBg;
 uniform sampler2D uScene, uB1, uB2, uB3, uCover;
+uniform float uPsp[48], uPspPk[48], uPspHue;   // PSP visualizers: the bands (low .. high), their falling peaks, the hue drift
+uniform vec2 uTrail[48];                       // the light trail, newest first, 1/40 s apart
 out vec4 outColor;
 ${DEFS}
 float hash(vec2 q) { return fract(sin(dot(q, vec2(12.9898, 78.233))) * 43758.5453); }
+// ---- the PSP's visualizers ----
+float pspBand(float x) { float f = clamp(x, 0.0, 1.0) * 47.0; int i = int(f); return mix(uPsp[i], uPsp[min(i + 1, 47)], fract(f)); }
+float vnoise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y); }
+float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int k = 0; k < 4; k++) { v += a * vnoise(p); p *= 2.03; a *= 0.5; } return v; }
+// 1 dot spectrum: 12 columns x 9 rows of round LEDs over dark grey, bass on the left. The bottom row is always lit; a
+// column lights up to its level, the top dot shrinking with the fraction; the top dot of a tall column runs warm
+// white; unlit dots are tiny dim points
+vec3 pspDots() {
+  vec2 uv = gl_FragCoord.xy / uRes;
+  vec3 col = vec3(0.045, 0.05, 0.06) * (1.0 - 0.35 * length(uv - 0.5));
+  const float NC = 12.0, NR = 9.0;
+  vec2 g0 = vec2(0.12, 0.14) * uRes, g1 = vec2(0.88, 0.80) * uRes, cell = (g1 - g0) / vec2(NC, NR);
+  float rad = min(cell.x, cell.y) * 0.3;
+  vec2 ci = floor((gl_FragCoord.xy - g0) / cell);
+  for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) {
+    vec2 cc = ci + vec2(dx, dy);
+    if (cc.x < 0.0 || cc.x >= NC || cc.y < 0.0 || cc.y >= NR) continue;
+    float lv = 0.0; for (int k = 0; k < 4; k++) lv += uPsp[int(cc.x) * 4 + k] * 0.25;
+    float lit = 1.0 + clamp(lv * PSP_GAIN, 0.0, 1.0) * (NR - 1.0), on = clamp(lit - cc.y, 0.0, 1.0);
+    float d = length(gl_FragCoord.xy - (g0 + (cc + 0.5) * cell));
+    col += vec3(0.16, 0.18, 0.22) * smoothstep(rad * 0.2, rad * 0.12, d) * (1.0 - on);
+    if (on <= 0.0) continue;
+    float rr = rad * mix(0.45, 1.0, on), core = smoothstep(rr, rr - 1.5, d);
+    vec3 ledC = mix(vec3(0.5, 0.78, 1.0), vec3(0.95, 0.98, 1.0), smoothstep(rr, 0.0, d));
+    if (cc.y >= 4.0 && cc.y > lit - 2.0) ledC = mix(ledC, vec3(1.0, 0.88, 0.72), 0.6);
+    col += ledC * core * on + vec3(0.25, 0.55, 1.0) * exp(-d * d / (rad * rad * 2.5)) * on * 0.3;
+  }
+  return col;
+}
+// 2 glowing strings: 14 thin lines pinned at both ends, swelling toward the middle, each a pair of moving waves sized by
+// its own band; dense crossings run white; the hue drifts blue -> violet -> pink over a minute and a half
+vec3 pspStrings() {
+  vec2 uv = gl_FragCoord.xy / uRes;
+  vec3 hueC = uPspHue < 0.5 ? mix(vec3(0.25, 0.5, 1.0), vec3(0.55, 0.35, 1.0), uPspHue * 2.0) : mix(vec3(0.55, 0.35, 1.0), vec3(1.0, 0.35, 0.7), uPspHue * 2.0 - 1.0);
+  vec3 col = vec3(0.05, 0.05, 0.06);
+  float x0 = 0.04, x1 = 0.96, xs = (uv.x - x0) / (x1 - x0);
+  if (xs < 0.0 || xs > 1.0) return col;
+  float acc = 0.0, e = 0.002;
+  for (int i = 0; i < 14; i++) {
+    float fi = float(i), h1 = fract(sin(fi * 12.9898) * 43758.5), h2 = fract(sin(fi * 78.233) * 43758.5);
+    float amp = (0.03 + 0.28 * clamp(pspBand(fi / 14.0) * PSP_GAIN, 0.0, 1.2)) * (0.6 + 0.4 * h1);
+    float k1 = 2.0 + floor(h1 * 3.0), k2 = 4.0 + floor(h2 * 4.0), ph = uTime * (0.8 + h2 * 1.6) + fi * 1.7;
+    float ya = 0.5 + pow(sin(3.14159 * xs), 1.3) * amp * (0.7 * sin(k1 * 3.14159 * xs + ph) + 0.3 * sin(k2 * 3.14159 * xs - ph * 1.3));
+    float xb = xs + e, yb = 0.5 + pow(sin(3.14159 * xb), 1.3) * amp * (0.7 * sin(k1 * 3.14159 * xb + ph) + 0.3 * sin(k2 * 3.14159 * xb - ph * 1.3));
+    float slope = (yb - ya) * uRes.y / (e * (x1 - x0) * uRes.x), d = abs(uv.y - ya) * uRes.y / sqrt(1.0 + slope * slope);
+    acc += exp(-d * d / 1.2) * 0.9 + exp(-d / 5.0) * 0.1;
+  }
+  return col + hueC * (1.0 - exp(-acc * 0.9)) + vec3(1.0) * smoothstep(1.5, 4.0, acc) * 0.45;
+}
+// 3 swirl: underwater blue; a ring of cyan specks turning round a slowly wandering centre (wider with the bass), the
+// turn tighter near the centre, and loose specks drifting along the bottom
+vec3 pspSwirl() {
+  vec2 uv = gl_FragCoord.xy / uRes, p = (uv - 0.5) * vec2(uRes.x / uRes.y, 1.0);
+  float bass = 0.0; for (int k = 0; k < 8; k++) bass += uPsp[k] / 8.0;
+  bass = clamp(bass * PSP_GAIN, 0.0, 1.0);
+  vec2 q = p - vec2(0.15 * sin(uTime * 0.23), 0.08 * cos(uTime * 0.31));
+  float r = length(q), a = atan(q.y, q.x) + uTime * 0.35 + 0.25 / (r + 0.1);
+  vec2 w = vec2(cos(a), sin(a)) * r;
+  float ring = exp(-pow((r - (0.17 + 0.09 * bass)) / (0.08 + 0.04 * bass), 2.0));
+  float cloud = ring * smoothstep(0.4, 0.8, fbm(w * 5.0 + uTime * 0.1));
+  // specks: one round point per cell of the turning space, some cells empty, each twinkling at its own pace
+  vec2 sc = w * 34.0 + vec2(uTime * 0.6, 0.0), sci = floor(sc), sco = vec2(hash(sci), hash(sci + 7.1));
+  float sd = length(fract(sc) - (0.25 + 0.5 * sco)), on1 = step(0.45, hash(sci + 3.3)) * (0.6 + 0.4 * sin(uTime * 3.0 + sco.x * 20.0));
+  float specks = smoothstep(0.22, 0.05, sd) * on1 * (ring * 1.3 + 0.35 * smoothstep(0.0, -0.45, p.y));
+  vec3 col = mix(vec3(0.04, 0.2, 0.3), vec3(0.16, 0.48, 0.6), smoothstep(0.9, 0.0, length(p)));
+  return col + vec3(0.55, 0.9, 1.0) * cloud * (0.5 + clamp(uLevel * 1.5, 0.0, 0.8)) + vec3(0.8, 1.0, 1.0) * specks * 0.6;
+}
+// 4 tile band: square tiles in a band across pale sky blue. Two rows always on; each column grows up by its level and
+// down by a neighbouring band's; pale tiles show where the level just was (its falling peak)
+vec3 pspTiles() {
+  vec2 uv = gl_FragCoord.xy / uRes;
+  vec3 bg = mix(vec3(0.80, 0.91, 0.98), vec3(0.70, 0.86, 0.97), uv.y), tc = vec3(0.16, 0.6, 0.92);
+  float cell = uRes.y / 22.0, cols = floor(uRes.x / cell);
+  vec2 tp = gl_FragCoord.xy - vec2((uRes.x - cols * cell) * 0.5, 0.0), ci = floor(tp / cell), f = fract(tp / cell);
+  if (ci.x < 0.0 || ci.x >= cols) return bg;
+  float rel = ci.y - floor(uRes.y * 0.45 / cell), x = (ci.x + 0.5) / cols, x2 = fract(x * 1.7 + 0.3);
+  float lv = rel >= 0.0 ? pspBand(x) * 2.5 : pspBand(x2) * 1.5, k = rel >= 0.0 ? rel : -rel - 1.0;
+  float pk = (rel >= 0.0 ? uPspPk[int(x * 47.0)] * 2.5 : uPspPk[int(x2 * 47.0)] * 1.5) * PSP_GAIN;
+  lv *= PSP_GAIN;
+  float solid = k < 1.0 ? 1.0 : step(k, lv), pale = (1.0 - solid) * step(k, pk + 0.5);
+  float tile = step(0.08, f.x) * step(f.x, 0.92) * step(0.08, f.y) * step(f.y, 0.92);
+  return mix(mix(bg, tc, tile * solid), mix(bg, tc, 0.4), tile * pale);
+}
+// 5 light trail: one glowing ribbon looping over lime green - two slow sweeps and a small curl - thin and fading behind
+vec3 pspTrail() {
+  vec2 uv = gl_FragCoord.xy / uRes, p = (uv - 0.5) * vec2(uRes.x / uRes.y, 1.0);
+  vec3 col = mix(vec3(0.62, 0.78, 0.1), vec3(0.8, 0.9, 0.25), smoothstep(0.9, 0.0, length(p)));
+  float acc = 0.0;
+  for (int i = 0; i < 47; i++) {
+    vec2 a = uTrail[i], b = uTrail[i + 1], ab = b - a;
+    float h = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0), d = length(p - a - ab * h);
+    float age = (float(i) + h) / 47.0, wd = mix(0.014, 0.003, age);
+    acc += (exp(-d * d / (wd * wd)) * 0.7 + exp(-d / 0.03) * 0.03) * pow(1.0 - age, 1.5);
+  }
+  return col + vec3(1.0, 1.0, 0.85) * min(acc, 1.2) * 0.85;
+}
 void main() {
   vec2 uv0 = gl_FragCoord.xy / uRes, cc = uv0 - 0.5;
   // CRT: a slight curve, the picture bulging toward the viewer
@@ -2117,7 +2257,8 @@ void main() {
   vec3 discCol = vec3(0.082, 0.09, 0.11) + 0.06 * smoothstep(0.14, 0.15, r);
   if (uHasCover > 0.5) { vec2 cuv = (uv - 0.5) * vec2(uRes.x / uRes.y, 1.0) / 0.3 + 0.5; discCol = texture(uCover, vec2(cuv.x, 1.0 - cuv.y)).rgb; }
   outc = mix(outc, discCol, disc);
-  outColor = vec4(outc, 1.0);
+  if (PSP > 0.5) outc = PSP < 1.5 ? pspDots() : PSP < 2.5 ? pspStrings() : PSP < 3.5 ? pspSwirl() : PSP < 4.5 ? pspTiles() : pspTrail();
+  outColor = vec4(clamp(outc, 0.0, 1.0), 1.0);
 }`;
 function program(fs) {
   const p = gl.createProgram();
@@ -2189,6 +2330,7 @@ function frame(now) {
   const pt0 = performance.now();
   try {
     engine(dt, t);
+    pspStep(dt, t);
     perfMark(0, pt0);
     resize();
     const QP = Q();
@@ -2263,6 +2405,9 @@ function frame(now) {
     gl.uniform1f(gl.getUniformLocation(progComp, "uZoom"), (comparing ? pinned : P).ZOOM_PULSE * zoomE);
     gl.uniform1f(gl.getUniformLocation(progComp, "uRingT"), t - ringStart);
     gl.uniform1f(gl.getUniformLocation(progComp, "uSpinC"), spinA % (2 * Math.PI)); gl.uniform1f(gl.getUniformLocation(progComp, "uBalC"), balE);
+    gl.uniform1fv(gl.getUniformLocation(progComp, "uPsp"), pspE); gl.uniform1fv(gl.getUniformLocation(progComp, "uPspPk"), pspPk);
+    gl.uniform2fv(gl.getUniformLocation(progComp, "uTrail"), pspTrail);
+    gl.uniform1f(gl.getUniformLocation(progComp, "uPspHue"), 0.5 - 0.5 * Math.cos(t * 2 * Math.PI / 90));
     gl.uniform1fv(gl.getUniformLocation(progComp, "uMelPos"), melPath); gl.uniform1fv(gl.getUniformLocation(progComp, "uMelStr"), melPathS);
     gl.uniform1f(gl.getUniformLocation(progComp, "uHasCover"), coverTex ? 1 : 0);
     if (coverTex) useTex(progComp, "uCover", 4, coverTex);
