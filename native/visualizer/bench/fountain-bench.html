@@ -2733,7 +2733,9 @@ if (location.hash.indexOf("drumtest") >= 0) {
   if (location.hash.indexOf("play") >= 0) play();
 }
 // ...&song=URL loads a song by URL (headless checks; file:// needs --allow-file-access-from-files)
-{ const sm = /song=([^&]+)/.exec(location.hash); if (sm) fetch(decodeURIComponent(sm[1])).then(r => r.arrayBuffer()).then(ab => loadFile({ arrayBuffer: async () => ab })).catch(e => fail("song: " + e.message)); }
+{ const sm = /song=([^&]+)/.exec(location.hash); if (sm) fetch(decodeURIComponent(sm[1])).then(r => r.arrayBuffer()).then(ab => loadFile({ arrayBuffer: async () => ab }))
+  // #songat=N: start the loaded song N seconds in (captures of the same moment, look after look)
+  .then(() => { const sa = /songat=(\d+(?:\.\d+)?)/.exec(location.hash); if (sa) { pause(); offset = +sa[1]; play(); } }).catch(e => fail("song: " + e.message)); }
 // ...&graphs=off hides the signal graphs (they cover the bottom of the stage, where the water reflection sits)
 if (/graphs=off/.test(location.hash)) document.getElementById("graphs").value = "off";
 // ...&src=song plays the synthetic song (it follows the simulation clock, so with #fixeddt a capture matches a screen)
