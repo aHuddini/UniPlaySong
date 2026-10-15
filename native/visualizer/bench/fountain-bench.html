@@ -150,15 +150,15 @@
       <button id="psBubbles" title="Out-of-focus light orbs drifting up behind small glowing LEDs">Bubble Lights</button>
       <button id="psNight" title="An LED road into the distance under drifting menu waves">Night Drive</button>
     </div>
-    <h2 class="sec">LED meter</h2>
+    <h2 class="sec">LED Meter (PSP Style)</h2>
     <div class="btns" title="The PSP's LED meter as a foundation - the same reaction, modern looks (PSP meter sliders)">
       <button id="pspDots" title="The firmware's own meter, crisp: 12 x 8 pill LEDs with their texture luster, bars and peaks falling under gravity">PSP Original</button>
-      <button id="ledHD" title="24 x 16 smaller LEDs, glossy pills in metal bezels with a sweeping glint, a wider bloom, a glossy floor, deep black">LED HD</button>
-      <button id="ledShowroom" title="The firmware's meter as a display piece: glossy pills, metal bezels, a glint, standing on a glossy floor">Showroom</button>
-      <button id="ledLCD" title="The meter as your PSP shows it: its pixel grid and colour stripes, the slow LCD pixels leaving short trails, the backlight in the black">PSP Screen</button>
+      <button id="ledHD" title="24 x 16 smaller LEDs, glossy pills in metal bezels, a wider bloom, a glossy floor, deep black">LED HD</button>
+      <button id="ledShowroom" title="The firmware's meter as a display piece: glossy pills in metal bezels, standing on a glossy floor that reflects the lit LEDs">Showroom</button>
+      <button id="ledLCD" title="The meter as your PSP shows it: the slow LCD pixels leaving short trails as bars fall, the backlight glowing faintly through the black">PSP Screen</button>
       <button id="ledHiFi" title="A hi-fi rack meter: 24 x 16, green to yellow to red in steps, glossy">Hi-Fi Rack</button>
       <button id="ledNeon" title="Synthwave neon: 24 x 16 in the palette's colours, a heavy bloom, a reflective floor, a little LCD trail">Neon Stack</button>
-      <button id="ledIce" title="Cyan glass in metal: the firmware grid in the Ancient Tech colours, high gloss, a sweeping glint">Ice Crystal</button>
+      <button id="ledIce" title="Cyan glass in metal: the firmware grid in the Ancient Tech colours, high gloss">Ice Crystal</button>
     </div>
     <h2 class="sec">PSP originals</h2>
     <div class="btns" title="The PSP music player's own visualizers, rebuilt from footage of a PSP-2000 - they replace the fountain">
@@ -279,10 +279,10 @@ const PARAMS = [
   ["MENU_WAVES", "Effects", "Menu waves", 0, 0, 1, 0.05, "Soft ribbons of light flowing across behind the fountain, like a console menu's wave background, swelling with the music."],
   ["PSP_HD", "PSP meter", "HD grid", 0, 0, 1, 1, "0 = the firmware's 12 columns x 8 LEDs (5 dB an LED); 1 = 24 x 16 (quarter-octave bands, 2.5 dB an LED) in the same space."],
   ["PSP_SHEEN", "PSP meter", "Sheen", 0.5, 0, 1, 0.05, "The pills' luster: a highlight along the top edge and a reflection along the bottom. 0.5 = the firmware's own textures; higher = glossier."],
-  ["PSP_GLINT", "PSP meter", "Metal and glint", 0, 0, 1, 0.05, "A thin metal bezel round each pill and a light glint that sweeps slowly across the meter, catching the pills one after another."],
+  ["PSP_GLINT", "PSP meter", "Metal bezel", 0, 0, 1, 0.05, "A thin metal bezel round each pill, lit from above."],
   ["PSP_BLOOM", "PSP meter", "Wide bloom", 0, 0, 2, 0.05, "A second, wider glow round each lit LED on top of its own halo."],
   ["PSP_GHOST", "PSP meter", "LCD ghosting", 0, 0, 1, 0.05, "The PSP screen's slow pixels: LEDs linger a little after they go out, so falling bars and peaks leave a short trail."],
-  ["PSP_LCD", "PSP meter", "LCD pixels", 0, 0, 1, 0.05, "The PSP screen itself: its 480x272 pixel grid with red, green and blue stripes, and the faint backlight glow in the black."],
+  ["PSP_LCD", "PSP meter", "LCD backlight", 0, 0, 1, 0.05, "The PSP screen's backlight showing through the black - faintly, a little brighter toward the edges, slightly cool."],
   ["PSP_FLOOR", "PSP meter", "Glossy floor", 0, 0, 1, 0.05, "The meter stands on a glossy surface that reflects it."],
   ["PSP_PALCOL", "PSP meter", "Palette colours", 0, 0, 1, 1, "0 = the firmware's blue, yellow and red rows; 1 = the chosen palette, from its dark end at the bottom to its bright end at the top."],
   ["PSP_WASH", "PSP meter", "Theme wash", 1, 0, 1, 0.05, "The PSP's theme colour washed over the screen behind the meter. 0 = pure black."],
@@ -1770,21 +1770,55 @@ const PSP_EDGES = [3, 5, 7, 11, 15, 22, 31, 45, 63, 90, 127, 181, 256];
 const PSP_EDGES_HD = Array.from({ length: 25 }, (_, i) => 3 * Math.pow(256 / 3, i / 24));
 const ledA = new Float32Array(24).fill(-40), ledVA = new Float32Array(24), ledB = new Float32Array(24).fill(-40), ledVB = new Float32Array(24);
 const ledI = new Float32Array(24 * 16), ledShow = new Float32Array(24 * 16);
+// The firmware's transform (0xee68, checked line for line against the textbook forms): a DCT-II of the left channel's
+// last 512 samples at 16-bit scale, through a Hann window; each index's |X| * 2^-22 (0 dB = a full-scale tone in phase
+// with its cosine - the DCT sees phase, which is what makes the PSP's meter flicker). Index k is k * 44100 / 1024 Hz on
+// the PSP, so the bands run ~130 Hz to 11 kHz; here each index is evaluated at that same frequency whatever this
+// context's sample rate
+const ledWin = Float32Array.from({ length: 512 }, (_, n) => 0.5 - 0.5 * Math.cos(2 * Math.PI * n / 512));
+const ledTd = new Float32Array(1024), ledXw = new Float32Array(512), ledX = new Float32Array(256), ledLv = new Float32Array(24);
+let ledCos = null, ledCosSr = 0;
+function ledTransform(sr) {
+  if (ledCosSr !== sr) {
+    ledCosSr = sr; ledCos = new Float32Array(256 * 512);
+    for (let k = 0; k < 256; k++) { const kk = k * 44100 / sr; for (let n = 0; n < 512; n++) ledCos[k * 512 + n] = Math.cos(Math.PI * (n + 0.5) * kk / 512); }
+  }
+  analyserL.getFloatTimeDomainData(ledTd);
+  for (let n = 0; n < 512; n++) ledXw[n] = ledTd[512 + n] * 32768 * ledWin[n];
+  for (let k = 3; k < 256; k++) { let acc = 0; const o = k * 512; for (let n = 0; n < 512; n++) acc += ledXw[n] * ledCos[o + n]; ledX[k] = Math.abs(acc) * 2.384185791015625e-7; }
+}
 let ledAcc = 0, ledC = 12, ledR = 8;
 function ledStep(dt) {
   const Pq = Q(), C = Pq.PSP_HD >= 0.5 ? 24 : 12, R = Pq.PSP_HD >= 0.5 ? 16 : 8, edges = C === 24 ? PSP_EDGES_HD : PSP_EDGES;
   if (C !== ledC) { ledC = C; ledR = R; ledI.fill(0); ledShow.fill(0); ledA.fill(-40); ledB.fill(-40); ledVA.fill(0); ledVB.fill(0); }
   const step = 40 / R;   // dB an LED
   ledAcc += dt;
-  const binHz = (actx ? actx.sampleRate : 48000) / 1024, off = 13.5 + 20 * Math.log10(Math.max(0.05, Pq.PSP_GAIN));
+  // the level slider: 1.2 (its default) is the firmware's own level
+  const gainDb = 20 * Math.log10(Math.max(0.05, Pq.PSP_GAIN) / 1.2);
+  // the bands' levels, once a frame: the firmware's transform on a playing song; on the synthetic beats (no samples) an
+  // approximation from the analyser's spectrum
+  if (sourceSel.value === "file" && playing && analyserL) {
+    ledTransform(actx.sampleRate);
+    for (let c = 0; c < C; c++) {
+      let mx = 0;
+      const k0 = Math.round(edges[c]), k1 = Math.max(k0 + 1, Math.round(edges[c + 1]));
+      for (let k = k0; k < Math.min(k1, 256); k++) mx = Math.max(mx, ledX[k]);
+      ledLv[c] = mx > 1e-9 ? 20 * Math.log10(mx) + gainDb : -40;
+    }
+  } else {
+    const binHz = (actx ? actx.sampleRate : 48000) / 1024;
+    for (let c = 0; c < C; c++) {
+      let mx = 0;
+      const b0 = Math.round(edges[c] * 43.07 / binHz), b1 = Math.max(b0 + 1, Math.round(edges[c + 1] * 43.07 / binHz));
+      for (let b = b0; b < Math.min(b1, 512); b++) mx = Math.max(mx, spec[b]);
+      ledLv[c] = mx > 1e-7 ? 20 * Math.log10(mx) + 13.5 + gainDb : -40;
+    }
+  }
   while (ledAcc >= 1 / 60) {
     ledAcc -= 1 / 60;
     for (let i = 0; i < C * R; i++) ledI[i] *= 0.85;
     for (let c = 0; c < C; c++) {
-      let mx = 0;
-      const b0 = Math.round(edges[c] * 86.13 / binHz), b1 = Math.max(b0 + 1, Math.round(edges[c + 1] * 86.13 / binHz));
-      for (let b = b0; b < Math.min(b1, 512); b++) mx = Math.max(mx, spec[b]);
-      const lv = mx > 1e-7 ? 20 * Math.log10(mx) + off : -40;
+      const lv = ledLv[c];
       ledA[c] += ledVA[c]; ledVA[c] -= 0.01; ledB[c] += ledVB[c]; ledVB[c] -= 0.1;
       if (ledA[c] < -40) { ledA[c] = -40; ledVA[c] = 0; }
       if (ledB[c] < -40) { ledB[c] = -40; ledVB[c] = 0; }
@@ -2111,12 +2145,11 @@ float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int k = 0; k < 4; k++) { v += a
 // core). Edges are anti-aliased in screen pixels, so the meter stays as crisp as on the PSP's own small screen. The HD
 // grid packs 24 x 16 smaller LEDs into the same space.
 float sdRBox(vec2 p, vec2 h, float r) { vec2 q = abs(p) - h + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
-vec3 ledMeter(vec2 q, float sc) {
+vec3 ledMeter(vec2 q, float sc, float refl) {   // refl: 1 = as seen in the floor (lit LEDs only, softer)
   float C = uLedGrid.x, R = uLedGrid.y, k = 12.0 / C;        // k: the LED's size against the firmware's
-  float px = 37.0 * k, py = 21.0 * 8.0 / R, aa = 0.75 / sc;
+  float px = 37.0 * k, py = 21.0 * 8.0 / R, aa = mix(0.75 / sc, 1.2 * k, refl);
   vec3 col = vec3(0.0);
   float ci = floor((q.x - 18.0 * k - 18.5 * k + px * 0.5) / px), ri = floor((227.0 + py * 0.5 - q.y) / py);
-  float glintPos = fract(uTime * 0.18);
   for (int dr = -2; dr <= 2; dr++) for (int dc = -2; dc <= 2; dc++) {
     float c = ci + float(dc), r = ri + float(dr);
     if (c < 0.0 || c > C - 1.0 || r < 0.0 || r > R - 1.0) continue;
@@ -2148,13 +2181,11 @@ vec3 ledMeter(vec2 q, float sc) {
                 + vec3(1.0) * shine * max(0.0, PSP_SHEEN - 0.5) * 0.8) * inBody
              + halo * (1.0 - inBody) * (0.52 * pow(max(0.0, 1.0 - max(d, 0.0) / (12.0 * k)), 1.3)
                                         + PSP_BLOOM * 0.22 * exp(-max(d, 0.0) / (9.0 * k)));
-    col += norml * max(b, 32.0) / 255.0 + lit * b * b / 65025.0;
-    // metal and glint: a thin bezel round the pill, lit from above; a diagonal glint sweeping across the meter
-    if (PSP_GLINT > 0.0) {
+    col += norml * max(b, 32.0) / 255.0 * (1.0 - refl) + lit * b * b / 65025.0;
+    // metal bezel: a thin ring round the pill, lit from above
+    if (PSP_GLINT > 0.0 && refl < 0.5) {
       float bez = smoothstep(1.4 * k, 0.6 * k, d) * smoothstep(-aa, aa, d);
-      vec3 metal = vec3(0.55, 0.58, 0.64) * (0.35 + 0.65 * smoothstep(0.8, -1.0, v));
-      float gx = (18.0 * k + px * c + p.x) / 480.0 + p.y / 600.0, glint = exp(-pow((gx - (glintPos * 1.6 - 0.3)) / 0.025, 2.0));
-      col += (metal * bez * 0.35 + vec3(1.0) * glint * (inBody * 0.55 + bez * 0.8)) * PSP_GLINT;
+      col += vec3(0.55, 0.58, 0.64) * (0.35 + 0.65 * smoothstep(0.8, -1.0, v)) * bez * 0.35 * PSP_GLINT;
     }
   }
   return col;
@@ -2162,27 +2193,26 @@ vec3 ledMeter(vec2 q, float sc) {
 vec3 pspDots() {
   float sc = uRes.y / 272.0;
   vec2 q = vec2((gl_FragCoord.x - uRes.x * 0.5) / sc + 240.0, 272.0 - gl_FragCoord.y / sc);   // PSP pixels, y down
-  vec3 col = ledMeter(q, sc);
-  // the glossy floor: below the bottom row the meter reflects, fading with depth, with a faint line of light where the
-  // floor meets the meter's foot
+  // the glossy floor: the meter lifts to make room, and below its foot the floor reflects it - only the lit LEDs and
+  // their glow (the dim pills don't show in a reflection), squashed by the viewing angle, softened, fading with depth
+  float lift = PSP_FLOOR > 0.0 ? 26.0 : 0.0;
+  vec3 col = ledMeter(q + vec2(0.0, lift), sc, 0.0);
   if (PSP_FLOOR > 0.0) {
-    float yF = 227.0 + 21.0 * 8.0 / uLedGrid.y * 0.5 + 4.0;
-    if (q.y > yF) col += ledMeter(vec2(q.x, 2.0 * yF - q.y), sc) * PSP_FLOOR * 0.42 * exp(-(q.y - yF) / 22.0);
-    col += vec3(0.6, 0.7, 0.85) * PSP_FLOOR * 0.05 * exp(-abs(q.y - yF) / 1.2) * smoothstep(0.0, 40.0, q.x) * smoothstep(480.0, 440.0, q.x);
+    float yF = 227.0 + 21.0 * 8.0 / uLedGrid.y * 0.5 + 3.0 - lift;
+    if (q.y > yF) {
+      float dy = q.y - yF; vec2 qr = vec2(q.x, yF - dy * 1.35 + lift);
+      vec3 r = ledMeter(qr, sc, 1.0) * 0.5 + (ledMeter(qr + vec2(0.0, 2.0), sc, 1.0) + ledMeter(qr - vec2(0.0, 2.0), sc, 1.0)) * 0.25;
+      col += r * PSP_FLOOR * 0.4 * exp(-dy / 26.0);
+    }
   }
   // the theme wash (the PSP's XMB colour - the user's theme on a PSP; a cool silver-blue here, at a third of the
   // firmware's strength since the PSP's own colour value isn't known)
   vec2 uvw = gl_FragCoord.xy / uRes;
   col += vec3(0.55, 0.62, 0.75) * mix(mix(0.5, 0.65, uvw.x), mix(0.3, 0.4, uvw.x), uvw.y) * 0.7 * 0.35 * PSP_WASH;
-  // the PSP's screen: its pixel grid (a thin dark gap between pixels), each pixel's red, green and blue stripes, and the
-  // backlight glowing faintly through the black
+  // the PSP screen's backlight: it shows through the black, a little brighter toward the edges, slightly cool
   if (PSP_LCD > 0.0) {
-    vec2 f = fract(q);
-    float gap = smoothstep(0.0, 0.1, f.x) * smoothstep(1.0, 0.9, f.x) * smoothstep(0.0, 0.1, f.y) * smoothstep(1.0, 0.9, f.y);
-    float sx = f.x * 3.0;
-    vec3 stripe = vec3(step(sx, 1.0), step(1.0, sx) * step(sx, 2.0), step(2.0, sx));
-    // (subtle, as at arm's length: the stripes only tint each pixel's thirds a little, the gaps show as a fine mesh)
-    col = col * mix(vec3(1.0), (0.82 + 0.54 * stripe) * mix(0.72, 1.0, gap), PSP_LCD) + vec3(0.02, 0.025, 0.035) * PSP_LCD;
+    vec2 e2 = abs(q / vec2(480.0, 272.0) - 0.5) * 2.0;
+    col += vec3(0.018, 0.022, 0.032) * (1.0 + 0.8 * pow(max(e2.x, e2.y), 3.0)) * PSP_LCD;
   }
   return col;
 }
@@ -2259,6 +2289,7 @@ vec3 pspTrail() {
   return col + vec3(1.0, 1.0, 0.85) * min(acc, 1.2) * 0.85;
 }
 void main() {
+  if (PSP > 0.5) { outColor = vec4(clamp(PSP < 1.5 ? pspDots() : PSP < 2.5 ? pspStrings() : PSP < 3.5 ? pspSwirl() : PSP < 4.5 ? pspTiles() : pspTrail(), 0.0, 1.0), 1.0); return; }
   vec2 uv0 = gl_FragCoord.xy / uRes, cc = uv0 - 0.5;
   // CRT: a slight curve, the picture bulging toward the viewer
   vec2 uv = 0.5 + cc * (1.0 + CRT * 0.12 * dot(cc, cc));
@@ -2392,7 +2423,6 @@ void main() {
   vec3 discCol = vec3(0.082, 0.09, 0.11) + 0.06 * smoothstep(0.14, 0.15, r);
   if (uHasCover > 0.5) { vec2 cuv = (uv - 0.5) * vec2(uRes.x / uRes.y, 1.0) / 0.3 + 0.5; discCol = texture(uCover, vec2(cuv.x, 1.0 - cuv.y)).rgb; }
   outc = mix(outc, discCol, disc);
-  if (PSP > 0.5) outc = PSP < 1.5 ? pspDots() : PSP < 2.5 ? pspStrings() : PSP < 3.5 ? pspSwirl() : PSP < 4.5 ? pspTiles() : pspTrail();
   outColor = vec4(clamp(outc, 0.0, 1.0), 1.0);
 }`;
 function program(fs) {
@@ -2513,12 +2543,14 @@ function frame(now) {
     gl.uniform1f(gl.getUniformLocation(progScene, "uHeatGain"), sch.heatGain); gl.uniform1f(gl.getUniformLocation(progScene, "uSplit"), sch.split); gl.uniform1f(gl.getUniformLocation(progScene, "uCoolGain"), sch.coolGain);
     gl.uniform1i(gl.getUniformLocation(progScene, "uGrad"), (comparing ? pinned : P).GRADIENT || 0);
     useTex(progScene, "uHist", 0, texHist); useTex(progScene, "uColA", 1, texA); useTex(progScene, "uColB", 2, texB); useTex(progScene, "uColC", 3, texC);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    // a PSP visualizer replaces the whole picture: the fountain, its trails and its blurs aren't drawn
+    const pspOnly = QP.PSP > 0.5;
+    if (!pspOnly) gl.drawArrays(gl.TRIANGLES, 0, 3);
     // blur pyramid: projectM's GetBlur1 / 2 / 3
     // trails: ping-pong between two targets; turning them on starts from this frame (no stale trail)
     let frameT = T.scene;
     const QT = comparing ? pinned : P;
-    if (QT.TRAILS > 0) {
+    if (QT.TRAILS > 0 && !pspOnly) {
       const dst = trailFlip ? T.trB : T.trA, prev = trailFlip ? T.trA : T.trB;
       gl.useProgram(progTrail);
       gl.bindFramebuffer(gl.FRAMEBUFFER, dst.f); gl.viewport(0, 0, T.W, T.H);
@@ -2529,7 +2561,7 @@ function frame(now) {
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       frameT = dst; trailFlip = !trailFlip; trailOn = true;
     } else trailOn = false;
-    blur(frameT, T.b1, T.b1t); blur(T.b1, T.b2, T.b2t); blur(T.b2, T.b3, T.b3t);
+    if (!pspOnly) { blur(frameT, T.b1, T.b1t); blur(T.b1, T.b2, T.b2t); blur(T.b2, T.b3, T.b3t); }
     // composite
     gl.useProgram(progComp);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, T.W, T.H);
