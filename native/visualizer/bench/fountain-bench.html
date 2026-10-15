@@ -76,7 +76,7 @@
     </div>
     <h2 class="sec">Presets</h2>
     <div class="btns">
-      <button id="presetYours5Full" class="main" title="Your tune #5 with stereo wings, a tint per song section and the lead-melody highlight">Tune #5 + sections + melody</button>
+      <button id="presetYours5Full" class="main" title="Your tune #5 plus a tint per song section and the lead-melody highlight - both need a loaded song (on the synthetic beat it looks the same as Your tune #5)">Tune #5 + sections + melody</button>
       <button id="presetYours5" title="Your values from 2026-10-13 00:36, plus beads cooling as they settle">Your tune #5</button>
     </div>
     <h2 class="sec">Showcase</h2>
@@ -123,14 +123,14 @@
       <button id="specToxic" title="Lime: green to chartreuse, a slow wave along the line, a touch of grain">Toxic</button>
       <button id="specPhosphor" title="Green: phosphor greens on a soft CRT">Phosphor</button>
       <button id="specAurora" title="Teal: green to teal to blue like the northern lights, held chords glowing, the line rippling">Aurora</button>
-      <button id="specAncient" title="Blue and cyan: glowing relic tech over water, beads in orbit, an orange warning pulse on the kick">Ancient Tech</button>
+      <button id="specAncient" title="Blue and cyan relic-tech interface: segmented readouts, a scanner sweeping each bar, HUD rails, a rune ring orbiting the cover, energy pulsing along the line, an orange warning on the kick">Ancient Tech</button>
       <button id="specPlasma" title="Violet: violet to blue to plasma green, light drifting off the fountain">Plasma</button>
       <button id="specVapor" title="Pink: hot pink to lavender to cyan, a soft liquid surface over a faint reflection">Vapor</button>
       <button id="specMagenta" title="Magenta: your tune #5's own look, unchanged">White to Magenta</button>
       <button id="specParagon" title="Blue against red with white between: wings that rise in the big moments, each section's colour sweeping out from the cover">Paragon / Renegade</button>
       <button id="specMercury" title="Neutral: liquid chrome over its reflection">Mercury</button>
-      <button id="specFull" title="All colours: the spectrum across the line, every effect kept gentle - Festival's everyday version">Full Spectrum</button>
-      <button id="specFestival" title="All colours, everything on: the spectrum across the line, ping-pong wings, big drops, sparkle (also in Showcase)">Festival</button>
+      <button id="specFull" title="All colours, crisp: the spectrum across the line on your calm tune #5 motion, sharp and without haze - the everyday one">Full Spectrum</button>
+      <button id="specFestival" title="All colours, party mode: the spectrum across the line with the wings alternating, a big wave every beat, oversized drops and wind-ups, sparkle (also in Showcase)">Festival</button>
     </div>
     <div class="btns">
       <select id="presetPick" title="Every other preset">
@@ -235,6 +235,9 @@ const PARAMS = [
   ["ORBIT", "Effects", "Orbit ring", 0, 0, 1, 0.05, "Beads circle the cover, one turn per bar, glowing with the music."],
   ["MELODY_RIBBON", "Effects", "Melody ribbon", 0, 0, 1, 0.05, "The tune leaves a trail: where the melody has been over the last two seconds rises above the line as a ribbon of light."],
   ["SECTION_SWEEP", "Effects", "Section change sweep", 0, 0, 1, 1, "A new section's tint sweeps out from the cover along the line, instead of fading in everywhere at once (with Sections: own tint)."],
+  ["QUANTIZE", "Effects", "Digital steps", 0, 0, 1, 0.05, "Dots snap to stepped heights, like the segments of a digital meter or a HUD readout. Higher = coarser steps."],
+  ["SCAN", "Effects", "Scan sweep", 0, 0, 1, 0.05, "A scanner band crosses the line once per bar, lighting up the dots it passes."],
+  ["HUD_LINES", "Effects", "HUD guides", 0, 0, 1, 0.05, "Faint guide rails above and below the fountain with tick marks along them, glowing with the music - an interface frame."],
   ["CRT", "Effects", "CRT screen", 0, 0, 1, 0.05, "Old-monitor finish: scanlines, a slight curve to the picture and darker edges."],
   ["GRAIN", "Effects", "Film grain", 0, 0, 1, 0.05, "Fine moving film grain over the picture (very faint - texture, not flicker)."],
   ["FLING_TIP", "Fling & motion", "Fling: outer dots only", 1.5, 0, 4, 0.1, "Which dots get thrown. 0 = the whole column moves together; higher = only the dots furthest from the line move, the core stays put."],
@@ -598,7 +601,7 @@ const SHOWCASE = {
   showHolo: { name: "Hologram", palette: "Hologram", grad: 0, values: { FRINGE: 0.004, DEFOCUS: 0.2, STRETCH_DIM: 1.0, LIFE_SPREAD: 6, BRIGHT: 3, EXPOSURE: 0.5, BEAT_IN_PLACE: 0.8, BEAT_EVEN: 0.8, SPARKLE: 0.8, MELODY: 1.0, COOL_AIR: 0.3, TEMP_AMOUNT: 0.25, KICK_COLOR: 0.7, GLOW_PULSE: 0.05, BLOOM_WIDE: 0.6 } },
   showQuick: { name: "Quicksilver", palette: "Mercury", grad: 0, values: { LIQUID: 0.85, FLING_DAMP: 0.35, BEAT_SPRING: 1.6, BEAT_SNAP: 0.5, BEAT_IN_PLACE: 0.7, BEAT_EVEN: 0.4, WAVE: 0.0, FLING: 2.6, SIZE: 1.0, DEFOCUS: 0.9, BLOOM_WIDE: 1.2, BLOOM_NEAR: 0.7, LAUNCH: 0.2, STRETCH_GAIN: 0.02, STRETCH_MAX: 2, BREATH: 0.6, LIFE_SPREAD: 20, SPARKLE: 0.7, PAD_SWELL: 0.6, TEMP_AMOUNT: 0.3, COOL_AIR: 0.6, KICK_COLOR: 0.6 } },
   showMinimal: { name: "Minimal", palette: "Silver", grad: 2, values: { ACCENT: 0.15, TEMP_AMOUNT: 0.15, COOL_AIR: 0.3, KICK_COLOR: 0.2, SPARKLE: 0.15, BLOOM_WIDE: 0.4, BLOOM_NEAR: 0.3, DEFOCUS: 0.5, FLING: 1.6, BEAT_SNAP: 0.5, WAVE: 0.8, PAD_GLOW: 0.3, MELODY: 0.5, SECTION_LOOK: 0, HARMONY_HUE: 0, GLOW_PULSE: 0.04, FRINGE: 0 } },
-  showFestival: { name: "Festival", palette: "Vapor", grad: 3, values: { PINGPONG: 0.8, WAVE: 1.6, WAVE_SPEED: 260, SPARKLE: 1.0, DROP_FLING: 2.8, TENSION: 1.5, SECTION_LOOK: 1, MELODY: 1.2, PAD_GLOW: 1, HARMONY_HUE: 0.8, TEMP_AMOUNT: 0.5, BEAT_ACCENT: 1.2, BEAT_OTHERS: 0.5, FLING: 2.9, REACH: 24, BLOOM_WIDE: 1.4 } },
+  showFestival: { name: "Festival", palette: "Vapor", grad: 3, values: { PINGPONG: 0.8, WAVE: 1.6, WAVE_SPEED: 260, SPARKLE: 1.0, DROP_FLING: 2.8, TENSION: 1.5, SECTION_LOOK: 1, MELODY: 1.2, PAD_GLOW: 0.3, HARMONY_HUE: 0.8, TEMP_AMOUNT: 0.5, BEAT_ACCENT: 1.2, BEAT_OTHERS: 0.5, FLING: 2.9, REACH: 24, BLOOM_WIDE: 0.6, DEFOCUS: 0.4, GLOW_PULSE: 0.05 } },
   showLight: { name: "Light Painting", palette: "Neon Noir", grad: 4, values: { TRAILS: 0.35, TRAIL_DRIFT: 0.012, FLING: 2.8, BEAT_SPRING: 2.4, BEAT_SNAP: 0.3, STRETCH_GAIN: 0.08, STRETCH_MAX: 6, LAUNCH: 0.9, LAUNCH_SPEED: 6, SPARKLE: 0.6, BLOOM_WIDE: 0.9 } },
   showPlaza: { name: "Fountain Plaza", palette: "Ice", grad: 0, values: { GRAVITY: 1, SPLASH: 1, LAUNCH: 0, LIFE_SPREAD: 6, REACH: 22, REFLECT: 0.6, REFLECT_RIPPLE: 0.5, TRAILS: 0.12, PAD_GLOW: 0.6, BEAT_SNAP: 0.6, SPARKLE: 0.7, STRETCH_GAIN: 0.04 } },
   showMirror: { name: "Mirror Lake", palette: "Moonlit Ruins", grad: 0, values: { LIQUID: 0.85, FLING_DAMP: 0.35, BEAT_SPRING: 1.6, BEAT_SNAP: 0.5, BEAT_IN_PLACE: 0.7, BEAT_EVEN: 0.4, WAVE: 0, REFLECT: 0.8, REFLECT_RIPPLE: 0.8, TRAILS: 0.3, DEFOCUS: 0.9, BLOOM_WIDE: 1.2, LAUNCH: 0.2, STRETCH_GAIN: 0.02, BREATH: 0.6, PAD_SWELL: 0.6 } },
@@ -627,19 +630,26 @@ const SHOWCASE = {
   specToxic: { name: "Toxic", palette: "Toxic", grad: 0, values: { WAVE_LINE: 0.3, TRAILS: 0.12, GRAIN: 0.1 } },
   specPhosphor: { name: "Phosphor", palette: "Phosphor", grad: 0, values: { CRT: 0.35, TRAILS: 0.15 } },
   specAurora: { name: "Aurora", palette: "Aurora", grad: 4, values: { WAVE_LINE: 0.4, PAD_GLOW: 0.9, HARMONY_HUE: 0.6, BLOOM_WIDE: 1.3 } },
-  specAncient: { name: "Ancient Tech", palette: "Ancient Tech", grad: 0, values: { REFLECT: 0.4, ORBIT: 0.4, BLOOM_WIDE: 1.2, SPARKLE: 0.7 } },
+  specAncient: { name: "Ancient Tech", palette: "Ancient Tech", grad: 0, values: { QUANTIZE: 0.45, SCAN: 0.8, HUD_LINES: 0.7, ORBIT: 0.6, HEARTBEAT: 0.7, DEFOCUS: 0.25, BLOOM_WIDE: 0.5, BLOOM_NEAR: 0.5, GLOW_PULSE: 0.05, PAD_GLOW: 0.2, SPARKLE: 0.5, KICK_COLOR: 0.8, TRAILS: 0.08, LIFE_SPREAD: 6 } },
   specPlasma: { name: "Plasma", palette: "Plasma", grad: 4, values: { TRAILS: 0.2, TRAIL_DRIFT: 0.005, BLOOM_WIDE: 1.3 } },
   specVapor: { name: "Vapor", palette: "Vapor", grad: 4, values: { LIQUID: 0.4, TRAILS: 0.15, REFLECT: 0.25, BLOOM_WIDE: 1.2 } },
   specMagenta: { name: "White to Magenta", palette: "White to magenta", grad: 0, values: {  } },
   specParagon: { name: "Paragon / Renegade", palette: "Paragon / Renegade", grad: 4, values: { WINGS: 0.4, SECTION_SWEEP: 1, STREAKS: 0.3 } },
   specMercury: { name: "Mercury", palette: "Mercury", grad: 0, values: { LIQUID: 0.6, REFLECT: 0.5, REFLECT_RIPPLE: 0.6, BLOOM_WIDE: 1.1 } },
-  specFull: { name: "Full Spectrum", palette: "Vapor", grad: 3, values: { SPARKLE: 0.8, PAD_GLOW: 0.8, HARMONY_HUE: 0.6, BLOOM_WIDE: 1.2, TRAILS: 0.1, SECTION_LOOK: 0.6 } },
+  specFull: { name: "Full Spectrum", palette: "Vapor", grad: 3, values: { SPARKLE: 0.6, PAD_GLOW: 0.15, HARMONY_HUE: 0.6, BLOOM_WIDE: 0.4, BLOOM_NEAR: 0.3, DEFOCUS: 0.3, GLOW_PULSE: 0.04, SECTION_LOOK: 0.6 } },
 };
 const whiteToMagenta = () => setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0);
 document.getElementById("presetYours4").onclick = () => { applyAll(YOUR_TUNE_4); whiteToMagenta(); };
 document.getElementById("presetYours5Full").onclick = () => { applyAll({ ...YOUR_TUNE_5, STEREO: 1, SECTION_LOOK: 0.5, MELODY: 0.8 }); whiteToMagenta(); };
 document.getElementById("presetYours5").onclick = () => { applyAll(YOUR_TUNE_5); whiteToMagenta(); };
 document.getElementById("presetYours4Cool").onclick = () => { applyAll(YOUR_TUNE_4_COOL); whiteToMagenta(); };
+// every preset button says what it applied (two presets can differ only in what a loaded song shows - this confirms the
+// click landed)
+document.getElementById("panel").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b || !/^(show|spec|preset|beat|bar|stomp)/.test(b.id)) return;
+  const el = document.getElementById("flash"); el.textContent = "Preset: " + b.textContent; el.classList.add("on");
+  clearTimeout(flashTimer); flashTimer = setTimeout(() => el.classList.remove("on"), 1400);
+});
 document.getElementById("presetPick").onchange = e => {
   const id = e.target.value, name = e.target.selectedOptions[0].textContent; e.target.value = "";
   const b = id && document.getElementById(id); if (!b) return;
@@ -1763,6 +1773,8 @@ vec3 fountain(float fx, float zy, bool left, float dxs) {
       // splash: in the last 14% of its life a landing dot bounces a little and scatters to one side of its column
       float spl = GRAVITY * SPLASH * smoothstep(0.86, 1.0, na);
       float zs = z + sign(k) * 0.6 * GRAVITY * SPLASH * sin(3.14159 * smoothstep(0.86, 1.0, na));
+      // digital steps: the height snapped to a grid (0.6 to 3 column widths) - a segmented readout
+      if (QUANTIZE > 0.0) { float qs = mix(0.6, 3.0, QUANTIZE); zs = floor(zs / qs + 0.5) * qs; }
       vec2 d = vec2(dx - (h.x > 0.5 ? 0.3 : -0.3) * spl, (zy - zs) / stretch) / size;
       float disc = 1.0 - smoothstep(0.0, 1.0, length(d));
       // ---- colour: the palette first, accents on top. Every accent follows one rule - its strength decides HOW MANY
@@ -1966,6 +1978,10 @@ void main() {
   }
   // focus pull: full, busy sections sharper, quiet ones softer
   vec3 base = mix(c, b1 * 1.2 + b2 * 0.6 + c * 0.25, DEFOCUS * mix(1.0, 0.35, FOCUS_PULL * uFull));
+  // scan sweep: a band crossing the frame left to right once per bar; the dots under it brighten (the background
+  // doesn't), and a faint scan line marks it
+  float scanX = fract(uSpinC / 6.2832), scanB = SCAN * exp(-pow((uv.x - scanX) / 0.018, 2.0));
+  base *= 1.0 + 1.6 * scanB;
   // the glow's colour by temperature: the cool colour while the music runs cool, the palette's hot colour as it heats
   vec3 coolGlow = mix(uCoolA, uCoolB, COOL_HUE); coolGlow /= max(coolGlow.r, max(coolGlow.g, coolGlow.b));
   vec3 glowCol = mix(coolGlow, uGlowHot, uWarm);
@@ -1983,6 +1999,14 @@ void main() {
   if (SHOCK_RING > 0.0 && uRingT < 4.0) {
     float ring = exp(-pow((r - (0.16 + uRingT * 0.55)) / 0.012, 2.0)) * smoothstep(0.0, 0.12, uRingT) * exp(-uRingT * 1.6);
     glow += glowCol * ring * SHOCK_RING * 0.8;
+  }
+  if (SCAN > 0.0) glow += uGlint / max(uGlint.r, max(uGlint.g, uGlint.b)) * scanB * 0.05 * smoothstep(0.42, 0.2, abs(uv.y - 0.5));
+  // HUD guides: rails 0.3 of the frame above and below the line, along the wings, with a tick every 1/12 of a wing
+  if (HUD_LINES > 0.0) {
+    float gapH = 0.11 * uRes.y / uRes.x, ax = abs(uv.x - 0.5), onWing = step(gapH, ax) * step(ax, 0.46);
+    float rail = exp(-pow((abs(uv.y - 0.5) - 0.3) / 0.0016, 2.0));
+    float tick = step(fract((ax - gapH) / (0.46 - gapH) * 12.0), 0.06) * step(abs(abs(uv.y - 0.5) - 0.3), 0.012) * step(0.0, 0.3 - abs(uv.y - 0.5) + 0.0);
+    glow += mix(glowCol, uGlint / max(uGlint.r, max(uGlint.g, uGlint.b)), 0.5) * HUD_LINES * onWing * (rail * 0.35 + tick * 0.25) * (0.5 + clamp(uLevel * 2.0, 0.0, 1.0));
   }
   // orbit ring: 24 beads circling the cover once per bar, glowing with the music
   if (ORBIT > 0.0 && abs(r - 0.205) < 0.03) {
