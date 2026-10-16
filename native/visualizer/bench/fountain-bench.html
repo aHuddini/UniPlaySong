@@ -76,7 +76,7 @@
     </div>
     <h2 class="sec">Presets</h2>
     <div class="btns">
-      <button id="presetYours5Full" class="main" title="Your tune #5 plus a tint per song section and the lead-melody highlight - both need a loaded song (on the synthetic beat it looks the same as Your tune #5)">Tune #5 + sections + melody</button>
+      <button id="presetYours5Full" class="main" title="The T8 standard - the look UniPlaySong's visualizer is built to first: your tune #5 plus a tint per song section and the lead-melody highlight (both need a loaded song; on the synthetic beat it looks the same as Your tune #5). A fresh bench opens on it">T8 standard: Tune #5 + sections + melody</button>
       <button id="presetYours5" title="Your values from 2026-10-13 00:36, plus beads cooling as they settle">Your tune #5</button>
     </div>
     <h2 class="sec">Showcase</h2>
@@ -500,7 +500,8 @@ const P = {};
 const DEFAULTS = {};
 for (const p of PARAMS) { DEFAULTS[p[0]] = p[3]; P[p[0]] = p[3]; }
 P.PALETTE = 0; P.GRADIENT = 0;
-try { Object.assign(P, JSON.parse(localStorage.getItem("fountainBench") || "{}")); } catch (e) { }
+let firstVisit = true;
+try { const sv = localStorage.getItem("fountainBench"); firstVisit = !sv; Object.assign(P, JSON.parse(sv || "{}")); } catch (e) { }
 
 // ---- UI --------------------------------------------------------------------------------------------------------
 const inputs = {};
@@ -713,7 +714,11 @@ const SHOWCASE = {
 };
 const whiteToMagenta = () => setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0);
 document.getElementById("presetYours4").onclick = () => { applyAll(YOUR_TUNE_4); whiteToMagenta(); };
-document.getElementById("presetYours5Full").onclick = () => { applyAll({ ...YOUR_TUNE_5, STEREO: 1, SECTION_LOOK: 0.5, MELODY: 0.8 }); whiteToMagenta(); };
+// The T8 standard: the look the UniPlaySong visualizer is built to first - your tune #5 with stereo wings, a tint per
+// song section and the lead-melody highlight, on White to magenta. A fresh bench opens on it; standard-t8.json beside
+// this page is its frozen copy (every value resolved), the spec for the renderer
+const T8_STANDARD = { ...YOUR_TUNE_5, STEREO: 1, SECTION_LOOK: 0.5, MELODY: 0.8 };
+document.getElementById("presetYours5Full").onclick = () => { applyAll(T8_STANDARD); whiteToMagenta(); };
 document.getElementById("presetYours5").onclick = () => { applyAll(YOUR_TUNE_5); whiteToMagenta(); };
 document.getElementById("presetYours4Cool").onclick = () => { applyAll(YOUR_TUNE_4_COOL); whiteToMagenta(); };
 // every preset button says what it applied (two presets can differ only in what a loaded song shows - this confirms the
@@ -2778,7 +2783,15 @@ if (/src=song/.test(location.hash)) sourceSel.value = "song";
 // ...&cover=URL builds the cover-art palette from that picture (headless checks)
 { const cm = /cover=([^&]+)/.exec(location.hash); if (cm) fetch(decodeURIComponent(cm[1])).then(r => r.blob()).then(b => coverPalette(b)).catch(e => fail("cover: " + e.message)); }
 // ...&preset=BUTTON_ID presses that preset button (e.g. #drumtest&play&preset=presetYours4Cool)
-{ const pm = /preset=([A-Za-z0-9]+)/.exec(location.hash); const b = pm && document.getElementById(pm[1]); if (b) b.onclick(); }
+{ const pm = /preset=([A-Za-z0-9]+)/.exec(location.hash); const b = pm && document.getElementById(pm[1]); if (b) b.onclick(); else if (firstVisit) document.getElementById("presetYours5Full").onclick(); }
+// #spec: write the current look, every value resolved, with its palette and colour scheme, into the page (to freeze the
+// standard as standard-t8.json: open with #preset=presetYours5Full&spec)
+if (/[#&]spec(&|$)/.test(location.hash)) {
+  const pl = PALETTES[P.PALETTE || 0], o = JSON.parse(document.getElementById("out").value);
+  const pre = document.createElement("pre"); pre.id = "specdump";
+  pre.textContent = JSON.stringify({ params: o, palette: { name: pl[0], low: pl[1], high: pl[2] }, scheme: schemeOf(pl) }, null, 1);
+  document.body.appendChild(pre);
+}
 { const pp = /pal=(\d+)/.exec(location.hash), gg = /grad=(\d+)/.exec(location.hash); if (pp || gg) setColour(pp ? +pp[1] : P.PALETTE, gg ? +gg[1] : (P.GRADIENT || 0)); }
 // fountain-bench.html#live&ff=30 runs the model 30 s ahead before the first frame (jump to a part of the song)
 const ffMatch = /ff=(\d+(?:\.\d+)?)/.exec(location.hash);
