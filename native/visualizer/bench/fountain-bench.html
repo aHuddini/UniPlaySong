@@ -278,6 +278,7 @@ const PARAMS = [
   ["LED_OFF", "Effects", "Unlit LEDs", 0.5, 0, 1, 0.05, "How visible the unlit LEDs are - the board behind the light."],
   ["MENU_WAVES", "Effects", "Menu waves", 0, 0, 1, 0.05, "Soft ribbons of light flowing across behind the fountain, like a console menu's wave background, swelling with the music."],
   ["PSP_HD", "PSP meter", "HD grid", 0, 0, 1, 1, "0 = the firmware's 12 columns x 8 LEDs (5 dB an LED); 1 = 24 x 16 (quarter-octave bands, 2.5 dB an LED) in the same space."],
+  ["PSP_SLOPE", "PSP meter", "Slope", 0, 0, 6, 0.5, "Lifts the higher bands by this many dB per octave, as pro analyzers do, so a typical mix reads level across the meter instead of sloping down to the right. 0 = the firmware (on most songs the right half barely moves); about 4 balances most music."],
   ["PSP_SHEEN", "PSP meter", "Sheen", 0.5, 0, 1, 0.05, "The pills' luster: a highlight along the top edge and a reflection along the bottom. 0.5 = the firmware's own textures; higher = glossier."],
   ["PSP_GLINT", "PSP meter", "Metal bezel", 0, 0, 1, 0.05, "A thin metal bezel round each pill, lit from above."],
   ["PSP_BLOOM", "PSP meter", "Wide bloom", 0, 0, 2, 0.05, "A second, wider glow round each lit LED on top of its own halo."],
@@ -698,12 +699,12 @@ const SHOWCASE = {
   psWaves: { name: "Menu Waves", palette: "Menu Blue", grad: 0, values: { MENU_WAVES: 1, PAD_GLOW: 0.4, BLOOM_WIDE: 0.8, DEFOCUS: 0.5, TRAILS: 0.1 } },
   psBubbles: { name: "Bubble Lights", palette: "Vapor", grad: 4, values: { ORBS: 1, LED: 0.7, LED_SIZE: 0.9, LED_OFF: 0.3, BLOOM_WIDE: 1.0, DEFOCUS: 0.6 } },
   pspDots: { name: "PSP Dot Spectrum", palette: "Warm to cool", grad: 4, values: { PSP: 1 } },
-  ledHD: { name: "LED HD", palette: "Warm to cool", grad: 4, values: { PSP: 1, PSP_HD: 1, PSP_SHEEN: 1, PSP_GLINT: 0.8, PSP_BLOOM: 0.9, PSP_FLOOR: 0.6, PSP_WASH: 0 } },
-  ledShowroom: { name: "Showroom", palette: "Warm to cool", grad: 4, values: { PSP: 1, PSP_SHEEN: 1, PSP_GLINT: 0.6, PSP_BLOOM: 0.5, PSP_FLOOR: 0.7, PSP_WASH: 0.4 } },
-  ledLCD: { name: "PSP Screen", palette: "Warm to cool", grad: 4, values: { PSP: 1, PSP_LCD: 1, PSP_GHOST: 0.7, PSP_BLOOM: 0.3 } },
-  ledHiFi: { name: "Hi-Fi Rack", palette: "VU Meter", grad: 2, values: { PSP: 1, PSP_HD: 1, PSP_PALCOL: 1, PSP_SHEEN: 0.9, PSP_GLINT: 0.5, PSP_BLOOM: 0.5, PSP_WASH: 0 } },
-  ledNeon: { name: "Neon Stack", palette: "Synthwave", grad: 4, values: { PSP: 1, PSP_HD: 1, PSP_PALCOL: 1, PSP_SHEEN: 0.7, PSP_BLOOM: 1.6, PSP_FLOOR: 0.8, PSP_GHOST: 0.35, PSP_WASH: 0 } },
-  ledIce: { name: "Ice Crystal", palette: "Ancient Tech", grad: 0, values: { PSP: 1, PSP_PALCOL: 1, PSP_SHEEN: 1, PSP_GLINT: 1, PSP_BLOOM: 0.8, PSP_FLOOR: 0.5, PSP_WASH: 0.3 } },
+  ledHD: { name: "LED HD", palette: "Warm to cool", grad: 4, values: { PSP: 1, PSP_SLOPE: 4, PSP_HD: 1, PSP_SHEEN: 1, PSP_GLINT: 0.8, PSP_BLOOM: 0.9, PSP_FLOOR: 0.6, PSP_WASH: 0 } },
+  ledShowroom: { name: "Showroom", palette: "Warm to cool", grad: 4, values: { PSP: 1, PSP_SLOPE: 4, PSP_SHEEN: 1, PSP_GLINT: 0.6, PSP_BLOOM: 0.5, PSP_FLOOR: 0.7, PSP_WASH: 0.4 } },
+  ledLCD: { name: "PSP Screen", palette: "Warm to cool", grad: 4, values: { PSP: 1, PSP_SLOPE: 4, PSP_LCD: 1, PSP_GHOST: 0.7, PSP_BLOOM: 0.3 } },
+  ledHiFi: { name: "Hi-Fi Rack", palette: "VU Meter", grad: 2, values: { PSP: 1, PSP_SLOPE: 4, PSP_HD: 1, PSP_PALCOL: 1, PSP_SHEEN: 0.9, PSP_GLINT: 0.5, PSP_BLOOM: 0.5, PSP_WASH: 0 } },
+  ledNeon: { name: "Neon Stack", palette: "Synthwave", grad: 4, values: { PSP: 1, PSP_SLOPE: 4, PSP_HD: 1, PSP_PALCOL: 1, PSP_SHEEN: 0.7, PSP_BLOOM: 1.6, PSP_FLOOR: 0.8, PSP_GHOST: 0.35, PSP_WASH: 0 } },
+  ledIce: { name: "Ice Crystal", palette: "Ancient Tech", grad: 0, values: { PSP: 1, PSP_SLOPE: 4, PSP_PALCOL: 1, PSP_SHEEN: 1, PSP_GLINT: 1, PSP_BLOOM: 0.8, PSP_FLOOR: 0.5, PSP_WASH: 0.3 } },
   pspStrings: { name: "PSP Strings", palette: "Warm to cool", grad: 4, values: { PSP: 2 } },
   pspSwirl: { name: "PSP Swirl", palette: "Warm to cool", grad: 4, values: { PSP: 3 } },
   pspTiles: { name: "PSP Tile Band", palette: "Warm to cool", grad: 4, values: { PSP: 4 } },
@@ -1795,6 +1796,8 @@ function ledStep(dt) {
   ledAcc += dt;
   // the level slider: 1.2 (its default) is the firmware's own level
   const gainDb = 20 * Math.log10(Math.max(0.05, Pq.PSP_GAIN) / 1.2);
+  // the slope: the meter spans log2(256 / 3) = 6.4 octaves, so each column sits that / C octaves above the last
+  const slopeCol = Pq.PSP_SLOPE * Math.log2(256 / 3) / C;
   // the bands' levels, once a frame: the firmware's transform on a playing song; on the synthetic beats (no samples) an
   // approximation from the analyser's spectrum
   if (sourceSel.value === "file" && playing && analyserL) {
@@ -1803,7 +1806,7 @@ function ledStep(dt) {
       let mx = 0;
       const k0 = Math.round(edges[c]), k1 = Math.max(k0 + 1, Math.round(edges[c + 1]));
       for (let k = k0; k < Math.min(k1, 256); k++) mx = Math.max(mx, ledX[k]);
-      ledLv[c] = mx > 1e-9 ? 20 * Math.log10(mx) + gainDb : -40;
+      ledLv[c] = mx > 1e-9 ? 20 * Math.log10(mx) + gainDb + slopeCol * c : -40;
     }
   } else {
     const binHz = (actx ? actx.sampleRate : 48000) / 1024;
@@ -1811,7 +1814,7 @@ function ledStep(dt) {
       let mx = 0;
       const b0 = Math.round(edges[c] * 43.07 / binHz), b1 = Math.max(b0 + 1, Math.round(edges[c + 1] * 43.07 / binHz));
       for (let b = b0; b < Math.min(b1, 512); b++) mx = Math.max(mx, spec[b]);
-      ledLv[c] = mx > 1e-7 ? 20 * Math.log10(mx) + 13.5 + gainDb : -40;
+      ledLv[c] = mx > 1e-7 ? 20 * Math.log10(mx) + 13.5 + gainDb + slopeCol * c : -40;
     }
   }
   while (ledAcc >= 1 / 60) {
