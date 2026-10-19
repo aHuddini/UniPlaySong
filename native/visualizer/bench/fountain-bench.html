@@ -78,6 +78,7 @@
     <div class="btns">
       <button id="presetYours5Full" class="main" title="The T8 standard - the look UniPlaySong's visualizer is built to first: your tune #5 plus a tint per song section and the lead-melody highlight (both need a loaded song; on the synthetic beat it looks the same as Your tune #5). A fresh bench opens on it">T8 standard: Tune #5 + sections + melody</button>
       <button id="presetT8Chords" class="main" title="The T8 standard plus the chord layer: one steady tint per chord, major warm / minor cool, heat away from the home key, a swell on each chord change (a loaded song only). Compare with the T8 standard button above">T8 + chords (try)</button>
+      <button id="presetT8Hits" class="main" title="T8 + chords plus the live band hits: the treble glints with the hats, the middle of each wing cracks on snares - any music, no song analysis needed">T8 + chords + hits (try)</button>
       <button id="presetYours5" title="Your values from 2026-10-13 00:36, plus beads cooling as they settle">Your tune #5</button>
     </div>
     <h2 class="sec">Showcase</h2>
@@ -367,6 +368,8 @@ const PARAMS = [
   ["MODE_TEMP", "Layers (loaded songs)", "Major warm, minor cool", 0, 0, 1, 0.05, "Major chords lean the line warm (more dots take the hot colour), minor chords cool (more take the cool shade). Riffs on power chords - no third, neither major nor minor - stay neutral."],
   ["KEY_HEAT", "Layers (loaded songs)", "Away from home: heat", 0, 0, 1, 0.05, "The further the chords wander from the song's home key, the warmer the line runs; coming home cools it again - tension and release."],
   ["CHORD_PULSE", "Layers (loaded songs)", "Chord change: swell", 0, 0, 1, 0.05, "When the chord changes (a new root - not just major to minor), the core swells and the glow lifts for a moment."],
+  ["HAT_SPARKLE", "Hits (any source)", "Hats: sparkle", 0, 0, 1.5, 0.05, "The treble columns glint with the hi-hats and cymbals - the high band's sharp hits, found live in any music (no song analysis). Colour only."],
+  ["SNARE_FLARE", "Hits (any source)", "Snares: flare", 0, 0, 1.5, 0.05, "The middle of each wing cracks with light on snares and claps - the 1.5-5 kHz band's sharp hits, found live. Less reliable than the hats on dense mixes, where guitars and voices can set it off too."],
   ["DET_KICK", "Drum detection", "Kick threshold", 0.12, 0.02, 0.6, 0.01, "How sharp a jump in the lows (40-150 Hz) counts as a kick or bass note. Lower = softer and quicker double kicks are caught, along with more false ones."],
   ["DET_KICK_SUSTAIN", "Drum detection", "Kick or bass note", 0.65, 0.3, 1, 0.01, "60-100 ms after a low hit: a kick has faded below this share of its peak, a bass note hasn't. 1 = every low hit counts as a kick (long 808 kicks need it high)."],
   ["DET_SNARE", "Drum detection", "Snare threshold", 0.3, 0.05, 1, 0.01, "How sharp a 1.5-5 kHz burst counts as a snare (or clap). Lower = ghost notes are caught, along with more false ones."],
@@ -726,6 +729,8 @@ const T8_STANDARD = { ...YOUR_TUNE_5, STEREO: 1, SECTION_LOOK: 0.5, MELODY: 0.8,
 document.getElementById("presetYours5Full").onclick = () => { applyAll(T8_STANDARD); whiteToMagenta(); };
 const T8_CHORDS = { ...T8_STANDARD, HARMONY_HUE: 0.6, CHORD_ROOT: 1, MODE_TEMP: 0.6, KEY_HEAT: 0.5, CHORD_PULSE: 0.5 };
 document.getElementById("presetT8Chords").onclick = () => { applyAll(T8_CHORDS); whiteToMagenta(); };
+const T8_HITS = { ...T8_CHORDS, HAT_SPARKLE: 0.8, SNARE_FLARE: 0.6 };
+document.getElementById("presetT8Hits").onclick = () => { applyAll(T8_HITS); whiteToMagenta(); };
 document.getElementById("presetYours5").onclick = () => { applyAll(YOUR_TUNE_5); whiteToMagenta(); };
 document.getElementById("presetYours4Cool").onclick = () => { applyAll(YOUR_TUNE_4_COOL); whiteToMagenta(); };
 // every preset button says what it applied (two presets can differ only in what a loaded song shows - this confirms the
@@ -1576,6 +1581,9 @@ const CHORD_NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb",
 // ---- level engine (the preset's per-frame code, in JS) -----------------------------------------------------------
 const N = 96, HIST = 128;
 const spec = new Float32Array(512);
+// band hits (see engine): the last 3 frames' max-filtered log spectra, and per band its running mean, envelope, 0..1 hit
+const hitL = new Float32Array(512), hitRef = new Float32Array(512), hitRing = [];
+const HIT_BANDS = [{ lo: 1500, hi: 5000, mean: 0, env: 0, hit: 0 }, { lo: 6000, hi: 16000, mean: 0, env: 0, hit: 0 }];
 const pk = new Float32Array(N).fill(1e-3), pv = new Float32Array(N), ez = new Float32Array(N);
 const lastLive = new Float32Array(N), env = new Float32Array(N), slow = new Float32Array(N), rate = new Float32Array(N);
 const fl = new Float32Array(N), flv = new Float32Array(N);
@@ -1601,7 +1609,7 @@ let spinA = 0, barPh = 0, synthBeatN = -1, layoutA = 0, layoutB = 0, morphT = 0;
 const hbTime = [-99, -99, -99, -99], hbAmp = [0, 0, 0, 0];
 const modeY = new Float32Array(12), modeV = new Float32Array(12);
 const pushBeat = (tm, amp) => { hbTime.unshift(tm); hbTime.length = 4; hbAmp.unshift(amp); hbAmp.length = 4; };   // where the last beat's drop landed on each wing (Liquid)
-let beatEnv = 0, beatAt = -1, padE = 0, harmX = 0, harmY = 0, harmE = 0, modeE = 0, awayE = 0, chordHit = 0, lastRoot = -1;   // the beat throw's envelope; the song time (plus lead) beats have been taken up to
+let beatEnv = 0, beatAt = -1, padE = 0, harmX = 0, harmY = 0, harmE = 0, modeE = 0, awayE = 0, chordHit = 0, chordWant = 0, lastRoot = -1;   // the beat throw's envelope; the song time (plus lead) beats have been taken up to
 const liqTmp = new Float32Array(N), targ = new Float32Array(N);   // the liquid's copy of the throws; each spring's target
 const kv = new Float32Array(N);   // each column's throw: its own kick, or the beat's, by BEAT_DRIVE
 const kc = new Float32Array(N);   // the colour's copy of it, smoothed - the colour fades in where the throw snaps
@@ -1633,6 +1641,29 @@ function engine(dt, t) {
       balT = srcL !== srcR ? (sl - sr2) / Math.max(1e-9, sl + sr2) : 0; widthT = srcL !== srcR ? sd / Math.max(1e-9, sl + sr2) : 0; }
   } else if (synthOn && sourceSel.value !== "file") synth(t, spec, binHz);
   else spec.fill(0);
+  // ---- band hits: transient strength per band with no drum labels (as Synesthesia's syn_MidHits / syn_HighHits) - the
+  // drum detector's flux (the log spectrum against each bin's max over the last 3 frames, +-1 bin), over its own running
+  // mean (~2 s), instant attack, 60 ms release; then 2..9 times the mean -> 0..1, so the top tenth of moments light it
+  // (9 songs). Against Demucs drum stems at this frame rate (bench/tools/hits_vs_stems.mjs) the envelopes follow the
+  // drums' own: high 0.82, mid 0.57. The low band manages 0.29 under a bass line, so the low end stays with the beat.
+  {
+    for (let i = 0; i < 512; i++) hitL[i] = Math.log1p(20 * 1024 * spec[i]);   // spec is |X| / N; the detector's L uses |X|
+    const full = hitRing.length === 3;
+    if (full) { hitRef.fill(0); for (const r of hitRing) for (let i = 0; i < 512; i++) if (r[i] > hitRef[i]) hitRef[i] = r[i]; }
+    for (const h of HIT_BANDS) {
+      const a = Math.max(1, Math.round(h.lo / binHz)), b = Math.min(510, Math.round(h.hi / binHz));
+      let s = 0; if (full) for (let i = a; i <= b; i++) s += Math.max(0, hitL[i] - hitRef[i]);
+      const flux = s / (b - a + 1);
+      h.mean += (flux - h.mean) * (1 - Math.exp(-dt / 2));
+      h.env = Math.max(flux / (h.mean + 1e-3), h.env * Math.exp(-dt / 0.06));
+      // eased, not stepped: the hit drives colour, and colour never snaps (an instant attack flashed) - 60 ms in, 150 out
+      const u = Math.min(1, Math.max(0, (h.env - 2) / 7)), target = u * u * (3 - 2 * u);
+      h.hit += (target - h.hit) * (1 - Math.exp(-dt / (target > h.hit ? 0.06 : 0.15)));
+    }
+    const mf = full ? hitRing.shift() : new Float32Array(512);
+    for (let i = 0; i < 512; i++) mf[i] = Math.max(hitL[i], hitL[Math.max(0, i - 1)], hitL[Math.min(511, i + 1)]);
+    hitRing.push(mf);
+  }
   const b0 = 50 / binHz, b1 = Math.min(510, 16000 / binHz);
   const v = new Float32Array(N); let loudest = 0;
   for (let c = 0; c < N; c++) {
@@ -1706,13 +1737,15 @@ function engine(dt, t) {
     hy = (1 - cr) * Math.sin(layers.harm[bi]) * layers.clarity[bi] + cr * Math.sin(layers.chordAng[bi]);
     if (ch >= 0) {
       modeT = layers.mode[bi]; awayT = layers.away[bi];
-      if (ch % 12 !== lastRoot) { if (lastRoot >= 0) chordHit = 1; lastRoot = ch % 12; }
+      if (ch % 12 !== lastRoot) { if (lastRoot >= 0) chordWant = 1; lastRoot = ch % 12; }
     } } }
   const hk = 1 - Math.exp(-dt / 1.0); harmX += (hx - harmX) * hk; harmY += (hy - harmY) * hk;
   harmE = harmY;
   modeE += (modeT - modeE) * (1 - Math.exp(-dt / 1.5));
   awayE += (awayT - awayE) * (1 - Math.exp(-dt / 2.5));
-  chordHit *= Math.exp(-dt / 0.4);
+  // the swell rises over ~80 ms toward a target that decays (it lifts the glow - brightness never steps)
+  chordHit += (chordWant - chordHit) * (1 - Math.exp(-dt / 0.08));
+  chordWant *= Math.exp(-dt / 0.4);
   if (useMap) { /* drops come from the map */ }
   else if (section < 0.35) { quietFor += dt; quietAgo = 0; }
   else { if (quietFor > 0) { lastQuiet = quietFor; quietFor = 0; } quietAgo += dt; }
@@ -1978,7 +2011,7 @@ uniform vec2 uRes;
 uniform float uTime;
 uniform float uP[${PARAMS.length}];
 uniform sampler2D uHist, uColA, uColB, uColC;
-uniform float uSection, uDrop, uTension, uPhrase, uPad, uHarm, uSecHue, uMode, uAway, uChord;
+uniform float uSection, uDrop, uTension, uPhrase, uPad, uHarm, uSecHue, uMode, uAway, uChord, uHitMid, uHitHigh;
 uniform vec3 uColMin, uColMax;
 uniform vec3 uCoolA, uCoolB, uKick, uCalmA, uCalmB, uGlint, uColMid;   // uColMid: (-1) = no middle colour   // the palette's scheme
 uniform float uHotMax, uHeatGain, uCoolGain, uSplit, uBend, uBal;
@@ -2120,6 +2153,14 @@ vec3 fountain(float fx, float zy, bool left, float dxs) {
       float pick = step(0.82, fract(h.x * 13.7 + u.y * 5.3 + floor(ph) * 0.37)) * pow(sin(3.14159 * fract(ph)), 2.0);
       vec3 glint = lumMatch(uGlint, col);
       col = mix(col, glint, clamp(DYNAMICS * SPARKLE * treble * pick * (A.y * 1.5 + TENSION * uTension * 0.6), 0.0, 1.0));
+      // hats (the high band's hits): the treble columns' dots glint with them - colour only, as the sparkle
+      col = mix(col, glint, clamp(HAT_SPARKLE * treble * pick * 2.5 * uHitHigh, 0.0, 1.0));
+      // snare (the mid band's hits, 1.5-5 kHz - the columns from ~0.2 to ~0.46 along the wing): a crack of light - some
+      // of their dots take the glint colour, and only a slight lift (kicks change colour, not brightness: photosensitivity)
+      float midW = smoothstep(0.12, 0.22, C.y) * (1.0 - smoothstep(0.46, 0.6, C.y));
+      float snare = SNARE_FLARE * uHitMid * midW;
+      col = mix(col, glint, popDot(snare, fract(h.x * 5.91 + u.y * 7.37)));
+      col *= 1.0 + 0.25 * min(1.0, snare);
       // phrase colour drift: every 8 bars the hue turns a little (about the grey axis, so brightness holds)
       // phrase, harmony and section turn the hue only a little (at most ~12 degrees): more would carry every palette
       // off its own colours (an orange palette went magenta at 60)
@@ -2639,6 +2680,8 @@ function frame(now) {
     gl.uniform1f(gl.getUniformLocation(progScene, "uMode"), modeE);
     gl.uniform1f(gl.getUniformLocation(progScene, "uAway"), awayE);
     gl.uniform1f(gl.getUniformLocation(progScene, "uChord"), chordHit);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uHitMid"), HIT_BANDS[0].hit);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uHitHigh"), HIT_BANDS[1].hit);
     gl.uniform1f(gl.getUniformLocation(progScene, "uSecHue"), secHueC);
     gl.uniform1f(gl.getUniformLocation(progScene, "uPhrase"), phraseC);
     const pal = PALETTES[(comparing ? pinned : P).PALETTE || 0];
