@@ -79,6 +79,7 @@
       <button id="presetYours5Full" class="main" title="The T8 standard - the look UniPlaySong's visualizer is built to first: your tune #5 plus a tint per song section and the lead-melody highlight (both need a loaded song; on the synthetic beat it looks the same as Your tune #5). A fresh bench opens on it">T8 standard: Tune #5 + sections + melody</button>
       <button id="presetT8Chords" class="main" title="The T8 standard plus the chord layer: one steady tint per chord, major warm / minor cool, heat away from the home key, a swell on each chord change (a loaded song only). Compare with the T8 standard button above">T8 + chords (try)</button>
       <button id="presetT8Hits" class="main" title="T8 + chords plus the live band hits: the treble glints with the hats, the middle of each wing cracks on snares - any music, no song analysis needed">T8 + chords + hits (try)</button>
+      <button id="presetYours6" class="main" title="Your tune #6 (2026-10-19): the T8 standard with the chord layer and the live hats/snares as you tuned them - stronger pad swell, more heat away from the home key, a firmer chord-change swell, a touch of zoom pulse and focus pull">Your tune #6</button>
       <button id="presetYours5" title="Your values from 2026-10-13 00:36, plus beads cooling as they settle">Your tune #5</button>
     </div>
     <h2 class="sec">Showcase</h2>
@@ -731,6 +732,11 @@ const T8_CHORDS = { ...T8_STANDARD, HARMONY_HUE: 0.6, CHORD_ROOT: 1, MODE_TEMP: 
 document.getElementById("presetT8Chords").onclick = () => { applyAll(T8_CHORDS); whiteToMagenta(); };
 const T8_HITS = { ...T8_CHORDS, HAT_SPARKLE: 0.8, SNARE_FLARE: 0.6 };
 document.getElementById("presetT8Hits").onclick = () => { applyAll(T8_HITS); whiteToMagenta(); };
+// The user's tune #6 (2026-10-19): the T8 standard with the chord layer and the live band hits, tuned - White to
+// magenta, random gradient
+const YOUR_TUNE_6 = { ...T8_STANDARD, ZOOM_PULSE: 0.05, FOCUS_PULL: 0.1, PAD_GLOW: 0.8, PAD_SWELL: 1.05, HARMONY_HUE: 0.7,
+  CHORD_ROOT: 1, MODE_TEMP: 0.65, KEY_HEAT: 0.85, CHORD_PULSE: 0.7, HAT_SPARKLE: 0.8, SNARE_FLARE: 0.6 };
+document.getElementById("presetYours6").onclick = () => { applyAll(YOUR_TUNE_6); whiteToMagenta(); };
 document.getElementById("presetYours5").onclick = () => { applyAll(YOUR_TUNE_5); whiteToMagenta(); };
 document.getElementById("presetYours4Cool").onclick = () => { applyAll(YOUR_TUNE_4_COOL); whiteToMagenta(); };
 // every preset button says what it applied (two presets can differ only in what a loaded song shows - this confirms the
@@ -1609,7 +1615,7 @@ let spinA = 0, barPh = 0, synthBeatN = -1, layoutA = 0, layoutB = 0, morphT = 0;
 const hbTime = [-99, -99, -99, -99], hbAmp = [0, 0, 0, 0];
 const modeY = new Float32Array(12), modeV = new Float32Array(12);
 const pushBeat = (tm, amp) => { hbTime.unshift(tm); hbTime.length = 4; hbAmp.unshift(amp); hbAmp.length = 4; };   // where the last beat's drop landed on each wing (Liquid)
-let beatEnv = 0, beatAt = -1, padE = 0, harmX = 0, harmY = 0, harmE = 0, modeE = 0, awayE = 0, chordHit = 0, chordWant = 0, lastRoot = -1;   // the beat throw's envelope; the song time (plus lead) beats have been taken up to
+let beatEnv = 0, beatAt = -1, padE = 0, harmX = 0, harmY = 0, harmE = 0, modeE = 0, awayE = 0, chordHit = 0, chordWant = 0, lastRoot = -1, padG = 0, chordG = 0;   // the beat throw's envelope; the song time (plus lead) beats have been taken up to
 const liqTmp = new Float32Array(N), targ = new Float32Array(N);   // the liquid's copy of the throws; each spring's target
 const kv = new Float32Array(N);   // each column's throw: its own kick, or the beat's, by BEAT_DRIVE
 const kc = new Float32Array(N);   // the colour's copy of it, smoothed - the colour fades in where the throw snaps
@@ -1727,6 +1733,9 @@ function engine(dt, t) {
   }
   const padT = lyOn ? layers.pad[Math.min(layers.pad.length - 1, Math.floor(songT * layers.fr))] : 0;
   padE += (padT - padE) * (1 - Math.exp(-dt / 0.25));
+  // the glow's own, slower copy: at 0.25 s it followed every wobble of the held level and the glow jumped (3-9 sudden
+  // rises a minute on Troy and Doom; none at 1.2 s)
+  padG += (padT - padG) * (1 - Math.exp(-dt / 1.2));
   // with 'one tint per chord', the recognised chord's own direction (full strength) stands in for the notes' (which
   // drift within a chord); its quality (major/minor strength) and distance from the home key ease into the colour; a
   // change of root swells the core
@@ -1746,6 +1755,9 @@ function engine(dt, t) {
   // the swell rises over ~80 ms toward a target that decays (it lifts the glow - brightness never steps)
   chordHit += (chordWant - chordHit) * (1 - Math.exp(-dt / 0.08));
   chordWant *= Math.exp(-dt / 0.4);
+  // the glow's share of a chord change swells in over 0.35 s and fades over 1.2 s - a gradual bump, not a jump (the
+  // dots keep the quicker swell: that's motion)
+  chordG += (chordHit - chordG) * (1 - Math.exp(-dt / (chordHit > chordG ? 0.35 : 1.2)));
   if (useMap) { /* drops come from the map */ }
   else if (section < 0.35) { quietFor += dt; quietAgo = 0; }
   else { if (quietFor > 0) { lastQuiet = quietFor; quietFor = 0; } quietAgo += dt; }
@@ -2750,8 +2762,8 @@ function frame(now) {
     gl.uniform1fv(gl.getUniformLocation(progComp, "uMelPos"), melPath); gl.uniform1fv(gl.getUniformLocation(progComp, "uMelStr"), melPathS);
     gl.uniform1f(gl.getUniformLocation(progComp, "uHasCover"), coverTex ? 1 : 0);
     if (coverTex) useTex(progComp, "uCover", 4, coverTex);
-    gl.uniform1f(gl.getUniformLocation(progComp, "uPad"), padE);
-    gl.uniform1f(gl.getUniformLocation(progComp, "uChord"), chordHit);
+    gl.uniform1f(gl.getUniformLocation(progComp, "uPad"), padG);     // the glow: the slow copies
+    gl.uniform1f(gl.getUniformLocation(progComp, "uChord"), chordG);
     {   // the glow's warmth: the columns' mean (faded) loudness through the same curve as the dots' temperature
       const QQ = comparing ? pinned : P; let m = 0; for (let c = 0; c < N; c++) m += heatC[c]; m /= N;
       gl.uniform1f(gl.getUniformLocation(progComp, "uWarm"), Math.min(1, Math.pow(Math.min(1, m * 1.5), QQ.COLOR_CURVE) * QQ.COLOR_LEVEL));
