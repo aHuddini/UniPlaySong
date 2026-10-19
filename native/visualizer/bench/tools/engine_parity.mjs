@@ -1,5 +1,5 @@
 // Engine parity: runs the bench's own level engine (lifted from fountain-bench.html, as sim.mjs does) on a song with the
-// T8 standard's values and no song analysis, one 1/60 s step per frame over the 1024 samples ending at frame k * 800
+// shipped look's values (Your tune #6, standard-tune6.json) and no song analysis, one 1/60 s step per frame over the 1024 samples ending at frame k * 800
 // (48 kHz) - exactly what the renderer's --bench mode feeds fountain.h - and compares the packed columns (colA, colB,
 // colC per frame) with the renderer's VIS_ENGINE_DUMP.
 //   node engine_parity.mjs <mono48k.f32> <renderer-dump.bin> [frames] [--analysis]

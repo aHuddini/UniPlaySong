@@ -9,7 +9,7 @@ All notable changes to UniPlaySong will be documented in this file.
 ### Added
 
 - Added the music visualizer for themes (Experimental): a 64-bit renderer shares its frames with Playnite through a D3D9Ex bridge into a `D3DImage`; styles Jukebox Fountain (default, drawn natively), Glow Bars and Fountain (projectM)
-- Added the Jukebox Fountain, a native port of the WebGL bench's engine and shaders (`fountain.h`, ~1e-7 engine parity); its look is the bench's "Your tune #6", exported by `export_t8.mjs` from `standard-tune6.json`
+- Added the Jukebox Fountain, a droplet style inspired by Tekken 8's music jukebox visualizer ("T8" in the bench): a native port of the bench's engine and shaders, with the bench's "Your tune #6" look
 - Added whole-song analysis in the renderer: beats, sections, drops, pads, melody, chords, key and distance from home, bit-exact with the bench, cached once per song as `VisualAnalysis\<song>.vab`
 - Added live hi-hat and snare reactions from per-band transient strength (0.82 and 0.57 correlation with Demucs drum stems); kicks follow the beat grid, since low-band detection scored 0.29 under a bass line
 - Added a song-state badge to the demo theme (live, analysing, following the song), from the control's new `SongState` property

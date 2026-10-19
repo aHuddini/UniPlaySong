@@ -1,6 +1,7 @@
 // Writes the Jukebox Fountain's style file for the renderer from the bench: the shipped look's values (bench/standard-tune6.json,
 // "Your tune #6"; another frozen spec - standard-t8.json, the earlier T8 reference - can be passed instead) and the bench's own shaders, lifted as they are - only their WebGL header becomes a desktop
 // GL 3.3 one and the template slots are filled. The renderer builds nothing of its own, so it draws what the bench draws.
+// ("T8": the droplet style is inspired by Tekken 8's music jukebox visualizer.)
 //   node export_t8.mjs [spec.json]   -> native/visualizer/presets/UPS - Jukebox Fountain.vis
 // Format: "P NAME value" per parameter (the shaders' uP[] order), "U name v..." uniforms, "I name v" int uniforms, then
 // the three shaders, each after a "@@SCENE" / "@@BLUR" / "@@COMP" line.

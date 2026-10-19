@@ -86,8 +86,8 @@ shader adds bloom from projectM's blur textures, a bass-driven backlight and the
 copies the FFT bins into `gmem` for the next frame. Every style frames a centre **art slot** (0.30 of the height,
 wings start 0.19 out) so a page can put its cover art in the middle.
 
-**Fountain** is TEKKEN 8's jukebox visualiser, on the particle model read out of the game's own GPU shader (Lucid's
-`docs/tekken8-visualizer-spec.md`), with the look of its camera.
+**Fountain** is inspired by Tekken 8's music jukebox visualizer (particle model per Lucid's
+`docs/tekken8-visualizer-spec.md`).
 
 **Layout.** One line of 96 columns, low to high across the frame: lows at the far left, highs at the far right, split
 around the art slot. Unlike the bar styles, its wings start under the slot's rim (0.11 of the height out, against the
@@ -217,6 +217,8 @@ the renderer to native mode) runs [`native/visualizer/fountain.h`](../../../nati
 of the WebGL bench [`native/visualizer/bench/fountain-bench.html`](../../../native/visualizer/bench/fountain-bench.html):
 the level engine line for line, and the bench's own shaders lifted as they are. **Parity with the bench is the rule** -
 change the bench, regenerate, port engine changes to `fountain.h`.
+
+The droplet style is inspired by Tekken 8's music jukebox visualizer - "T8" in the bench and its tools.
 
 - **The look:** the bench's **Your tune #6**, frozen in `bench/standard-tune6.json`. `node bench/tools/export_t8.mjs`
   writes the `.vis` from it (parameters, palette uniforms, the three shaders); copy it to `src/Audio/Native/Visualizer/presets/`.

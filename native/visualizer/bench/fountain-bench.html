@@ -76,7 +76,7 @@
     </div>
     <h2 class="sec">Presets</h2>
     <div class="btns">
-      <button id="presetYours5Full" class="main" title="The T8 standard - the look UniPlaySong's visualizer is built to first: your tune #5 plus a tint per song section and the lead-melody highlight (both need a loaded song; on the synthetic beat it looks the same as Your tune #5). Kept as a reference - UniPlaySong ships Your tune #6">T8 standard: Tune #5 + sections + melody</button>
+      <button id="presetYours5Full" class="main" title="The T8 standard (inspired by Tekken 8's music jukebox visualizer) - the look UniPlaySong's visualizer is built to first: your tune #5 plus a tint per song section and the lead-melody highlight (both need a loaded song; on the synthetic beat it looks the same as Your tune #5). Kept as a reference - UniPlaySong ships Your tune #6">T8 standard: Tune #5 + sections + melody</button>
       <button id="presetT8Chords" class="main" title="The T8 standard plus the chord layer: one steady tint per chord, major warm / minor cool, heat away from the home key, a swell on each chord change (a loaded song only). Compare with the T8 standard button above">T8 + chords (try)</button>
       <button id="presetT8Hits" class="main" title="T8 + chords plus the live band hits: the treble glints with the hats, the middle of each wing cracks on snares - any music, no song analysis needed">T8 + chords + hits (try)</button>
       <button id="presetYours6" class="main" title="Your tune #6 (2026-10-19): the T8 standard with the chord layer and the live hats/snares as you tuned them - stronger pad swell, more heat away from the home key, a firmer chord-change swell, a touch of zoom pulse and focus pull. The look UniPlaySong ships (standard-tune6.json); a fresh bench opens on it">Your tune #6</button>
@@ -723,6 +723,7 @@ const SHOWCASE = {
 };
 const whiteToMagenta = () => setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0);
 document.getElementById("presetYours4").onclick = () => { applyAll(YOUR_TUNE_4); whiteToMagenta(); };
+// "T8": the droplet style is inspired by Tekken 8's music jukebox visualizer.
 // The T8 standard: the look the UniPlaySong visualizer is built to first - your tune #5 with stereo wings, a tint per
 // song section and the lead-melody highlight, on White to magenta. A fresh bench opens on it; standard-t8.json beside
 // this page is its frozen copy (every value resolved), the spec for the renderer

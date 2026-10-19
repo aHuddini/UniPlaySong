@@ -1,4 +1,5 @@
-// The Jukebox Fountain: UniPlaySong's own fountain visualizer, drawn natively instead of through projectM. A port of
+// The Jukebox Fountain: UniPlaySong's own fountain visualizer, drawn natively instead of through projectM. Its droplet
+// style is inspired by Tekken 8's music jukebox visualizer ("T8" in the bench). A port of
 // the WebGL bench (native/visualizer/bench/fountain-bench.html) - its level engine line for line, and its shaders as
 // they are, lifted into the style file by bench/tools/export_t8.mjs with the shipped look's values (Your tune #6). Parity with the bench
 // is the rule: change the bench, regenerate the style file, and port engine changes here.
