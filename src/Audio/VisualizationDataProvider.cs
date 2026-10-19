@@ -25,6 +25,15 @@ namespace UniPlaySong.Audio
         // which player is audible.
         internal OutputClock Clock => _clock;
 
+        // The song this provider plays, for the Jukebox Fountain's song analysis: an id (one per provider, and a player
+        // makes one per song), the file (null when it isn't one - Spotify, a jingle), and where the reader was after the
+        // last block (read on the audio thread, right after the block; < 0 = unknown).
+        private static int _nextSongId;
+        internal int SongId { get; } = System.Threading.Interlocked.Increment(ref _nextSongId);
+        internal string SongPath { get; set; }
+        internal Func<double> SongPosition { get; set; }
+        internal double SongSeconds { get; private set; } = -1;
+
         private bool Synced => _clock != null && (Settings?.AlternativeAudioReactiveVisualizerSync ?? false);
 
         // Synced-update state (FFT thread only)
@@ -213,6 +222,12 @@ namespace UniPlaySong.Audio
 
             int samplesRead = _source.Read(buffer, offset, count);
             if (samplesRead == 0) return 0;
+            var position = SongPosition;
+            if (position != null)
+            {
+                // never let a reader's position getter take the audio thread down
+                try { SongSeconds = position(); } catch { SongSeconds = -1; }
+            }
 
             float peakL = 0f, peakR = 0f;
             float sumSqL = 0f, sumSqR = 0f;

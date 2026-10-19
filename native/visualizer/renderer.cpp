@@ -1,14 +1,15 @@
-// UniPlaySong visualizer renderer (x64): renders one MilkDrop preset with projectM offscreen and hands each frame to
-// UniPlaySong's UPS_MusicVisualControl through shared GPU textures (visualizer_shared.h). The music comes from
-// UniPlaySong itself, through a shared ring - nothing is captured from the speakers.
+// UniPlaySong visualizer renderer (x64): renders one style offscreen and hands each frame to UniPlaySong's
+// UPS_MusicVisualControl through shared GPU textures (visualizer_shared.h). A style is a MilkDrop preset (.milk, drawn by
+// projectM) or UniPlaySong's own fountain (.vis, fountain.h). The music comes from UniPlaySong itself, through a shared
+// ring - nothing is captured from the speakers.
 //
-//   UniPlaySongVisualizer.exe <preset.milk> <width> <height> <channel> [parentPid]
+//   UniPlaySongVisualizer.exe <style.milk|.vis> <width> <height> <channel> [parentPid]
 //       Paced by UniPlaySong: one frame each time it signals <channel>_Tick, and none while it doesn't (minimized,
 //       idle, in the background). Exits when <channel>_Frames says stop, or when the parent process exits (so a crashed
 //       Playnite never leaves it running).
 //
-//   UniPlaySongVisualizer.exe <preset.milk> <width> <height> --bench <seconds>
-//       For preset work: renders unpaced for <seconds>, touches no named objects, prints timings.
+//   UniPlaySongVisualizer.exe <style.milk|.vis> <width> <height> --bench <seconds>
+//       For style work: renders unpaced for <seconds>, touches no named objects, prints timings.
 //       VIS_PCM=<file> feeds raw 48 kHz stereo float (800 frames per rendered frame); VIS_DUMP=<file.bmp> saves the
 //       last frame composited over grey, as a theme would show it.
 //
@@ -28,7 +29,13 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <thread>
+#include <mutex>
+#include <atomic>
+#include <memory>
 #include "visualizer_shared.h"
+#include "fountain.h"
+#include "analysis.h"
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "opengl32.lib")
@@ -171,6 +178,8 @@ struct AudioRing
 {
     const VisAudio* hdr = nullptr;
     const float* data = nullptr;
+    const uint8_t* base = nullptr;
+    size_t size = 0;      // the mapping's size, for what follows the audio (the song link)
     uint32_t fed = 0;      // the frame fed up to
     bool started = false;
     std::vector<float> chunk;
@@ -183,6 +192,9 @@ struct AudioRing
         if (!base) return;
         hdr = (const VisAudio*)base;
         data = (const float*)(base + VIS_AUDIO_DATA_OFFSET);
+        this->base = base;
+        MEMORY_BASIC_INFORMATION mi = {};
+        if (VirtualQuery(base, &mi, sizeof(mi))) size = mi.RegionSize;
     }
 
     // Everything from the last feed up to the frame being heard. Unsigned differences survive the counters wrapping.
@@ -206,6 +218,130 @@ struct AudioRing
         projectm_pcm_add_float(pm, chunk.data(), span, PROJECTM_STEREO);
         fed = played;
     }
+
+    // The last n frames heard, each channel on its own (the newest last); silence where there's no music.
+    void Window(int n, float* L, float* R) const
+    {
+        std::fill(L, L + n, 0.0f); std::fill(R, R + n, 0.0f);
+        if (!hdr || hdr->magic != VIS_AUDIO_MAGIC) return;
+        uint32_t played = hdr->played, written = hdr->written, cap = hdr->capacity;
+        if (played - written < 0x80000000u && played != written) played = written; // clock ahead of the data: the newest
+        for (int i = 0; i < n; i++)
+        {
+            uint32_t frame = played - (uint32_t)(n - i), age = written - frame;
+            if (age == 0 || age > cap || age >= 0x80000000u) continue; // not written yet, or already overwritten
+            uint32_t at = frame & (cap - 1);
+            L[i] = data[2 * (size_t)at]; R[i] = data[2 * (size_t)at + 1];
+        }
+    }
+    double SampleRate() const { return hdr && hdr->magic == VIS_AUDIO_MAGIC && hdr->sampleRate ? hdr->sampleRate : 44100.0; }
+};
+
+// ---- the song, for the Jukebox Fountain: where it is now (the stamps) and its analysis (analysis.h) ----------------
+struct SongLink
+{
+    const VisSong* vs = nullptr;
+    uint32_t seenSeq = 0;
+    std::mutex lock;
+    std::shared_ptr<fountain::Song> ready;   // the newest finished analysis (worker threads)...
+    uint32_t readyFor = 0;                   // ...and its song
+    std::atomic<uint32_t> wanted{ 0 };      // the song the latest request is for
+    std::atomic<uint32_t> failedFor{ 0 };   // a song whose analysis could not be made or read
+    std::shared_ptr<fountain::Song> song;    // the analysis in use (the drawing thread's)
+    uint32_t songFor = 0;
+    std::vector<std::thread> workers;
+
+    void Open(const AudioRing& ring)
+    {
+        if (ring.base && ring.size >= VIS_AUDIO_MAPPING) vs = (const VisSong*)(ring.base + VIS_SONG_OFFSET);
+    }
+    static std::wstring Path(const uint16_t* p)
+    {
+        std::wstring s;
+        for (int i = 0; i < VIS_PATH_CHARS && p[i]; i++) s += (wchar_t)p[i];
+        return s;
+    }
+
+    // Once a frame: a new request is analysed (or its file read) on a worker thread; a finished analysis is taken up.
+    void Poll()
+    {
+        if (!vs || vs->magic != VIS_SONG_MAGIC) return;
+        uint32_t seq = vs->seq;
+        if (seq != seenSeq && !(seq & 1))
+        {
+            MemoryBarrier();
+            uint32_t req = vs->song; int64_t bytes = vs->sourceBytes, time = vs->sourceTime;
+            std::wstring file = Path(vs->analysis), pcm = Path(vs->pcm);
+            MemoryBarrier();
+            if (vs->seq == seq)
+            {
+                seenSeq = seq; wanted = req;
+                if (req && file.empty()) failedFor = req;
+                else if (req) workers.emplace_back([this, req, file, pcm, bytes, time] { Work(req, file, pcm, bytes, time); });
+            }
+        }
+        std::lock_guard<std::mutex> g(lock);
+        if (ready && readyFor != songFor) { song = ready; songFor = readyFor; }
+    }
+
+    // Analyses the song into its file when UniPlaySong handed its samples over, then reads the file.
+    void Work(uint32_t req, std::wstring file, std::wstring pcm, int64_t bytes, int64_t time)
+    {
+        if (!pcm.empty())
+        {
+            std::vector<float> x;
+            if (FILE* f = _wfopen(pcm.c_str(), L"rb"))
+            {
+                std::fseek(f, 0, SEEK_END); x.resize(std::ftell(f) / sizeof(float)); std::fseek(f, 0, SEEK_SET);
+                x.resize(std::fread(x.data(), sizeof(float), x.size(), f)); std::fclose(f);
+            }
+            DeleteFileW(pcm.c_str());
+            if (x.empty()) { failedFor = req; return; }
+            if (wanted != req) return;
+            analysis::SongMap map = analysis::BuildMap(x.data(), x.size(), 48000);
+            analysis::Beats beats = analysis::TrackBeats(x.data(), x.size(), 48000);
+            analysis::BeatStrengths(beats);
+            if (wanted != req) return;
+            analysis::Layers layers = analysis::AnalyseLayers(x.data(), x.size(), 48000, beats.beats, beats.barPhase);
+            if (!analysis::Save(file, map, beats, layers, bytes, time)) std::printf("song analysis: could not write the analysis file\n");
+            std::printf("song analysis: %zu beats at %.0f BPM, %zu drops, %zu sections\n", beats.beats.size(), beats.bpm, map.drops.size(), layers.sections.size()); std::fflush(stdout);
+        }
+        fountain::Song s;
+        if (!analysis::Load(file, bytes, time, s)) { failedFor = req; return; }
+        if (wanted != req) return;
+        std::lock_guard<std::mutex> g(lock);
+        ready = std::make_shared<fountain::Song>(std::move(s)); readyFor = req;
+    }
+
+    // Where the song is at the frame being heard: from the newest stamp at or before it, moved on by the frames since
+    // (or, between two stamps of the same song, along their slope - right under the slowed-down effect too). false when
+    // it isn't known (no stamps yet, or not a song file).
+    bool Time(const AudioRing& ring, uint32_t* songId, double* t) const
+    {
+        if (!vs || vs->magic != VIS_SONG_MAGIC || !ring.hdr) return false;
+        uint32_t n = vs->stamps, played = ring.hdr->played;
+        if (!n) return false;
+        VisStamp a = {}, b = {}; bool haveA = false, haveB = false;
+        for (uint32_t k = 0; k < std::min<uint32_t>(n, VIS_STAMPS - 1); k++)   // newest first
+        {
+            VisStamp st = vs->stamp[(n - 1 - k) % VIS_STAMPS];
+            uint32_t ahead = st.frame - played;
+            if (ahead == 0 || ahead >= 0x80000000u) { a = st; haveA = true; break; }
+            b = st; haveB = true;
+        }
+        if (!haveA || !a.song || a.seconds < 0) return false;
+        const double sr = ring.SampleRate();
+        double tt = a.seconds + (double)(played - a.frame) / sr;
+        if (haveB && b.song == a.song)
+        {
+            double span = (double)(b.frame - a.frame), d = b.seconds - a.seconds;
+            if (span > 0 && d >= 0 && d <= 2 * span / sr) tt = a.seconds + d * (double)(played - a.frame) / span;
+        }
+        *songId = a.song; *t = tt;
+        return true;
+    }
+
+    void Join() { for (auto& w : workers) if (w.joinable()) w.join(); }
 };
 
 static void WriteBmp(const char* path, const std::vector<uint8_t>& bgra, int w, int h)
@@ -228,12 +364,52 @@ static void WriteBmp(const char* path, const std::vector<uint8_t>& bgra, int w, 
     std::fclose(f);
 }
 
+// --analyze <mono48k.f32> <out.json>: the Jukebox Fountain's song analysis on one song, as JSON - for
+// bench/tools/analysis_parity.mjs, which runs the bench's own analysis on the same samples and compares.
+static int AnalyzeToJson(const char* pcmPath, const char* outPath)
+{
+    FILE* f = std::fopen(pcmPath, "rb");
+    if (!f) { std::fprintf(stderr, "no %s\n", pcmPath); return 1; }
+    std::fseek(f, 0, SEEK_END); std::vector<float> x(std::ftell(f) / sizeof(float)); std::fseek(f, 0, SEEK_SET);
+    x.resize(std::fread(x.data(), sizeof(float), x.size(), f)); std::fclose(f);
+    LARGE_INTEGER q0, q1, q2, fq; QueryPerformanceFrequency(&fq); QueryPerformanceCounter(&q0);
+    analysis::SongMap map = analysis::BuildMap(x.data(), x.size(), 48000);
+    QueryPerformanceCounter(&q1);
+    analysis::Beats beats = analysis::TrackBeats(x.data(), x.size(), 48000);
+    analysis::BeatStrengths(beats);
+    QueryPerformanceCounter(&q2);
+    analysis::Layers layers = analysis::AnalyseLayers(x.data(), x.size(), 48000, beats.beats, beats.barPhase);
+    LARGE_INTEGER q3; QueryPerformanceCounter(&q3);
+    FILE* o = std::fopen(outPath, "wb");
+    if (!o) return 1;
+    auto list = [&](const char* name, auto const& v, bool last) {
+        std::fprintf(o, "\"%s\":[", name);
+        for (size_t i = 0; i < v.size(); i++) std::fprintf(o, i ? ",%.17g" : "%.17g", (double)v[i]);
+        std::fprintf(o, "]%s\n", last ? "" : ","); };
+    std::fprintf(o, "{\"map\":{\"frames\":%d,\"fr\":%.17g,\"beat\":%.17g,\"offset\":%.17g,\"bpm\":%.17g,\n", map.frames, map.fr, map.beat, map.offset, map.bpm);
+    list("section", map.section, false); list("tension", map.tension, false); list("drops", map.drops, true);
+    std::fprintf(o, "},\"beats\":{\"bpm\":%.17g,\"fr\":%.17g,\"period\":%.17g,\"barPhase\":%d,\n", beats.bpm, beats.fr, beats.period, beats.barPhase);
+    list("beats", beats.beats, false); list("strength", beats.strength, false); list("env", beats.env, true);
+    std::fprintf(o, "},\"layers\":{\"fr\":%.17g,\n", layers.fr);
+    std::vector<double> secStart, secEnd, secLabel;
+    for (const auto& sc : layers.sections) { secStart.push_back(sc.start); secEnd.push_back(sc.end); secLabel.push_back(sc.label); }
+    list("pad", layers.pad, false); list("melF", layers.melF, false); list("melS", layers.melS, false);
+    list("harm", layers.harm, false); list("clarity", layers.clarity, false);
+    list("secStart", secStart, false); list("secEnd", secEnd, false); list("secLabel", secLabel, true);
+    std::fprintf(o, "}}\n");
+    std::fclose(o);
+    std::printf("analysed %.1f s of song: map %.0f ms, beats %.0f ms, layers %.0f ms - %zu beats at %.1f BPM, %zu drops, %zu sections\n",
+                x.size() / 48000.0, Ms(q0, q1, fq), Ms(q1, q2, fq), Ms(q2, q3, fq), beats.beats.size(), beats.bpm, map.drops.size(), layers.sections.size());
+    return 0;
+}
+
 int main(int argc, char** argv)
 {
+    if (argc == 4 && !std::strcmp(argv[1], "--analyze")) return AnalyzeToJson(argv[2], argv[3]);
     if (argc < 5)
     {
-        std::fprintf(stderr, "usage: UniPlaySongVisualizer <preset.milk> <width> <height> <channel> [parentPid]\n"
-                             "       UniPlaySongVisualizer <preset.milk> <width> <height> --bench <seconds>\n");
+        std::fprintf(stderr, "usage: UniPlaySongVisualizer <style.milk|.vis> <width> <height> <channel> [parentPid]\n"
+                             "       UniPlaySongVisualizer <style.milk|.vis> <width> <height> --bench <seconds>\n");
         return 2;
     }
     const char* preset = argv[1];
@@ -272,19 +448,36 @@ int main(int argc, char** argv)
     hdr->magic = VIS_FRAMES_MAGIC;
     HANDLE tick = CreateEventW(nullptr, FALSE, FALSE, bench ? nullptr : (channel + L"_Tick").c_str());
 
-    // ---- projectM, one preset, no playlist
+    // ---- the style: projectM with one MilkDrop preset (no playlist), or the native fountain
     CreateGl(w, h);
-    projectm_handle pm = projectm_create();
-    if (!pm) Fail("projectm_create");
-    projectm_set_window_size(pm, w, h);
-    projectm_set_fps(pm, 60);
-    projectm_set_mesh_size(pm, 48, 32);
-    projectm_set_preset_switch_failed_event_callback(pm, [](const char* file, const char* message, void*) {
-        std::printf("preset failed: %s\n  %s\n", file, message); std::fflush(stdout); }, nullptr);
-    projectm_load_preset_file(pm, preset, false);
+    size_t presetLen = std::strlen(preset);
+    const bool native = presetLen > 4 && !_stricmp(preset + presetLen - 4, ".vis");
+    projectm_handle pm = nullptr;
+    fountain::Style style;
+    fountain::Engine engine;
+    fountain::Renderer fountainGl;
+    if (native)
+    {
+        if (!style.Load(preset)) Fail("style file");
+        engine.Init(style);
+        fountainGl.profile = bench && std::getenv("VIS_PROFILE");
+        if (!fountainGl.Create(w, h, style)) Fail("fountain shaders");
+        std::printf("fountain %dx%d, style %s (%zu params)\n", w, h, preset, style.values.size());
+    }
+    else
+    {
+        pm = projectm_create();
+        if (!pm) Fail("projectm_create");
+        projectm_set_window_size(pm, w, h);
+        projectm_set_fps(pm, 60);
+        projectm_set_mesh_size(pm, 48, 32);
+        projectm_set_preset_switch_failed_event_callback(pm, [](const char* file, const char* message, void*) {
+            std::printf("preset failed: %s\n  %s\n", file, message); std::fflush(stdout); }, nullptr);
+        projectm_load_preset_file(pm, preset, false);
+        std::printf("projectM %dx%d, preset %s\n", w, h, preset);
+    }
     KeyPass key;
     key.Create(w, h);
-    std::printf("projectM %dx%d, preset %s\n", w, h, preset);
     std::fflush(stdout);
 
     AudioRing ring;
@@ -299,8 +492,33 @@ int main(int argc, char** argv)
             std::fclose(f);
         }
 
+    SongLink songLink;
+    if (!bench) songLink.Open(ring);
+    // bench only: VIS_ANALYZE=1 analyses the PCM (as mono) and runs the engine with its beats and map, as a song would
+    fountain::Song benchSong;
+    const bool benchAnalysed = bench && native && std::getenv("VIS_ANALYZE") && pcm.size() >= 2;
+    if (benchAnalysed)
+    {
+        std::vector<float> mono(pcm.size() / 2);
+        for (size_t i = 0; i < mono.size(); i++) mono[i] = (float)((pcm[2 * i] + (double)pcm[2 * i + 1]) * 0.5);
+        analysis::SongMap map = analysis::BuildMap(mono.data(), mono.size(), 48000);
+        analysis::Beats beats = analysis::TrackBeats(mono.data(), mono.size(), 48000);
+        analysis::BeatStrengths(beats);
+        analysis::Layers layers = analysis::AnalyseLayers(mono.data(), mono.size(), 48000, beats.beats, beats.barPhase);
+        // through an analysis file and back, as a song's analysis reaches the engine
+        wchar_t tmpDir[MAX_PATH]; GetTempPathW(MAX_PATH, tmpDir);
+        std::wstring file = std::wstring(tmpDir) + L"ups_bench.vab";
+        if (!analysis::Save(file, map, beats, layers, 1, 2) || !analysis::Load(file, 1, 2, benchSong)) Fail("bench analysis file");
+        DeleteFileW(file.c_str());
+        std::printf("bench song analysis: %zu beats at %.0f BPM, %zu drops (through an analysis file)\n", beats.beats.size(), beats.bpm, map.drops.size());
+    }
     std::vector<uint8_t> out(frameBytes);
-    LARGE_INTEGER freq, start, t0, t1, t2, t3; QueryPerformanceFrequency(&freq); QueryPerformanceCounter(&start);
+    std::vector<float> winL(1024), winR(1024);   // the fountain's listening window, each channel
+    double simT = 0;                              // the fountain's running time
+    // bench only: the fountain engine's packed columns (colA, colB, colC) each frame, for bench/tools/engine_parity.mjs
+    FILE* engineDump = bench && native && std::getenv("VIS_ENGINE_DUMP") ? std::fopen(std::getenv("VIS_ENGINE_DUMP"), "wb") : nullptr;
+    LARGE_INTEGER freq, start, t0, t1, t2, t3, lastTick; QueryPerformanceFrequency(&freq); QueryPerformanceCounter(&start);
+    lastTick = start;
     double sumRender = 0, sumRead = 0, sumUpload = 0;
     std::vector<double> totals;
     int64_t frame = 0;
@@ -310,6 +528,7 @@ int main(int argc, char** argv)
         {
             LARGE_INTEGER now; QueryPerformanceCounter(&now);
             if (Ms(start, now, freq) > benchSeconds * 1000.0) break;
+            if (const char* nf = std::getenv("VIS_FRAMES")) if (frame >= std::atoll(nf)) break;   // exactly this many frames
         }
         else if (WaitForSingleObject(tick, 50) != WAIT_OBJECT_0)
         {
@@ -323,15 +542,74 @@ int main(int argc, char** argv)
         int i = (int)(frame % VIS_BUFFERS);
 
         QueryPerformanceCounter(&t0);
-        ring.Feed(pm);
-        if (pcm.size() >= 1600)
+        if (native)
         {
-            if (pcmPos + 1600 > pcm.size()) pcmPos = 0;
-            projectm_pcm_add_float(pm, pcm.data() + pcmPos, 800, PROJECTM_STEREO);
-            pcmPos += 1600;
+            // a bench run steps a fixed 1/60 s over 800 frames of its 48 kHz PCM; a live one, the real time since the
+            // last frame (at most 0.1 s, as the bench's page does, so a frame after a long idle doesn't leap)
+            double dt, sr;
+            if (bench)
+            {
+                dt = 1.0 / 60; sr = 48000;
+                if (pcm.size() >= 1600)
+                {
+                    if (pcmPos + 1600 > pcm.size()) pcmPos = 0;
+                    pcmPos += 1600;
+                    for (int k = 0; k < 1024; k++)
+                    {
+                        long long f = (long long)(pcmPos / 2) - 1024 + k;
+                        winL[k] = f >= 0 ? pcm[2 * (size_t)f] : 0.0f; winR[k] = f >= 0 ? pcm[2 * (size_t)f + 1] : 0.0f;
+                    }
+                }
+            }
+            else
+            {
+                dt = std::min(0.1, std::max(1e-3, Ms(lastTick, t0, freq) / 1000.0)); sr = ring.SampleRate();
+                ring.Window(1024, winL.data(), winR.data());
+            }
+            lastTick = t0;
+            simT += dt;
+            // the song's analysis, when there is one for the song being heard
+            const fountain::Song* song = nullptr; double songT = -1;
+            if (benchAnalysed) { song = &benchSong; songT = (pcmPos / 2) / 48000.0; hdr->songState = 2; }
+            else if (!bench)
+            {
+                songLink.Poll();
+                uint32_t heard = 0; double at = 0;
+                bool known = songLink.Time(ring, &heard, &at);
+                if (songLink.song && known && heard == songLink.songFor) { song = songLink.song.get(); songT = at; }
+                hdr->songState = song ? 2 : (heard && heard == songLink.wanted && heard != songLink.failedFor ? 1 : 0);
+                // VIS_DEBUG: once a second, where the song is and whether its analysis is driving the fountain
+                static const bool debugSong = std::getenv("VIS_DEBUG") != nullptr;
+                static double nextDebug = 0;
+                if (debugSong && simT >= nextDebug)
+                {
+                    nextDebug = simT + 1;
+                    std::printf("song %u at %.2f s%s; analysis %s\n", heard, at, known ? "" : " (unknown)",
+                                song ? "in use" : (songLink.song ? "for another song" : "not ready"));
+                    std::fflush(stdout);
+                }
+            }
+            engine.Step(dt, simT, winL.data(), winR.data(), sr, song, songT);
+            if (engineDump)
+            {
+                std::fwrite(engine.colA, sizeof(engine.colA), 1, engineDump); std::fwrite(engine.colB, sizeof(engine.colB), 1, engineDump);
+                std::fwrite(engine.colC, sizeof(engine.colC), 1, engineDump);
+            }
+            fountainGl.Draw(engine, simT);
         }
-        projectm_opengl_render_frame(pm);
+        else
+        {
+            ring.Feed(pm);
+            if (pcm.size() >= 1600)
+            {
+                if (pcmPos + 1600 > pcm.size()) pcmPos = 0;
+                projectm_pcm_add_float(pm, pcm.data() + pcmPos, 800, PROJECTM_STEREO);
+                pcmPos += 1600;
+            }
+            projectm_opengl_render_frame(pm);
+        }
         glFinish();
+        if (native) fountainGl.Collect();
         QueryPerformanceCounter(&t1);
         key.Run(w, h, out.data()); // the presets crush faint haze to black, for the keying
         QueryPerformanceCounter(&t2);
@@ -360,7 +638,12 @@ int main(int argc, char** argv)
                         totals[totals.size() * 95 / 100]);
         }
     }
-    projectm_destroy(pm);
+    if (engineDump) std::fclose(engineDump);
+    songLink.Join();
+    if (fountainGl.profiled)
+        std::printf("fountain GPU per frame: scene %.2f ms, blur pyramid %.2f ms, composite %.2f ms\n", fountainGl.passMs[0] / fountainGl.profiled,
+                    fountainGl.passMs[1] / fountainGl.profiled, fountainGl.passMs[2] / fountainGl.profiled);
+    if (pm) projectm_destroy(pm);
     hdr->magic = 0;
     return 0;
 }

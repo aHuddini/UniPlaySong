@@ -208,7 +208,7 @@ namespace UniPlaySong.Services
 
         // Creates the appropriate WaveStream reader based on file extension.
         // OGG uses OggFileReader (NVorbis); GME formats use GmeReader; PSF uses PsfReader; all others use AudioFileReader.
-        private static WaveStream CreateAudioReader(string filePath)
+        internal static WaveStream CreateAudioReader(string filePath)
         {
             var ext = Path.GetExtension(filePath);
             if (ext.Equals(".ogg", StringComparison.OrdinalIgnoreCase))
@@ -311,6 +311,9 @@ namespace UniPlaySong.Services
 
                 int fftSize = _settingsService.Current?.VizFftSize ?? 1024;
                 _visualizationProvider = new VisualizationDataProvider(_effectsChain, fftSize, () => _settingsService.Current, _outputClock);
+                var songReader = _audioFile;
+                _visualizationProvider.SongPath = filePath;
+                _visualizationProvider.SongPosition = () => songReader.CurrentTime.TotalSeconds;
                 if (!SuppressVisualizationProvider)
                     VisualizationDataProvider.Current = _visualizationProvider;
                 long vizMs = sw.ElapsedMilliseconds;
@@ -809,6 +812,9 @@ namespace UniPlaySong.Services
 
                 int fftSize = _settingsService.Current?.VizFftSize ?? 1024;
                 _secondaryVisualizationProvider = new VisualizationDataProvider(_secondaryEffectsChain, fftSize, () => _settingsService.Current, _outputClock);
+                var secondaryReader = _secondaryAudioFile;
+                _secondaryVisualizationProvider.SongPath = nextPath;
+                _secondaryVisualizationProvider.SongPosition = () => secondaryReader.CurrentTime.TotalSeconds;
                 // Do NOT set VisualizationDataProvider.Current here — primary owns that slot
                 // until promotion. Viz still gets combined audio via post-mix read on primary.
 

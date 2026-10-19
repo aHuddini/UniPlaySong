@@ -4795,7 +4795,8 @@ namespace UniPlaySong
             if (args.Name == "SeekDisc")
                 return new Controls.SeekDisc(_activeMediaService, _api);
             if (args.Name == "MusicVisualControl")
-                return new Controls.MusicVisualControl(_settingsService, _fileLogger);
+                return new Controls.MusicVisualControl(_settingsService, _fileLogger,
+                    Path.Combine(Path.GetDirectoryName(_gamesPath) ?? string.Empty, Constants.VisualAnalysisFolderName));
             return null;
         }
 

@@ -208,13 +208,13 @@
                                         </Image.Effect>
                                     </Image>
                                 </Border>
-                                <!-- Darker towards the floor, so the visualizer's glow and backlight carry the page -->
+                                <!-- Near black, darker towards the floor: the visualizer's glow and backlight carry the page -->
                                 <Rectangle Grid.RowSpan="2" IsHitTestVisible="False">
                                     <Rectangle.Fill>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                            <GradientStop Offset="0" Color="#59000000" />
-                                            <GradientStop Offset="0.55" Color="#99000000" />
-                                            <GradientStop Offset="1" Color="#E6000000" />
+                                            <GradientStop Offset="0" Color="#CC000000" />
+                                            <GradientStop Offset="0.55" Color="#E0000000" />
+                                            <GradientStop Offset="1" Color="#F5000000" />
                                         </LinearGradientBrush>
                                     </Rectangle.Fill>
                                 </Rectangle>
@@ -234,6 +234,53 @@
                                     </Grid.RowDefinitions>
                                     <ContentControl x:Name="UPS_MusicVisualControl" Grid.RowSpan="3"
                                                     Focusable="False" IsHitTestVisible="False" />
+
+                                    <!-- Test badge: what drives the Jukebox Fountain (Content.SongState: 0 live, 1 analysing, 2 the analysed song) -->
+                                    <Border Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,16,24,0"
+                                            Padding="12,5" CornerRadius="12" Background="#99000000" IsHitTestVisible="False">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Content.IsRunning, ElementName=UPS_MusicVisualControl}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,8,0">
+                                                <Ellipse.Style>
+                                                    <Style TargetType="Ellipse">
+                                                        <Setter Property="Fill" Value="#FF9E9E9E" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Content.SongState, ElementName=UPS_MusicVisualControl}" Value="1">
+                                                                <Setter Property="Fill" Value="#FFFFB300" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Content.SongState, ElementName=UPS_MusicVisualControl}" Value="2">
+                                                                <Setter Property="Fill" Value="#FF4CD964" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Ellipse.Style>
+                                            </Ellipse>
+                                            <TextBlock FontSize="16" Foreground="#E6FFFFFF" VerticalAlignment="Center">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Text" Value="Live" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Content.SongState, ElementName=UPS_MusicVisualControl}" Value="1">
+                                                                <Setter Property="Text" Value="Analysing song…" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Content.SongState, ElementName=UPS_MusicVisualControl}" Value="2">
+                                                                <Setter Property="Text" Value="Following song" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Border>
 
                                     <!-- Cover: a disc 30% of the stage's height at its centre - the gap every UPS preset leaves. Layers:
                                          shadow (static, cached), the record (turns while music plays), then light that stays put

@@ -40,15 +40,23 @@ namespace UniPlaySong.Controls
 
         private readonly ISettingsProvider _settings;
         private readonly FileLogger _log;
-        // Sized in code to the frame's box in device pixels, centred: shown 1:1, never stretched to the element.
+        // Sized in code to the frame's box in device pixels, centred: shown 1:1, never stretched to the element. No layout
+        // rounding: it rounds to the DPI's grid, which under Fullscreen's Viewbox isn't the pixel grid - a 988 px frame
+        // (592.8 units) came out 593 units, 988.33 px, and every row was resampled. _snap puts it on whole pixels instead.
         private readonly Image _image = new Image
         {
-            Stretch = Stretch.Fill, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center
+            Stretch = Stretch.Fill, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+            UseLayoutRounding = false
         };
+        private readonly TranslateTransform _snap = new TranslateTransform();   // the image's sub-pixel nudge, see OnRendering
+        private Vector _deviceScale = new Vector(1, 1);
+        private string _shownAt;   // TEST BUILD ONLY: the last "Shown at" logged
         private readonly DispatcherTimer _resizeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
         private UniPlaySongSettings _subscribedTo;
         private Process _renderer;
         private VisualizerAudioFeed _feed;
+        private VisualizerSongAnalysis _songAnalysis;   // the Jukebox Fountain only: its beats and sections need the song analysed
+        private readonly string _otherMusicFolder;
         private MemoryMappedFile _mmf;
         private MemoryMappedViewAccessor _view;
         private IntPtr _tick;
@@ -78,14 +86,15 @@ namespace UniPlaySong.Controls
         private static Window _tuner;
         private readonly DispatcherTimer _tuneTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
 
-        public MusicVisualControl(ISettingsProvider settings, FileLogger log)
+        // otherMusicFolder: where song analyses of music outside the game folders go (the Jukebox Fountain)
+        public MusicVisualControl(ISettingsProvider settings, FileLogger log, string otherMusicFolder)
         {
             _settings = settings;
             _log = log;
+            _otherMusicFolder = otherMusicFolder;
             Focusable = false;
             IsHitTestVisible = false;
-            // On whole device pixels: an image placed at a fractional offset is resampled, which softens every frame.
-            UseLayoutRounding = true;
+            _image.RenderTransform = _snap;
             var grid = new Grid();
             grid.Children.Add(_image);
             grid.Children.Add(_testLabel);
@@ -129,11 +138,28 @@ namespace UniPlaySong.Controls
         public static readonly DependencyProperty IsRunningProperty = IsRunningKey.DependencyProperty;
         public bool IsRunning => (bool)GetValue(IsRunningProperty);
 
+        // The Jukebox Fountain's source: 0 reacting live, 1 analysing the song, 2 following the analysed song.
+        // Themes can bind it (Content.SongState on the element).
+        private static readonly DependencyPropertyKey SongStateKey = DependencyProperty.RegisterReadOnly(
+            nameof(SongState), typeof(int), typeof(MusicVisualControl), new PropertyMetadata(0));
+        public static readonly DependencyProperty SongStateProperty = SongStateKey.DependencyProperty;
+        public int SongState => (int)GetValue(SongStateProperty);
+
         private bool Enabled => _settings?.Current?.MusicVisualizerEnabled == true;
 
-        // The chosen style's preset, made by native/visualizer/presets/make_presets.py.
-        private string PresetPath => TunedOrTest ?? Path.Combine(Folder, "presets",
-            _settings?.Current?.MusicVisualizerStyle == MusicVisualizerStyle.Fountain ? "UPS - Fountain.milk" : "UPS - Glow Bars.milk");
+        // The chosen style's file: a MilkDrop preset made by native/visualizer/presets/make_presets.py, or the Jukebox
+        // Fountain's style file, made by native/visualizer/bench/tools/export_t8.mjs.
+        private string PresetPath => TunedOrTest ?? Path.Combine(Folder, "presets", StyleFile(_settings?.Current?.MusicVisualizerStyle));
+
+        private static string StyleFile(MusicVisualizerStyle? style)
+        {
+            switch (style)
+            {
+                case MusicVisualizerStyle.GlowBars: return "UPS - Glow Bars.milk";
+                case MusicVisualizerStyle.Fountain: return "UPS - Fountain.milk";
+                default: return "UPS - Jukebox Fountain.vis";
+            }
+        }
 
         // Every style renders its box at full size. TEST BUILD ONLY: a variant's name can ask for less - "(2-3 res)" -
         // drawn smaller and stretched into the same box.
@@ -363,6 +389,8 @@ namespace UniPlaySong.Controls
             {
                 Load(Folder);
                 _feed = VisualizerAudioFeed.Open(channel + "_Audio");
+                if (_settings?.Current?.MusicVisualizerStyle == MusicVisualizerStyle.JukeboxFountain)
+                    _songAnalysis = new VisualizerSongAnalysis(_feed, _log, _otherMusicFolder);
             }
             catch (Exception ex)
             {
@@ -375,13 +403,13 @@ namespace UniPlaySong.Controls
             // what keeps the visualizer sharp. Past the cap the rest of the element stays empty rather than upscaled (an
             // upscaled frame - 1728 px stretched over 2880 - looked blurry all over, and filling the width also made every
             // column wider than the page was laid out for).
-            var toDevice = PresentationSource.FromVisual(this)?.CompositionTarget.TransformToDevice ?? Matrix.Identity;
-            int ew = (int)(ActualWidth * toDevice.M11), eh = (int)(ActualHeight * toDevice.M22);
+            _deviceScale = ToDevice(this, new Point(1, 1)) - ToDevice(this, new Point(0, 0));
+            int ew = (int)(ActualWidth * _deviceScale.X), eh = (int)(ActualHeight * _deviceScale.Y);
             if (ew < 64 || eh < 64) { ew = 1280; eh = 720; }
             _startedAt = new Size(ActualWidth, ActualHeight);
             int bw = Math.Min(ew, 2560) & ~1, bh = Math.Min(eh, 1440) & ~1;
-            _image.Width = bw / toDevice.M11;
-            _image.Height = bh / toDevice.M22;
+            _image.Width = bw / _deviceScale.X;
+            _image.Height = bh / _deviceScale.Y;
             int w = bw, h = bh;
             if (RenderScale < 1)
             {
@@ -455,6 +483,7 @@ namespace UniPlaySong.Controls
             _d3d.SetBackBuffer(D3DResourceType.IDirect3DSurface9, back, true);
             _d3d.Unlock();
             _image.Source = _d3d;
+            _shownAt = null;
             _window = Window.GetWindow(this);
             _lastFrame = 0;
             CompositionTarget.Rendering += OnRendering;
@@ -465,11 +494,29 @@ namespace UniPlaySong.Controls
         private void OnRendering(object sender, EventArgs e)
         {
             _feed?.PublishPlayed();
+            _songAnalysis?.Tick();
             // Ask for a frame only while there is something to show: not after 1.5 s of silence (paused, stopped, between
             // songs - the visuals have settled by then) and not while Playnite is in the background (a game, another app).
             // The last frame stays up and the renderer waits, drawing nothing.
             bool idle = _feed == null || unchecked(Environment.TickCount - _feed.LastSoundTick) > 1500 || _window?.IsActive == false;
             if (!idle) SetEvent(_tick);
+            int songState = _view.ReadInt32(OffSongState);
+            if (songState != SongState) SetValue(SongStateKey, songState);
+            // Keep the frame on whole device pixels. Layout rounding works in this element's units, and under Fullscreen's
+            // Viewbox a whole unit is a fraction of a pixel (the stage's top, 110 units down, lands at 183.3 px at 200%) -
+            // WPF would then resample every frame and the visualizer goes soft. The layout offset leaves out _snap itself.
+            if (VisualTreeHelper.GetParent(_image) is Visual parent)
+            {
+                var at = ToDevice(parent, (Point)VisualTreeHelper.GetOffset(_image));
+                _snap.X = (Math.Round(at.X) - at.X) / _deviceScale.X;
+                _snap.Y = (Math.Round(at.Y) - at.Y) / _deviceScale.Y;
+                // Where the frame actually lands (after _snap), whenever that changes: whole-pixel corners and the frame's
+                // own size mean it's shown 1:1.
+                var tl = ToDevice(_image, new Point(0, 0));
+                var br = ToDevice(_image, new Point(_image.ActualWidth, _image.ActualHeight));
+                var shownAt = $"at {tl.X:0.###},{tl.Y:0.###}, {br.X - tl.X:0.###}x{br.Y - tl.Y:0.###} device px for a {_w}x{_h} frame";
+                if (_image.ActualWidth > 0 && shownAt != _shownAt) { _shownAt = shownAt; _log?.Debug($"[Visualizer] Shown {shownAt}"); }
+            }
             long frame = _view.ReadInt64(OffFrame);
             if (frame == _lastFrame || frame <= 0 || !_d3d.IsFrontBufferAvailable) return;
             _lastFrame = frame;
@@ -479,11 +526,22 @@ namespace UniPlaySong.Controls
             _d3d.Unlock();
         }
 
+        // A point in v's units, in device pixels: DPI and every transform above v. TransformToDevice alone is only the DPI,
+        // and Playnite's Fullscreen window shows its whole view through a Viewbox (laid out 1080 units tall, stretched to
+        // the screen) - sizing by DPI alone drew a 2560 px frame into 2133 px on a 2880x1800 screen at 200%.
+        private static Point ToDevice(Visual v, Point p)
+        {
+            var source = PresentationSource.FromVisual(v);
+            if (source?.RootVisual == null) return p;
+            return source.CompositionTarget.TransformToDevice.Transform(v.TransformToAncestor(source.RootVisual).Transform(p));
+        }
+
         private void Stop()
         {
             if (_owner != this) return;
             _generation++;
             SetValue(IsRunningKey, false);
+            SetValue(SongStateKey, 0);
             CompositionTarget.Rendering -= OnRendering;
             if (_d3d != null)
             {
@@ -506,6 +564,7 @@ namespace UniPlaySong.Controls
             _renderer = null;
             _view?.Dispose(); _view = null;
             _mmf?.Dispose(); _mmf = null;
+            _songAnalysis?.Dispose(); _songAnalysis = null;
             _feed?.Dispose(); _feed = null;
             _owner = null;
         }
@@ -528,7 +587,7 @@ namespace UniPlaySong.Controls
         [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] internal static extern int vt_copy(int index);
         [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] internal static extern void vt_shutdown();
 
-        internal const int OffMagic = 0, OffWidth = 4, OffHeight = 8, OffHandles = 16, OffLatest = 40, OffFrame = 48, OffStop = 80;
+        internal const int OffMagic = 0, OffWidth = 4, OffHeight = 8, OffHandles = 16, OffLatest = 40, OffSongState = 44, OffFrame = 48, OffStop = 80;
         internal const uint FramesMagic = 0x31585456u; // "VTX1"
 
         // DllImport by name binds to an already-loaded module; the bridge lives in the Visualizer subfolder, which the

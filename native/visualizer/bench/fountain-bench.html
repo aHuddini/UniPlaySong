@@ -77,6 +77,7 @@
     <h2 class="sec">Presets</h2>
     <div class="btns">
       <button id="presetYours5Full" class="main" title="The T8 standard - the look UniPlaySong's visualizer is built to first: your tune #5 plus a tint per song section and the lead-melody highlight (both need a loaded song; on the synthetic beat it looks the same as Your tune #5). A fresh bench opens on it">T8 standard: Tune #5 + sections + melody</button>
+      <button id="presetT8Chords" class="main" title="The T8 standard plus the chord layer: one steady tint per chord, major warm / minor cool, heat away from the home key, a swell on each chord change (a loaded song only). Compare with the T8 standard button above">T8 + chords (try)</button>
       <button id="presetYours5" title="Your values from 2026-10-13 00:36, plus beads cooling as they settle">Your tune #5</button>
     </div>
     <h2 class="sec">Showcase</h2>
@@ -362,6 +363,10 @@ const PARAMS = [
   ["PAD_GLOW", "Layers (loaded songs)", "Held chords: glow", 0, 0, 1.5, 0.05, "Pads, strings and held synth chords light the soft glow behind the line, so an intro or a quiet stretch with no drums still glows."],
   ["PAD_SWELL", "Layers (loaded songs)", "Held chords: core swell", 0, 0, 1.5, 0.05, "Held chords slowly swell the inner part of each column, underneath the beat's throws."],
   ["HARMONY_HUE", "Layers (loaded songs)", "Chords: colour", 0, 0, 1, 0.05, "The palette turns with the harmony - each chord gets its own tint and a chord change shifts it (brightness holds). It moves less where the harmony is unclear (dense mixes, drums only)."],
+  ["CHORD_ROOT", "Layers (loaded songs)", "Chords: one tint per chord", 0, 0, 1, 0.05, "With 'Chords: colour' up: 0 = the tint follows the notes as they sound, drifting within a chord. 1 = each recognised chord keeps one steady tint, which moves only when the chord does."],
+  ["MODE_TEMP", "Layers (loaded songs)", "Major warm, minor cool", 0, 0, 1, 0.05, "Major chords lean the line warm (more dots take the hot colour), minor chords cool (more take the cool shade). Riffs on power chords - no third, neither major nor minor - stay neutral."],
+  ["KEY_HEAT", "Layers (loaded songs)", "Away from home: heat", 0, 0, 1, 0.05, "The further the chords wander from the song's home key, the warmer the line runs; coming home cools it again - tension and release."],
+  ["CHORD_PULSE", "Layers (loaded songs)", "Chord change: swell", 0, 0, 1, 0.05, "When the chord changes (a new root - not just major to minor), the core swells and the glow lifts for a moment."],
   ["DET_KICK", "Drum detection", "Kick threshold", 0.12, 0.02, 0.6, 0.01, "How sharp a jump in the lows (40-150 Hz) counts as a kick or bass note. Lower = softer and quicker double kicks are caught, along with more false ones."],
   ["DET_KICK_SUSTAIN", "Drum detection", "Kick or bass note", 0.65, 0.3, 1, 0.01, "60-100 ms after a low hit: a kick has faded below this share of its peak, a bass note hasn't. 1 = every low hit counts as a kick (long 808 kicks need it high)."],
   ["DET_SNARE", "Drum detection", "Snare threshold", 0.3, 0.05, 1, 0.01, "How sharp a 1.5-5 kHz burst counts as a snare (or clap). Lower = ghost notes are caught, along with more false ones."],
@@ -717,8 +722,10 @@ document.getElementById("presetYours4").onclick = () => { applyAll(YOUR_TUNE_4);
 // The T8 standard: the look the UniPlaySong visualizer is built to first - your tune #5 with stereo wings, a tint per
 // song section and the lead-melody highlight, on White to magenta. A fresh bench opens on it; standard-t8.json beside
 // this page is its frozen copy (every value resolved), the spec for the renderer
-const T8_STANDARD = { ...YOUR_TUNE_5, STEREO: 1, SECTION_LOOK: 0.5, MELODY: 0.8 };
+const T8_STANDARD = { ...YOUR_TUNE_5, STEREO: 1, SECTION_LOOK: 0.5, MELODY: 0.8, DEFOCUS: 0.55 };   // crisper dots than #5 (2026-10-18, in Playnite)
 document.getElementById("presetYours5Full").onclick = () => { applyAll(T8_STANDARD); whiteToMagenta(); };
+const T8_CHORDS = { ...T8_STANDARD, HARMONY_HUE: 0.6, CHORD_ROOT: 1, MODE_TEMP: 0.6, KEY_HEAT: 0.5, CHORD_PULSE: 0.5 };
+document.getElementById("presetT8Chords").onclick = () => { applyAll(T8_CHORDS); whiteToMagenta(); };
 document.getElementById("presetYours5").onclick = () => { applyAll(YOUR_TUNE_5); whiteToMagenta(); };
 document.getElementById("presetYours4Cool").onclick = () => { applyAll(YOUR_TUNE_4_COOL); whiteToMagenta(); };
 // every preset button says what it applied (two presets can differ only in what a loaded song shows - this confirms the
@@ -822,7 +829,9 @@ function ensureAudio() {
 async function loadFile(f) {
   ensureAudio();
   buffer = await actx.decodeAudioData(await f.arrayBuffer());
-  drumTruth = null; drums = null; drumScore = "";
+  // drumKey too: it names the song by its length, so a song loaded again (or one of the same length) kept its old key
+  // with its drums cleared, and detection never re-ran - 'finding drums...' for good
+  drumTruth = null; drums = null; drumScore = ""; drumKey = "";
   sourceSel.value = "file"; offset = 0; play();
   mapBuffer(buffer);
 }
@@ -1351,7 +1360,7 @@ document.getElementById("drumTest").onclick = () => {
   ensureAudio();
   const d = makeDrumTest(actx.sampleRate);
   buffer = actx.createBuffer(1, d.x.length, d.sr); buffer.copyToChannel(d.x, 0);
-  drumTruth = d.truth; drumTruth.beat = Array.from({ length: 64 }, (_, i) => i * 0.5); drums = null; drumScore = ""; sourceSel.value = "file"; offset = 0; play(); mapBuffer(buffer);
+  drumTruth = d.truth; drumTruth.beat = Array.from({ length: 64 }, (_, i) => i * 0.5); drums = null; drumScore = ""; drumKey = ""; sourceSel.value = "file"; offset = 0; play(); mapBuffer(buffer);
 };
 
 // ---- layers ------------------------------------------------------------------------------------------------------
@@ -1418,19 +1427,88 @@ async function analyseLayers(x, sr, beats, progress, barPhase = 0) {
   }
   // per beat: the chroma over the beat, on the circle of fifths - its angle, how clearly it points (0..1), and how
   // much it moved from the beat before (a chord change)
-  const harm = [], clarity = [], change = [], beatChroma = [];
+  const harm = [], clarity = [], change = [], beatChroma = [], songChroma = new Float64Array(12), heldShare = [];
   let prev = null;
   for (let i = 0; i < beats.length; i++) {
     const a = Math.max(0, Math.floor(beats[i] * fr)), b = Math.min(T, Math.max(a + 1, Math.floor((beats[i + 1] ?? beats[i] + 0.5) * fr)));
     // the median over the beat, per note (a passing note doesn't count)
     const c = new Float32Array(12), col = [];
     for (let q = 0; q < 12; q++) { col.length = 0; for (let t = a; t < b; t++) col.push(chroma[t * 12 + q]); col.sort((p, r) => p - r); c[q] = col.length ? col[col.length >> 1] : 0; }
+    for (let q = 0; q < 12; q++) songChroma[q] += c[q];
+    // how much of the beat is held sound rather than hits (the HPSS share above 60 Hz): drums alone ~?, chords ~?
+    { let hs = 0, ss = 0; for (let t = a; t < b; t++) for (let k = 0; k < nb; k++) { hs += Hp[t * nb + k]; ss += S[t * nb + k]; } heldShare.push(ss > 0 ? hs / ss : 0); }
     let vx = 0, vy = 0, sum = 0, nn = 0;
     for (let q = 0; q < 12; q++) { const ang = 2 * Math.PI * ((q * 7) % 12) / 12; vx += c[q] * Math.cos(ang); vy += c[q] * Math.sin(ang); sum += c[q]; nn += c[q] * c[q]; }
     harm.push(Math.atan2(vy, vx)); clarity.push(sum > 0 ? Math.min(1, 3 * Math.hypot(vx, vy) / sum) : 0);
     const norm = Math.sqrt(nn) || 1;
     if (prev) { let dot = 0; for (let q = 0; q < 12; q++) dot += prev[q] * c[q] / norm; change.push(1 - dot); } else change.push(0);
     prev = c.map(v => v / norm); beatChroma.push(prev);
+  }
+  // ---- chords: each beat's chroma (unit length) against the 24 major and minor triads (also unit length), plus "no
+  // chord" at a fixed score - a beat that matches no triad better than that (drums only, a dense smear) gets none.
+  // Viterbi over the beats: changing chord costs CH_SWITCH of score, so a passing note doesn't flip it.
+  // The templates carry each note's overtones (harmonics 1-6, falling 0.6x each - Gomez 2006), as the chroma does: a
+  // plain triad template read D major as F# minor, D-F#-A's overtones putting a C# in the chroma.
+  // chord: root 0..11 (C..B) major, +12 minor, -1 none
+  const CH_NONE = 0.62, CH_SWITCH = 0.12, NS = 25, MODE_GAIN = 8, fifthAng = q => 2 * Math.PI * ((q * 7) % 12) / 12;
+  const tmpl = [];
+  for (let m = 0; m < 2; m++) for (let r = 0; r < 12; r++) {
+    const t = new Float32Array(12);
+    for (const p of [r, r + (m ? 3 : 4), r + 7]) for (let h = 1; h <= 6; h++) t[(p + Math.round(12 * Math.log2(h))) % 12] += Math.pow(0.6, h - 1);
+    let n2 = 0; for (let q = 0; q < 12; q++) n2 += t[q] * t[q];
+    tmpl.push(t.map(v => v / Math.sqrt(n2)));
+  }
+  // A beat that's nearly all hits has no chord whatever its few notes look like (chroma is scaled per frame, so its
+  // shape alone can't tell): drums alone hold ~0.00 of their sound, the test chords ~1.0, real songs 0.25-0.67
+  const em = beatChroma.map((u, i) => { const s = new Float64Array(NS), hu = Math.min(1, Math.max(0, (heldShare[i] - 0.05) / 0.1)), held = hu * hu * (3 - 2 * hu);
+    for (let k = 0; k < 24; k++) { let d = 0; for (let q = 0; q < 12; q++) d += u[q] * tmpl[k][q]; s[k] = d * held; } s[24] = CH_NONE; return s; });
+  const chord = new Int8Array(em.length), chordConf = new Float32Array(em.length), chordAng = new Float32Array(em.length);
+  // major or minor, as a strength: the chord's root as major against it as minor, -1 minor .. 1 major. Power chords
+  // (root and fifth, no third - most riffs) sit near 0, so they don't flick between warm and cool
+  const mode = new Float32Array(em.length);
+  if (em.length) {
+    let acc = Float64Array.from(em[0]); const back = [];
+    for (let i = 1; i < em.length; i++) {
+      let bi = 0; for (let k = 1; k < NS; k++) if (acc[k] > acc[bi]) bi = k;
+      const nx = new Float64Array(NS), bk = new Int8Array(NS);
+      for (let k = 0; k < NS; k++) { const sw = acc[bi] - CH_SWITCH; if (acc[k] >= sw) { nx[k] = acc[k] + em[i][k]; bk[k] = k; } else { nx[k] = sw + em[i][k]; bk[k] = bi; } }
+      acc = nx; back.push(bk);
+    }
+    let k = 0; for (let j = 1; j < NS; j++) if (acc[j] > acc[k]) k = j;
+    chord[em.length - 1] = k;
+    for (let i = em.length - 1; i > 0; i--) chord[i - 1] = back[i - 1][chord[i]];
+    for (let i = 0; i < em.length; i++) {
+      const s = chord[i]; chordConf[i] = s < 24 ? em[i][s] : 0;
+      if (s < 24) mode[i] = Math.max(-1, Math.min(1, (em[i][s % 12] - em[i][s % 12 + 12]) * MODE_GAIN));
+      // the chord's own direction on the circle of fifths, as harm measures a beat's notes - one steady tint per chord
+      if (s < 24) { let x = 0, y = 0; for (let q = 0; q < 12; q++) { x += tmpl[s][q] * Math.cos(fifthAng(q)); y += tmpl[s][q] * Math.sin(fifthAng(q)); } chordAng[i] = Math.atan2(y, x); }
+      else chordAng[i] = harm[i];
+      if (s >= 24) chord[i] = -1;
+    }
+  }
+  // the key: each of the 24 by how much of the song's chords it explains - a chord in the key counts 1, its home chord
+  // 2 (so A minor beats C major when Am is home) - plus half the Krumhansl-Kessler correlation of the song's summed
+  // chroma, which settles near-ties. The notes alone picked E major for an A minor song (its E major chord's G# pulls).
+  const KK = [[6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88], [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17]];
+  const corr = (a, b) => { let ma = 0, mb = 0; for (let q = 0; q < 12; q++) { ma += a[q] / 12; mb += b[q] / 12; } let n = 0, da = 0, db = 0; for (let q = 0; q < 12; q++) { n += (a[q] - ma) * (b[q] - mb); da += (a[q] - ma) ** 2; db += (b[q] - mb) ** 2; } return n / (Math.sqrt(da * db) || 1); };
+  // the chords that belong to a key, as [steps above its home note, minor]: major I ii iii IV V vi; minor i III iv v V VI VII
+  const IN_KEY = [[[0, 0], [2, 1], [4, 1], [5, 0], [7, 0], [9, 1]], [[0, 1], [3, 0], [5, 1], [7, 1], [7, 0], [8, 0], [10, 0]]];
+  const chordBeats = Array.from(chord).filter(c => c >= 0);
+  const key = { root: 0, minor: 0, conf: -Infinity };
+  for (let m = 0; m < 2; m++) for (let r = 0; r < 12; r++) {
+    let fit = 0;
+    for (const c of chordBeats) { const st = (c % 12 - r + 12) % 12, mi = c >= 12 ? 1 : 0; if (IN_KEY[m].some(([s, q]) => s === st && q === mi)) fit += st === 0 ? 2 : 1; }
+    const v = fit / Math.max(1, 2 * chordBeats.length) + 0.5 * corr(songChroma, KK[m].map((_, q) => KK[m][(q - r + 12) % 12]));
+    if (v > key.conf) { key.conf = v; key.root = r; key.minor = m; }
+  }
+  // how far each beat's chord sits from home: both as their relative major (A minor counts as C), their distance round
+  // the circle of fifths, 0 at home .. 1 at four or more steps away (in C: G, F, Am, Em, Dm near; E, Ab, Db far).
+  // A beat with no chord keeps the last.
+  const relMaj = (root, minor) => minor ? (root + 3) % 12 : root, home = relMaj(key.root, key.minor);
+  const away = new Float32Array(em.length);
+  for (let i = 0, last = 0; i < em.length; i++) {
+    if (chord[i] >= 0) { const d = Math.abs(((relMaj(chord[i] % 12, chord[i] >= 12) - home) * 7 % 12 + 12) % 12); last = Math.min(1, Math.min(d, 12 - d) / 4); }
+    away[i] = last;
   }
   // ---- lead melody: per frame, the pitch from 196 Hz to 1.3 kHz whose harmonics (x1..x5, weighted 0.8^n) carry the
   // most held energy; kept where it stands clearly above the other candidates and the held part is loud enough
@@ -1490,8 +1568,9 @@ async function analyseLayers(x, sr, beats, progress, barPhase = 0) {
     sections.push({ start: k === 0 ? 0 : beats[startBeat], end: k + 2 === cuts.length ? 1e9 : beats[Math.min(beats.length - 1, endBar[0] + 4)], label: lab });
   }
   if (progress) await progress(1);
-  return { fr, pad, harm, clarity, change, melF: mf, melS, sections };
+  return { fr, pad, harm, clarity, change, melF: mf, melS, sections, chord, chordConf, chordAng, mode, key, away, heldShare };
 }
+const CHORD_NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
 // ---- end layers --------------------------------------------------------------------------------------------------
 
 // ---- level engine (the preset's per-frame code, in JS) -----------------------------------------------------------
@@ -1522,7 +1601,7 @@ let spinA = 0, barPh = 0, synthBeatN = -1, layoutA = 0, layoutB = 0, morphT = 0;
 const hbTime = [-99, -99, -99, -99], hbAmp = [0, 0, 0, 0];
 const modeY = new Float32Array(12), modeV = new Float32Array(12);
 const pushBeat = (tm, amp) => { hbTime.unshift(tm); hbTime.length = 4; hbAmp.unshift(amp); hbAmp.length = 4; };   // where the last beat's drop landed on each wing (Liquid)
-let beatEnv = 0, beatAt = -1, padE = 0, harmX = 0, harmY = 0, harmE = 0;   // the beat throw's envelope; the song time (plus lead) beats have been taken up to
+let beatEnv = 0, beatAt = -1, padE = 0, harmX = 0, harmY = 0, harmE = 0, modeE = 0, awayE = 0, chordHit = 0, lastRoot = -1;   // the beat throw's envelope; the song time (plus lead) beats have been taken up to
 const liqTmp = new Float32Array(N), targ = new Float32Array(N);   // the liquid's copy of the throws; each spring's target
 const kv = new Float32Array(N);   // each column's throw: its own kick, or the beat's, by BEAT_DRIVE
 const kc = new Float32Array(N);   // the colour's copy of it, smoothed - the colour fades in where the throw snaps
@@ -1617,10 +1696,23 @@ function engine(dt, t) {
   }
   const padT = lyOn ? layers.pad[Math.min(layers.pad.length - 1, Math.floor(songT * layers.fr))] : 0;
   padE += (padT - padE) * (1 - Math.exp(-dt / 0.25));
-  let hx = 0, hy = 0;
-  if (lyOn) { const bi = beatIndexAt(songT); if (bi >= 0 && bi < layers.harm.length) { hx = Math.cos(layers.harm[bi]) * layers.clarity[bi]; hy = Math.sin(layers.harm[bi]) * layers.clarity[bi]; } }
+  // with 'one tint per chord', the recognised chord's own direction (full strength) stands in for the notes' (which
+  // drift within a chord); its quality (major/minor strength) and distance from the home key ease into the colour; a
+  // change of root swells the core
+  let hx = 0, hy = 0, modeT = 0, awayT = lyOn ? awayE : 0;
+  if (lyOn) { const bi = beatIndexAt(songT); if (bi >= 0 && bi < layers.harm.length) {
+    const ch = layers.chord ? layers.chord[bi] : -1, cr = ch >= 0 ? P.CHORD_ROOT : 0;
+    hx = (1 - cr) * Math.cos(layers.harm[bi]) * layers.clarity[bi] + cr * Math.cos(layers.chordAng[bi]);
+    hy = (1 - cr) * Math.sin(layers.harm[bi]) * layers.clarity[bi] + cr * Math.sin(layers.chordAng[bi]);
+    if (ch >= 0) {
+      modeT = layers.mode[bi]; awayT = layers.away[bi];
+      if (ch % 12 !== lastRoot) { if (lastRoot >= 0) chordHit = 1; lastRoot = ch % 12; }
+    } } }
   const hk = 1 - Math.exp(-dt / 1.0); harmX += (hx - harmX) * hk; harmY += (hy - harmY) * hk;
   harmE = harmY;
+  modeE += (modeT - modeE) * (1 - Math.exp(-dt / 1.5));
+  awayE += (awayT - awayE) * (1 - Math.exp(-dt / 2.5));
+  chordHit *= Math.exp(-dt / 0.4);
   if (useMap) { /* drops come from the map */ }
   else if (section < 0.35) { quietFor += dt; quietAgo = 0; }
   else { if (quietFor > 0) { lastQuiet = quietFor; quietFor = 0; } quietAgo += dt; }
@@ -1752,11 +1844,18 @@ function engine(dt, t) {
     hist.copyWithin(N, 0, N * (HIST - 1));
     acc60 -= 1 / 60;
   }
+  // each column's reach this frame (column widths from the line): the highest level any of its dots can show (the
+  // history they're born from, the live level, the slow core level) through every multiplier at its ceiling, plus the
+  // largest stretched dot - the scene skips the column's dots for pixels beyond it, so it must never be short
+  const P2 = Q(), travelMax = Math.max(1, P2.RAIN > 0 ? P2.FLOOR : 1);
+  const reachMul = P2.REACH * (1 + P2.BREATH * P2.DYNAMICS) * (1 + 0.35 * P2.TENSION) * (1 + 0.18 * P2.COOL_AIR) * (1 + 1.2 * P2.PAD_SWELL) * (1 + 0.45 * 1.2 * P2.MELODY) * travelMax;
+  const reachAdd = 0.4 * P2.SIZE * (1 + P2.STRETCH_MAX) + 0.6 * P2.GRAVITY * P2.SPLASH + (P2.QUANTIZE > 0 ? 1.5 : 0) + 0.5;
   for (let c = 0; c < N; c++) {
     hist[c] = ez[c];
+    let lm = Math.max(ez[c], slow[c]); for (let r = 1; r < HIST; r++) lm = Math.max(lm, hist[r * N + c]);
     colA.set([ez[c], kc[c], slow[c], rate[c]], c * 4);
     colB.set([fl[c], flv[c], heatC[c], settleC[c]], c * 4);
-    colC.set([melC[c], bandPos[c], 0, 0], c * 4);
+    colC.set([melC[c], bandPos[c], lm * reachMul * (1 + P2.FLING * Math.abs(fl[c])) + reachAdd, 0], c * 4);
   }
 }
 
@@ -1879,7 +1978,7 @@ uniform vec2 uRes;
 uniform float uTime;
 uniform float uP[${PARAMS.length}];
 uniform sampler2D uHist, uColA, uColB, uColC;
-uniform float uSection, uDrop, uTension, uPhrase, uPad, uHarm, uSecHue;
+uniform float uSection, uDrop, uTension, uPhrase, uPad, uHarm, uSecHue, uMode, uAway, uChord;
 uniform vec3 uColMin, uColMax;
 uniform vec3 uCoolA, uCoolB, uKick, uCalmA, uCalmB, uGlint, uColMid;   // uColMid: (-1) = no middle colour   // the palette's scheme
 uniform float uHotMax, uHeatGain, uCoolGain, uSplit, uBend, uBal;
@@ -1911,9 +2010,11 @@ vec3 fountain(float fx, float zy, bool left, float dxs) {
   if (fx >= 0.0 && fx <= 48.0 && abs(dx) < 0.42) {
     vec4 A = texelFetch(uColA, ivec2(int(g), 0), 0);   // live, kick envelope, slow level, rate
     vec4 B = texelFetch(uColB, ivec2(int(g), 0), 0);   // fling, fling velocity
-    vec4 C = texelFetch(uColC, ivec2(int(g), 0), 0);   // melody highlight, place in the spectrum (0 low .. 1 high)
+    vec4 C = texelFetch(uColC, ivec2(int(g), 0), 0);   // melody highlight, place in the spectrum (0 low .. 1 high), reach
     float live = A.x;
-    for (float s = 0.0; s < 30.0; s += 1.0) {
+    // beyond the column's reach this frame no dot of it can be here (the engine works the reach out, every multiplier at
+    // its ceiling) - skip them all
+    if (abs(zy) <= C.z) for (float s = 0.0; s < 30.0; s += 1.0) {
       vec2 h = H2(g, s);
       vec2 u = H2(g + 97.0, s + 13.0);
       float life = sqrt(1.0 + LIFE_SPREAD * h.x);
@@ -1959,12 +2060,16 @@ vec3 fountain(float fx, float zy, bool left, float dxs) {
       float base = level * k * 2.0 * REACH * (1.0 + BREATH * calm * sin(uTime * 1.5708)) * (1.0 + 0.35 * TENSION * uTension);
       base *= 1.0 + 0.18 * cool * sin(uTime * 1.3 + g * 0.35);   // a slow sway travelling along the quiet columns
       base *= 1.0 + PAD_SWELL * uPad * (1.0 - smoothstep(0.0, 0.6, tip));   // held chords swell the inner dots
+      base *= 1.0 + 0.6 * CHORD_PULSE * uChord * (1.0 - smoothstep(0.0, 0.6, tip));   // ...and a new chord, for a moment
       base *= 1.0 + 0.45 * MELODY * C.x;   // the melody's place lifts a little
       float z = base * travel * flm;
       // the dot's own speed (column widths a second): launch, fling and level change
       float vz = base * (travelD * flm + travel * flD) + k * 2.0 * REACH * travel * flm * A.w * 60.0 * b;
       float stretch = 1.0 + STRETCH_MAX * clamp(abs(vz) * STRETCH_GAIN, 0.0, 1.0);
       float size = (0.25 + 0.15 * fract(h.x * 7.31 + u.x * 3.17)) * SIZE;
+      // dots keep the pixel size they have at 2050 px wide (the bench on a 2880 px screen, where the look was tuned): a
+      // column is wing * width / 48 px, so on a wider frame (Playnite's 2560) they'd grow with it and read ~25% softer
+      size *= min(1.0, 2050.0 / uRes.x);
       // splash: in the last 14% of its life a landing dot bounces a little and scatters to one side of its column
       float spl = GRAVITY * SPLASH * smoothstep(0.86, 1.0, na);
       float zs = z + sign(k) * 0.6 * GRAVITY * SPLASH * sin(3.14159 * smoothstep(0.86, 1.0, na));
@@ -1972,6 +2077,7 @@ vec3 fountain(float fx, float zy, bool left, float dxs) {
       if (QUANTIZE > 0.0) { float qs = mix(0.6, 3.0, QUANTIZE); zs = floor(zs / qs + 0.5) * qs; }
       vec2 d = vec2(dx - (h.x > 0.5 ? 0.3 : -0.3) * spl, (zy - zs) / stretch) / size;
       float disc = 1.0 - smoothstep(0.0, 1.0, length(d));
+      if (disc <= 0.0) continue;   // not inside this dot: it adds nothing here, so skip its colour
       // ---- colour: the palette first, accents on top. Every accent follows one rule - its strength decides HOW MANY
       // dots take its colour (each dot has its own threshold per accent), never how far every dot shifts - so a bar is
       // always a mix of the palette and accents, never one flat tint. Each accent has a coverage budget so the palette
@@ -1985,6 +2091,9 @@ vec3 fountain(float fx, float zy, bool left, float dxs) {
       // temperature: the column's faded loudness, cooler toward the core (COLOR_TIPS), only the loud parts high
       // (COLOR_CURVE)
       float T = pow(clamp(B.z * 1.5, 0.0, 1.0), COLOR_CURVE) * mix(1.0, smoothstep(0.1, 0.9, tip), COLOR_TIPS);
+      // the harmony's temperature: major chords and wandering from the home key warm the line (more dots take the hot
+      // colour, as loudness does); minor chords cool it (below)
+      T = min(1.0, T + 0.35 * MODE_TEMP * max(uMode, 0.0) + 0.45 * KEY_HEAT * uAway);
       // sections and chords: they lean the palette's balance between its own two colours (a chorus might run warmer) -
       // the palette stays itself; only a small hue turn is left for them below
       cg = clamp(cg + 0.3 * clamp(SECTION_LOOK * uSecHue / 0.85 + HARMONY_HUE * uHarm * 0.6, -1.0, 1.0), 0.0, 1.0);
@@ -1996,6 +2105,7 @@ vec3 fountain(float fx, float zy, bool left, float dxs) {
       // its dots take the palette's cool shade (Cool colour picks between its two)
       float coolT = 1.0 - smoothstep(0.0, 0.45, T);
       float coolness = coolT + (1.0 - coolT) * MOVE_COOL * B.w * smoothstep(0.2, 0.8, tip);
+      coolness = min(1.0, coolness + 0.6 * MODE_TEMP * max(-uMode, 0.0));
       vec3 airCol = soften(lumMatch(mix(uCoolA, uCoolB, COOL_HUE), col));
       col = mix(col, airCol, clamp(ACCENT * COOL_AIR * uCoolGain, 0.0, 1.0) * popDot(coolness * (0.25 + 0.5 * TEMP_AMOUNT), fract(h.x * 6.37 + u.y * 2.93)));
       // breakdown: in a quiet stretch with a weak beat, some dots take the palette's breakdown colours
@@ -2126,7 +2236,7 @@ const COMP_FS = `#version 300 es
 precision highp float;
 uniform vec2 uRes;
 uniform float uP[${PARAMS.length}];
-uniform float uLevel, uPad, uWarm, uTime, uFull, uZoom, uRingT, uHasCover, uSpinC, uBalC;
+uniform float uLevel, uPad, uWarm, uTime, uFull, uZoom, uRingT, uHasCover, uSpinC, uBalC, uChord;
 uniform float uMelPos[32], uMelStr[32];   // the melody's place along a wing (0 low .. 1 high) and strength, newest first, 1/16 s apart
 uniform vec3 uGlowHot, uCoolA, uCoolB, uBloomTint, uGlint;
 uniform int uBg;
@@ -2314,7 +2424,8 @@ void main() {
     cv = (cv - normalize(cv) * pull) * mat2(cos(tw), -sin(tw), sin(tw), cos(tw));
     suv = cv / vec2(uRes.x / uRes.y, 1.0) + 0.5;
   }
-  vec2 o = vec2(FRINGE * smoothstep(0.2, 1.0, length(suv - 0.5) * 2.0), 0.0);
+  // in pixels no wider than at 2050 px, as the dots (scene shader)
+  vec2 o = vec2(FRINGE * smoothstep(0.2, 1.0, length(suv - 0.5) * 2.0) * min(1.0, 2050.0 / uRes.x), 0.0);
   vec3 c = vec3(texture(uScene, suv + o).r, texture(uScene, suv).g, texture(uScene, suv - o).b);
   vec3 b1 = texture(uB1, suv).rgb, b2 = texture(uB2, suv).rgb, b3 = texture(uB3, suv).rgb;
   // zoom pulse: on the bar's ONE, a radial blur outward from the cover (uZoom is eased in and out)
@@ -2394,7 +2505,7 @@ void main() {
   vec2 d = (uv - 0.5) * vec2(0.8, 3.0);
   // the glow behind the line: violet while the music runs cool, warming toward the palette's hot colour only as the
   // columns heat up (it was a fixed red-pink - a red fog over every palette)
-  vec3 back = glowCol * exp(-length(d) * 4.0) * (0.06 + GLOW_PULSE * clamp(uLevel * 2.5, 0.0, 1.0) + PAD_GLOW * 0.35 * uPad);
+  vec3 back = glowCol * exp(-length(d) * 4.0) * (0.06 + GLOW_PULSE * clamp(uLevel * 2.5, 0.0, 1.0) + PAD_GLOW * 0.35 * uPad + CHORD_PULSE * 0.25 * uChord);
   // menu waves: three soft ribbons of light flowing across behind the fountain, each a thin bright line in a wide soft
   // band, their swell growing with the music
   if (MENU_WAVES > 0.0) {
@@ -2525,6 +2636,9 @@ function frame(now) {
     gl.uniform1f(gl.getUniformLocation(progScene, "uTension"), tensionC);
     gl.uniform1f(gl.getUniformLocation(progScene, "uPad"), padE);
     gl.uniform1f(gl.getUniformLocation(progScene, "uHarm"), harmE);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uMode"), modeE);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uAway"), awayE);
+    gl.uniform1f(gl.getUniformLocation(progScene, "uChord"), chordHit);
     gl.uniform1f(gl.getUniformLocation(progScene, "uSecHue"), secHueC);
     gl.uniform1f(gl.getUniformLocation(progScene, "uPhrase"), phraseC);
     const pal = PALETTES[(comparing ? pinned : P).PALETTE || 0];
@@ -2594,6 +2708,7 @@ function frame(now) {
     gl.uniform1f(gl.getUniformLocation(progComp, "uHasCover"), coverTex ? 1 : 0);
     if (coverTex) useTex(progComp, "uCover", 4, coverTex);
     gl.uniform1f(gl.getUniformLocation(progComp, "uPad"), padE);
+    gl.uniform1f(gl.getUniformLocation(progComp, "uChord"), chordHit);
     {   // the glow's warmth: the columns' mean (faded) loudness through the same curve as the dots' temperature
       const QQ = comparing ? pinned : P; let m = 0; for (let c = 0; c < N; c++) m += heatC[c]; m /= N;
       gl.uniform1f(gl.getUniformLocation(progComp, "uWarm"), Math.min(1, Math.pow(Math.min(1, m * 1.5), QQ.COLOR_CURVE) * QQ.COLOR_LEVEL));
@@ -2714,6 +2829,7 @@ function drawGraphs() {
     // layers: held chords as a level, the harmony as each beat's tint (paler where it's unclear)
     if (layers && layersOf === buffer) {
       const yP = y0 + 5 * lh, yH = y0 + 6 * lh, yM = y0 + 7 * lh;
+      let lblBeat = -1;
       g2.fillStyle = "#9a98a4"; g2.fillText("pads", 12, yP + 10); g2.fillText("harmony", 12, yH + 10); g2.fillText("melody", 12, yM + 10);
       for (let x = 0; x < xw; x += 2) {
         const tt = now - span + x / xw * 2 * span; if (tt < 0 || tt >= dur) continue;
@@ -2722,7 +2838,14 @@ function drawGraphs() {
         const bi = beatIndexAt(tt);
         if (layers.melF) { const fi = Math.min(layers.melF.length - 1, Math.floor(tt * layers.fr)), ms = layers.melS[fi];
           if (ms > 0.05) { const pos = Math.pow(Math.max(0, (layers.melF[fi] - 50) / 15950), 2 / 3); g2.fillStyle = `rgba(255,122,217,${0.3 + 0.7 * ms})`; g2.fillRect(x0 + x, yM + lh - 2 - Math.min(1, pos / 0.45) * (lh - 4), 2, 2); } }
-        if (bi >= 0 && bi < layers.harm.length) { g2.fillStyle = `hsla(${Math.round((layers.harm[bi] * 180 / Math.PI + 360) % 360)}, ${Math.round(20 + 70 * layers.clarity[bi])}%, 55%, 0.9)`; g2.fillRect(x0 + x, yH + 2, 2, lh - 4); }
+        if (bi >= 0 && bi < layers.harm.length) {
+          // a recognised chord: its own tint, full; none: the notes' direction, paler where unclear; the chord's name
+          // where its root changes
+          const ch = layers.chord ? layers.chord[bi] : -1, ang = ch >= 0 ? layers.chordAng[bi] : layers.harm[bi];
+          g2.fillStyle = `hsla(${Math.round((ang * 180 / Math.PI + 360) % 360)}, ${ch >= 0 ? 80 : Math.round(20 + 50 * layers.clarity[bi])}%, ${ch >= 0 ? 55 : 35}%, 0.9)`;
+          g2.fillRect(x0 + x, yH + 2, 2, lh - 4);
+          if (ch >= 0 && bi !== lblBeat && (bi === 0 || layers.chord[bi - 1] < 0 || layers.chord[bi - 1] % 12 !== ch % 12)) { lblBeat = bi; g2.fillStyle = "#fff"; g2.fillText(CHORD_NAMES[ch % 12] + (ch >= 12 ? "m" : ""), x0 + x + 2, yH + lh - 4); }
+        }
       }
     }
     g2.fillStyle = "#fff"; g2.fillRect(xs(now) - 0.5, y0, 1, 8 * lh);
@@ -2732,6 +2855,7 @@ function drawGraphs() {
       const mmss = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
       beatTxt = `beat ${beatInfo.bpm.toFixed(0)} BPM` + (beatInfo.tempos.length > 1 ? " (" + beatInfo.tempos.slice(1).map(([t, b]) => `${b.toFixed(0)} from ${mmss(t)}`).join(", ") + ")" : "");
       if (drumTruth) { const r = scoreHits(beatInfo.beats, drumTruth.beat); beatTxt += ` ${r.hit}/${r.total}${r.extra ? " +" + r.extra + " false" : ""}`; }
+      if (layers && layersOf === buffer && layers.key) beatTxt += `   key ${CHORD_NAMES[layers.key.root]}${layers.key.minor ? " minor" : " major"}`;
       beatTxt += "   ";
     }
     g2.fillText(drumStatus || (beatTxt + (drumScore || "finding drums...")), 12, y0 + 8 * lh + 14);

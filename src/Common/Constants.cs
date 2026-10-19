@@ -101,6 +101,7 @@ namespace UniPlaySong.Common
         public const string ExtraMetadataFolderName = "ExtraMetadata";
         public const string ExtensionFolderName = "UniPlaySong";
         public const string GamesFolderName = "Games";
+        public const string VisualAnalysisFolderName = "VisualAnalysis"; // the Jukebox Fountain's song analyses: in each game's music folder, and beside Games for other music
         public const string TempFolderName = "Temp";
         public const string DefaultMusicFolderName = "DefaultMusic";
         public const string TrailerAudioCacheFolderName = "TrailerAudioCache";

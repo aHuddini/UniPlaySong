@@ -5,7 +5,7 @@ built from `native/visualizer/`, and projectM 4.1.8 + GLEW 2.2.0 built from the 
 
 | File | What it is | SHA-256 | Scanned | Report |
 |---|---|---|---|---|
-| `UniPlaySongVisualizer.exe` | First-party x64 renderer (projectM, offscreen OpenGL, shared D3D11 textures) | `ed38cd5e99c1ea8b0d978536013059c3cdc1368c35665c9204b18478fa58bbfe` | not yet - submit before release | [VirusTotal](https://www.virustotal.com/gui/file/ed38cd5e99c1ea8b0d978536013059c3cdc1368c35665c9204b18478fa58bbfe) |
+| `UniPlaySongVisualizer.exe` | First-party x64 renderer (projectM, offscreen OpenGL, shared D3D11 textures) | `7ac37929ae609c8cea0665c05f20a89cb25850c5295bee050eb53698bbe64c9c` | not yet - submit before release | [VirusTotal](https://www.virustotal.com/gui/file/7ac37929ae609c8cea0665c05f20a89cb25850c5295bee050eb53698bbe64c9c) |
 | `UniPlaySongVisualizerBridge.dll` | First-party x86 bridge (D3D9Ex, opens the renderer's shared textures) | `d247a35ca19ee7adc3b513c7797e1d7ec6160b39259c4a3b753e290d436a49d2` | 2026-10-12 | [VirusTotal](https://www.virustotal.com/gui/file/d247a35ca19ee7adc3b513c7797e1d7ec6160b39259c4a3b753e290d436a49d2) |
 | `projectM-4.dll` | projectM 4.1.8, x64, static MSVC runtime | `6ec38fa4ca701918fac274f1dfe0ba420f3ae76f16e09d0ae6e9ae1a3c6f3656` | 2026-10-12 | [VirusTotal](https://www.virustotal.com/gui/file/6ec38fa4ca701918fac274f1dfe0ba420f3ae76f16e09d0ae6e9ae1a3c6f3656) |
 | `glew32.dll` | GLEW 2.2.0, x64, static MSVC runtime | `763fc6ad9da9948a37f9e7a61e109406e41f3b7e18473796442de394f7bfe60a` | 2026-10-12 | [VirusTotal](https://www.virustotal.com/gui/file/763fc6ad9da9948a37f9e7a61e109406e41f3b7e18473796442de394f7bfe60a) |

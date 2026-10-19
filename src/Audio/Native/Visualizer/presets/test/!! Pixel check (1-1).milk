@@ -1,0 +1,35 @@
+[preset00]
+MILKDROP_PRESET_VERSION=201
+PSVERSION=2
+PSVERSION_WARP=2
+PSVERSION_COMP=2
+fRating=5.0
+fGammaAdj=1.0
+fDecay=1.0
+fVideoEchoAlpha=0.0
+nWaveMode=0
+bAdditiveWaves=0
+bTexWrap=0
+fWaveAlpha=0.0
+zoom=1.0
+rot=0.0
+dx=0.0
+dy=0.0
+warp=0.0
+sx=1.0
+sy=1.0
+ob_a=0.0
+ib_a=0.0
+nMotionVectorsX=0.0
+comp_1=`shader_body
+comp_2=`{
+comp_3=`  // TEST ONLY: is the frame shown 1:1? Left third 1 px rows, middle a 1 px checkerboard, right third 1 px columns.
+comp_4=`  // Shown pixel for pixel each band is an even grey; any rescale breaks it into wide stripes (moire).
+comp_5=`  float2 P = floor(uv * texsize.xy + 0.25);
+comp_6=`  float third = floor(uv.x * 3.0);
+comp_7=`  float rows = fmod(P.y, 2.0);
+comp_8=`  float chk = fmod(P.x + P.y, 2.0);
+comp_9=`  float cols = fmod(P.x, 2.0);
+comp_10=`  float v = rows * step(third, 0.5) + chk * step(0.5, third) * step(third, 1.5) + cols * step(1.5, third);
+comp_11=`  ret = float3(v, v, v);
+comp_12=`}

@@ -18,7 +18,13 @@ namespace UniPlaySong.Audio
         internal const uint Magic = 0x31445541u; // "AUD1"
         internal const int Capacity = 65536;     // stereo frames, a power of two
         internal const int OffSampleRate = 4, OffCapacity = 8, OffWritten = 16, OffPlayed = 20, OffData = 32;
-        internal const int Bytes = OffData + Capacity * 2 * sizeof(float);
+        // The song, after the audio (VisSong): a stamp per block of where the song was, and the analysis request
+        internal const uint SongMagic = 0x31474E53u; // "SNG1"
+        internal const int Stamps = 64, PathChars = 260, StampSize = 16;
+        internal const int OffSong = OffData + Capacity * 2 * sizeof(float);
+        internal const int SongOffStamps = 4, SongOffSeq = 8, SongOffSong = 12, SongOffBytes = 16, SongOffTime = 24, SongOffStamp = 32;
+        internal const int SongOffAnalysis = SongOffStamp + Stamps * StampSize, SongOffPcm = SongOffAnalysis + PathChars * 2;
+        internal const int Bytes = OffSong + SongOffPcm + PathChars * 2;
 
         private static VisualizerAudioFeed _active;
 
@@ -35,6 +41,7 @@ namespace UniPlaySong.Audio
             _view = _map.CreateViewAccessor();
             _base = _view.SafeMemoryMappedViewHandle.DangerousGetHandle() + (int)_view.PointerOffset;
             Marshal.WriteInt32(_base, OffCapacity, Capacity);
+            Marshal.WriteInt32(_base, OffSong, unchecked((int)SongMagic));
             Marshal.WriteInt32(_base, 0, unchecked((int)Magic));
         }
 
@@ -52,8 +59,11 @@ namespace UniPlaySong.Audio
         {
             var feed = Volatile.Read(ref _active);
             if (feed == null || samples <= 0) return;
-            if (!ReferenceEquals(clock, VisualizationDataProvider.Current?.Clock)) return;
-            feed.Append(clock.WaveFormat.SampleRate, clock.WaveFormat.Channels, startFrame, buffer, offset, samples);
+            var provider = VisualizationDataProvider.Current;
+            if (!ReferenceEquals(clock, provider?.Clock)) return;
+            int frames = feed.Append(clock.WaveFormat.SampleRate, clock.WaveFormat.Channels, startFrame, buffer, offset, samples);
+            // where the song was as this block ended (the provider read it just now, on this thread); 0 = not a song file
+            if (frames > 0) feed.Stamp((uint)(startFrame + frames), provider.SongPath != null ? (uint)provider.SongId : 0u, provider.SongSeconds);
         }
 
         // Environment.TickCount when the ring last carried anything audible. The player's clock can't say when the music
@@ -68,7 +78,8 @@ namespace UniPlaySong.Audio
             Marshal.WriteInt32(_base, OffPlayed, unchecked((int)(uint)clock.FramesPlayed));
         }
 
-        internal void Append(int sampleRate, int channels, long startFrame, float[] buffer, int offset, int samples)
+        // The block into the ring; returns its frames.
+        internal int Append(int sampleRate, int channels, long startFrame, float[] buffer, int offset, int samples)
         {
             if (!_formatWritten)
             {
@@ -76,7 +87,7 @@ namespace UniPlaySong.Audio
                 _formatWritten = true;
             }
             int frames = samples / Math.Max(1, channels);
-            if (frames <= 0) return;
+            if (frames <= 0) return 0;
             if (_stereo.Length < frames * 2) _stereo = new float[frames * 2];
             Interleave(buffer, offset, frames, channels, _stereo);
             if (Audible(_stereo, frames * 2)) Volatile.Write(ref _lastSoundTick, Environment.TickCount);
@@ -91,6 +102,50 @@ namespace UniPlaySong.Audio
                 Marshal.Copy(_stereo, first * 2, _base + OffData, (frames - first) * 2);
             Thread.MemoryBarrier();
             Marshal.WriteInt32(_base, OffWritten, unchecked((int)(start + (uint)frames)));
+            return frames;
+        }
+
+        // On the audio thread, after the block: the frame it ended at, the song and where the song was then. The stamp is
+        // written whole before the count moves, so the renderer reads only finished ones.
+        internal void Stamp(uint frame, uint song, double seconds)
+        {
+            uint n = (uint)Marshal.ReadInt32(_base, OffSong + SongOffStamps);
+            int at = OffSong + SongOffStamp + (int)(n % Stamps) * StampSize;
+            Marshal.WriteInt32(_base, at, unchecked((int)frame));
+            Marshal.WriteInt32(_base, at + 4, unchecked((int)song));
+            Marshal.WriteInt64(_base, at + 8, BitConverter.DoubleToInt64Bits(seconds));
+            Thread.MemoryBarrier();
+            Marshal.WriteInt32(_base, OffSong + SongOffStamps, unchecked((int)(n + 1)));
+        }
+
+        private readonly object _requestGate = new object();
+
+        // The song analysis to use: the song it's for, its file, and the song as mono 48 kHz float to analyse into that
+        // file when it isn't there yet (null when it is). Between two seq bumps (odd while writing), so the renderer
+        // never takes half of one. Any thread.
+        public void PublishSong(uint song, string analysisPath, string pcmPath, long sourceBytes, long sourceTime)
+        {
+            lock (_requestGate)
+            {
+                int seq = Marshal.ReadInt32(_base, OffSong + SongOffSeq);
+                Marshal.WriteInt32(_base, OffSong + SongOffSeq, seq + 1);
+                Thread.MemoryBarrier();
+                Marshal.WriteInt32(_base, OffSong + SongOffSong, unchecked((int)song));
+                Marshal.WriteInt64(_base, OffSong + SongOffBytes, sourceBytes);
+                Marshal.WriteInt64(_base, OffSong + SongOffTime, sourceTime);
+                WritePath(OffSong + SongOffAnalysis, analysisPath);
+                WritePath(OffSong + SongOffPcm, pcmPath);
+                Thread.MemoryBarrier();
+                Marshal.WriteInt32(_base, OffSong + SongOffSeq, seq + 2);
+            }
+        }
+
+        // UTF-16, 0-terminated; null or a path too long for the field is written empty.
+        private void WritePath(int offset, string path)
+        {
+            if (path == null || path.Length >= PathChars) path = string.Empty;
+            for (int i = 0; i < path.Length; i++) Marshal.WriteInt16(_base, offset + i * 2, (short)path[i]);
+            Marshal.WriteInt16(_base, offset + path.Length * 2, 0);
         }
 
         // Anything above -80 dBFS.

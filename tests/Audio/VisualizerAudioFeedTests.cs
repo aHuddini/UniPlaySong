@@ -48,6 +48,41 @@ namespace UniPlaySong.Tests.Audio
             }
         }
 
+        // The song block after the audio (visualizer_shared.h, VisSong): a stamp lands at its slot before the count
+        // moves, and a request is written whole between two seq bumps (even once done).
+        [Test]
+        public void Stamp_AndSongRequest_LandWhereTheRendererReadsThem()
+        {
+            string name = NewName();
+            using (var feed = VisualizerAudioFeed.Open(name))
+            using (var map = MemoryMappedFile.OpenExisting(name))
+            using (var view = map.CreateViewAccessor())
+            {
+                int song = VisualizerAudioFeed.OffSong;
+                Assert.AreEqual(VisualizerAudioFeed.SongMagic, view.ReadUInt32(song));
+
+                for (uint i = 0; i < VisualizerAudioFeed.Stamps + 1; i++) feed.Stamp(1000 + i, 7, 1.5 + i);
+                Assert.AreEqual((uint)VisualizerAudioFeed.Stamps + 1, view.ReadUInt32(song + VisualizerAudioFeed.SongOffStamps));
+                int slot0 = song + VisualizerAudioFeed.SongOffStamp;   // the 65th stamp wrapped to slot 0
+                Assert.AreEqual(1000u + VisualizerAudioFeed.Stamps, view.ReadUInt32(slot0));
+                Assert.AreEqual(7u, view.ReadUInt32(slot0 + 4));
+                Assert.AreEqual(1.5 + VisualizerAudioFeed.Stamps, view.ReadDouble(slot0 + 8));
+
+                feed.PublishSong(42, @"C:\a\VisualAnalysis\x.mp3.vab", @"C:\t\x.f32", 1234, 5678);
+                Assert.AreEqual(2u, view.ReadUInt32(song + VisualizerAudioFeed.SongOffSeq), "seq ends even");
+                Assert.AreEqual(42u, view.ReadUInt32(song + VisualizerAudioFeed.SongOffSong));
+                Assert.AreEqual(1234L, view.ReadInt64(song + VisualizerAudioFeed.SongOffBytes));
+                Assert.AreEqual(5678L, view.ReadInt64(song + VisualizerAudioFeed.SongOffTime));
+                string Read(int at) { var s = new System.Text.StringBuilder(); for (int i = 0; ; i++) { char c = view.ReadChar(at + i * 2); if (c == 0) return s.ToString(); s.Append(c); } }
+                Assert.AreEqual(@"C:\a\VisualAnalysis\x.mp3.vab", Read(song + VisualizerAudioFeed.SongOffAnalysis));
+                Assert.AreEqual(@"C:\t\x.f32", Read(song + VisualizerAudioFeed.SongOffPcm));
+
+                feed.PublishSong(43, @"C:\a\y.vab", null, 1, 2);   // the file is ready: no samples to analyse
+                Assert.AreEqual(4u, view.ReadUInt32(song + VisualizerAudioFeed.SongOffSeq));
+                Assert.AreEqual(string.Empty, Read(song + VisualizerAudioFeed.SongOffPcm));
+            }
+        }
+
         [Test]
         public void Interleave_MonoIsDoubled_ExtraChannelsAreDropped()
         {

@@ -25,7 +25,8 @@ typedef struct VisFrames
     uint64_t gpuHandles[VIS_BUFFERS];
     // Written after a buffer is complete: the index, then the frame counter (the reader reads the counter first).
     volatile int32_t latest;
-    int32_t pad0;
+    // The Jukebox Fountain, each frame: 0 reacting live, 1 the song is being analysed, 2 following the analysed song.
+    volatile int32_t songState;
     volatile int64_t frame;
     // QueryPerformanceCounter when each buffer was finished (system-wide clock, for measuring delay).
     volatile int64_t producedQpc[VIS_BUFFERS];
@@ -61,3 +62,39 @@ typedef struct VisAudio
 #pragma pack(pop)
 
 #define VIS_AUDIO_BYTES (VIS_AUDIO_DATA_OFFSET + VIS_AUDIO_CAPACITY * 2 * sizeof(float))
+
+// ---- the song: UniPlaySong -> renderer, after the audio in the same mapping ---------------------------------------
+// For the Jukebox Fountain (fountain.h), which follows the song's beats and sections. Two parts:
+//   stamps: the audio thread stamps each block it hands over with where the song was when the block ended (the
+//     reader's position, so seeks, pauses, crossfades and the slowed-down effect all stay right); the renderer reads
+//     the song's time at `played` from the stamps around it.
+//   request: the song the analysis is for, where its analysis file is (or goes), and - when that file isn't there
+//     yet - the song as mono 48 kHz float for the renderer to analyse into it (analysis.h). A seqlock: odd while
+//     UniPlaySong writes it, so the renderer never takes half of one.
+#define VIS_SONG_MAGIC 0x31474E53u     /* "SNG1" */
+#define VIS_STAMPS 64                  /* ~10 s of 150 ms blocks */
+#define VIS_PATH_CHARS 260
+#define VIS_ANALYSIS_VERSION 2         /* analysis.h's file format and results; a change re-analyses every song */
+
+#pragma pack(push, 8)
+typedef struct VisStamp
+{
+    uint32_t frame;   // the block ended at this frame (the audio ring's count, as `played`)
+    uint32_t song;    // which song: an id per song the player opens, 0 = not a song file (no analysis)
+    double seconds;   // where the song was then, < 0 = unknown
+} VisStamp;
+typedef struct VisSong
+{
+    uint32_t magic;
+    volatile uint32_t stamps;          // stamps written in total; stamp n at n % VIS_STAMPS (the audio thread)
+    volatile uint32_t seq;             // the request's version: odd while UniPlaySong writes it (the UI thread)
+    uint32_t song;                     // the song the request is for (0 = none)
+    int64_t sourceBytes, sourceTime;   // the song file's size and last write (FILETIME), recorded in its analysis
+    VisStamp stamp[VIS_STAMPS];
+    uint16_t analysis[VIS_PATH_CHARS]; // the analysis file, UTF-16, 0-terminated
+    uint16_t pcm[VIS_PATH_CHARS];      // the song to analyse into it (mono 48 kHz float), empty when the file is ready
+} VisSong;
+#pragma pack(pop)
+
+#define VIS_SONG_OFFSET VIS_AUDIO_BYTES
+#define VIS_AUDIO_MAPPING (VIS_SONG_OFFSET + sizeof(VisSong))
