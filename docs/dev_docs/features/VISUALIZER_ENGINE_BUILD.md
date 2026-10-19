@@ -250,13 +250,17 @@ The droplet style is inspired by Tekken 8's music jukebox visualizer - "T8" in t
 | `drums_vs_stems.mjs`, `chords_vs_stems.mjs`, `hits_vs_stems.mjs` | in-mix detection against Demucs stems from `C:\Projects\audiostemtool` (dev-time only, nothing ships) |
 
 Renderer env for the bench mode: `VIS_ANALYZE=1` (analyse the PCM, through a `.vab`), `VIS_FRAMES=n`,
-`VIS_ENGINE_DUMP=<file>`, `VIS_PROFILE=1`, `VIS_DEBUG=1`.
+`VIS_ENGINE_DUMP=<file>`, `VIS_PROFILE=1`, `VIS_DEBUG=1`, `VIS_INTEROP=0` (force the copy path, to compare),
+`VIS_DUMP_D3D=1` (read the dumped frame through Direct3D, as the bridge does).
 
 ## Known limits and next steps
 
-- **The frame still crosses the CPU:** GL readback + D3D11 upload, ~2.6 ms at 1728×712 and ~4 ms at 2560×1054 (the
-  keying moved to the GPU). Next: render straight into the shared texture through `WGL_NV_DX_interop2`, keeping this
-  path as the fallback.
+- **Zero-copy hand-off** (done): the key pass draws straight into the shared D3D11 textures through
+  `WGL_NV_DX_interop2` - locked for GL while it draws, finished before it's unlocked and announced. At 2560×988 on an
+  Arc 140V the hand-off went from 4.52 ms (GL readback 3.72 + D3D11 upload 0.80) to 1.38 ms, the p95 frame from 17.4 to
+  12.5 ms. Frames are pixel-identical to the copy path, read through Direct3D as the bridge sees them. The copy path
+  stays as the fallback (extension missing, a texture that won't register, a failed lock); `VisFrames.transport` says
+  which ran, and the debug log records it (`[Visualizer] Frames by zero-copy (GPU only)` / `copy (through the CPU)`).
 - One element at a time (one bridge device).
 - No device-loss handling yet beyond D3DImage's own front-buffer check.
 - Spotify: visualized only when Spotify's audio already runs through UPS (Spotify Live Effects or the spectrum

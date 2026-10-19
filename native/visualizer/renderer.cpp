@@ -137,8 +137,9 @@ struct KeyPass
         glGenVertexArrays(1, &vao);
     }
 
-    // projectM's finished frame (framebuffer 0) -> out, w*h BGRA, top row first.
-    void Run(int w, int h, uint8_t* out)
+    // projectM's finished frame (framebuffer 0) -> out, w*h BGRA, top row first. With a target framebuffer (zero-copy:
+    // a shared D3D11 texture) it draws there instead, and reads back only when out is given.
+    void Run(int w, int h, uint8_t* out, GLuint target = 0)
     {
         GLint active, tex, program, array, view[4];
         glGetIntegerv(GL_ACTIVE_TEXTURE, &active);
@@ -156,12 +157,12 @@ struct KeyPass
         glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
         glBindTexture(GL_TEXTURE_2D, src);
         glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, w, h);
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        glBindFramebuffer(GL_FRAMEBUFFER, target ? target : fbo);
         glViewport(0, 0, w, h);
         glUseProgram(prog);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 3);
-        glReadPixels(0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, out);
+        if (out) glReadPixels(0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, out);
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glBindVertexArray(array);
@@ -170,6 +171,48 @@ struct KeyPass
         glActiveTexture(active);
         glViewport(view[0], view[1], view[2], view[3]);
         for (int i = 0; i < 4; i++) if (was[i]) glEnable(caps[i]);
+    }
+};
+
+// ---- zero-copy: the key pass draws straight into the shared D3D11 textures -----------------------------------------
+// WGL_NV_DX_interop2 lets OpenGL render into a Direct3D 11 texture. Without it every frame went GPU -> CPU (glReadPixels)
+// -> GPU (UpdateSubresource): ~2.6 ms at 1728x712, ~4 ms at 2560x1054. The rows come out the same either way: GL's row 0
+// lands in the texture's first row, which Direct3D shows at the top - where the readback put it too. When the extension
+// is missing or a texture won't register, the copy path stays.
+struct Interop
+{
+    HANDLE dev = nullptr, obj[VIS_BUFFERS] = {};
+    GLuint tex[VIS_BUFFERS] = {}, fbo[VIS_BUFFERS] = {};
+    bool on = false;
+
+    bool Open(ID3D11Device* d3d, ID3D11Texture2D* const* shared)
+    {
+        if (!WGLEW_NV_DX_interop2 || !wglDXOpenDeviceNV) return false;
+        dev = wglDXOpenDeviceNV(d3d);
+        if (!dev) return false;
+        glGenTextures(VIS_BUFFERS, tex);
+        glGenFramebuffers(VIS_BUFFERS, fbo);
+        for (int i = 0; i < VIS_BUFFERS; i++)
+        {
+            obj[i] = wglDXRegisterObjectNV(dev, shared[i], tex[i], GL_TEXTURE_2D, WGL_ACCESS_WRITE_DISCARD_NV);
+            if (!obj[i] || !wglDXLockObjectsNV(dev, 1, &obj[i])) { Close(); return false; }
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo[i]);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex[i], 0);
+            const bool complete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            wglDXUnlockObjectsNV(dev, 1, &obj[i]);
+            if (!complete) { Close(); return false; }
+        }
+        return on = true;
+    }
+    void Close()
+    {
+        for (int i = 0; i < VIS_BUFFERS; i++) if (obj[i]) { wglDXUnregisterObjectNV(dev, obj[i]); obj[i] = nullptr; }
+        if (fbo[0]) glDeleteFramebuffers(VIS_BUFFERS, fbo);
+        if (tex[0]) glDeleteTextures(VIS_BUFFERS, tex);
+        std::memset(fbo, 0, sizeof(fbo)); std::memset(tex, 0, sizeof(tex));
+        if (dev) wglDXCloseDeviceNV(dev);
+        dev = nullptr; on = false;
     }
 };
 
@@ -481,6 +524,10 @@ int main(int argc, char** argv)
     }
     KeyPass key;
     key.Create(w, h);
+    Interop interop;
+    if (const char* force = std::getenv("VIS_INTEROP"); !(force && force[0] == '0')) interop.Open(dev, tex);
+    hdr->transport = interop.on ? 2 : 1;
+    std::printf("frames: %s\n", interop.on ? "zero-copy (WGL_NV_DX_interop2)" : "copy (readback + upload)");
     std::fflush(stdout);
 
     AudioRing ring;
@@ -618,10 +665,24 @@ int main(int argc, char** argv)
         glFinish();
         if (native) fountainGl.Collect();
         QueryPerformanceCounter(&t1);
-        key.Run(w, h, out.data()); // the presets crush faint haze to black, for the keying
-        QueryPerformanceCounter(&t2);
-        d3d->UpdateSubresource(tex[i], 0, nullptr, out.data(), w * 4, 0);
-        d3d->Flush();
+        // the presets crush faint haze to black, for the keying
+        if (interop.on && wglDXLockObjectsNV(interop.dev, 1, &interop.obj[i]))
+        {
+            // drawn straight into the shared texture; finished before it's unlocked and announced, so the bridge in
+            // Playnite never reads a frame still being drawn
+            key.Run(w, h, nullptr, interop.fbo[i]);
+            glFinish();
+            wglDXUnlockObjectsNV(interop.dev, 1, &interop.obj[i]);
+            QueryPerformanceCounter(&t2);
+            d3d->Flush();
+        }
+        else
+        {
+            key.Run(w, h, out.data());
+            QueryPerformanceCounter(&t2);
+            d3d->UpdateSubresource(tex[i], 0, nullptr, out.data(), w * 4, 0);
+            d3d->Flush();
+        }
         QueryPerformanceCounter(&t3);
 
         hdr->producedQpc[i] = t3.QuadPart;
@@ -634,13 +695,46 @@ int main(int argc, char** argv)
 
     if (bench)
     {
-        if (const char* dump = std::getenv("VIS_DUMP")) WriteBmp(dump, out, w, h);
+        if (const char* dump = std::getenv("VIS_DUMP"))
+        {
+            // VIS_DUMP_D3D=1: read the last frame through Direct3D, as the bridge in Playnite sees the shared texture
+            // (checks the zero-copy path's row order against the copy path's)
+            if (std::getenv("VIS_DUMP_D3D") && frame > 0)
+            {
+                const int last = (int)((frame - 1) % VIS_BUFFERS);
+                D3D11_TEXTURE2D_DESC d; tex[last]->GetDesc(&d);
+                d.Usage = D3D11_USAGE_STAGING; d.BindFlags = 0; d.CPUAccessFlags = D3D11_CPU_ACCESS_READ; d.MiscFlags = 0;
+                ID3D11Texture2D* staging = nullptr;
+                if (SUCCEEDED(dev->CreateTexture2D(&d, nullptr, &staging)))
+                {
+                    d3d->CopyResource(staging, tex[last]);
+                    D3D11_MAPPED_SUBRESOURCE m;
+                    if (SUCCEEDED(d3d->Map(staging, 0, D3D11_MAP_READ, 0, &m)))
+                    {
+                        for (int y = 0; y < h; y++) std::memcpy(out.data() + (size_t)y * w * 4, (const uint8_t*)m.pData + (size_t)y * m.RowPitch, (size_t)w * 4);
+                        d3d->Unmap(staging, 0);
+                    }
+                    staging->Release();
+                }
+            }
+            else if (interop.on && frame > 0)
+            {
+                const int last = (int)((frame - 1) % VIS_BUFFERS);
+                wglDXLockObjectsNV(interop.dev, 1, &interop.obj[last]);
+                glBindFramebuffer(GL_FRAMEBUFFER, interop.fbo[last]);
+                glReadPixels(0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, out.data());
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                wglDXUnlockObjectsNV(interop.dev, 1, &interop.obj[last]);
+            }
+            WriteBmp(dump, out, w, h);
+        }
         QueryPerformanceCounter(&t3);
         double secs = Ms(start, t3, freq) / 1000.0;
         if (frame > 0)
         {
             std::sort(totals.begin(), totals.end());
-            std::printf("frames %lld in %.1f s (%.1f fps); per frame: render %.2f ms, key+readback %.2f ms, upload %.2f ms; p95 total %.2f ms\n",
+            std::printf("frames %lld in %.1f s (%.1f fps); per frame: render %.2f ms, key+readback %.2f ms, upload %.2f ms; p95 total %.2f ms\n"
+                        "(zero-copy: \"key+readback\" is the key pass drawn into the texture and finished, \"upload\" the flush)\n",
                         (long long)frame, secs, frame / secs, sumRender / frame, sumRead / frame, sumUpload / frame,
                         totals[totals.size() * 95 / 100]);
         }
@@ -650,6 +744,7 @@ int main(int argc, char** argv)
     if (fountainGl.profiled)
         std::printf("fountain GPU per frame: scene %.2f ms, blur pyramid %.2f ms, composite %.2f ms\n", fountainGl.passMs[0] / fountainGl.profiled,
                     fountainGl.passMs[1] / fountainGl.profiled, fountainGl.passMs[2] / fountainGl.profiled);
+    interop.Close();
     if (pm) projectm_destroy(pm);
     hdr->magic = 0;
     return 0;

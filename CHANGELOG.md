@@ -12,6 +12,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added the Jukebox Fountain, a droplet style inspired by Tekken 8's music jukebox visualizer ("T8" in the bench): a native port of the bench's engine and shaders, with the bench's "Your tune #6" look
 - Added whole-song analysis in the renderer: beats, sections, drops, pads, melody, chords, key and distance from home, bit-exact with the bench, cached once per song as `VisualAnalysis\<song>.vab`
 - Added live hi-hat and snare reactions from per-band transient strength (0.82 and 0.57 correlation with Demucs drum stems); kicks follow the beat grid, since low-band detection scored 0.29 under a bass line
+- Added zero-copy frame hand-off: the renderer draws straight into the shared textures (`WGL_NV_DX_interop2`), cutting the hand-off at 2560×988 from 4.5 to 1.4 ms with identical frames; the GPU-to-CPU copy remains the fallback
 - Added a song-state badge to the demo theme (live, analysing, following the song), from the control's new `SongState` property
 
 ### Fixed

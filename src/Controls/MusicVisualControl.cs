@@ -322,6 +322,7 @@ namespace UniPlaySong.Controls
             }
             long frame = _view.ReadInt64(OffFrame);
             if (frame == _lastFrame || frame <= 0 || !_d3d.IsFrontBufferAvailable) return;
+            if (_lastFrame == 0) _log?.Debug($"[Visualizer] Frames by {(_view.ReadInt32(OffTransport) == 2 ? "zero-copy (GPU only)" : "copy (through the CPU)")}");
             _lastFrame = frame;
             _d3d.Lock();
             vt_copy(_view.ReadInt32(OffLatest));
@@ -390,7 +391,7 @@ namespace UniPlaySong.Controls
         [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] internal static extern int vt_copy(int index);
         [DllImport(Dll, CallingConvention = CallingConvention.Cdecl)] internal static extern void vt_shutdown();
 
-        internal const int OffMagic = 0, OffWidth = 4, OffHeight = 8, OffHandles = 16, OffLatest = 40, OffSongState = 44, OffFrame = 48, OffStop = 80;
+        internal const int OffMagic = 0, OffWidth = 4, OffHeight = 8, OffHandles = 16, OffLatest = 40, OffSongState = 44, OffFrame = 48, OffStop = 80, OffTransport = 84;
         internal const uint FramesMagic = 0x31585456u; // "VTX1"
 
         // DllImport by name binds to an already-loaded module; the bridge lives in the Visualizer subfolder, which the

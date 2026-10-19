@@ -31,7 +31,9 @@ typedef struct VisFrames
     // QueryPerformanceCounter when each buffer was finished (system-wide clock, for measuring delay).
     volatile int64_t producedQpc[VIS_BUFFERS];
     volatile int32_t stop; // UniPlaySong sets 1 to end the renderer
-    int32_t pad1;
+    // How frames reach the textures, set before the first frame: 1 copy (GL readback + D3D11 upload), 2 zero-copy (GL
+    // draws into them through WGL_NV_DX_interop2).
+    int32_t transport;
 } VisFrames;
 #pragma pack(pop)
 
