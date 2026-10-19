@@ -7,7 +7,7 @@
 // VIS_ANALYZE=1), so the comparison covers the beat throws, sections, drops and the layers (melody, pads, harmony) too.
 import fs from "fs";
 const html = fs.readFileSync("C:/Projects/UniPSound/UniPlaySong/native/visualizer/bench/fountain-bench.html", "utf8").split("\r\n").join("\n");
-const spec = JSON.parse(fs.readFileSync("C:/Projects/UniPSound/UniPlaySong/native/visualizer/bench/standard-t8.json", "utf8"));
+const spec = JSON.parse(fs.readFileSync("C:/Projects/UniPSound/UniPlaySong/native/visualizer/bench/standard-tune6.json", "utf8"));   // the shipped look, as the renderer's style file
 const cut = (a, b) => html.slice(html.indexOf(a), html.indexOf(b));
 const params = cut("const PARAMS = [", "const P = {};");
 const fft = cut("function makeFFT", "const smooth =");
@@ -24,7 +24,8 @@ const factory = new Function("MOCK", `
   let P = {}; const Q = () => P;
   ${peak} ${eng}
   return { engine, setP: o => { P = {}; for (const p of PARAMS) P[p[0]] = p[3]; Object.assign(P, o); }, colA, colB, colC,
-    setSong: (m, b, l) => { songMap = m; beatInfo = b; layers = l; layersOf = buffer; } };`);
+    setSong: (m, b, l) => { songMap = m; beatInfo = b; layers = l; layersOf = buffer; },
+    scal: () => [padE, padG, harmE, modeE, awayE, chordHit, chordG, HIT_BANDS[0].hit, HIT_BANDS[1].hit] };`);
 const args = process.argv.slice(2), withAnalysis = args.includes("--analysis");
 const [file, dumpFile, nArg] = args.filter(a => a !== "--analysis");
 const b = fs.readFileSync(file), x = new Float32Array(b.buffer, b.byteOffset, b.length / 4), sr = 48000, n = 1024;
@@ -47,10 +48,11 @@ if (withAnalysis) {
   E.setSong(map, beats, layers);
   console.log(`with the song's analysis: ${beats.beats.length} beats, ${map.drops.length} drops, ${layers.sections.length} sections`);
 }
-const dump = fs.readFileSync(dumpFile), d = new Float32Array(dump.buffer, dump.byteOffset, dump.length / 4), per = 96 * 12;
+const SCAL = ["padE", "padG", "harmE", "modeE", "awayE", "chordHit", "chordG", "hitMid", "hitHigh"];
+const dump = fs.readFileSync(dumpFile), d = new Float32Array(dump.buffer, dump.byteOffset, dump.length / 4), per = 96 * 12 + SCAL.length;
 const frames = Math.min(+(nArg || 600), d.length / per);
 const names = ["ez", "kc", "slow", "rate", "fl", "flv", "heatC", "settleC", "melC", "bandPos", "reach"];
-const worst = new Float64Array(11), at = new Array(11);
+const worst = new Float64Array(11), at = new Array(11), sw = new Float64Array(SCAL.length), sat = new Array(SCAL.length);
 for (let k = 0; k < frames; k++) {
   end = (k + 1) * 800; mock.actx.currentTime = end / sr;
   E.engine(1 / 60, (k + 1) / 60);
@@ -62,6 +64,10 @@ for (let k = 0; k < frames; k++) {
       if (e > worst[q]) { worst[q] = e; at[q] = `frame ${k} col ${c}: bench ${a.toFixed(5)} renderer ${r.toFixed(5)}`; }
     }
   }
+  const sv = E.scal();
+  for (let q = 0; q < SCAL.length; q++) { const r = d[k * per + 96 * 12 + q], e = Math.abs(sv[q] - r); if (e > sw[q]) { sw[q] = e; sat[q] = `frame ${k}: bench ${sv[q].toFixed(5)} renderer ${r.toFixed(5)}`; } }
 }
 console.log(`${frames} frames compared (${(frames / 60).toFixed(1)} s of the song), largest difference per value:`);
 for (let q = 0; q < 11; q++) console.log(`  ${names[q].padEnd(8)} ${worst[q].toExponential(2)}  ${at[q] || ""}`);
+console.log("song uniforms (scalars):");
+for (let q = 0; q < SCAL.length; q++) console.log(`  ${SCAL[q].padEnd(8)} ${sw[q].toExponential(2)}  ${sat[q] || ""}`);

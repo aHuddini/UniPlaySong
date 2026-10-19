@@ -151,8 +151,13 @@ device pixels, so at 200% display scaling a 2560-px frame isn't shown at twice i
 This is deliberate. A round of rendering Fountain smaller and stretching it to fill the element (0.6 scale, 1728 px
 over 2880) looked blurry all over. Filling the width also made every column wider than the page was laid out for.
 
-Smaller renders, test variants only, are stretched into the same box. Their width is a multiple of 64: at ~1700 px
-wide, readback took 2.5–3.2 ms against ~1.7 ms at 1664 or 1728, because odd widths fall off the driver's fast path.
+**Device pixels are measured through every transform, not DPI alone.** Playnite Fullscreen shows its whole view through
+a `Viewbox` (laid out 1080 units tall, stretched to the window), which `CompositionTarget.TransformToDevice` doesn't
+include: sizing by DPI drew a 2560 px frame into 2133 px on a 2880×1800 screen at 200%. `MusicVisualControl.ToDevice`
+walks `TransformToAncestor` to the root instead. Layout rounding is **off** on the image (it rounds to the DPI grid, not
+the pixel grid: a 988 px frame came out 988.33) and a `TranslateTransform` puts its corner on a whole pixel each frame.
+The debug log records where it lands (`[Visualizer] Shown at x,y, WxH device px for a WxH frame`) - equal sizes and
+whole-pixel corners mean 1:1. Checked with a 1 px test pattern against a screen capture: 0 pixels off.
 
 Costs measured at 1080p on an Intel Arc 140V (render / whole frame, p95): Glow Bars 3.8 / 11.1 ms; Halo Ring 5.4 /
 13.1; LED Bars (per-pixel) 6.5 / 14.4; Aurora 6.8 / 14.4; Spark Bars 9.0 / 16.7. **Shapes cost ~6 µs each on the
@@ -204,6 +209,46 @@ Renders unpaced for the given seconds, touches no named objects (so it can't dis
 average render / key+readback / upload times and the p95 frame. `VIS_PCM=<file>` feeds raw 48 kHz stereo float (make one
 with `ffmpeg -i song.mp3 -f f32le -ac 2 -ar 48000 test.pcm`), 800 frames per rendered frame; `VIS_DUMP=<file.bmp>`
 saves the last frame composited over grey, as a theme would show it.
+
+## Jukebox Fountain — the native style
+
+The default style is drawn natively, not by projectM: `presets/UPS - Jukebox Fountain.vis` (a `.vis` preset switches
+the renderer to native mode) runs [`native/visualizer/fountain.h`](../../../native/visualizer/fountain.h). It is a port
+of the WebGL bench [`native/visualizer/bench/fountain-bench.html`](../../../native/visualizer/bench/fountain-bench.html):
+the level engine line for line, and the bench's own shaders lifted as they are. **Parity with the bench is the rule** -
+change the bench, regenerate, port engine changes to `fountain.h`.
+
+- **The look:** the bench's **Your tune #6**, frozen in `bench/standard-tune6.json`. `node bench/tools/export_t8.mjs`
+  writes the `.vis` from it (parameters, palette uniforms, the three shaders); copy it to `src/Audio/Native/Visualizer/presets/`.
+  The bench's other looks (Your tune #4/#5, the T8 standard - `standard-t8.json` - Showcase, Spectrum) are kept as
+  reference; so are the MilkDrop test variants in `native/visualizer/presets/reference/`.
+- **Whole-song analysis** ([`analysis.h`](../../../native/visualizer/analysis.h)), in the 64-bit renderer: the song map
+  (sections, build-up tension, drops), a librosa-style beat tracker (tempo changes, beat strengths, the bar's first
+  beat), and the layers - held pads, melody, harmony, lettered sections, and per beat the chord (24 triads with
+  overtone templates, Viterbi-smoothed, "none" on drum-only beats), how major or minor it sounds, the key, and the
+  distance from home on the circle of fifths. UniPlaySong decodes a new song to mono 48 kHz and hands it over
+  ([`VisualizerSongAnalysis.cs`](../../../src/Audio/VisualizerSongAnalysis.cs)); the result is cached as
+  `<game music folder>\VisualAnalysis\<song>.vab` (header + `MAP `/`BEAT`/`LAYR`/`CHRD` chunks). `VIS_ANALYSIS_VERSION`
+  (with `AnalysisVersion` in C#) re-analyses every song once when the format or the results change. `VisFrames.songState`
+  tells a theme whether it's live, analysing or following the song.
+- **Live, no analysis needed:** the spectrum-driven engine, and the hi-hat and snare reactions - the high (6-16 kHz)
+  and mid (1.5-5 kHz) bands' transient strength over its own running mean, eased so colour never snaps. Against Demucs
+  drum stems these follow the drums at 0.82 (high) and 0.57 (mid) correlation; the low band only manages 0.29 under a
+  bass line, so kicks come from the beat grid, not detection.
+- **Dots keep the bench's pixel size** past 2050 px wide (`min(1, 2050 / width)` on the dot and colour fringe): they
+  scaled with the frame, so Playnite's 2560 px frame read 25% softer than the bench.
+
+**Parity tools** (`bench/tools/`, run with Node against a decoded song):
+
+| Tool | Checks |
+|---|---|
+| `analysis_parity.mjs <mono.f32> <json>` | `UniPlaySongVisualizer.exe --analyze` against the bench's analysis: map, beats, layers, chords, key (0 difference on Troy, Doom, Stalker) |
+| `engine_parity.mjs <mono.f32> <dump> [frames] --analysis` | the renderer's `VIS_ENGINE_DUMP` (per-column state + the song uniforms' scalars) against the bench engine, through a real `.vab` (~1e-7) |
+| `chords_check.mjs` | chords and key on synthesised progressions with known answers; drums-only gives none |
+| `drums_vs_stems.mjs`, `chords_vs_stems.mjs`, `hits_vs_stems.mjs` | in-mix detection against Demucs stems from `C:\Projects\audiostemtool` (dev-time only, nothing ships) |
+
+Renderer env for the bench mode: `VIS_ANALYZE=1` (analyse the PCM, through a `.vab`), `VIS_FRAMES=n`,
+`VIS_ENGINE_DUMP=<file>`, `VIS_PROFILE=1`, `VIS_DEBUG=1`.
 
 ## Known limits and next steps
 

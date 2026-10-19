@@ -2,15 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -50,7 +47,7 @@ namespace UniPlaySong.Controls
         };
         private readonly TranslateTransform _snap = new TranslateTransform();   // the image's sub-pixel nudge, see OnRendering
         private Vector _deviceScale = new Vector(1, 1);
-        private string _shownAt;   // TEST BUILD ONLY: the last "Shown at" logged
+        private string _shownAt;   // where the frame was last logged as shown (debug log)
         private readonly DispatcherTimer _resizeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
         private UniPlaySongSettings _subscribedTo;
         private Process _renderer;
@@ -68,24 +65,6 @@ namespace UniPlaySong.Controls
         private string _startedPreset;
         private Window _window;
 
-        // TEST BUILD ONLY - remove before committing. F9 / F8 step through Visualizer\presets\test\*.milk on the page,
-        // with the variant's name shown for a few seconds, so styles can be compared live.
-        private static readonly string TestFolder = Path.Combine(Folder, "presets", "test");
-        private static int _testIndex = -1;
-        private readonly TextBlock _testLabel = new TextBlock
-        {
-            Foreground = Brushes.White, Background = new SolidColorBrush(Color.FromArgb(170, 0, 0, 0)), FontSize = 26,
-            Padding = new Thickness(14, 6, 14, 6), Margin = new Thickness(24), Visibility = Visibility.Collapsed,
-            HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top
-        };
-        private readonly DispatcherTimer _testLabelTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
-        private Window _testWindow;
-        // In-scene tuning (TEST BUILD ONLY): per template, its parameters' current values; the one being adjusted.
-        private sealed class Tunable { public string Label, Token; public double Value, Default, Step, Min, Max; }
-        private static readonly Dictionary<string, List<Tunable>> _tuning = new Dictionary<string, List<Tunable>>();
-        private static Window _tuner;
-        private readonly DispatcherTimer _tuneTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(350) };
-
         // otherMusicFolder: where song analyses of music outside the game folders go (the Jukebox Fountain)
         public MusicVisualControl(ISettingsProvider settings, FileLogger log, string otherMusicFolder)
         {
@@ -97,10 +76,7 @@ namespace UniPlaySong.Controls
             _image.RenderTransform = _snap;
             var grid = new Grid();
             grid.Children.Add(_image);
-            grid.Children.Add(_testLabel);
             Content = grid;
-            _testLabelTimer.Tick += (s, e) => { _testLabelTimer.Stop(); _testLabel.Visibility = Visibility.Collapsed; };
-            _tuneTimer.Tick += (s, e) => { _tuneTimer.Stop(); if (_owner == this) { Stop(); Refresh(); } };
 
             // The renderer's frame size is fixed when it starts. When the element settles at another size (a page's text
             // loading, a resolution change), restart it so the frame matches again - the presets lay out around the
@@ -118,14 +94,10 @@ namespace UniPlaySong.Controls
             Loaded += (s, e) =>
             {
                 Subscribe();
-                _testWindow = Window.GetWindow(this);
-                if (_testWindow != null) _testWindow.PreviewKeyDown += OnTestKey;
                 Refresh();
             };
             Unloaded += (s, e) =>
             {
-                if (_testWindow != null) _testWindow.PreviewKeyDown -= OnTestKey;
-                _testWindow = null;
                 Unsubscribe();
                 Stop();
             };
@@ -149,7 +121,7 @@ namespace UniPlaySong.Controls
 
         // The chosen style's file: a MilkDrop preset made by native/visualizer/presets/make_presets.py, or the Jukebox
         // Fountain's style file, made by native/visualizer/bench/tools/export_t8.mjs.
-        private string PresetPath => TunedOrTest ?? Path.Combine(Folder, "presets", StyleFile(_settings?.Current?.MusicVisualizerStyle));
+        private string PresetPath => Path.Combine(Folder, "presets", StyleFile(_settings?.Current?.MusicVisualizerStyle));
 
         private static string StyleFile(MusicVisualizerStyle? style)
         {
@@ -159,168 +131,6 @@ namespace UniPlaySong.Controls
                 case MusicVisualizerStyle.Fountain: return "UPS - Fountain.milk";
                 default: return "UPS - Jukebox Fountain.vis";
             }
-        }
-
-        // Every style renders its box at full size. TEST BUILD ONLY: a variant's name can ask for less - "(2-3 res)" -
-        // drawn smaller and stretched into the same box.
-        private static double RenderScale => TestPreset?.Contains("(2-3 res)") == true ? 2.0 / 3 : 1.0;
-
-        // TEST BUILD ONLY (with the fields above).
-        private static string[] TestPresets =>
-            Directory.Exists(TestFolder) ? Directory.GetFiles(TestFolder, "*.milk").OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToArray() : new string[0];
-
-        private static string TestPreset
-        {
-            get
-            {
-                var files = TestPresets;
-                return _testIndex >= 0 && files.Length > 0 ? files[_testIndex % files.Length] : null;
-            }
-        }
-
-        // A test preset with a .tune sidecar is a template: what runs is its filled copy in _tuned\.
-        private static string TunedOrTest
-        {
-            get
-            {
-                var test = TestPreset;
-                var tune = Tuning(test);
-                return tune == null ? test : FillTemplate(test, tune);
-            }
-        }
-
-        // Label|TOKEN|default|step|min|max per line; loaded once per template, then kept as you change it.
-        private static List<Tunable> Tuning(string template)
-        {
-            if (template == null) return null;
-            if (_tuning.TryGetValue(template, out var known)) return known;
-            var sidecar = Path.ChangeExtension(template, ".tune");
-            if (!File.Exists(sidecar)) return null;
-            var list = new List<Tunable>();
-            foreach (var line in File.ReadAllLines(sidecar))
-            {
-                var p = line.Split('|');
-                if (p.Length < 6) continue;
-                double D(int i) => double.Parse(p[i], CultureInfo.InvariantCulture);
-                list.Add(new Tunable { Label = p[0], Token = p[1], Value = D(2), Default = D(2), Step = D(3), Min = D(4), Max = D(5) });
-            }
-            _tuning[template] = list;
-            return list;
-        }
-
-        private static string FillTemplate(string template, List<Tunable> tune)
-        {
-            var dir = Path.Combine(TestFolder, "_tuned");
-            Directory.CreateDirectory(dir);
-            var text = File.ReadAllText(template);
-            foreach (var t in tune) text = text.Replace("@" + t.Token + "@", t.Value.ToString("0.0#####", CultureInfo.InvariantCulture));
-            var path = Path.Combine(dir, Path.GetFileName(template));
-            File.WriteAllText(path, text);
-            File.WriteAllLines(Path.Combine(dir, "values.txt"), new[] { Path.GetFileNameWithoutExtension(template) }
-                .Concat(tune.Select(t => $"{t.Label} = {t.Value.ToString("0.0#####", CultureInfo.InvariantCulture)}   ({t.Token})")));
-            return path;
-        }
-
-        private static string Fmt(double v) => v.ToString("0.0#####", CultureInfo.InvariantCulture);
-
-        // A floating window with a slider per parameter; any change restarts the renderer with the new values after a
-        // short pause. Plain default control styles (an explicit empty Style), whatever the theme restyles.
-        private void ToggleTuner(string template, List<Tunable> tune)
-        {
-            if (_tuner != null) { _tuner.Close(); return; }
-            var white = Brushes.White;
-            var dim = new SolidColorBrush(Color.FromArgb(200, 255, 255, 255));
-            var rows = new StackPanel { Margin = new Thickness(16, 12, 16, 16) };
-            rows.Children.Add(new TextBlock { Text = Path.GetFileNameWithoutExtension(template), Foreground = white, FontSize = 15,
-                FontWeight = FontWeights.SemiBold, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) });
-            var sliders = new List<Slider>();
-            foreach (var t in tune)
-            {
-                var p = t;
-                var value = new TextBlock { Text = Fmt(p.Value), Foreground = white, Width = 70, TextAlignment = TextAlignment.Right,
-                    VerticalAlignment = VerticalAlignment.Center };
-                var slider = new Slider { Style = new Style(typeof(Slider)), Minimum = p.Min, Maximum = p.Max, Value = p.Value,
-                    SmallChange = p.Step, LargeChange = p.Step * 10, TickFrequency = p.Step, IsSnapToTickEnabled = true,
-                    VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0), Tag = p };
-                var reset = new Button { Style = new Style(typeof(Button)), Content = "Reset", Padding = new Thickness(6, 1, 6, 1),
-                    Margin = new Thickness(8, 0, 0, 0), ToolTip = "Back to " + Fmt(p.Default) };
-                slider.ValueChanged += (s, e) =>
-                {
-                    p.Value = Math.Round(slider.Value / p.Step) * p.Step;
-                    value.Text = Fmt(p.Value);
-                    _tuneTimer.Stop();
-                    _tuneTimer.Start();
-                };
-                reset.Click += (s, e) => slider.Value = p.Default;
-                sliders.Add(slider);
-                var line = new DockPanel();
-                DockPanel.SetDock(reset, Dock.Right);
-                DockPanel.SetDock(value, Dock.Right);
-                line.Children.Add(reset);
-                line.Children.Add(value);
-                line.Children.Add(slider);
-                rows.Children.Add(new TextBlock { Text = p.Label, Foreground = dim, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 2) });
-                rows.Children.Add(line);
-            }
-            var buttons = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 16, 0, 0) };
-            var resetAll = new Button { Style = new Style(typeof(Button)), Content = "Reset all", Padding = new Thickness(10, 3, 10, 3) };
-            resetAll.Click += (s, e) => { foreach (var sl in sliders) sl.Value = ((Tunable)sl.Tag).Default; };
-            var copy = new Button { Style = new Style(typeof(Button)), Content = "Copy values", Padding = new Thickness(10, 3, 10, 3),
-                Margin = new Thickness(8, 0, 0, 0) };
-            copy.Click += (s, e) =>
-            {
-                var file = Path.Combine(TestFolder, "_tuned", "values.txt");
-                if (File.Exists(file)) Clipboard.SetText(File.ReadAllText(file));
-            };
-            buttons.Children.Add(resetAll);
-            buttons.Children.Add(copy);
-            rows.Children.Add(buttons);
-            rows.Children.Add(new TextBlock { Text = "Changes apply about a third of a second after you let go. Values: Visualizer\\presets\\test\\_tuned\\values.txt",
-                Foreground = dim, FontSize = 11, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 10, 0, 0) });
-            _tuner = new Window
-            {
-                Title = "Visualizer tuner", Width = 480, Height = 820, Left = 40, Top = 40, Topmost = true, ShowInTaskbar = false,
-                WindowStyle = WindowStyle.ToolWindow, Background = new SolidColorBrush(Color.FromRgb(24, 24, 30)),
-                Content = new ScrollViewer { Content = rows, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }
-            };
-            if (_testWindow != null && _testWindow.IsLoaded) _tuner.Owner = _testWindow;
-            _tuner.Closed += (s, e) => _tuner = null;
-            _tuner.Show();
-        }
-
-        private void OnTestKey(object sender, KeyEventArgs e)
-        {
-            if (_owner != this) return;
-            var tune = Tuning(TestPreset);
-            if (tune != null && tune.Count > 0 && e.Key == Key.F6)
-            {
-                e.Handled = true;
-                ToggleTuner(TestPreset, tune);
-                return;
-            }
-            if (e.Key != Key.F9 && e.Key != Key.F8) return;
-            _tuner?.Close();
-            e.Handled = true;
-            var files = TestPresets;
-            if (files.Length == 0)
-            {
-                ShowTestLabel($"No test presets in {TestFolder}");
-                return;
-            }
-            int step = e.Key == Key.F9 ? 1 : -1;
-            _testIndex = _testIndex < 0 ? (step > 0 ? 0 : files.Length - 1) : (_testIndex + step + files.Length) % files.Length;
-            ShowTestLabel($"{Path.GetFileNameWithoutExtension(files[_testIndex])}   ({_testIndex + 1}/{files.Length}, F8/F9)"
-                + (Tuning(files[_testIndex]) != null ? "   - F6 opens the tuner" : ""));
-            _log?.Debug($"[Visualizer] Test preset {files[_testIndex]}");
-            Refresh();
-        }
-
-        private void ShowTestLabel(string text)
-        {
-            _testLabel.Text = text;
-            _testLabel.Visibility = Visibility.Visible;
-            _testLabelTimer.Stop();
-            _testLabelTimer.Start();
         }
 
         // Start or stop to match "on screen and switched on". Deferred to after layout, so the renderer can match the
@@ -411,13 +221,6 @@ namespace UniPlaySong.Controls
             _image.Width = bw / _deviceScale.X;
             _image.Height = bh / _deviceScale.Y;
             int w = bw, h = bh;
-            if (RenderScale < 1)
-            {
-                // A width that is a multiple of 64 stays on the driver's fast readback path (~1.7 ms at 1664 or 1728
-                // against 2.5-3.2 ms at ~1700).
-                w = Math.Max(64, (int)(bw * RenderScale) / 64 * 64);
-                h = (int)Math.Round(w * (double)bh / bw) & ~1;
-            }
 
             try
             {

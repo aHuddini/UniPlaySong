@@ -7,6 +7,7 @@ Packages:
     Changelog:
       - '[New Feature] Seek within songs: click or drag a music timeline, or tilt the controller''s right stick while one is on screen. Works with Spotify too.'
       - '[New Feature] For themes: skip-forward/back commands, a buttons-only player control and a turntable-style cover you turn to seek. See the Theme Integration Guide.'
+      - '[New Feature] Experimental: a music visualizer for themes. Its Jukebox Fountain learns each song''s beat, sections and chords, and sparkles with hi-hats and snares (Settings -> Experimental).'
   - Version: 1.8.10
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-10-06

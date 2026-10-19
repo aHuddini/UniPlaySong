@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <array>
 #include <limits>
 
 namespace analysis {
@@ -390,6 +391,11 @@ struct Layers
     std::vector<float> pad, melF, melS;
     std::vector<double> harm, clarity;
     std::vector<LayerSection> sections;
+    // per beat: the chord (root 0..11, +12 minor, -1 none), its match score, its direction on the circle of fifths,
+    // how major (1) or minor (-1) it sounds, how far from home (0..1); the key
+    std::vector<int8_t> chord;
+    std::vector<float> chordConf, chordAng, mode, away;
+    int keyRoot = 0, keyMinor = 0;
 };
 
 static Layers AnalyseLayers(const float* x, size_t len, double sr, const std::vector<double>& beats, int barPhase)
@@ -471,7 +477,8 @@ static Layers AnalyseLayers(const float* x, size_t len, double sr, const std::ve
     // per beat: the chroma over the beat (the median per note - a passing note doesn't count) on the circle of fifths:
     // its angle, and how clearly it points (0..1)
     std::vector<std::vector<float>> beatChroma;
-    std::vector<double> col;
+    std::vector<double> col, heldShare;
+    double songChroma[12] = {};
     for (int i = 0; i < nBeats; i++)
     {
         int a, b; span(i, &a, &b);
@@ -481,12 +488,110 @@ static Layers AnalyseLayers(const float* x, size_t len, double sr, const std::ve
             col.clear(); for (int t = a; t < b; t++) col.push_back(chroma[(size_t)t * 12 + q]);
             std::sort(col.begin(), col.end()); c[q] = col.empty() ? 0 : (float)col[col.size() >> 1];
         }
+        for (int q = 0; q < 12; q++) songChroma[q] += c[q];
+        // how much of the beat is held sound rather than hits (the HPSS share above 60 Hz)
+        { double hs = 0, ss = 0; for (int t = a; t < b; t++) for (int k = 0; k < nb; k++) { hs += H(t, k); ss += S[(size_t)t * nb + k]; } heldShare.push_back(ss > 0 ? hs / ss : 0); }
         double vx = 0, vy = 0, sum = 0, nn = 0;
         for (int q = 0; q < 12; q++) { const double ang = 2 * PI * ((q * 7) % 12) / 12; vx += c[q] * std::cos(ang); vy += c[q] * std::sin(ang); sum += c[q]; nn += (double)c[q] * c[q]; }
         r.harm.push_back(std::atan2(vy, vx)); r.clarity.push_back(sum > 0 ? std::min(1.0, 3 * std::hypot(vx, vy) / sum) : 0);
         const double norm = Or1(std::sqrt(nn));
         std::vector<float> u(12); for (int q = 0; q < 12; q++) u[q] = (float)(c[q] / norm);
         beatChroma.push_back(std::move(u));
+    }
+    // ---- chords: each beat's chroma (unit length) against the 24 major and minor triads, plus "no chord" at a fixed
+    // score; a beat that's nearly all hits gets none (its few notes can't tell). The templates carry each note's
+    // overtones (harmonics 1-6 falling 0.6x each - Gomez 2006). Viterbi over the beats: a change costs CH_SWITCH.
+    // chord: root 0..11 (C..B) major, +12 minor, -1 none
+    {
+        const double CH_NONE = 0.62, CH_SWITCH = 0.12, MODE_GAIN = 8; const int NS = 25;
+        auto fifthAng = [](int q) { return 2 * PI * ((q * 7) % 12) / 12; };
+        std::vector<std::array<float, 12>> tmpl;
+        for (int m = 0; m < 2; m++) for (int rt = 0; rt < 12; rt++)
+        {
+            std::array<float, 12> t{};
+            for (int p : { rt, rt + (m ? 3 : 4), rt + 7 })
+                for (int h = 1; h <= 6; h++) { const int ix = (p + (int)JsRound(12 * std::log2((double)h))) % 12; t[ix] = (float)(t[ix] + std::pow(0.6, h - 1)); }
+            double n2 = 0; for (int q = 0; q < 12; q++) n2 += (double)t[q] * t[q];
+            for (int q = 0; q < 12; q++) t[q] = (float)(t[q] / std::sqrt(n2));
+            tmpl.push_back(t);
+        }
+        std::vector<std::array<double, 25>> em(nBeats);
+        for (int i = 0; i < nBeats; i++)
+        {
+            const double hu = std::min(1.0, std::max(0.0, (heldShare[i] - 0.05) / 0.1)), held = hu * hu * (3 - 2 * hu);
+            for (int k = 0; k < 24; k++) { double d = 0; for (int q = 0; q < 12; q++) d += (double)beatChroma[i][q] * tmpl[k][q]; em[i][k] = d * held; }
+            em[i][24] = CH_NONE;
+        }
+        r.chord.assign(nBeats, -1); r.chordConf.assign(nBeats, 0); r.chordAng.assign(nBeats, 0); r.mode.assign(nBeats, 0);
+        if (nBeats)
+        {
+            std::array<double, 25> acc = em[0];
+            std::vector<std::array<int8_t, 25>> back;
+            for (int i = 1; i < nBeats; i++)
+            {
+                int bi = 0; for (int k = 1; k < NS; k++) if (acc[k] > acc[bi]) bi = k;
+                std::array<double, 25> nx; std::array<int8_t, 25> bk;
+                for (int k = 0; k < NS; k++)
+                {
+                    const double sw = acc[bi] - CH_SWITCH;
+                    if (acc[k] >= sw) { nx[k] = acc[k] + em[i][k]; bk[k] = (int8_t)k; } else { nx[k] = sw + em[i][k]; bk[k] = (int8_t)bi; }
+                }
+                acc = nx; back.push_back(bk);
+            }
+            std::vector<int> st(nBeats);
+            int k = 0; for (int j = 1; j < NS; j++) if (acc[j] > acc[k]) k = j;
+            st[nBeats - 1] = k;
+            for (int i = nBeats - 1; i > 0; i--) st[i - 1] = back[i - 1][st[i]];
+            for (int i = 0; i < nBeats; i++)
+            {
+                const int s = st[i];
+                r.chordConf[i] = s < 24 ? (float)em[i][s] : 0;
+                if (s < 24) r.mode[i] = (float)std::max(-1.0, std::min(1.0, (em[i][s % 12] - em[i][s % 12 + 12]) * MODE_GAIN));
+                // the chord's own direction on the circle of fifths, as harm measures a beat's notes
+                if (s < 24) { double cx = 0, cy = 0; for (int q = 0; q < 12; q++) { cx += tmpl[s][q] * std::cos(fifthAng(q)); cy += tmpl[s][q] * std::sin(fifthAng(q)); } r.chordAng[i] = (float)std::atan2(cy, cx); }
+                else r.chordAng[i] = (float)r.harm[i];
+                r.chord[i] = (int8_t)(s < 24 ? s : -1);
+            }
+        }
+        // the key: each of the 24 by how much of the song's chords it explains (a chord in the key 1, its home chord 2),
+        // plus half the Krumhansl-Kessler correlation of the song's summed chroma
+        static const double KK[2][12] = { { 6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88 },
+                                          { 6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17 } };
+        auto corr = [](const double* a, const double* bq)
+        {
+            double ma = 0, mb = 0; for (int q = 0; q < 12; q++) { ma += a[q] / 12; mb += bq[q] / 12; }
+            double n = 0, da = 0, db = 0; for (int q = 0; q < 12; q++) { n += (a[q] - ma) * (bq[q] - mb); da += (a[q] - ma) * (a[q] - ma); db += (bq[q] - mb) * (bq[q] - mb); }
+            return n / Or1(std::sqrt(da * db));
+        };
+        // the chords in a key, as { steps above its home note, minor }: major I ii iii IV V vi; minor i III iv v V VI VII
+        static const int inMaj[6][2] = { { 0, 0 }, { 2, 1 }, { 4, 1 }, { 5, 0 }, { 7, 0 }, { 9, 1 } };
+        static const int inMin[7][2] = { { 0, 1 }, { 3, 0 }, { 5, 1 }, { 7, 1 }, { 7, 0 }, { 8, 0 }, { 10, 0 } };
+        std::vector<int> chordBeats; for (int8_t c : r.chord) if (c >= 0) chordBeats.push_back(c);
+        double best = -std::numeric_limits<double>::infinity();
+        for (int m = 0; m < 2; m++) for (int rt = 0; rt < 12; rt++)
+        {
+            double fit = 0;
+            for (int c : chordBeats)
+            {
+                const int stp = (c % 12 - rt + 12) % 12, mi = c >= 12 ? 1 : 0;
+                const int (*list)[2] = m ? inMin : inMaj; const int cnt = m ? 7 : 6;
+                for (int j = 0; j < cnt; j++) if (list[j][0] == stp && list[j][1] == mi) { fit += stp == 0 ? 2 : 1; break; }
+            }
+            double prof[12]; for (int q = 0; q < 12; q++) prof[q] = KK[m][(q - rt + 12) % 12];
+            const double v = fit / std::max<size_t>(1, 2 * chordBeats.size()) + 0.5 * corr(songChroma, prof);
+            if (v > best) { best = v; r.keyRoot = rt; r.keyMinor = m; }
+        }
+        // how far each beat's chord sits from home: both as their relative major, their distance round the circle of
+        // fifths, 0 at home .. 1 at four or more steps; a beat with no chord keeps the last
+        auto relMaj = [](int root, bool minor) { return minor ? (root + 3) % 12 : root; };
+        const int home = relMaj(r.keyRoot, r.keyMinor != 0);
+        r.away.assign(nBeats, 0);
+        double last = 0;
+        for (int i = 0; i < nBeats; i++)
+        {
+            if (r.chord[i] >= 0) { const int d = std::abs((((relMaj(r.chord[i] % 12, r.chord[i] >= 12) - home) * 7) % 12 + 12) % 12); last = std::min(1.0, std::min(d, 12 - d) / 4.0); }
+            r.away[i] = (float)last;
+        }
     }
     // lead melody: per frame, the pitch from 196 Hz to 1.3 kHz whose harmonics (x1..x5, weighted 0.8^n) carry the most
     // held energy; kept where it stands clearly above the other candidates and the held part is loud enough
@@ -594,6 +699,7 @@ static Layers AnalyseLayers(const float* x, size_t len, double sr, const std::ve
 //   "MAP " fr, beat, offset, bpm (f64); n, section[n], tension[n] (f32); count, drops (f64)
 //   "BEAT" bpm, period (f64), barPhase (i32); n, beats[n], strength[n] (f64)
 //   "LAYR" fr (f64); n, pad[n], melF[n], melS[n] (f32); n, harm[n], clarity[n] (f32); n, n x { start, end (f64), label (i32) }
+//   "CHRD" n, chord[n] (i8: root 0..11, +12 minor, -1 none); chordAng[n], mode[n], away[n] (f32); keyRoot, keyMinor (i32)
 static const uint32_t FileMagic = 0x31415655u;   // "UVA1"
 
 struct Writer
@@ -624,6 +730,9 @@ static bool Save(const std::wstring& path, const SongMap& map, const Beats& beat
     l.Many(f32(layers.harm)); l.Raw(f32(layers.clarity));
     l.Put((uint32_t)layers.sections.size()); for (const LayerSection& sc : layers.sections) { l.Put(sc.start); l.Put(sc.end); l.Put((int32_t)sc.label); }
     w.buf.insert(w.buf.end(), { 'L', 'A', 'Y', 'R' }); w.Put((uint32_t)l.buf.size()); w.buf.insert(w.buf.end(), l.buf.begin(), l.buf.end());
+    Writer c;
+    c.Many(layers.chord); c.Raw(layers.chordAng); c.Raw(layers.mode); c.Raw(layers.away); c.Put((int32_t)layers.keyRoot); c.Put((int32_t)layers.keyMinor);
+    w.buf.insert(w.buf.end(), { 'C', 'H', 'R', 'D' }); w.Put((uint32_t)c.buf.size()); w.buf.insert(w.buf.end(), c.buf.begin(), c.buf.end());
 
     size_t slash = path.find_last_of(L"\\/");
     if (slash != std::wstring::npos) CreateDirectoryW(path.substr(0, slash).c_str(), nullptr);
@@ -685,6 +794,11 @@ static bool Load(const std::wstring& path, int64_t sourceBytes, int64_t sourceTi
             take(&n, 4); s.sections.resize(n);
             for (auto& sc : s.sections) { double a = 0, b = 0; int32_t label = 0; take(&a, 8); take(&b, 8); take(&label, 4); sc = { (float)a, (float)b, label }; }
             s.layers = !s.pad.empty();
+        }
+        else if (!std::memcmp(tag, "CHRD", 4))
+        {
+            take(&n, 4); s.chord.resize(n); s.chordAng.resize(n); s.mode.resize(n); s.away.resize(n);
+            take(s.chord.data(), n); take(s.chordAng.data(), n * 4); take(s.mode.data(), n * 4); take(s.away.data(), n * 4);
         }
         at = end;   // past anything this version doesn't read
     }

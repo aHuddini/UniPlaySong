@@ -4,6 +4,25 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.9.0] - Unreleased
+
+### Added
+
+- Added the music visualizer for themes (Experimental): a 64-bit renderer shares its frames with Playnite through a D3D9Ex bridge into a `D3DImage`; styles Jukebox Fountain (default, drawn natively), Glow Bars and Fountain (projectM)
+- Added the Jukebox Fountain, a native port of the WebGL bench's engine and shaders (`fountain.h`, ~1e-7 engine parity); its look is the bench's "Your tune #6", exported by `export_t8.mjs` from `standard-tune6.json`
+- Added whole-song analysis in the renderer: beats, sections, drops, pads, melody, chords, key and distance from home, bit-exact with the bench, cached once per song as `VisualAnalysis\<song>.vab`
+- Added live hi-hat and snare reactions from per-band transient strength (0.82 and 0.57 correlation with Demucs drum stems); kicks follow the beat grid, since low-band detection scored 0.29 under a bass line
+- Added a song-state badge to the demo theme (live, analysing, following the song), from the control's new `SongState` property
+
+### Fixed
+
+- Fixed the visualizer frame being resampled in Fullscreen: Playnite's `Viewbox` scale was missed (2560 px drawn into 2133 px) and layout rounding stretched it (988 px to 988.33); it now lands 1:1 on whole pixels
+- Fixed the Jukebox Fountain reading 25% softer in Playnite than in the bench: dots and the colour fringe now keep their 2050 px pixel size on wider frames
+
+### Removed
+
+- Removed the visualizer's test build: the F6 tuner, F8/F9 test presets and reduced-resolution renders; the test presets moved to `native/visualizer/presets/reference/`
+
 ## [1.8.10] - 2026-10-06
 
 ### Added

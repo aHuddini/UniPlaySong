@@ -1,6 +1,6 @@
 // The Jukebox Fountain: UniPlaySong's own fountain visualizer, drawn natively instead of through projectM. A port of
 // the WebGL bench (native/visualizer/bench/fountain-bench.html) - its level engine line for line, and its shaders as
-// they are, lifted into the style file by bench/tools/export_t8.mjs with the T8 standard's values. Parity with the bench
+// they are, lifted into the style file by bench/tools/export_t8.mjs with the shipped look's values (Your tune #6). Parity with the bench
 // is the rule: change the bench, regenerate the style file, and port engine changes here.
 #pragma once
 #include <cmath>
@@ -82,6 +82,10 @@ struct Song
     float lyFr = 0;
     std::vector<float> pad, melF, melS, harm, clarity;
     std::vector<Section> sections;
+    // chords per beat (root 0..11, +12 minor, -1 none), each one's direction on the circle of fifths, how major/minor,
+    // how far from the home key (0..1)
+    std::vector<int8_t> chord;
+    std::vector<float> chordAng, mode, away;
 };
 
 // ---- the spectrum, as the bench's AnalyserNode gives it -------------------------------------------------------------
@@ -128,7 +132,7 @@ struct Engine
                    PINGPONG, DYNAMICS, DROP_DECAY, WAVE_SPEED, GAMMA, KICK_THRESHOLD, KICK_GAIN, BEAT_EVEN, LIQUID,
                    BEAT_IN_PLACE, WAVE, DROP_FLING, GLOW_SMOOTH, COLOR_EASE, COLOR_CURVE, COLOR_LEVEL,
                    RAIN, FLOOR, REACH, BREATH, TENSION, COOL_AIR, PAD_SWELL, MELODY, SIZE, STRETCH_MAX, GRAVITY, SPLASH,
-                   QUANTIZE, FLING; } P;
+                   QUANTIZE, FLING, CHORD_ROOT; } P;
 
     float specL[512] = {}, specR[512] = {};
     float pk[N], pv[N] = {}, ez[N] = {}, lastLive[N] = {}, env[N] = {}, slow[N] = {}, rate[N] = {}, fl[N] = {}, flv[N] = {};
@@ -139,6 +143,13 @@ struct Engine
     double tension = 0, beatIdx = 0, beatFrac = 0, phrase = 0, lastSongT = -1;
     int dropColL = 24, dropColR = 71;
     double beatEnv = 0, beatAt = -1, padE = 0, harmX = 0, harmY = 0, harmE = 0;
+    double modeE = 0, awayE = 0, chordHit = 0, chordWant = 0, padG = 0, chordG = 0;
+    int lastRoot = -1;
+    // band hits: the mix's spectrum, its log, the last 3 frames' max-filtered logs (a ring), and per band its running
+    // mean, envelope and 0..1 hit
+    float specM[512] = {}, hitL[512] = {}, hitRef[512] = {}, hitRing[3][512] = {};
+    int hitN = 0, hitAt = 0;
+    struct HitBand { double lo, hi, mean, env, hit; } hitB[2] = { { 1500, 5000, 0, 0, 0 }, { 6000, 16000, 0, 0, 0 } };
     double dropC = 0, sectionC = 1, tensionC = 0, phraseC = 0, actC = 0, secHueC = 0, melPos = 0.3, mT = 0;
     double eFast = 0, eSlow = 0, section = 1, quietFor = 0, quietAgo = 99, lastQuiet = 0, dropPulse = 0, bassKick = 0;
     int waveAt = 0;
@@ -155,7 +166,7 @@ struct Engine
         FP(WAVE_SPEED); FP(GAMMA); FP(KICK_THRESHOLD); FP(KICK_GAIN); FP(BEAT_EVEN); FP(LIQUID); FP(BEAT_IN_PLACE); FP(WAVE);
         FP(DROP_FLING); FP(GLOW_SMOOTH); FP(COLOR_EASE); FP(COLOR_CURVE); FP(COLOR_LEVEL);
         FP(RAIN); FP(FLOOR); FP(REACH); FP(BREATH); FP(TENSION); FP(COOL_AIR); FP(PAD_SWELL); FP(MELODY); FP(SIZE);
-        FP(STRETCH_MAX); FP(GRAVITY); FP(SPLASH); FP(QUANTIZE); FP(FLING);
+        FP(STRETCH_MAX); FP(GRAVITY); FP(SPLASH); FP(QUANTIZE); FP(FLING); FP(CHORD_ROOT);
 #undef FP
         for (int c = 0; c < N; c++) pk[c] = 1e-3f;
     }
@@ -189,6 +200,30 @@ struct Engine
         // when the wings aren't split
         if (stereo) { analyser.Spectrum(L, specL); analyser.Spectrum(R, specR); }
         else { float mix[1024]; for (int i = 0; i < 1024; i++) mix[i] = 0.5f * (L[i] + R[i]); analyser.Spectrum(mix, specL); std::memcpy(specR, specL, sizeof(specL)); }
+        // band hits: transient strength per band with no drum labels (as Synesthesia's syn_MidHits / syn_HighHits), from
+        // the mix - the drum detector's flux (the log spectrum against each bin's max over the last 3 frames, +-1 bin) over
+        // its own running mean (~2 s), instant attack, 60 ms release; 2..9 times the mean -> 0..1, eased in 60 ms / out
+        // 150 ms (it drives colour, which never snaps). Against Demucs drum stems the envelopes follow the drums': high
+        // 0.82, mid 0.57 (bench/tools/hits_vs_stems.mjs); the low band only 0.29, so the low end stays with the beat.
+        {
+            if (stereo) { float mix[1024]; for (int i = 0; i < 1024; i++) mix[i] = 0.5f * (L[i] + R[i]); analyser.Spectrum(mix, specM); }
+            else std::memcpy(specM, specL, sizeof(specM));
+            for (int i = 0; i < 512; i++) hitL[i] = (float)std::log1p(20.0 * 1024 * specM[i]);   // specM is |X| / N
+            const bool full = hitN == 3;
+            if (full) { std::fill(hitRef, hitRef + 512, 0.0f); for (int r = 0; r < 3; r++) for (int i = 0; i < 512; i++) if (hitRing[r][i] > hitRef[i]) hitRef[i] = hitRing[r][i]; }
+            for (HitBand& h : hitB)
+            {
+                const int a = std::max(1, (int)std::floor(h.lo / binHz + 0.5)), b = std::min(510, (int)std::floor(h.hi / binHz + 0.5));
+                double s = 0; if (full) for (int i = a; i <= b; i++) s += std::max(0.0, (double)hitL[i] - hitRef[i]);
+                const double flux = s / (b - a + 1);
+                h.mean += (flux - h.mean) * (1 - std::exp(-dt / 2));
+                h.env = std::max(flux / (h.mean + 1e-3), h.env * std::exp(-dt / 0.06));
+                const double u = std::min(1.0, std::max(0.0, (h.env - 2) / 7)), target = u * u * (3 - 2 * u);
+                h.hit += (target - h.hit) * (1 - std::exp(-dt / (target > h.hit ? 0.06 : 0.15)));
+            }
+            float* mf = hitRing[hitAt]; hitAt = (hitAt + 1) % 3; hitN = std::min(3, hitN + 1);   // the oldest, reused
+            for (int i = 0; i < 512; i++) mf[i] = std::max({ hitL[i], hitL[std::max(0, i - 1)], hitL[std::min(511, i + 1)] });
+        }
         const double b0 = 50 / binHz, b1 = std::min(510.0, 16000 / binHz);
         float v[N]; double loudest = 0;
         for (int c = 0; c < N; c++)
@@ -246,10 +281,33 @@ struct Engine
         }
         double padT = lyOn && !song->pad.empty() ? song->pad[std::min((int)song->pad.size() - 1, (int)std::floor(songT * song->lyFr))] : 0;
         padE += (padT - padE) * (1 - std::exp(-dt / 0.25));
-        double hx = 0, hy = 0;
-        if (lyOn) { int bi = BeatIndexAt(song, songT); if (bi >= 0 && bi < (int)song->harm.size()) { hx = std::cos(song->harm[bi]) * song->clarity[bi]; hy = std::sin(song->harm[bi]) * song->clarity[bi]; } }
+        padG += (padT - padG) * (1 - std::exp(-dt / 1.2));   // the glow's slower copy: at 0.25 s the glow jumped
+        // harmony: the notes' direction, or (Chord root) the recognised chord's own; its major/minor and distance from home
+        // ease into the colour; a new root swells the core (quickly) and the glow (gradually)
+        double hx = 0, hy = 0, modeT = 0, awayT = lyOn ? awayE : 0;
+        if (lyOn)
+        {
+            int bi = BeatIndexAt(song, songT);
+            if (bi >= 0 && bi < (int)song->harm.size())
+            {
+                const int ch = bi < (int)song->chord.size() ? song->chord[bi] : -1;
+                const double cr = ch >= 0 ? P.CHORD_ROOT : 0;
+                hx = (1 - cr) * std::cos(song->harm[bi]) * song->clarity[bi] + cr * (ch >= 0 ? std::cos(song->chordAng[bi]) : 0);
+                hy = (1 - cr) * std::sin(song->harm[bi]) * song->clarity[bi] + cr * (ch >= 0 ? std::sin(song->chordAng[bi]) : 0);
+                if (ch >= 0)
+                {
+                    modeT = song->mode[bi]; awayT = song->away[bi];
+                    if (ch % 12 != lastRoot) { if (lastRoot >= 0) chordWant = 1; lastRoot = ch % 12; }
+                }
+            }
+        }
         const double hk = 1 - std::exp(-dt / 1.0); harmX += (hx - harmX) * hk; harmY += (hy - harmY) * hk;
         harmE = harmY;
+        modeE += (modeT - modeE) * (1 - std::exp(-dt / 1.5));
+        awayE += (awayT - awayE) * (1 - std::exp(-dt / 2.5));
+        chordHit += (chordWant - chordHit) * (1 - std::exp(-dt / 0.08));
+        chordWant *= std::exp(-dt / 0.4);
+        chordG += (chordHit - chordG) * (1 - std::exp(-dt / (chordHit > chordG ? 0.35 : 1.2)));
         if (useMap) { /* drops come from the map */ }
         else if (section < 0.35) { quietFor += dt; quietAgo = 0; }
         else { if (quietFor > 0) { lastQuiet = quietFor; quietFor = 0; } quietAgo += dt; }
@@ -503,6 +561,8 @@ struct Renderer
         F1(scene, "uTime", t); F1(scene, "uSection", full); F1(scene, "uDrop", e.dropC); F1(scene, "uTension", e.tensionC);
         F1(scene, "uPad", e.padE); F1(scene, "uHarm", e.harmE); F1(scene, "uSecHue", e.secHueC); F1(scene, "uPhrase", e.phraseC);
         F1(scene, "uLevelL", e.meanLevel);
+        F1(scene, "uMode", e.modeE); F1(scene, "uAway", e.awayE); F1(scene, "uChord", e.chordHit);
+        F1(scene, "uHitMid", e.hitB[0].hit); F1(scene, "uHitHigh", e.hitB[1].hit);
         Tex(scene, "uHist", 0, texHist); Tex(scene, "uColA", 1, texA); Tex(scene, "uColB", 2, texB); Tex(scene, "uColC", 3, texC);
         glDrawArrays(GL_TRIANGLES, 0, 3);
         // blur pyramid
@@ -513,7 +573,8 @@ struct Renderer
         glUseProgram(comp);
         glBindFramebuffer(GL_FRAMEBUFFER, 0); glViewport(0, 0, W, H);
         glUniform2f(glGetUniformLocation(comp, "uRes"), (float)W, (float)H);
-        F1(comp, "uLevel", e.meanLevel); F1(comp, "uTime", t); F1(comp, "uFull", full); F1(comp, "uPad", e.padE);
+        F1(comp, "uLevel", e.meanLevel); F1(comp, "uTime", t); F1(comp, "uFull", full);
+        F1(comp, "uPad", e.padG); F1(comp, "uChord", e.chordG);   // the glow: the slow copies
         F1(comp, "uWarm", e.Warm()); F1(comp, "uRingT", 99);
         Tex(comp, "uScene", 0, sceneT.tex); Tex(comp, "uB1", 1, b1.tex); Tex(comp, "uB2", 2, b2.tex); Tex(comp, "uB3", 3, b3.tex);
         glDrawArrays(GL_TRIANGLES, 0, 3);

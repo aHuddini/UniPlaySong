@@ -44,3 +44,6 @@ console.log(`  harmony ${maxDiff(ly.harm, cl.harm)}, clarity ${maxDiff(ly.clarit
 const fmt = ss => ss.map(s => `${"ABCDEF"[s.label]}@${s.start.toFixed(2)}`).join(" ");
 console.log(`  sections ${fmt(ly.sections)}\n         / ${fmt(cl.secStart.map((st, i) => ({ start: st, label: cl.secLabel[i] })))}`);
 console.log(`  section ends ${maxDiff(ly.sections.map(s => s.end), cl.secEnd)}`);
+const same = Array.from(ly.chord).filter((c, i) => c === cl.chord[i]).length;
+console.log(`  chords ${same}/${ly.chord.length} beats the same, match score ${maxDiff(ly.chordConf, cl.chordConf)}, angle ${maxDiff(ly.chordAng, cl.chordAng)}`);
+console.log(`  major/minor ${maxDiff(ly.mode, cl.mode)}, away from home ${maxDiff(ly.away, cl.away)}, key ${ly.key.root}${ly.key.minor ? "m" : ""} / ${cl.keyRoot}${cl.keyMinor ? "m" : ""}`);

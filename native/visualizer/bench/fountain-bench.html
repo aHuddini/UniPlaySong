@@ -76,10 +76,10 @@
     </div>
     <h2 class="sec">Presets</h2>
     <div class="btns">
-      <button id="presetYours5Full" class="main" title="The T8 standard - the look UniPlaySong's visualizer is built to first: your tune #5 plus a tint per song section and the lead-melody highlight (both need a loaded song; on the synthetic beat it looks the same as Your tune #5). A fresh bench opens on it">T8 standard: Tune #5 + sections + melody</button>
+      <button id="presetYours5Full" class="main" title="The T8 standard - the look UniPlaySong's visualizer is built to first: your tune #5 plus a tint per song section and the lead-melody highlight (both need a loaded song; on the synthetic beat it looks the same as Your tune #5). Kept as a reference - UniPlaySong ships Your tune #6">T8 standard: Tune #5 + sections + melody</button>
       <button id="presetT8Chords" class="main" title="The T8 standard plus the chord layer: one steady tint per chord, major warm / minor cool, heat away from the home key, a swell on each chord change (a loaded song only). Compare with the T8 standard button above">T8 + chords (try)</button>
       <button id="presetT8Hits" class="main" title="T8 + chords plus the live band hits: the treble glints with the hats, the middle of each wing cracks on snares - any music, no song analysis needed">T8 + chords + hits (try)</button>
-      <button id="presetYours6" class="main" title="Your tune #6 (2026-10-19): the T8 standard with the chord layer and the live hats/snares as you tuned them - stronger pad swell, more heat away from the home key, a firmer chord-change swell, a touch of zoom pulse and focus pull">Your tune #6</button>
+      <button id="presetYours6" class="main" title="Your tune #6 (2026-10-19): the T8 standard with the chord layer and the live hats/snares as you tuned them - stronger pad swell, more heat away from the home key, a firmer chord-change swell, a touch of zoom pulse and focus pull. The look UniPlaySong ships (standard-tune6.json); a fresh bench opens on it">Your tune #6</button>
       <button id="presetYours5" title="Your values from 2026-10-13 00:36, plus beads cooling as they settle">Your tune #5</button>
     </div>
     <h2 class="sec">Showcase</h2>
@@ -733,7 +733,8 @@ document.getElementById("presetT8Chords").onclick = () => { applyAll(T8_CHORDS);
 const T8_HITS = { ...T8_CHORDS, HAT_SPARKLE: 0.8, SNARE_FLARE: 0.6 };
 document.getElementById("presetT8Hits").onclick = () => { applyAll(T8_HITS); whiteToMagenta(); };
 // The user's tune #6 (2026-10-19): the T8 standard with the chord layer and the live band hits, tuned - White to
-// magenta, random gradient
+// magenta, random gradient. The look UniPlaySong ships: standard-tune6.json is its frozen copy, the spec export_t8.mjs
+// writes the renderer's style file from
 const YOUR_TUNE_6 = { ...T8_STANDARD, ZOOM_PULSE: 0.05, FOCUS_PULL: 0.1, PAD_GLOW: 0.8, PAD_SWELL: 1.05, HARMONY_HUE: 0.7,
   CHORD_ROOT: 1, MODE_TEMP: 0.65, KEY_HEAT: 0.85, CHORD_PULSE: 0.7, HAT_SPARKLE: 0.8, SNARE_FLARE: 0.6 };
 document.getElementById("presetYours6").onclick = () => { applyAll(YOUR_TUNE_6); whiteToMagenta(); };
@@ -2165,13 +2166,16 @@ vec3 fountain(float fx, float zy, bool left, float dxs) {
       float pick = step(0.82, fract(h.x * 13.7 + u.y * 5.3 + floor(ph) * 0.37)) * pow(sin(3.14159 * fract(ph)), 2.0);
       vec3 glint = lumMatch(uGlint, col);
       col = mix(col, glint, clamp(DYNAMICS * SPARKLE * treble * pick * (A.y * 1.5 + TENSION * uTension * 0.6), 0.0, 1.0));
-      // hats (the high band's hits): the treble columns' dots glint with them - colour only, as the sparkle
-      col = mix(col, glint, clamp(HAT_SPARKLE * treble * pick * 2.5 * uHitHigh, 0.0, 1.0));
+      // the hits whiten a dot (its own brightness, no hue) rather than tint it: the glint's pale cyan, brightness-matched
+      // to a dim magenta dot, is mostly green - on dense guitar songs the snare flare turned the wings visibly green
+      vec3 white = vec3(dot(col, LUM));
+      // hats (the high band's hits): the treble columns' dots flash whiter with them - colour only
+      col = mix(col, white, clamp(HAT_SPARKLE * treble * pick * 2.5 * uHitHigh, 0.0, 1.0));
       // snare (the mid band's hits, 1.5-5 kHz - the columns from ~0.2 to ~0.46 along the wing): a crack of light - some
-      // of their dots take the glint colour, and only a slight lift (kicks change colour, not brightness: photosensitivity)
+      // of their dots whiten, and only a slight lift (kicks change colour, not brightness: photosensitivity)
       float midW = smoothstep(0.12, 0.22, C.y) * (1.0 - smoothstep(0.46, 0.6, C.y));
       float snare = SNARE_FLARE * uHitMid * midW;
-      col = mix(col, glint, popDot(snare, fract(h.x * 5.91 + u.y * 7.37)));
+      col = mix(col, white, popDot(snare, fract(h.x * 5.91 + u.y * 7.37)));
       col *= 1.0 + 0.25 * min(1.0, snare);
       // phrase colour drift: every 8 bars the hue turns a little (about the grey axis, so brightness holds)
       // phrase, harmony and section turn the hue only a little (at most ~12 degrees): more would carry every palette
@@ -2962,9 +2966,9 @@ if (/src=song/.test(location.hash)) sourceSel.value = "song";
 // ...&cover=URL builds the cover-art palette from that picture (headless checks)
 { const cm = /cover=([^&]+)/.exec(location.hash); if (cm) fetch(decodeURIComponent(cm[1])).then(r => r.blob()).then(b => coverPalette(b)).catch(e => fail("cover: " + e.message)); }
 // ...&preset=BUTTON_ID presses that preset button (e.g. #drumtest&play&preset=presetYours4Cool)
-{ const pm = /preset=([A-Za-z0-9]+)/.exec(location.hash); const b = pm && document.getElementById(pm[1]); if (b) b.onclick(); else if (firstVisit) document.getElementById("presetYours5Full").onclick(); }
+{ const pm = /preset=([A-Za-z0-9]+)/.exec(location.hash); const b = pm && document.getElementById(pm[1]); if (b) b.onclick(); else if (firstVisit) document.getElementById("presetYours6").onclick(); }
 // #spec: write the current look, every value resolved, with its palette and colour scheme, into the page (to freeze the
-// standard as standard-t8.json: open with #preset=presetYours5Full&spec)
+// shipped look as standard-tune6.json: open with #preset=presetYours6&spec; the T8 reference was frozen the same way)
 if (/[#&]spec(&|$)/.test(location.hash)) {
   const pl = PALETTES[P.PALETTE || 0], o = JSON.parse(document.getElementById("out").value);
   const pre = document.createElement("pre"); pre.id = "specdump";

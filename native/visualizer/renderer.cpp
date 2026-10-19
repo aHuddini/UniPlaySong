@@ -395,7 +395,10 @@ static int AnalyzeToJson(const char* pcmPath, const char* outPath)
     for (const auto& sc : layers.sections) { secStart.push_back(sc.start); secEnd.push_back(sc.end); secLabel.push_back(sc.label); }
     list("pad", layers.pad, false); list("melF", layers.melF, false); list("melS", layers.melS, false);
     list("harm", layers.harm, false); list("clarity", layers.clarity, false);
-    list("secStart", secStart, false); list("secEnd", secEnd, false); list("secLabel", secLabel, true);
+    list("secStart", secStart, false); list("secEnd", secEnd, false); list("secLabel", secLabel, false);
+    list("chord", layers.chord, false); list("chordConf", layers.chordConf, false); list("chordAng", layers.chordAng, false);
+    list("mode", layers.mode, false); list("away", layers.away, false);
+    std::fprintf(o, "\"keyRoot\":%d,\"keyMinor\":%d\n", layers.keyRoot, layers.keyMinor);
     std::fprintf(o, "}}\n");
     std::fclose(o);
     std::printf("analysed %.1f s of song: map %.0f ms, beats %.0f ms, layers %.0f ms - %zu beats at %.1f BPM, %zu drops, %zu sections\n",
@@ -594,6 +597,10 @@ int main(int argc, char** argv)
             {
                 std::fwrite(engine.colA, sizeof(engine.colA), 1, engineDump); std::fwrite(engine.colB, sizeof(engine.colB), 1, engineDump);
                 std::fwrite(engine.colC, sizeof(engine.colC), 1, engineDump);
+                // the scalars behind the scene's and composite's song uniforms (bench/tools/engine_parity.mjs reads them)
+                const float sc[9] = { (float)engine.padE, (float)engine.padG, (float)engine.harmE, (float)engine.modeE, (float)engine.awayE,
+                                      (float)engine.chordHit, (float)engine.chordG, (float)engine.hitB[0].hit, (float)engine.hitB[1].hit };
+                std::fwrite(sc, sizeof(sc), 1, engineDump);
             }
             fountainGl.Draw(engine, simT);
         }

@@ -21,7 +21,7 @@ namespace UniPlaySong.Audio
     internal sealed class VisualizerSongAnalysis : IDisposable
     {
         internal const uint FileMagic = 0x31415655u; // "UVA1", native/visualizer/analysis.h
-        internal const int AnalysisVersion = 2;     // VIS_ANALYSIS_VERSION, native/visualizer/visualizer_shared.h
+        internal const int AnalysisVersion = 3;     // VIS_ANALYSIS_VERSION, native/visualizer/visualizer_shared.h
         private const int Rate = 48000;              // the rate the bench analyses at
 
         private readonly VisualizerAudioFeed _feed;

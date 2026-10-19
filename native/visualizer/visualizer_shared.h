@@ -74,7 +74,7 @@ typedef struct VisAudio
 #define VIS_SONG_MAGIC 0x31474E53u     /* "SNG1" */
 #define VIS_STAMPS 64                  /* ~10 s of 150 ms blocks */
 #define VIS_PATH_CHARS 260
-#define VIS_ANALYSIS_VERSION 2         /* analysis.h's file format and results; a change re-analyses every song */
+#define VIS_ANALYSIS_VERSION 3         /* analysis.h's file format and results; a change re-analyses every song */
 
 #pragma pack(push, 8)
 typedef struct VisStamp
