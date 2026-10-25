@@ -27,4 +27,10 @@ static class Constants
     public const int MinFadeDurationMs = 100;
     public const int MaxFadeDurationMs = 5000;
     #endregion
+
+    #region Trailer
+    public const int DefaultTrailerAudioDelayMs = 0;
+    public const int MinTrailerAudioDelayMs = 0;
+    public const int MaxTrailerAudioDelayMs = 10000;
+    #endregion
 }
