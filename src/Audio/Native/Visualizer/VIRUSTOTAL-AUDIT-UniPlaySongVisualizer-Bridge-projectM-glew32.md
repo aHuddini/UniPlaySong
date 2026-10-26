@@ -5,7 +5,7 @@ built from `native/visualizer/`, and projectM 4.1.8 + GLEW 2.2.0 built from the 
 
 | File | What it is | SHA-256 | Scanned | Report |
 |---|---|---|---|---|
-| `UniPlaySongVisualizer.exe` | First-party x64 renderer (projectM, offscreen OpenGL, shared D3D11 textures) | `50e9c00d96b2df4221432ac526065fde251cbffd12aefcf6eec563fff35cb257` | not yet - submit before release | [VirusTotal](https://www.virustotal.com/gui/file/50e9c00d96b2df4221432ac526065fde251cbffd12aefcf6eec563fff35cb257) |
+| `UniPlaySongVisualizer.exe` | First-party x64 renderer (projectM, offscreen OpenGL, shared D3D11 textures) | `50e9c00d96b2df4221432ac526065fde251cbffd12aefcf6eec563fff35cb257` | 2026-10-26 | [VirusTotal](https://www.virustotal.com/gui/file/50e9c00d96b2df4221432ac526065fde251cbffd12aefcf6eec563fff35cb257) |
 | `UniPlaySongVisualizerBridge.dll` | First-party x86 bridge (D3D9Ex, opens the renderer's shared textures) | `d247a35ca19ee7adc3b513c7797e1d7ec6160b39259c4a3b753e290d436a49d2` | 2026-10-12 | [VirusTotal](https://www.virustotal.com/gui/file/d247a35ca19ee7adc3b513c7797e1d7ec6160b39259c4a3b753e290d436a49d2) |
 | `projectM-4.dll` | projectM 4.1.8, x64, static MSVC runtime | `6ec38fa4ca701918fac274f1dfe0ba420f3ae76f16e09d0ae6e9ae1a3c6f3656` | 2026-10-12 | [VirusTotal](https://www.virustotal.com/gui/file/6ec38fa4ca701918fac274f1dfe0ba420f3ae76f16e09d0ae6e9ae1a3c6f3656) |
 | `glew32.dll` | GLEW 2.2.0, x64, static MSVC runtime | `763fc6ad9da9948a37f9e7a61e109406e41f3b7e18473796442de394f7bfe60a` | 2026-10-12 | [VirusTotal](https://www.virustotal.com/gui/file/763fc6ad9da9948a37f9e7a61e109406e41f3b7e18473796442de394f7bfe60a) |
@@ -44,3 +44,8 @@ score as suspicious. The renderer and the bridge now both carry a version resour
 above. The current bridge drew a single detection when scanned: a generic, unnamed "malicious" verdict of the kind
 machine-learning engines give to files they score as suspicious. The same evidence applies, so it is treated as a
 false positive.
+
+**Current renderer: 1/69 (2026-10-26).** SecureAge alone returned a generic "malicious" verdict with no detection
+name; every other engine - Microsoft, Kaspersky, ESET, BitDefender, CrowdStrike, Sophos, Symantec, TrendMicro among
+them - found nothing. A lone unnamed verdict on a new, unsigned, low-reputation binary is the same reputation-and-ML
+pattern as the bridge's, so it is treated as a false positive.
