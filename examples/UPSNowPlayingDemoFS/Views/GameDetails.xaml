@@ -1,0 +1,267 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"                    
+                    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+                    mc:Ignorable="d">
+
+    <!-- UPS demo: converter for the demo-page toggle visibility -->
+    <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+
+    <Style TargetType="{x:Type GameDetails}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type GameDetails}">
+                    <Grid Background="{DynamicResource MainBackgourndBrush}"
+                          x:Name="PART_ViewHost"
+                          d:DesignWidth="{StaticResource DesignWidth}"
+                          d:DesignHeight="{StaticResource DesignHeight}"
+                          d:DataContext="{x:Static DesignMainViewModel.DesignSelectedGameIntance}"
+                          KeyboardNavigation.DirectionalNavigation="Contained"
+                          KeyboardNavigation.TabNavigation="Cycle"
+                          KeyboardNavigation.ControlTabNavigation="Cycle">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="350" />
+                            <ColumnDefinition Width="6*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="3*" />
+                            <RowDefinition Height="4*" />
+                        </Grid.RowDefinitions>
+
+                        <!-- UPS NOWPLAYING TEST START — proof-of-concept demo on the vanilla Fullscreen theme.
+                             A toggle button (top-right) opens/closes a full-screen demo page showing every
+                             element + the raw {PluginSettings} card. Delete this block or restore .mediabak to revert. -->
+                        <StackPanel Grid.Row="0" Grid.ColumnSpan="4" Panel.ZIndex="1000"
+                                    Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                    Margin="0,40,40,0">
+                            <!-- Interactive media controller bar docked next to the demo button
+                                 (always visible). Its transport buttons are controller-navigable and
+                                 A-clickable here in the detail view. IsTabStop=False on the host keeps
+                                 the wrapper itself from being a dead tab-stop, but the buttons inside
+                                 stay reachable via directional (D-pad) nav. -->
+                            <ContentControl x:Name="UPS_MediaControllerBar" Focusable="False"
+                                            KeyboardNavigation.IsTabStop="False"
+                                            VerticalAlignment="Center" Margin="0,0,12,0"/>
+                            <ToggleButton x:Name="UpsDemoToggle"
+                                          Content="&#9835; UPS Media Demo" FontSize="16" Padding="14,7"
+                                          VerticalAlignment="Center"
+                                          Background="#EE1DB954" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                        </StackPanel>
+
+                        <!-- ═══ IsMusicChanged DEMO: a "Now Playing" toast that animates in on each
+                             track change and fades itself out. IsMusicChanged pulses True→False on
+                             every song change; the EnterActions storyboard slides the toast in, holds,
+                             then fades out. It re-fires on the next change because the flag reset to
+                             False. The toast content is the live NowPlaying* data. ═══ -->
+                        <Border Grid.Row="0" Grid.ColumnSpan="4" Panel.ZIndex="1001"
+                                HorizontalAlignment="Left" VerticalAlignment="Top"
+                                Margin="40,40,0,0" Opacity="0"
+                                Background="#F2101014" CornerRadius="10" Padding="14,10"
+                                BorderBrush="#33FFFFFF" BorderThickness="1">
+                            <!-- Transform for the slide. A Style storyboard cannot reference a named
+                                 element (WPF throws "cannot specify a TargetName"), so the animations
+                                 below target THIS Border's own RenderTransform.X by property path — no
+                                 x:Name. -->
+                            <Border.RenderTransform>
+                                <TranslateTransform X="-40"/>
+                            </Border.RenderTransform>
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{PluginSettings Plugin=UniPlaySong, Path=IsMusicChanged}" Value="True">
+                                            <DataTrigger.EnterActions>
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <!-- slide + fade IN (targets this Border, no TargetName) -->
+                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                         To="1" Duration="0:0:0.25"/>
+                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.X"
+                                                                         To="0" Duration="0:0:0.25"/>
+                                                        <!-- hold ~4.5s, then fade OUT (theme owns the visible duration) -->
+                                                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                         To="0" BeginTime="0:0:4.5" Duration="0:0:0.5"/>
+                                                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.X"
+                                                                         To="-40" BeginTime="0:0:4.5" Duration="0:0:0.5"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </DataTrigger.EnterActions>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <StackPanel Orientation="Horizontal">
+                                <Border CornerRadius="6" ClipToBounds="True" Width="48" Height="48" Margin="0,0,12,0">
+                                    <Image Source="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingAlbumArtPath}"
+                                           Stretch="UniformToFill"/>
+                                </Border>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="♫ NOW PLAYING" Foreground="#8827E67A" FontSize="10" FontWeight="Bold" Margin="0,0,0,2"/>
+                                    <TextBlock Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingTitle}"
+                                               Foreground="White" FontWeight="SemiBold" FontSize="15"
+                                               TextTrimming="CharacterEllipsis" MaxWidth="320"/>
+                                    <TextBlock Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingArtist}"
+                                               Foreground="#C0FFFFFF" FontSize="12"
+                                               TextTrimming="CharacterEllipsis" MaxWidth="320"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Row="0" Grid.RowSpan="3" Grid.ColumnSpan="4" Panel.ZIndex="999"
+                                Background="#F2000000"
+                                Visibility="{Binding IsChecked, ElementName=UpsDemoToggle, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                      Margin="60,110,60,60">
+                        <!-- Vertical list; each row = small caption + the element with NO wrapping card,
+                             so what you see is the element's own footprint (slim pill, etc.), not a demo box. -->
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top">
+
+                            <!-- (Media controller — bar is docked next to the demo button, top-right) -->
+
+                            <!-- 1) Element — bar -->
+                            <TextBlock Text="ELEMENT — BAR" Foreground="#66FFFFFF" FontSize="11" Margin="2,0,0,3"/>
+                            <ContentControl x:Name="UPS_NowPlayingMiniPlayer" Focusable="False"
+                                            HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,18"/>
+
+                            <!-- 2) Element — compact -->
+                            <TextBlock Text="ELEMENT — COMPACT" Foreground="#66FFFFFF" FontSize="11" Margin="2,0,0,3"/>
+                            <ContentControl x:Name="UPS_NowPlayingMiniPlayerCompact" Focusable="False"
+                                            HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,18"/>
+
+                            <!-- 3) Media controller — compact -->
+                            <TextBlock Text="MEDIA CONTROLLER — COMPACT" Foreground="#66FFFFFF" FontSize="11" Margin="2,0,0,3"/>
+                            <ContentControl x:Name="UPS_MediaControllerCompact" Focusable="False"
+                                            HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,0,0,18"/>
+
+                            <!-- 4) Raw {PluginSettings} data (DIY) -->
+                            <Border Background="#CC101014" CornerRadius="6" Padding="10"
+                                    BorderBrush="#33FFFFFF" BorderThickness="1"
+                                    HorizontalAlignment="Left" VerticalAlignment="Top">
+                                <StackPanel>
+                                    <TextBlock Text="RAW {PluginSettings} (DIY)" Foreground="#66FFFFFF" FontSize="10" Margin="0,0,0,4"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Image Width="56" Height="56" Margin="0,0,10,0" Stretch="UniformToFill"
+                                               Source="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingAlbumArtPath}"/>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Foreground="White" FontWeight="SemiBold" FontSize="16"
+                                                       Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingTitle}"/>
+                                            <TextBlock Foreground="#C0FFFFFF" FontSize="14"
+                                                       Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingArtist}"/>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Foreground="#88FFFFFF" FontSize="12"
+                                                           Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingAlbum}"/>
+                                                <TextBlock Foreground="#88FFFFFF" FontSize="12" Margin="8,0,0,0"
+                                                           Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingGenre}"/>
+                                                <TextBlock Foreground="#88FFFFFF" FontSize="12" Margin="8,0,0,0"
+                                                           Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingDuration}"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        </ScrollViewer>
+                        </Border>
+                        <!-- UPS NOWPLAYING TEST END -->
+
+                        <FadeImage HorizontalAlignment="Center" VerticalAlignment="Top"
+                                   Grid.ColumnSpan="4" Grid.RowSpan="2"
+                                   x:Name="PART_ImageBackground" />
+
+                        <Border Background="{DynamicResource GameDetailsBackgroundBrush}"
+                                Grid.ColumnSpan="4" Grid.Row="1" />
+
+                        <Border CornerRadius="3" BorderThickness="3" BorderBrush="{DynamicResource ControlBackgroundBrush}"
+                                Margin="14" Grid.Column="1" Grid.Row="1"
+                                VerticalAlignment="Top"
+                                HorizontalAlignment="Right">
+                            <Image x:Name="PART_ImageCover" />
+                        </Border>
+
+                        <Image Grid.Column="1" Grid.Row="1"
+                               VerticalAlignment="Top"
+                               HorizontalAlignment="Right"
+                               Margin="24"
+                               Source="{Binding LibraryPlugin.LibraryIcon}"
+                               Height="48" RenderOptions.BitmapScalingMode="Fant">
+                            <Image.Effect>
+                                <DropShadowEffect Color="White" BlurRadius="20" ShadowDepth="0"
+                                                  RenderingBias="Quality" Opacity="1"/>
+                            </Image.Effect>
+                        </Image>
+
+                        <DockPanel Grid.Column="2" Grid.Row="1"
+                                   Margin="20"
+                                   HorizontalAlignment="Left">
+
+                            <TextBlock Style="{DynamicResource TextBlockBaseStyle}"
+                                       Text="{Binding DisplayName}"
+                                       Foreground="White" FontFamily="{DynamicResource FontTitilliumWebBold}"
+                                       FontSize="38" DockPanel.Dock="Top">
+                                <TextBlock.Effect>
+                                    <DropShadowEffect ShadowDepth="2" Color="Black"
+                                                      RenderingBias="Quality" Opacity="1"/>
+                                </TextBlock.Effect>
+                            </TextBlock>
+
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,20,20,20">
+                                <StackPanel>
+                                    <TextBlock Style="{DynamicResource TextBlockBaseStyle}"
+                                               FontFamily="{DynamicResource FontTitilliumWebBold}"
+                                               Text="{DynamicResource LOCTimePlayed}"
+                                               Margin="0,0,0,10" />
+                                    <TextBlock Style="{DynamicResource TextBlockBaseStyle}"
+                                               Text="{Binding Playtime, Converter={StaticResource PlayTimeToStringConverter}}" />
+                                </StackPanel>
+                                
+                                <StackPanel Margin="50,0,0,0">
+                                    <TextBlock Style="{DynamicResource TextBlockBaseStyle}"
+                                               FontFamily="{DynamicResource FontTitilliumWebBold}"
+                                               Text="{DynamicResource LOCGameLastActivityTitle}"
+                                               Margin="0,0,0,10" />
+                                    <TextBlock Style="{DynamicResource TextBlockBaseStyle}"
+                                               Text="{Binding LastActivity, Converter={StaticResource DateTimeToLastPlayedConverter}}" />
+                                </StackPanel>
+
+                                <StackPanel Margin="50,0,0,0">
+                                    <TextBlock Style="{DynamicResource TextBlockBaseStyle}"
+                                               FontFamily="{DynamicResource FontTitilliumWebBold}"
+                                               Text="{DynamicResource LOCGameReleaseDateTitle}"
+                                               Margin="0,0,0,10" />
+                                    <TextBlock Style="{DynamicResource TextBlockBaseStyle}"
+                                               Text="{Binding ReleaseDate}" />
+                                </StackPanel>
+
+                                <StackPanel Margin="50,0,0,0">
+                                    <TextBlock Style="{DynamicResource TextBlockBaseStyle}"
+                                               FontFamily="{DynamicResource FontTitilliumWebBold}"
+                                               Text="{DynamicResource LOCGamePlatformTitle}"
+                                               Margin="0,0,0,10" />
+                                    <TextBlock Style="{DynamicResource TextBlockBaseStyle}"
+                                               Text="{Binding Platforms, Converter={StaticResource ListToStringConverter}}" />
+                                </StackPanel>
+                            </StackPanel>
+                            
+                            <StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
+                                <ButtonEx x:Name="PART_ButtonContext"
+                                          Margin="2" BorderThickness="2" MinWidth="220" HorizontalContentAlignment="Center" />
+                                <ButtonEx x:Name="PART_ButtonOptions"
+                                          Content="{DynamicResource LOCGameOptions}"
+                                          Margin="5,2,2,2" BorderThickness="2" MinWidth="220" HorizontalContentAlignment="Center" />
+                            </StackPanel>
+      
+                            <ScrollViewerEx Margin="0,20,0,0" DockPanel.Dock="Top"
+                                            x:Name="PART_ScrollHtmlDescription">
+                                <HtmlTextView x:Name="PART_HtmlDescription"
+                                                HtmlFontSize="16"
+                                                HtmlForeground="{DynamicResource TextColor}"
+                                                LinkForeground="{DynamicResource GlyphColor}"
+                                                FocusVisualStyle="{x:Null}" />
+                            </ScrollViewerEx>
+                        </DockPanel>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

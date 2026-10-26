@@ -1057,8 +1057,9 @@ view shows behind it. It reacts only to the music UniPlaySong plays — never to
   ```
 - **Cost:** it uses the graphics card while on screen — a few milliseconds a frame on integrated graphics at 1080p.
 
-A complete Fullscreen example page — visualizer, centred spinning cover, seekable timeline, title and transport — is
-in the UniPlaySong repository at `native/visualizer/demo-theme/UPSNowPlayingDemoFS-Main.xaml`.
+A complete, installable Fullscreen example theme — the visualizer page (centred spinning cover, seekable timeline,
+title, transport, recent tracks), a Spotify page and the player with its spectrum — is in the UniPlaySong repository at
+[`examples/UPSNowPlayingDemoFS`](../../../examples/UPSNowPlayingDemoFS), and as a `.pthm` on the 1.9.0 release.
 
 ### Music player with a spectrum — `UPS_MusicPlayerControlVisual` (v1.9.0+)
 

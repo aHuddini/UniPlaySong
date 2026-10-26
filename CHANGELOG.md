@@ -23,6 +23,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added zero-copy frame hand-off: the renderer draws straight into the shared textures (`WGL_NV_DX_interop2`), cutting the hand-off at 2560×988 from 4.5 to 1.4 ms with identical frames; the GPU-to-CPU copy remains the fallback
 - Added a theme style choice for the visualizer: the element's `Tag` takes `Style=` and `Palette=` parts (`Style=GlowBars; Palette=Disc`), choosing that page's style; a bare word stays the palette
 - Added the VisualizerPrototyper: the bench on GitHub Pages, with a three-colour palette generator and "Copy style for UPS"; styles sent through the new issue form ship as `UPS - <name>.vis`, picked by `Style=<name>`
+- Added the demo theme as an installable example, `examples/UPSNowPlayingDemoFS` (Playnite's default Fullscreen theme, MIT, with visualizer, Spotify and player pages), shipped as a `.pthm` on the release
 - Added a song-state badge to the demo theme (live, analysing, following the song), from the control's new `SongState` property
 
 ### Fixed
