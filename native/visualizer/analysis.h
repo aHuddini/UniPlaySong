@@ -396,6 +396,10 @@ struct Layers
     std::vector<int8_t> chord;
     std::vector<float> chordConf, chordAng, mode, away;
     int keyRoot = 0, keyMinor = 0;
+    // per beat: the bass note (MIDI 28..55, -1 none) and how clear it is (0..1); the song's usual bass note
+    std::vector<int8_t> bassNote;
+    std::vector<float> bassConf;
+    int bassHome = 40;
 };
 
 static Layers AnalyseLayers(const float* x, size_t len, double sr, const std::vector<double>& beats, int barPhase)
@@ -616,6 +620,46 @@ static Layers AnalyseLayers(const float* x, size_t len, double sr, const std::ve
     r.melF = melF;
     for (int t = 1; t < T - 1; t++) { float a3[3] = { melF[t - 1], melF[t], melF[t + 1] }; std::sort(a3, a3 + 3); r.melF[t] = a3[1]; }
     r.melS = std::move(melS);
+    // ---- bass line: per frame, each note E1 (41 Hz) .. G3 (196 Hz) scored by its harmonics in the held part (x1..x4,
+    // weighted 1, 0.8, 0.6, 0.4, read between bins - a low note's own bins are too coarse); per beat the note with the
+    // most, how clearly it leads, how loud the low held part is, and whether there's a bass at all (the 58-250 Hz share
+    // of the held sound - a lounge piano holds 5%, songs with a bass line 34-83%). bassNote: MIDI 28..55, -1 none
+    {
+        const int BASS_LO = 28, BASS_HI = 55, NBN = BASS_HI - BASS_LO + 1; const double BW[4] = { 1, 0.8, 0.6, 0.4 }, BASS_LEAD_MIN = 1.6;
+        std::vector<float> bassSal((size_t)T * NBN), bassE(T);
+        for (int t = 0; t < T; t++)
+        {
+            auto amp = [&](int k) { return k >= 0 && k < nb ? std::sqrt(H(t, k)) : 0.0; };
+            double tot = 0;
+            for (int m = BASS_LO; m <= BASS_HI; m++)
+            {
+                const double f0 = 440 * std::pow(2.0, (m + tuning - 69) / 12); double sal = 0;
+                for (int hh = 1; hh <= 4; hh++) { const double fk = hh * f0 / binHz - lo; const int k0 = (int)std::floor(fk); const double fw = fk - k0; sal += BW[hh - 1] * ((1 - fw) * amp(k0) + fw * amp(k0 + 1)); }
+                bassSal[(size_t)t * NBN + m - BASS_LO] = (float)sal; tot += sal;
+            }
+            bassE[t] = (float)(tot / NBN);
+        }
+        const double bassE90 = Or1(Pct(bassE, 0.9));
+        const int kBass = (int)JsRound(250 / binHz) - lo;
+        r.bassNote.assign(nBeats, -1); r.bassConf.assign(nBeats, 0);
+        for (int i = 0; i < nBeats; i++)
+        {
+            int a, b; span(i, &a, &b);
+            double acc[NBN] = {}, e = 0;
+            for (int t = a; t < b; t++) { for (int q = 0; q < NBN; q++) acc[q] += bassSal[(size_t)t * NBN + q]; e += bassE[t]; }
+            double lowE = 0, allE = 0; for (int t = a; t < b; t++) for (int k = 0; k < nb; k++) { const double v = H(t, k); allE += v; if (k <= kBass) lowE += v; }
+            const float share = (float)(allE > 0 ? lowE / allE : 0);
+            int best = 0; double sum = 0; for (int q = 0; q < NBN; q++) { sum += acc[q]; if (acc[q] > acc[best]) best = q; }
+            const double lead = acc[best] / Or1(sum / NBN), loud = std::min(1.0, e / std::max(1, b - a) / bassE90);
+            const double g = std::min(1.0, std::max(0.0, (share - 0.08) / 0.12)), gate = g * g * (3 - 2 * g);
+            const double u = std::min(1.0, std::max(0.0, (lead - BASS_LEAD_MIN) / 1.5)) * std::min(1.0, loud * 1.5) * gate;
+            if (u > 0.1) { r.bassNote[i] = (int8_t)(BASS_LO + best); r.bassConf[i] = (float)u; }
+        }
+        // the song's usual bass note: the centre of the walk's octave
+        std::vector<int> found; for (int8_t n : r.bassNote) if (n >= 0) found.push_back(n);
+        std::sort(found.begin(), found.end());
+        r.bassHome = found.empty() ? 40 : found[found.size() >> 1];
+    }
     // song structure: per bar, harmony (chroma) and timbre (8 log bands of the whole spectrum); boundaries where a
     // checkerboard kernel (Foote) finds the sound changing; segments that sound alike share a letter
     const int nbands = 8;
@@ -700,6 +744,7 @@ static Layers AnalyseLayers(const float* x, size_t len, double sr, const std::ve
 //   "BEAT" bpm, period (f64), barPhase (i32); n, beats[n], strength[n] (f64)
 //   "LAYR" fr (f64); n, pad[n], melF[n], melS[n] (f32); n, harm[n], clarity[n] (f32); n, n x { start, end (f64), label (i32) }
 //   "CHRD" n, chord[n] (i8: root 0..11, +12 minor, -1 none); chordAng[n], mode[n], away[n] (f32); keyRoot, keyMinor (i32)
+//   "BASS" n, bassNote[n] (i8: MIDI, -1 none); bassConf[n] (f32); bassHome (i32)
 static const uint32_t FileMagic = 0x31415655u;   // "UVA1"
 
 struct Writer
@@ -733,6 +778,9 @@ static bool Save(const std::wstring& path, const SongMap& map, const Beats& beat
     Writer c;
     c.Many(layers.chord); c.Raw(layers.chordAng); c.Raw(layers.mode); c.Raw(layers.away); c.Put((int32_t)layers.keyRoot); c.Put((int32_t)layers.keyMinor);
     w.buf.insert(w.buf.end(), { 'C', 'H', 'R', 'D' }); w.Put((uint32_t)c.buf.size()); w.buf.insert(w.buf.end(), c.buf.begin(), c.buf.end());
+    Writer bs;
+    bs.Many(layers.bassNote); bs.Raw(layers.bassConf); bs.Put((int32_t)layers.bassHome);
+    w.buf.insert(w.buf.end(), { 'B', 'A', 'S', 'S' }); w.Put((uint32_t)bs.buf.size()); w.buf.insert(w.buf.end(), bs.buf.begin(), bs.buf.end());
 
     size_t slash = path.find_last_of(L"\\/");
     if (slash != std::wstring::npos) CreateDirectoryW(path.substr(0, slash).c_str(), nullptr);
@@ -799,6 +847,12 @@ static bool Load(const std::wstring& path, int64_t sourceBytes, int64_t sourceTi
         {
             take(&n, 4); s.chord.resize(n); s.chordAng.resize(n); s.mode.resize(n); s.away.resize(n);
             take(s.chord.data(), n); take(s.chordAng.data(), n * 4); take(s.mode.data(), n * 4); take(s.away.data(), n * 4);
+        }
+        else if (!std::memcmp(tag, "BASS", 4))
+        {
+            int32_t home = 40;
+            take(&n, 4); s.bassNote.resize(n); s.bassConf.resize(n);
+            take(s.bassNote.data(), n); take(s.bassConf.data(), n * 4); take(&home, 4); s.bassHome = home;
         }
         at = end;   // past anything this version doesn't read
     }

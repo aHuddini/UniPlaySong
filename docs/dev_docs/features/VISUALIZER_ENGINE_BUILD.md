@@ -220,17 +220,44 @@ change the bench, regenerate, port engine changes to `fountain.h`.
 
 The droplet style is inspired by Tekken 8's music jukebox visualizer - "T8" in the bench and its tools.
 
-- **The look:** the bench's **Your tune #6**, frozen in `bench/standard-tune6.json`. `node bench/tools/export_t8.mjs`
+- **The look:** the bench's **Your tune #8**, frozen in `bench/standard-tune8.json`. `node bench/tools/export_t8.mjs`
   writes the `.vis` from it (parameters, palette uniforms, the three shaders); copy it to `src/Audio/Native/Visualizer/presets/`.
-  The bench's other looks (Your tune #4/#5, the T8 standard - `standard-t8.json` - Showcase, Spectrum) are kept as
-  reference; so are the MilkDrop test variants in `native/visualizer/presets/reference/`.
+  The bench's other looks (Your tune #4-#7, the T8 standard - `standard-t8.json`, `standard-tune6.json`, `standard-tune7.json` - Showcase,
+  Spectrum) are kept as reference; so are the MilkDrop test variants in `native/visualizer/presets/reference/`.
+- **The palette comes from a picture:** the game's background by default; the theme's element `Tag` can pick `Cover`
+  or `Disc` (the now-playing art, `NowPlayingAlbumArtPath`), each falling back to the others. UniPlaySong takes three colours from it the bench's way (`VisualizerCoverPalette`: k-means into five colours at 64x64,
+  weighted to saturated bright pixels; the three covering the most pixels with colour in them, greys only to fill in) and sends them
+  through `VisSong.cover*`. The renderer builds the "Cover art" scheme from them (`fountain::Colours::FromCover`:
+  darkest = cool end, lightest = hot end, the third the middle stop, most vivid = kick, nearest blue = cool shade; calm,
+  glint and bloom mixed from those) and eases to it over ~2 s (0.8 s time constant). A one-colour cover gives shades of
+  that colour. Each picture is taken apart once and kept in `VisualAnalysis\palettes.json` (beside Games); each session
+  checks a picture's size and time once and takes it again only if it changed (`StoreVersion` retakes them all). No art,
+  or an image that won't decode: the style's own palette (White to magenta). The bench's "Cover
+  art" picks and builds the same way, so it previews what Playnite shows.
+- **The music player's spectrum strip** (`UPS_MusicPlayerControlVisual`): `presets/UPS - Seek Spectrum.vis`, written by
+  hand - the Jukebox Fountain's `P`/`U` lines (the engine reads its parameters by name) with a neutral grey-white
+  palette for no art, and its own three shaders: 32 bars rising from the strip's bottom edge, each the live level of one
+  right-wing column (48-95, evenly low to high), blending over its own height from a bottom colour to a top colour; no
+  bloom. The two colours are what the eye reads in the cover, nothing boosted (`VisualizerStripColors`): a hue histogram
+  weighted saturation x brightness^2; the strongest family and the strongest at least 60 degrees from it (none =
+  one-hue, darker-to-brighter shades); each family's colour from its brightest third, at the cover's own saturation,
+  only brightness lifted; a cover with little vivid colour toned toward neutral (A Plague Tale near-white, Quake III
+  keeps its red). The darker colour at the foot. Boosting saturation invented colours and made pairs harsh; the desktop
+  extractor's Vivid pick rotated hues. Sent as the cover's first two colours, read as sent (`uCoverA`, `uCoverB`, eased).
+  Also shown alone: `UPS_MusicVisualStrip`. It needs nothing new from the renderer.
+  Bench check: `VIS_COVER` with `--bench` and `VIS_DUMP`.
 - **Whole-song analysis** ([`analysis.h`](../../../native/visualizer/analysis.h)), in the 64-bit renderer: the song map
   (sections, build-up tension, drops), a librosa-style beat tracker (tempo changes, beat strengths, the bar's first
   beat), and the layers - held pads, melody, harmony, lettered sections, and per beat the chord (24 triads with
   overtone templates, Viterbi-smoothed, "none" on drum-only beats), how major or minor it sounds, the key, and the
-  distance from home on the circle of fifths. UniPlaySong decodes a new song to mono 48 kHz and hands it over
+  distance from home on the circle of fifths; and the bass line - per beat the note E1-G3 scored by its harmonics in
+  the held part, gated off where the 58-250 Hz share of the held sound shows no bass (a lounge piano: 5%; songs with a
+  bass line 34-83%). Against pYIN on Demucs bass stems the note's name is right 74-90% of beats; octaves slip (the
+  lowest fundamentals sit below the first bins), so the rise folds notes into the octave round the song's usual bass
+  note: the fountain's body lifts as the bass climbs and settles as it falls (eased 0.4 s; #7's walking light along the
+  wing, sideways and quick, read as apart from the fountain). UniPlaySong decodes a new song to mono 48 kHz and hands it over
   ([`VisualizerSongAnalysis.cs`](../../../src/Audio/VisualizerSongAnalysis.cs)); the result is cached as
-  `<game music folder>\VisualAnalysis\<song>.vab` (header + `MAP `/`BEAT`/`LAYR`/`CHRD` chunks). `VIS_ANALYSIS_VERSION`
+  `<game music folder>\VisualAnalysis\<song>.vab` (header + `MAP `/`BEAT`/`LAYR`/`CHRD`/`BASS` chunks). `VIS_ANALYSIS_VERSION`
   (with `AnalysisVersion` in C#) re-analyses every song once when the format or the results change. `VisFrames.songState`
   tells a theme whether it's live, analysing or following the song.
 - **Live, no analysis needed:** the spectrum-driven engine, and the hi-hat and snare reactions - the high (6-16 kHz)
@@ -247,11 +274,12 @@ The droplet style is inspired by Tekken 8's music jukebox visualizer - "T8" in t
 | `analysis_parity.mjs <mono.f32> <json>` | `UniPlaySongVisualizer.exe --analyze` against the bench's analysis: map, beats, layers, chords, key (0 difference on Troy, Doom, Stalker) |
 | `engine_parity.mjs <mono.f32> <dump> [frames] --analysis` | the renderer's `VIS_ENGINE_DUMP` (per-column state + the song uniforms' scalars) against the bench engine, through a real `.vab` (~1e-7) |
 | `chords_check.mjs` | chords and key on synthesised progressions with known answers; drums-only gives none |
-| `drums_vs_stems.mjs`, `chords_vs_stems.mjs`, `hits_vs_stems.mjs` | in-mix detection against Demucs stems from `C:\Projects\audiostemtool` (dev-time only, nothing ships) |
+| `drums_vs_stems.mjs`, `chords_vs_stems.mjs`, `hits_vs_stems.mjs`, `bass_vs_stems.mjs` | in-mix detection against Demucs stems from `C:\Projects\audiostemtool` (dev-time only, nothing ships) |
 
 Renderer env for the bench mode: `VIS_ANALYZE=1` (analyse the PCM, through a `.vab`), `VIS_FRAMES=n`,
 `VIS_ENGINE_DUMP=<file>`, `VIS_PROFILE=1`, `VIS_DEBUG=1`, `VIS_INTEROP=0` (force the copy path, to compare),
-`VIS_DUMP_D3D=1` (read the dumped frame through Direct3D, as the bridge does).
+`VIS_DUMP_D3D=1` (read the dumped frame through Direct3D, as the bridge does), `VIS_COVER=r,g,b;r,g,b` (0-1: a cover's
+two colours, to see its palette).
 
 ## Known limits and next steps
 

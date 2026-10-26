@@ -1,5 +1,6 @@
-// Writes the Jukebox Fountain's style file for the renderer from the bench: the shipped look's values (bench/standard-tune6.json,
-// "Your tune #6"; another frozen spec - standard-t8.json, the earlier T8 reference - can be passed instead) and the bench's own shaders, lifted as they are - only their WebGL header becomes a desktop
+// Writes the Jukebox Fountain's style file for the renderer from the bench: the shipped look's values (bench/standard-tune8.json,
+// "Your tune #8"; another frozen spec - standard-tune7.json, standard-tune6.json or standard-t8.json, earlier references - can
+// be passed instead, though one frozen before a slider existed lacks it and is refused) and the bench's own shaders, lifted as they are - only their WebGL header becomes a desktop
 // GL 3.3 one and the template slots are filled. The renderer builds nothing of its own, so it draws what the bench draws.
 // ("T8": the droplet style is inspired by Tekken 8's music jukebox visualizer.)
 //   node export_t8.mjs [spec.json]   -> native/visualizer/presets/UPS - Jukebox Fountain.vis
@@ -8,7 +9,7 @@
 import fs from "fs";
 const root = "C:/Projects/UniPSound/UniPlaySong/native/visualizer";
 const html = fs.readFileSync(`${root}/bench/fountain-bench.html`, "utf8").split("\r\n").join("\n");
-const specFile = process.argv[2] || "standard-tune6.json";
+const specFile = process.argv[2] || "standard-tune8.json";
 const spec = JSON.parse(fs.readFileSync(`${root}/bench/${specFile}`, "utf8"));
 
 // the parameters, in the bench's PARAMS order (the order of uP[] in its shaders)

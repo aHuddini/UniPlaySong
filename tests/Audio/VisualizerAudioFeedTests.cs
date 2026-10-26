@@ -84,6 +84,38 @@ namespace UniPlaySong.Tests.Audio
         }
 
         [Test]
+        public void Cover_LandsWhereTheRendererReadsIt()
+        {
+            // VisSong in native/visualizer/visualizer_shared.h (pack 8): coverSeq at 2096, coverOn 2100, coverA 2104, coverB
+            // 2116, coverC 2128, 2144 bytes in all (2140 rounded to 8) - the renderer reads these offsets, so a drift here
+            // would hand it garbage colours
+            Assert.AreEqual(2096, VisualizerAudioFeed.SongOffCoverSeq);
+            Assert.AreEqual(2100, VisualizerAudioFeed.SongOffCoverOn);
+            Assert.AreEqual(2104, VisualizerAudioFeed.SongOffCoverA);
+            Assert.AreEqual(2116, VisualizerAudioFeed.SongOffCoverB);
+            Assert.AreEqual(2128, VisualizerAudioFeed.SongOffCoverC);
+            Assert.AreEqual(2144, VisualizerAudioFeed.Bytes - VisualizerAudioFeed.OffSong);
+            string name = NewName();
+            using (var feed = VisualizerAudioFeed.Open(name))
+            using (var map = MemoryMappedFile.OpenExisting(name))
+            using (var view = map.CreateViewAccessor())
+            {
+                int song = VisualizerAudioFeed.OffSong;
+                feed.PublishCover(true, System.Windows.Media.Color.FromRgb(255, 0, 51), System.Windows.Media.Color.FromRgb(0, 102, 255),
+                    System.Windows.Media.Color.FromRgb(0, 255, 153));
+                Assert.AreEqual(2u, view.ReadUInt32(song + VisualizerAudioFeed.SongOffCoverSeq), "seq ends even");
+                Assert.AreEqual(1u, view.ReadUInt32(song + VisualizerAudioFeed.SongOffCoverOn));
+                Assert.AreEqual(1f, view.ReadSingle(song + VisualizerAudioFeed.SongOffCoverA), 1e-6);
+                Assert.AreEqual(0.2f, view.ReadSingle(song + VisualizerAudioFeed.SongOffCoverA + 8), 1e-6);
+                Assert.AreEqual(0.4f, view.ReadSingle(song + VisualizerAudioFeed.SongOffCoverB + 4), 1e-6);
+                Assert.AreEqual(0.6f, view.ReadSingle(song + VisualizerAudioFeed.SongOffCoverC + 8), 1e-6);
+                feed.PublishCover(false, default(System.Windows.Media.Color), default(System.Windows.Media.Color), default(System.Windows.Media.Color));   // no art
+                Assert.AreEqual(4u, view.ReadUInt32(song + VisualizerAudioFeed.SongOffCoverSeq));
+                Assert.AreEqual(0u, view.ReadUInt32(song + VisualizerAudioFeed.SongOffCoverOn));
+            }
+        }
+
+        [Test]
         public void Interleave_MonoIsDoubled_ExtraChannelsAreDropped()
         {
             var stereo = new float[4];

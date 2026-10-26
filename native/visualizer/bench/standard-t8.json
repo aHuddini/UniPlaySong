@@ -134,6 +134,8 @@
   "KEY_HEAT": 0,
   "CHORD_PULSE": 0,
   "HAT_SPARKLE": 0,
+  "BASS_WALK": 0,
+  "BASS_PULSE": 0,
   "SNARE_FLARE": 0,
   "DET_KICK": 0.12,
   "DET_KICK_SUSTAIN": 0.65,

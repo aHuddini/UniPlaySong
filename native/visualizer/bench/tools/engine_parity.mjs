@@ -1,5 +1,5 @@
 // Engine parity: runs the bench's own level engine (lifted from fountain-bench.html, as sim.mjs does) on a song with the
-// shipped look's values (Your tune #6, standard-tune6.json) and no song analysis, one 1/60 s step per frame over the 1024 samples ending at frame k * 800
+// shipped look's values (Your tune #8, standard-tune8.json) and no song analysis, one 1/60 s step per frame over the 1024 samples ending at frame k * 800
 // (48 kHz) - exactly what the renderer's --bench mode feeds fountain.h - and compares the packed columns (colA, colB,
 // colC per frame) with the renderer's VIS_ENGINE_DUMP.
 //   node engine_parity.mjs <mono48k.f32> <renderer-dump.bin> [frames] [--analysis]
@@ -7,7 +7,7 @@
 // VIS_ANALYZE=1), so the comparison covers the beat throws, sections, drops and the layers (melody, pads, harmony) too.
 import fs from "fs";
 const html = fs.readFileSync("C:/Projects/UniPSound/UniPlaySong/native/visualizer/bench/fountain-bench.html", "utf8").split("\r\n").join("\n");
-const spec = JSON.parse(fs.readFileSync("C:/Projects/UniPSound/UniPlaySong/native/visualizer/bench/standard-tune6.json", "utf8"));   // the shipped look, as the renderer's style file
+const spec = JSON.parse(fs.readFileSync("C:/Projects/UniPSound/UniPlaySong/native/visualizer/bench/standard-tune8.json", "utf8"));   // the shipped look, as the renderer's style file
 const cut = (a, b) => html.slice(html.indexOf(a), html.indexOf(b));
 const params = cut("const PARAMS = [", "const P = {};");
 const fft = cut("function makeFFT", "const smooth =");
@@ -25,7 +25,7 @@ const factory = new Function("MOCK", `
   ${peak} ${eng}
   return { engine, setP: o => { P = {}; for (const p of PARAMS) P[p[0]] = p[3]; Object.assign(P, o); }, colA, colB, colC,
     setSong: (m, b, l) => { songMap = m; beatInfo = b; layers = l; layersOf = buffer; },
-    scal: () => [padE, padG, harmE, modeE, awayE, chordHit, chordG, HIT_BANDS[0].hit, HIT_BANDS[1].hit] };`);
+    scal: () => [padE, padG, harmE, modeE, awayE, chordHit, chordG, HIT_BANDS[0].hit, HIT_BANDS[1].hit, bassPosE, bassStrE, bassHit, bassPitchE] };`);
 const args = process.argv.slice(2), withAnalysis = args.includes("--analysis");
 const [file, dumpFile, nArg] = args.filter(a => a !== "--analysis");
 const b = fs.readFileSync(file), x = new Float32Array(b.buffer, b.byteOffset, b.length / 4), sr = 48000, n = 1024;
@@ -48,7 +48,7 @@ if (withAnalysis) {
   E.setSong(map, beats, layers);
   console.log(`with the song's analysis: ${beats.beats.length} beats, ${map.drops.length} drops, ${layers.sections.length} sections`);
 }
-const SCAL = ["padE", "padG", "harmE", "modeE", "awayE", "chordHit", "chordG", "hitMid", "hitHigh"];
+const SCAL = ["padE", "padG", "harmE", "modeE", "awayE", "chordHit", "chordG", "hitMid", "hitHigh", "bassPos", "bassStr", "bassHit", "bassPitch"];
 const dump = fs.readFileSync(dumpFile), d = new Float32Array(dump.buffer, dump.byteOffset, dump.length / 4), per = 96 * 12 + SCAL.length;
 const frames = Math.min(+(nArg || 600), d.length / per);
 const names = ["ez", "kc", "slow", "rate", "fl", "flv", "heatC", "settleC", "melC", "bandPos", "reach"];

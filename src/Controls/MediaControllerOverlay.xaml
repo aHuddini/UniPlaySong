@@ -67,6 +67,29 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- UPS_MusicPlayerControlVisual's seek bar: the same 4 px line with a knob at the song's position (the plain popup
+             keeps its line). 20 px tall and transparent, not empty, across all of it, so the whole height takes a click or a
+             drag (an empty background takes none: only the 4 px line did); PART_Indicator's width is the progress, the knob
+             rides its end. -->
+        <Style x:Key="UpsKnobSeekBar" TargetType="ProgressBar">
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Grid Background="Transparent">
+                            <Border x:Name="PART_Track" Height="4" CornerRadius="2" VerticalAlignment="Center"
+                                    Background="{TemplateBinding Background}"/>
+                            <Grid x:Name="PART_Indicator" HorizontalAlignment="Left">
+                                <Border Height="4" CornerRadius="2" VerticalAlignment="Center" Background="{TemplateBinding Foreground}"/>
+                                <Ellipse Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,-6,0"
+                                         Fill="{TemplateBinding Foreground}"/>
+                            </Grid>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </PluginUserControl.Resources>
 
     <PluginUserControl.Style>
@@ -79,7 +102,18 @@
         </Style>
     </PluginUserControl.Style>
 
-    <Border Background="#E60E1116" CornerRadius="16" Padding="22" MinWidth="360" MaxWidth="420">
+    <Grid x:Name="CardRoot" MinWidth="360" MaxWidth="420">
+    <!-- UPS_MusicPlayerControlVisual: the album art blurred behind the card (frosted). Blurred once per cover and cached
+         (code-behind). A shape with a brush, so it fills the card and never sizes it - an Image here sized the card to the
+         cover's proportions. Collapsed on the plain popup. -->
+    <Border x:Name="Frost" Visibility="Collapsed" ClipToBounds="True">
+        <Rectangle x:Name="FrostFill" Margin="-60">
+            <Rectangle.Effect>
+                <BlurEffect Radius="60" RenderingBias="Performance"/>
+            </Rectangle.Effect>
+        </Rectangle>
+    </Border>
+    <Border x:Name="Card" Background="#E60E1116" CornerRadius="16" Padding="22">
         <StackPanel>
             <!-- Album art -->
             <Border CornerRadius="10" ClipToBounds="True" Margin="0,0,0,16" HorizontalAlignment="Center"
@@ -88,7 +122,13 @@
             </Border>
 
             <!-- Source label + title + artist -->
-            <TextBlock Text="{Binding SourceName}" FontSize="11" Opacity="0.5" Margin="2,0,0,2" FontWeight="SemiBold"/>
+            <TextBlock x:Name="SourceLabel" Text="{Binding SourceName}" FontSize="11" Opacity="0.5" Margin="2,0,0,2" FontWeight="SemiBold"/>
+            <!-- UPS_MusicPlayerControlVisual: the playing game's name (or Spotify) as a pill, in place of the source label -->
+            <Border x:Name="GamePill" Visibility="Collapsed" HorizontalAlignment="Left" CornerRadius="10" Padding="9,2,9,3"
+                    Margin="0,0,0,6" Background="#33FFFFFF">
+                <TextBlock x:Name="GamePillText" FontSize="11" FontWeight="SemiBold" Foreground="#FFFFFF"
+                           TextTrimming="CharacterEllipsis" MaxWidth="340"/>
+            </Border>
             <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold" Foreground="#FFFFFF"
                        TextTrimming="CharacterEllipsis" Margin="2,0,0,1"/>
             <TextBlock Text="{Binding Artist}" FontSize="14" Opacity="0.72" Foreground="#FFFFFF"
@@ -101,12 +141,19 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="{Binding PositionText}" FontSize="11" Opacity="0.6"
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <!-- UPS_MusicPlayerControlVisual's spectrum strip, standing on the seek bar; collapsed (no space) on the plain popup -->
+                <ContentControl x:Name="StripHost" Grid.Row="0" Grid.Column="1" Height="24" Visibility="Collapsed"
+                                IsHitTestVisible="False" Focusable="False"/>
+                <TextBlock x:Name="PositionLabel" Grid.Row="1" Grid.Column="0" Text="{Binding PositionText}" FontSize="11" Opacity="0.6"
                            Foreground="#FFFFFF" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <ProgressBar Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding Progress, Mode=OneWay}"
+                <ProgressBar x:Name="SeekBar" Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding Progress, Mode=OneWay}"
                              Height="4" VerticalAlignment="Center" Foreground="#FFFFFF" Background="#26FFFFFF"
                              BorderThickness="0"/>
-                <TextBlock Grid.Column="2" Text="{Binding DurationText}" FontSize="11" Opacity="0.6"
+                <TextBlock x:Name="DurationLabel" Grid.Row="1" Grid.Column="2" Text="{Binding DurationText}" FontSize="11" Opacity="0.6"
                            Foreground="#FFFFFF" VerticalAlignment="Center" Margin="10,0,0,0"/>
             </Grid>
 
@@ -137,4 +184,5 @@
             </StackPanel>
         </StackPanel>
     </Border>
+    </Grid>
 </PluginUserControl>

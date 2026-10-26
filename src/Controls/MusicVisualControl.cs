@@ -10,8 +10,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Playnite.SDK.Controls;
+using Playnite.SDK.Models;
 using UniPlaySong.Audio;
 using UniPlaySong.Common;
 using UniPlaySong.Services;
@@ -24,6 +26,9 @@ namespace UniPlaySong.Controls
     // over whatever the theme draws behind it. The renderer runs only while the element is on screen and the setting is
     // on, takes its music from UPS itself (VisualizerAudioFeed), and draws one frame per WPF frame. Never focusable or
     // hit-testable, so it can't take controller focus. Layout and native side: native/visualizer/.
+    // The same control is the music player's spectrum strip (UPS_MusicPlayerControlVisual, see MediaControllerOverlay): no
+    // setting, its own style (UPS - Seek Spectrum.vis) and the popup's art for colours. A strip on screen borrows the
+    // renderer from a page visualizer, which holds its last frame until the strip goes.
     public class MusicVisualControl : PluginUserControl
     {
         private static readonly string Folder =
@@ -32,6 +37,9 @@ namespace UniPlaySong.Controls
 
         // The bridge holds one device and one set of shared textures, so only one element shows at a time.
         private static MusicVisualControl _owner;
+        // Page visualizers waiting for a strip to give the renderer back: the one it was borrowed from (holding its last
+        // frame) and any that wanted it meanwhile. Restarted when the strip goes.
+        private static readonly List<MusicVisualControl> _waiting = new List<MusicVisualControl>();
         private static Task _rendererExited = Task.FromResult(0);
         private static int _starts;
 
@@ -48,6 +56,13 @@ namespace UniPlaySong.Controls
         private readonly TranslateTransform _snap = new TranslateTransform();   // the image's sub-pixel nudge, see OnRendering
         private Vector _deviceScale = new Vector(1, 1);
         private string _shownAt;   // where the frame was last logged as shown (debug log)
+        // The Jukebox Fountain's palette from a picture: three colours (VisualizerCoverPalette) sent to the renderer, which
+        // builds the palette and crossfades to it. Which picture is the theme's choice, by the element's Tag: "Background"
+        // (the default - the game's background, what fills the screen), "Cover" (the game's cover) or "Disc" (the
+        // now-playing art: the song's own, else the cover). Each falls back to the others when its picture is missing.
+        private string _gameBackground, _gameCover;   // the game shown's, when the file is there (GameContextChanged)
+        private string _coverFor;   // the art the renderer last got colours for (null: none sent since it started)
+        private bool _coverSent;
         private readonly DispatcherTimer _resizeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
         private UniPlaySongSettings _subscribedTo;
         private Process _renderer;
@@ -64,15 +79,25 @@ namespace UniPlaySong.Controls
         private Size _startedAt;
         private string _startedPreset;
         private Window _window;
+        private bool IsStrip { get; }   // the music player's spectrum strip, not the page visualizer
 
-        // otherMusicFolder: where song analyses of music outside the game folders go (the Jukebox Fountain)
-        public MusicVisualControl(ISettingsProvider settings, FileLogger log, string otherMusicFolder)
+        // otherMusicFolder: where song analyses of music outside the game folders go (the Jukebox Fountain).
+        // strip: the music player's spectrum strip (UPS_MusicPlayerControlVisual).
+        public MusicVisualControl(ISettingsProvider settings, FileLogger log, string otherMusicFolder, bool strip = false)
         {
             _settings = settings;
             _log = log;
             _otherMusicFolder = otherMusicFolder;
+            IsStrip = strip;
             Focusable = false;
             IsHitTestVisible = false;
+            // the theme's element carries the Tag (the palette's picture); Playnite doesn't pass it on, so take it from there
+            if (!IsStrip)
+                SetBinding(TagProperty, new System.Windows.Data.Binding(nameof(Tag))
+                {
+                    RelativeSource = new System.Windows.Data.RelativeSource(System.Windows.Data.RelativeSourceMode.FindAncestor, typeof(Control), 1)
+                });
+            else _image.VerticalAlignment = VerticalAlignment.Bottom;   // the bars stand on the seek bar
             _image.RenderTransform = _snap;
             var grid = new Grid();
             grid.Children.Add(_image);
@@ -117,11 +142,44 @@ namespace UniPlaySong.Controls
         public static readonly DependencyProperty SongStateProperty = SongStateKey.DependencyProperty;
         public int SongState => (int)GetValue(SongStateProperty);
 
-        private bool Enabled => _settings?.Current?.MusicVisualizerEnabled == true;
+        private bool Enabled => WantsRenderer(IsStrip, _settings?.Current?.MusicVisualizerEnabled == true, VisualizationDataProvider.Current != null);
+
+        // The page visualizer runs when the setting is on (which also puts playback on NAudio); the strip has no setting
+        // and runs whenever there is NAudio playback to hear - on SDL2 there is none, so it starts nothing.
+        internal static bool WantsRenderer(bool strip, bool visualizerSetting, bool hearing) => strip ? hearing : visualizerSetting;
+
+        // The frame in device pixels: at most 2560x1440, even. A page visualizer too small to measure falls back to 1280x720;
+        // a strip is its own size, down to 4 px, and (0, 0) below that - too thin to draw, so it doesn't start.
+        internal static (int w, int h) FrameSize(double width, double height, Vector deviceScale, bool strip)
+        {
+            int ew = (int)(width * deviceScale.X), eh = (int)(height * deviceScale.Y);
+            if (strip) { if (ew < 4 || eh < 4) return (0, 0); }
+            else if (ew < 64 || eh < 64) { ew = 1280; eh = 720; }
+            return (Math.Min(ew, 2560) & ~1, Math.Min(eh, 1440) & ~1);
+        }
+
+        // What Start does when the renderer may be someone else's: take it (nobody has it), borrow it (a strip, from a
+        // page - nobody opens the player over its own page visualizer), wait for it (a page, while a strip has it), or
+        // leave it (one at a time, as before).
+        internal enum Claim { Take, Borrow, Wait, Leave }
+
+        internal static Claim ClaimFrom(bool strip, bool hasOwner, bool ownerIsStrip) =>
+            !hasOwner ? Claim.Take : strip && !ownerIsStrip ? Claim.Borrow : !strip && ownerIsStrip ? Claim.Wait : Claim.Leave;
+
+        // A strip that goes (not one restarting at a new size) hands the renderer back to the waiting pages - even if it
+        // never got it (closed while the page's renderer was still exiting) - unless another strip has it now.
+        internal static bool HandsBack(bool strip, bool ownedByAnother, bool staying) => strip && !ownedByAnother && !staying;
+
+        private static void HandBack()
+        {
+            var pages = _waiting.ToArray();
+            _waiting.Clear();
+            foreach (var page in pages) page.Refresh();
+        }
 
         // The chosen style's file: a MilkDrop preset made by native/visualizer/presets/make_presets.py, or the Jukebox
-        // Fountain's style file, made by native/visualizer/bench/tools/export_t8.mjs.
-        private string PresetPath => Path.Combine(Folder, "presets", StyleFile(_settings?.Current?.MusicVisualizerStyle));
+        // Fountain's style file, made by native/visualizer/bench/tools/export_t8.mjs. The strip has its own.
+        private string PresetPath => Path.Combine(Folder, "presets", IsStrip ? "UPS - Seek Spectrum.vis" : StyleFile(_settings?.Current?.MusicVisualizerStyle));
 
         private static string StyleFile(MusicVisualizerStyle? style)
         {
@@ -176,7 +234,35 @@ namespace UniPlaySong.Controls
 
         private void Start()
         {
-            if (_owner != null || !Enabled) return;
+            if (!Enabled)
+            {
+                if (IsStrip) _log?.Debug("[Visualizer] Strip not started: no NAudio playback to hear");
+                return;
+            }
+            // The frame's box: the element in device pixels, centred and shown 1:1 - pixel for pixel is what keeps the
+            // visualizer sharp. Past the cap the rest of the element stays empty rather than upscaled (an upscaled frame -
+            // 1728 px stretched over 2880 - looked blurry all over, and filling the width also made every column wider than
+            // the page was laid out for).
+            _deviceScale = ToDevice(this, new Point(1, 1)) - ToDevice(this, new Point(0, 0));
+            var (w, h) = FrameSize(ActualWidth, ActualHeight, _deviceScale, IsStrip);
+            if (w == 0)
+            {
+                _log?.Debug($"[Visualizer] Not started: too small to draw ({ActualWidth:0}x{ActualHeight:0})");
+                return;
+            }
+            switch (ClaimFrom(IsStrip, _owner != null, _owner?.IsStrip == true))
+            {
+                case Claim.Leave:
+                    return;
+                case Claim.Wait:
+                    if (!_waiting.Contains(this)) _waiting.Add(this);
+                    return;
+                case Claim.Borrow:
+                    var page = _owner;
+                    if (!_waiting.Contains(page)) _waiting.Add(page);
+                    page.Suspend();
+                    break;
+            }
             // A new renderer must not start before the old one has gone: its shared memory would still be in use.
             if (!_rendererExited.IsCompleted)
             {
@@ -187,6 +273,7 @@ namespace UniPlaySong.Controls
             if (!File.Exists(RendererPath) || !File.Exists(preset))
             {
                 _log?.Warn($"[Visualizer] Not installed: {RendererPath} or its preset is missing");
+                if (IsStrip) HandBack();
                 return;
             }
 
@@ -199,28 +286,20 @@ namespace UniPlaySong.Controls
             {
                 Load(Folder);
                 _feed = VisualizerAudioFeed.Open(channel + "_Audio");
-                if (_settings?.Current?.MusicVisualizerStyle == MusicVisualizerStyle.JukeboxFountain)
+                if (!IsStrip && _settings?.Current?.MusicVisualizerStyle == MusicVisualizerStyle.JukeboxFountain)
                     _songAnalysis = new VisualizerSongAnalysis(_feed, _log, _otherMusicFolder);
             }
             catch (Exception ex)
             {
                 _log?.Warn($"[Visualizer] Could not start: {ex.Message}");
                 _owner = null;
+                if (IsStrip) HandBack();
                 return;
             }
 
-            // The frame's box: the element in device pixels, at most 2560x1440, centred and shown 1:1 - pixel for pixel is
-            // what keeps the visualizer sharp. Past the cap the rest of the element stays empty rather than upscaled (an
-            // upscaled frame - 1728 px stretched over 2880 - looked blurry all over, and filling the width also made every
-            // column wider than the page was laid out for).
-            _deviceScale = ToDevice(this, new Point(1, 1)) - ToDevice(this, new Point(0, 0));
-            int ew = (int)(ActualWidth * _deviceScale.X), eh = (int)(ActualHeight * _deviceScale.Y);
-            if (ew < 64 || eh < 64) { ew = 1280; eh = 720; }
             _startedAt = new Size(ActualWidth, ActualHeight);
-            int bw = Math.Min(ew, 2560) & ~1, bh = Math.Min(eh, 1440) & ~1;
-            _image.Width = bw / _deviceScale.X;
-            _image.Height = bh / _deviceScale.Y;
-            int w = bw, h = bh;
+            _image.Width = w / _deviceScale.X;
+            _image.Height = h / _deviceScale.Y;
 
             try
             {
@@ -231,7 +310,7 @@ namespace UniPlaySong.Controls
             catch (Exception ex)
             {
                 _log?.Warn($"[Visualizer] Renderer did not start: {ex.Message}");
-                Stop();
+                Fail();
                 return;
             }
             _log?.Debug($"[Visualizer] Started {w}x{h}, channel {channel}");
@@ -260,7 +339,7 @@ namespace UniPlaySong.Controls
                 if (generation == _generation)
                 {
                     _log?.Warn("[Visualizer] Renderer never published its frames");
-                    Stop();
+                    Fail();
                 }
                 return;
             }
@@ -277,7 +356,7 @@ namespace UniPlaySong.Controls
             if (back == IntPtr.Zero)
             {
                 _log?.Warn($"[Visualizer] Could not open the renderer's textures (0x{hr:x8})");
-                Stop();
+                Fail();
                 return;
             }
 
@@ -287,6 +366,7 @@ namespace UniPlaySong.Controls
             _d3d.Unlock();
             _image.Source = _d3d;
             _shownAt = null;
+            _coverSent = false;   // a new renderer: send it the cover again
             _window = Window.GetWindow(this);
             _lastFrame = 0;
             CompositionTarget.Rendering += OnRendering;
@@ -303,8 +383,13 @@ namespace UniPlaySong.Controls
             // The last frame stays up and the renderer waits, drawing nothing.
             bool idle = _feed == null || unchecked(Environment.TickCount - _feed.LastSoundTick) > 1500 || _window?.IsActive == false;
             if (!idle) SetEvent(_tick);
+            PublishCover();
             int songState = _view.ReadInt32(OffSongState);
-            if (songState != SongState) SetValue(SongStateKey, songState);
+            if (songState != SongState)
+            {
+                _log?.Debug($"[Visualizer] Song state {(songState == 2 ? "following" : songState == 1 ? "analysing" : "live")} at +{_songAnalysis?.SinceSongMs} ms");
+                SetValue(SongStateKey, songState);
+            }
             // Keep the frame on whole device pixels. Layout rounding works in this element's units, and under Fullscreen's
             // Viewbox a whole unit is a fraction of a pixel (the stage's top, 110 units down, lands at 183.3 px at 200%) -
             // WPF would then resample every frame and the visualizer goes soft. The layout offset leaves out _snap itself.
@@ -330,6 +415,78 @@ namespace UniPlaySong.Controls
             _d3d.Unlock();
         }
 
+        public override void GameContextChanged(Game oldContext, Game newContext)
+        {
+            _gameBackground = GameFile(newContext?.BackgroundImage);
+            _gameCover = GameFile(newContext?.CoverImage);
+        }
+
+        private static string GameFile(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            try
+            {
+                string path = Playnite.SDK.API.Instance?.Database?.GetFullFilePath(id);
+                return !string.IsNullOrEmpty(path) && File.Exists(path) ? path : null;
+            }
+            catch (Exception) { return null; }   // a URL rather than a file, or a path it won't take
+        }
+
+        // The picture the palette comes from, by the Tag's choice, falling back to the others. The strip: the player's own
+        // art (the now-playing art the popup shows). Spotify: its album art whatever the Tag - the selected game has
+        // nothing to do with what is playing.
+        private string PaletteArt()
+        {
+            string disc = _settings?.Current?.NowPlayingAlbumArtPath;
+            if (string.IsNullOrEmpty(disc)) disc = null;
+            if (IsStrip || (_settings?.Current?.SpotifyActive == true && disc != null)) return disc;
+            string source = Tag as string;
+            if ("Disc".Equals(source, StringComparison.OrdinalIgnoreCase)) return disc ?? _gameBackground;
+            if ("Cover".Equals(source, StringComparison.OrdinalIgnoreCase)) return _gameCover ?? _gameBackground ?? disc;
+            return _gameBackground ?? _gameCover ?? disc;
+        }
+
+        // When the picture changes, its three colours go to the renderer - taken off the UI thread, sent only if this
+        // renderer is still the one running and the art hasn't changed again. No art, or none usable: the style's own palette.
+        private void PublishCover()
+        {
+            string art = PaletteArt();
+            if (_coverSent && art == _coverFor) return;
+            _coverSent = true;
+            _coverFor = art;
+            var feed = _feed;
+            if (feed == null) return;
+            if (string.IsNullOrEmpty(art) || !File.Exists(art)) { feed.PublishCover(false, default(Color), default(Color), default(Color)); return; }
+            Task.Run(() =>
+            {
+                Color a = default(Color), b = default(Color), c = default(Color);
+                bool on = false, analysed = false;
+                try
+                {
+                    if (IsStrip)
+                    {
+                        // the strip's two colours (VisualizerStripColors), blended up each bar (UPS - Seek Spectrum.vis);
+                        // it reads the first two as sent (uCoverA, uCoverB)
+                        var (foot, top) = VisualizerStripColors.FromFile(art);
+                        a = foot; b = top; c = top;
+                    }
+                    else
+                    {
+                        var cols = VisualizerCoverPalette.Get(art, Path.Combine(_otherMusicFolder, "palettes.json"), out analysed);
+                        a = cols[0]; b = cols[1]; c = cols[2];
+                    }
+                    on = true;
+                }
+                catch (Exception ex) { _log?.Debug($"[Visualizer] Cover colours skipped: {ex.Message}"); }
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (_feed != feed || _coverFor != art) return;
+                    feed.PublishCover(on, a, b, c);
+                    _log?.Debug(on ? $"[Visualizer] Cover palette #{a.R:X2}{a.G:X2}{a.B:X2} / #{b.R:X2}{b.G:X2}{b.B:X2} / #{c.R:X2}{c.G:X2}{c.B:X2} from {(art == _gameBackground ? "background" : art == _gameCover ? "cover" : "disc art")} {Path.GetFileName(art)} ({(analysed ? "analysed" : "stored")})" : "[Visualizer] Cover palette: none (the style's own)");
+                }));
+            });
+        }
+
         // A point in v's units, in device pixels: DPI and every transform above v. TransformToDevice alone is only the DPI,
         // and Playnite's Fullscreen window shows its whole view through a Viewbox (laid out 1080 units tall, stretched to
         // the screen) - sizing by DPI alone drew a 2560 px frame into 2133 px on a 2880x1800 screen at 200%.
@@ -342,7 +499,19 @@ namespace UniPlaySong.Controls
 
         private void Stop()
         {
-            if (_owner != this) return;
+            if (_owner == this) StopRenderer();
+            if (HandsBack(IsStrip, _owner != null && _owner != this, IsVisible && Enabled)) HandBack();
+        }
+
+        // Starting failed: stop, and a strip gives the renderer back (it won't draw, so the page should).
+        private void Fail()
+        {
+            Stop();
+            if (IsStrip) HandBack();
+        }
+
+        private void StopRenderer()
+        {
             _generation++;
             SetValue(IsRunningKey, false);
             SetValue(SongStateKey, 0);
@@ -371,6 +540,26 @@ namespace UniPlaySong.Controls
             _songAnalysis?.Dispose(); _songAnalysis = null;
             _feed?.Dispose(); _feed = null;
             _owner = null;
+        }
+
+        // Lends the renderer to a strip: stop, but keep the last frame up (a still picture) until starting again.
+        private void Suspend()
+        {
+            BitmapSource still = null;
+            if (_d3d != null && _w > 0 && _h > 0)
+            {
+                try
+                {
+                    var rtb = new RenderTargetBitmap(_w, _h, 96 * _deviceScale.X, 96 * _deviceScale.Y, PixelFormats.Pbgra32);
+                    rtb.Render(_image);
+                    rtb.Freeze();
+                    still = rtb;
+                }
+                catch (Exception ex) { _log?.Debug($"[Visualizer] Could not keep the last frame: {ex.Message}"); }
+            }
+            Stop();
+            _image.Source = still;
+            _log?.Debug("[Visualizer] Lent to the music player's strip");
         }
     }
 

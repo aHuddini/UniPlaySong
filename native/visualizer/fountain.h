@@ -1,7 +1,7 @@
 // The Jukebox Fountain: UniPlaySong's own fountain visualizer, drawn natively instead of through projectM. Its droplet
 // style is inspired by Tekken 8's music jukebox visualizer ("T8" in the bench). A port of
 // the WebGL bench (native/visualizer/bench/fountain-bench.html) - its level engine line for line, and its shaders as
-// they are, lifted into the style file by bench/tools/export_t8.mjs with the shipped look's values (Your tune #6). Parity with the bench
+// they are, lifted into the style file by bench/tools/export_t8.mjs with the shipped look's values (Your tune #8). Parity with the bench
 // is the rule: change the bench, regenerate the style file, and port engine changes here.
 #pragma once
 #include <cmath>
@@ -87,6 +87,10 @@ struct Song
     // how far from the home key (0..1)
     std::vector<int8_t> chord;
     std::vector<float> chordAng, mode, away;
+    // the bass line per beat (MIDI, -1 none), how clear, and the song's usual bass note
+    std::vector<int8_t> bassNote;
+    std::vector<float> bassConf;
+    int bassHome = 40;
 };
 
 // ---- the spectrum, as the bench's AnalyserNode gives it -------------------------------------------------------------
@@ -145,7 +149,8 @@ struct Engine
     int dropColL = 24, dropColR = 71;
     double beatEnv = 0, beatAt = -1, padE = 0, harmX = 0, harmY = 0, harmE = 0;
     double modeE = 0, awayE = 0, chordHit = 0, chordWant = 0, padG = 0, chordG = 0;
-    int lastRoot = -1;
+    double bassPosE = 0.3, bassPitchE = 0.5, bassStrE = 0, bassHit = 0, bassWant = 0;
+    int lastRoot = -1, lastBass = -1;
     // band hits: the mix's spectrum, its log, the last 3 frames' max-filtered logs (a ring), and per band its running
     // mean, envelope and 0..1 hit
     float specM[512] = {}, hitL[512] = {}, hitRef[512] = {}, hitRing[3][512] = {};
@@ -309,6 +314,29 @@ struct Engine
         chordHit += (chordWant - chordHit) * (1 - std::exp(-dt / 0.08));
         chordWant *= std::exp(-dt / 0.4);
         chordG += (chordHit - chordG) * (1 - std::exp(-dt / (chordHit > chordG ? 0.35 : 1.2)));
+        // the bass line: this beat's note - the walk glides to it, folded into the octave round the song's usual bass note
+        // (low fundamentals sit below the analysis's first bins, so octaves slip where the note's name holds) - how
+        // clear it is, and a bounce on each new note
+        int bassT = -1; double bassS = 0;
+        if (lyOn)
+        {
+            const int bi = BeatIndexAt(song, songT);
+            if (bi >= 0 && bi < (int)song->bassNote.size() && song->bassNote[bi] >= 0)
+            {
+                bassT = song->bassNote[bi]; bassS = song->bassConf[bi];
+                if (bassT != lastBass) { if (lastBass >= 0) bassWant = 1; lastBass = bassT; }
+            }
+        }
+        // the rise takes the same folded note, slower (0.4 s), so the body eases from note to note
+        if (bassT >= 0)
+        {
+            const int c = song->bassHome, f = c + ((((bassT - c + 6) % 12) + 12) % 12) - 6;
+            bassPosE += ((double)(f - (c - 6)) / 12 - bassPosE) * (1 - std::exp(-dt / 0.15));
+            bassPitchE += ((double)(f - (c - 6)) / 12 - bassPitchE) * (1 - std::exp(-dt / 0.4));
+        }
+        bassStrE += (bassS - bassStrE) * (1 - std::exp(-dt / 0.4));
+        bassHit += (bassWant - bassHit) * (1 - std::exp(-dt / 0.06));
+        bassWant *= std::exp(-dt / 0.3);
         if (useMap) { /* drops come from the map */ }
         else if (section < 0.35) { quietFor += dt; quietAgo = 0; }
         else { if (quietFor > 0) { lastQuiet = quietFor; quietFor = 0; } quietAgo += dt; }
@@ -428,6 +456,78 @@ struct Engine
     }
 };
 
+// ---- the palette: the style's own, or one made from the song's cover --------------------------------------------
+// The colour uniforms the bench sets from a palette and its scheme. A cover's palette is the bench's "Cover art" scheme
+// built from the three colours UniPlaySong took from the art (VisualizerCoverPalette - the bench's k-means): darkest the cool end, lightest the hot end, the third the gradient's middle stop, the most vivid the kick,
+// the one nearest blue the cool shade, and the calm, glint and bloom tints mixed from those - nothing from outside the
+// cover. uColMid is always given: "no middle colour" (-1) is its two ends' average, which draws the
+// same and lets one palette fade into another.
+struct Colours
+{
+    static const int N = 17;
+    float v[N][3] = {};
+    static const char* Name(int i)
+    {
+        static const char* n[N] = { "uColMin", "uColMax", "uColMid", "uCoolA", "uCoolB", "uKick", "uCalmA", "uCalmB", "uGlint",
+                                    "uHotMax", "uHeatGain", "uCoolGain", "uSplit", "uGlowHot", "uBloomTint",
+                                    // the cover's first two colours as sent, 0..1, not brought to full brightness: the music
+                                    // player's spectrum strip blends them as the desktop spectrum does, where the blend is
+                                    // often one hue light to dark (eased like the rest)
+                                    "uCoverA", "uCoverB" };
+        return n[i];
+    }
+    static Colours FromStyle(const Style& s)
+    {
+        Colours c;
+        for (int i = 0; i < N; i++)
+            for (const Uniform& u : s.uniforms)
+                if (u.name == Name(i)) for (int q = 0; q < 3; q++) c.v[i][q] = u.v[q < u.count ? q : 0];
+        if (c.v[2][0] < 0) for (int q = 0; q < 3; q++) c.v[2][q] = 0.5f * (c.v[0][q] + c.v[1][q]);
+        return c;
+    }
+    static Colours FromCover(const float* a, const float* b, const float* c3)
+    {
+        auto lum = [](const float* c) { return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+        auto sat = [](const float* c) { return std::max({ c[0], c[1], c[2] }) - std::min({ c[0], c[1], c[2] }); };
+        // the bench's hdr(): brightest channel to 10
+        auto hdr = [](const float* c, float* o) { const float m = std::max({ c[0], c[1], c[2], 1e-3f }); for (int q = 0; q < 3; q++) o[q] = c[q] / m * 10; };
+        auto mixc = [](const float* x, const float* y, float t, float* o) { for (int q = 0; q < 3; q++) o[q] = x[q] + (y[q] - x[q]) * t; };
+        // the three by brightness: the darkest the cool end, the lightest the hot end, the one between the gradient's
+        // middle stop - so the palette runs through all three hues; the most vivid is the kick
+        const float* by[3] = { a, b, c3 };
+        std::sort(by, by + 3, [&](const float* x, const float* y) { return lum(x) < lum(y); });
+        const float* vivid = sat(a) >= sat(b) ? (sat(a) >= sat(c3) ? a : c3) : (sat(b) >= sat(c3) ? b : c3);
+        float lo[3], hi[3], midc[3], kick[3];
+        hdr(by[0], lo); hdr(by[2], hi); hdr(by[1], midc); hdr(vivid, kick);
+        static const float grey[3] = { 5, 5, 5 }, white[3] = { 10, 10, 10 };
+        Colours c;
+        std::memcpy(c.v[0], lo, sizeof(lo)); std::memcpy(c.v[1], hi, sizeof(hi)); std::memcpy(c.v[2], midc, sizeof(midc));
+        // the cool shade is the cover's own coolest colour (hue nearest blue, by how saturated), and that blended with
+        // the dark end - never a fixed blue or violet mixed in: that pushed every cover toward violet (a blue-teal cover,
+        // Shadow of Mordor, went purple: the cool shade feeds the glow while the music runs cool and the cool-air dots)
+        auto coolness = [&](const float* x)
+        {
+            const float mx = std::max({ x[0], x[1], x[2] }), mn = std::min({ x[0], x[1], x[2] });
+            if (mx - mn < 1e-6f) return -1.0f;
+            float h = mx == x[0] ? 60 * std::fmod((x[1] - x[2]) / (mx - mn) + 6, 6.0f) : mx == x[1] ? 60 * ((x[2] - x[0]) / (mx - mn) + 2) : 60 * ((x[0] - x[1]) / (mx - mn) + 4);
+            float d = std::fabs(h - 210); d = std::min(d, 360 - d);
+            return (180 - d) * (mx - mn);
+        };
+        const float* coolest = by[0];
+        for (const float* x : by) if (coolness(x) > coolness(coolest)) coolest = x;
+        hdr(coolest, c.v[3]); mixc(c.v[3], lo, 0.5f, c.v[4]);
+        std::memcpy(c.v[5], kick, sizeof(kick));
+        mixc(lo, grey, 0.4f, c.v[6]); mixc(kick, grey, 0.5f, c.v[7]);
+        mixc(hi, white, 0.5f, c.v[8]);
+        for (int q = 0; q < 3; q++) { c.v[9][q] = 1; c.v[10][q] = 1; c.v[11][q] = 1; c.v[12][q] = 0; }   // hot = the light end
+        const float hm = std::max({ hi[0], hi[1], hi[2], 1e-3f });
+        for (int q = 0; q < 3; q++) c.v[13][q] = hi[q] / hm;
+        float bl[3]; mixc(lo, kick, 0.5f, bl); hdr(bl, c.v[14]); for (int q = 0; q < 3; q++) c.v[14][q] /= 10;
+        for (int q = 0; q < 3; q++) { c.v[15][q] = a[q]; c.v[16][q] = b[q]; }
+        return c;
+    }
+};
+
 // ---- the passes: scene, blur pyramid, composite (into framebuffer 0) ---------------------------------------------
 struct Target { GLuint tex = 0, fbo = 0; int w = 0, h = 0; };
 struct Renderer
@@ -436,6 +536,12 @@ struct Renderer
     Target sceneT, b1, b1t, b2, b2t, b3, b3t;
     int W = 0, H = 0;
     const Style* style = nullptr;
+    // the palette drawn now, easing toward the one wanted (a new cover's, or back to the style's) over ~2 s - colour
+    // never snaps
+    Colours colNow, colWant;
+    GLint colLoc[2][Colours::N] = {};
+    double colT = -1;
+    void SetCover(bool on, const float* a, const float* b, const float* c) { colWant = on ? Colours::FromCover(a, b, c) : Colours::FromStyle(*style); }
     // bench only: GPU time per pass (scene, blur pyramid, composite), summed - Collect() after the frame has finished
     bool profile = false;
     GLuint query[4] = {};
@@ -521,7 +627,20 @@ struct Renderer
             }
         }
         glUseProgram(0);
+        colNow = colWant = Colours::FromStyle(s);
+        for (int i = 0; i < Colours::N; i++) { colLoc[0][i] = glGetUniformLocation(scene, Colours::Name(i)); colLoc[1][i] = glGetUniformLocation(comp, Colours::Name(i)); }
         return true;
+    }
+    void ApplyColours(int prog, GLuint p)
+    {
+        for (int i = 0; i < Colours::N; i++)
+        {
+            const GLint loc = colLoc[prog][i];
+            if (loc < 0) continue;
+            if (i >= 9 && i <= 12) glUniform1f(loc, colNow.v[i][0]);   // uHotMax, uHeatGain, uCoolGain, uSplit
+            else glUniform3f(loc, colNow.v[i][0], colNow.v[i][1], colNow.v[i][2]);
+        }
+        (void)p;
     }
     static void Tex(GLuint prog, const char* name, int unit, GLuint tex)
     {
@@ -554,16 +673,24 @@ struct Renderer
         glBindTexture(GL_TEXTURE_2D, texB); glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Engine::N, 1, GL_RGBA, GL_FLOAT, e.colB);
         glBindTexture(GL_TEXTURE_2D, texC); glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Engine::N, 1, GL_RGBA, GL_FLOAT, e.colC);
         const double full = std::max(e.sectionC, e.actC);   // full if loud OR drumming
+        // the palette eases toward the one wanted (0.8 s time constant: ~95% there in 2.4 s)
+        {
+            const double dt = colT < 0 ? 0 : std::max(0.0, t - colT); colT = t;
+            const float k = (float)(1 - std::exp(-dt / 0.8));
+            for (int i = 0; i < Colours::N; i++) for (int q = 0; q < 3; q++) colNow.v[i][q] += (colWant.v[i][q] - colNow.v[i][q]) * k;
+        }
         // scene
         Mark(0);
         glUseProgram(scene);
         glBindFramebuffer(GL_FRAMEBUFFER, sceneT.fbo); glViewport(0, 0, W, H);
         glUniform2f(glGetUniformLocation(scene, "uRes"), (float)W, (float)H);
+        ApplyColours(0, scene);
         F1(scene, "uTime", t); F1(scene, "uSection", full); F1(scene, "uDrop", e.dropC); F1(scene, "uTension", e.tensionC);
         F1(scene, "uPad", e.padE); F1(scene, "uHarm", e.harmE); F1(scene, "uSecHue", e.secHueC); F1(scene, "uPhrase", e.phraseC);
         F1(scene, "uLevelL", e.meanLevel);
         F1(scene, "uMode", e.modeE); F1(scene, "uAway", e.awayE); F1(scene, "uChord", e.chordHit);
-        F1(scene, "uHitMid", e.hitB[0].hit); F1(scene, "uHitHigh", e.hitB[1].hit);
+        F1(scene, "uHitMid", e.hitB[0].hit); F1(scene, "uHitHigh", e.hitB[1].hit); F1(scene, "uBassHit", e.bassHit);
+        F1(scene, "uBassPitch", e.bassPitchE); F1(scene, "uBassStr", e.bassStrE);
         Tex(scene, "uHist", 0, texHist); Tex(scene, "uColA", 1, texA); Tex(scene, "uColB", 2, texB); Tex(scene, "uColC", 3, texC);
         glDrawArrays(GL_TRIANGLES, 0, 3);
         // blur pyramid
@@ -574,8 +701,10 @@ struct Renderer
         glUseProgram(comp);
         glBindFramebuffer(GL_FRAMEBUFFER, 0); glViewport(0, 0, W, H);
         glUniform2f(glGetUniformLocation(comp, "uRes"), (float)W, (float)H);
+        ApplyColours(1, comp);
         F1(comp, "uLevel", e.meanLevel); F1(comp, "uTime", t); F1(comp, "uFull", full);
         F1(comp, "uPad", e.padG); F1(comp, "uChord", e.chordG);   // the glow: the slow copies
+        F1(comp, "uBassPos", e.bassPosE); F1(comp, "uBassStr", e.bassStrE);
         F1(comp, "uWarm", e.Warm()); F1(comp, "uRingT", 99);
         Tex(comp, "uScene", 0, sceneT.tex); Tex(comp, "uB1", 1, b1.tex); Tex(comp, "uB2", 2, b2.tex); Tex(comp, "uB3", 3, b3.tex);
         glDrawArrays(GL_TRIANGLES, 0, 3);

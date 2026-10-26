@@ -76,7 +76,7 @@ typedef struct VisAudio
 #define VIS_SONG_MAGIC 0x31474E53u     /* "SNG1" */
 #define VIS_STAMPS 64                  /* ~10 s of 150 ms blocks */
 #define VIS_PATH_CHARS 260
-#define VIS_ANALYSIS_VERSION 3         /* analysis.h's file format and results; a change re-analyses every song */
+#define VIS_ANALYSIS_VERSION 4         /* analysis.h's file format and results; a change re-analyses every song */
 
 #pragma pack(push, 8)
 typedef struct VisStamp
@@ -95,6 +95,11 @@ typedef struct VisSong
     VisStamp stamp[VIS_STAMPS];
     uint16_t analysis[VIS_PATH_CHARS]; // the analysis file, UTF-16, 0-terminated
     uint16_t pcm[VIS_PATH_CHARS];      // the song to analyse into it (mono 48 kHz float), empty when the file is ready
+    // The palette's colours: the three UniPlaySong took from a picture (VisualizerCoverPalette: the game's background,
+    // its cover, or the song's art). A seqlock of its own (odd while written); coverOn 0 = no art (the style's own palette).
+    volatile uint32_t coverSeq;
+    uint32_t coverOn;
+    float coverA[3], coverB[3], coverC[3]; // 0..1 RGB, darkest first: the darkest, the brightest, the third
 } VisSong;
 #pragma pack(pop)
 

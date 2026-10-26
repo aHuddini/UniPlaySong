@@ -24,10 +24,11 @@ copy /y "%PREFIX%\bin\projectM-4.dll" "%OUT%\" >nul || exit /b 1
 copy /y "%PREFIX%\bin\glew32.dll" "%OUT%\" >nul || exit /b 1
 del /q "%OUT%\*.exp" "%OUT%\*.lib" 2>nul
 
-rem The shipped styles: two MilkDrop presets (make_presets.py makes six) and the Jukebox Fountain's style file
-rem (bench\tools\export_t8.mjs).
+rem The shipped styles: two MilkDrop presets (make_presets.py makes six), the Jukebox Fountain's style file
+rem (bench\tools\export_t8.mjs) and the music player's spectrum strip (UPS - Seek Spectrum.vis).
 if not exist "%OUT%\presets" mkdir "%OUT%\presets"
 copy /y "presets\UPS - Glow Bars.milk" "%OUT%\presets\" >nul || exit /b 1
 copy /y "presets\UPS - Fountain.milk" "%OUT%\presets\" >nul || exit /b 1
 copy /y "presets\UPS - Jukebox Fountain.vis" "%OUT%\presets\" >nul || exit /b 1
+copy /y "presets\UPS - Seek Spectrum.vis" "%OUT%\presets\" >nul || exit /b 1
 echo built into src\Audio\Native\Visualizer\

@@ -9,5 +9,5 @@ Not shipped. Material kept for future experiments.
   `../../bench/fountain-bench.html`; `../../bench/standard-t8.json` freezes the T8 standard ("T8": the droplet style is
   inspired by Tekken 8's music jukebox visualizer).
 
-The shipped look is **Your tune #6**: `../../bench/standard-tune6.json`, exported to
+The shipped look is **Your tune #8**: `../../bench/standard-tune8.json` (#7, #6 and the T8 standard kept as references), exported to
 `UPS - Jukebox Fountain.vis` by `../../bench/tools/export_t8.mjs`.

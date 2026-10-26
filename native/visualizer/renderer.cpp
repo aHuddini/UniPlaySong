@@ -305,6 +305,23 @@ struct SongLink
         return s;
     }
 
+    // A new cover palette, when UniPlaySong has sent one since the last call (its own seqlock): true and the colours.
+    uint32_t coverSeen = 0;
+    bool Cover(bool* on, float* a, float* b, float* c)
+    {
+        if (!vs || vs->magic != VIS_SONG_MAGIC) return false;
+        const uint32_t seq = vs->coverSeq;
+        if (seq == coverSeen || (seq & 1)) return false;
+        MemoryBarrier();
+        const bool o = vs->coverOn != 0; float x[3], y[3], z[3];
+        for (int q = 0; q < 3; q++) { x[q] = vs->coverA[q]; y[q] = vs->coverB[q]; z[q] = vs->coverC[q]; }
+        MemoryBarrier();
+        if (vs->coverSeq != seq) return false;
+        coverSeen = seq; *on = o;
+        for (int q = 0; q < 3; q++) { a[q] = x[q]; b[q] = y[q]; c[q] = z[q]; }
+        return true;
+    }
+
     // Once a frame: a new request is analysed (or its file read) on a worker thread; a finished analysis is taken up.
     void Poll()
     {
@@ -441,7 +458,8 @@ static int AnalyzeToJson(const char* pcmPath, const char* outPath)
     list("secStart", secStart, false); list("secEnd", secEnd, false); list("secLabel", secLabel, false);
     list("chord", layers.chord, false); list("chordConf", layers.chordConf, false); list("chordAng", layers.chordAng, false);
     list("mode", layers.mode, false); list("away", layers.away, false);
-    std::fprintf(o, "\"keyRoot\":%d,\"keyMinor\":%d\n", layers.keyRoot, layers.keyMinor);
+    list("bassNote", layers.bassNote, false); list("bassConf", layers.bassConf, false);
+    std::fprintf(o, "\"keyRoot\":%d,\"keyMinor\":%d,\"bassHome\":%d\n", layers.keyRoot, layers.keyMinor, layers.bassHome);
     std::fprintf(o, "}}\n");
     std::fclose(o);
     std::printf("analysed %.1f s of song: map %.0f ms, beats %.0f ms, layers %.0f ms - %zu beats at %.1f BPM, %zu drops, %zu sections\n",
@@ -508,6 +526,12 @@ int main(int argc, char** argv)
         engine.Init(style);
         fountainGl.profile = bench && std::getenv("VIS_PROFILE");
         if (!fountainGl.Create(w, h, style)) Fail("fountain shaders");
+        // bench only: VIS_COVER=r,g,b;r,g,b;r,g,b (0..1) - a cover's three colours, as UniPlaySong sends them
+        if (const char* cv = std::getenv("VIS_COVER"); bench && cv)
+        {
+            float a[3], b[3], c[3];
+            if (std::sscanf(cv, "%f,%f,%f;%f,%f,%f;%f,%f,%f", &a[0], &a[1], &a[2], &b[0], &b[1], &b[2], &c[0], &c[1], &c[2]) == 9) { fountainGl.SetCover(true, a, b, c); fountainGl.colNow = fountainGl.colWant; }
+        }
         std::printf("fountain %dx%d, style %s (%zu params)\n", w, h, preset, style.values.size());
     }
     else
@@ -624,6 +648,7 @@ int main(int argc, char** argv)
             else if (!bench)
             {
                 songLink.Poll();
+                { bool on = false; float a[3], b[3], c[3]; if (songLink.Cover(&on, a, b, c)) fountainGl.SetCover(on, a, b, c); }
                 uint32_t heard = 0; double at = 0;
                 bool known = songLink.Time(ring, &heard, &at);
                 if (songLink.song && known && heard == songLink.songFor) { song = songLink.song.get(); songT = at; }
@@ -645,8 +670,9 @@ int main(int argc, char** argv)
                 std::fwrite(engine.colA, sizeof(engine.colA), 1, engineDump); std::fwrite(engine.colB, sizeof(engine.colB), 1, engineDump);
                 std::fwrite(engine.colC, sizeof(engine.colC), 1, engineDump);
                 // the scalars behind the scene's and composite's song uniforms (bench/tools/engine_parity.mjs reads them)
-                const float sc[9] = { (float)engine.padE, (float)engine.padG, (float)engine.harmE, (float)engine.modeE, (float)engine.awayE,
-                                      (float)engine.chordHit, (float)engine.chordG, (float)engine.hitB[0].hit, (float)engine.hitB[1].hit };
+                const float sc[13] = { (float)engine.padE, (float)engine.padG, (float)engine.harmE, (float)engine.modeE, (float)engine.awayE,
+                                       (float)engine.chordHit, (float)engine.chordG, (float)engine.hitB[0].hit, (float)engine.hitB[1].hit,
+                                       (float)engine.bassPosE, (float)engine.bassStrE, (float)engine.bassHit, (float)engine.bassPitchE };
                 std::fwrite(sc, sizeof(sc), 1, engineDump);
             }
             fountainGl.Draw(engine, simT);

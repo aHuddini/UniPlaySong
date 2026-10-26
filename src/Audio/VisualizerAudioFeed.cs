@@ -24,7 +24,9 @@ namespace UniPlaySong.Audio
         internal const int OffSong = OffData + Capacity * 2 * sizeof(float);
         internal const int SongOffStamps = 4, SongOffSeq = 8, SongOffSong = 12, SongOffBytes = 16, SongOffTime = 24, SongOffStamp = 32;
         internal const int SongOffAnalysis = SongOffStamp + Stamps * StampSize, SongOffPcm = SongOffAnalysis + PathChars * 2;
-        internal const int Bytes = OffSong + SongOffPcm + PathChars * 2;
+        internal const int SongOffCoverSeq = SongOffPcm + PathChars * 2, SongOffCoverOn = SongOffCoverSeq + 4, SongOffCoverA = SongOffCoverOn + 4,
+            SongOffCoverB = SongOffCoverA + 12, SongOffCoverC = SongOffCoverB + 12;
+        internal const int Bytes = OffSong + ((SongOffCoverC + 12 + 7) & ~7);   // the C struct rounds up to 8
 
         private static VisualizerAudioFeed _active;
 
@@ -139,6 +141,24 @@ namespace UniPlaySong.Audio
                 Marshal.WriteInt32(_base, OffSong + SongOffSeq, seq + 2);
             }
         }
+
+        // The cover's three colours for the Jukebox Fountain's palette (on = false: no art, the style's own palette). Between
+        // two seq bumps, as the request. UI thread.
+        public void PublishCover(bool on, System.Windows.Media.Color a, System.Windows.Media.Color b, System.Windows.Media.Color c)
+        {
+            int seq = Marshal.ReadInt32(_base, OffSong + SongOffCoverSeq);
+            Marshal.WriteInt32(_base, OffSong + SongOffCoverSeq, seq + 1);
+            Thread.MemoryBarrier();
+            Marshal.WriteInt32(_base, OffSong + SongOffCoverOn, on ? 1 : 0);
+            WriteRgb(OffSong + SongOffCoverA, a);
+            WriteRgb(OffSong + SongOffCoverB, b);
+            WriteRgb(OffSong + SongOffCoverC, c);
+            Thread.MemoryBarrier();
+            Marshal.WriteInt32(_base, OffSong + SongOffCoverSeq, seq + 2);
+        }
+
+        private void WriteRgb(int offset, System.Windows.Media.Color c) =>
+            Marshal.Copy(new[] { c.R / 255f, c.G / 255f, c.B / 255f }, 0, _base + offset, 3);
 
         // UTF-16, 0-terminated; null or a path too long for the field is written empty.
         private void WritePath(int offset, string path)

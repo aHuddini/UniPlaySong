@@ -21,7 +21,7 @@ namespace UniPlaySong.Audio
     internal sealed class VisualizerSongAnalysis : IDisposable
     {
         internal const uint FileMagic = 0x31415655u; // "UVA1", native/visualizer/analysis.h
-        internal const int AnalysisVersion = 3;     // VIS_ANALYSIS_VERSION, native/visualizer/visualizer_shared.h
+        internal const int AnalysisVersion = 4;     // VIS_ANALYSIS_VERSION, native/visualizer/visualizer_shared.h
         private const int Rate = 48000;              // the rate the bench analyses at
 
         private readonly VisualizerAudioFeed _feed;
@@ -32,6 +32,9 @@ namespace UniPlaySong.Audio
         private int _song;                 // the provider last handled (UI thread)
         private int _generation;           // per song; a job hands over only while its song is still the current one
         private CancellationTokenSource _cancel;
+        private readonly Stopwatch _sinceSong = new Stopwatch();   // since the song heard changed: the debug log's timings
+
+        internal long SinceSongMs => _sinceSong.ElapsedMilliseconds;
 
         // otherMusicFolder: where analyses of music outside the game folders go
         public VisualizerSongAnalysis(VisualizerAudioFeed feed, FileLogger log, string otherMusicFolder)
@@ -47,6 +50,8 @@ namespace UniPlaySong.Audio
             var provider = VisualizationDataProvider.Current;
             if (provider == null || provider.SongId == _song) return;
             _song = provider.SongId;
+            _sinceSong.Restart();
+            _log?.Debug($"[Visualizer] Song {provider.SongId} heard: {Path.GetFileName(provider.SongPath)}");
             Start((uint)provider.SongId, provider.SongPath);
         }
 
@@ -89,6 +94,7 @@ namespace UniPlaySong.Audio
             {
                 if (generation != _generation) return false;
                 _feed.PublishSong(song, file, pcm, bytes, time);
+                _log?.Debug($"[Visualizer] Song {song} sent at +{SinceSongMs} ms: {(file == null ? "live only" : pcm == null ? "analysis on file" : "to analyse")}");
                 return true;
             }
         }
