@@ -51,7 +51,7 @@
   button.primary:hover { filter: brightness(1.15); }
   .swatches { display: inline-flex; align-items: center; gap: 4px; color: var(--dim); }
   .swatches input[type=color] { width: 30px; height: 26px; padding: 0; border: 1px solid #3a3a44; border-radius: 6px; background: none; cursor: pointer; }
-  #send { position: sticky; bottom: -24px; margin: 16px -14px -24px; padding: 10px 14px 14px; background: var(--panel); border-top: 1px solid var(--line);
+  #send { position: sticky; top: -12px; z-index: 1; margin: 0 -14px 6px; padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--line);
     display: flex; align-items: center; gap: 10px; }
   #send a { color: var(--accent); }
   #search { flex: 1; min-width: 0; background: #0c0c10; color: var(--text); border: 1px solid #3a3a44; border-radius: 6px; padding: 5px 8px; font: inherit; }
@@ -80,6 +80,15 @@
   <div id="panel">
     <h1>VisualizerPrototyper <span class="by">for UniPlaySong</span></h1>
     <p class="note">Load a song, pick colours and a look, tune it - then <b>Copy style for UPS</b> and send it in.</p>
+    <div id="send">
+      <button id="copyStyle" class="primary" title="Copy this look - every value, the palette and its colour scheme - to paste into UniPlaySong's &quot;Visualizer style&quot; issue form">Copy style for UPS</button>
+      <a href="https://github.com/aHuddini/UniPlaySong/issues/new?template=visualizer_style.yml" target="_blank" rel="noopener">Send it in</a>
+    </div>
+    <div class="btns">
+      <button id="copy" title="Copy every value as JSON">Copy values</button>
+      <button id="pin" title="Remember the current values; hold C to see them again">Pin as compare</button>
+      <button id="resetAll" title="Every slider back to its default">Reset all</button>
+    </div>
     <h2 class="sec">Song</h2>
     <div class="btns">
       <input type="file" id="file" accept="audio/*">
@@ -89,8 +98,8 @@
       <select id="source"><option value="synth">Synthetic beat</option><option value="song">Synthetic song (breakdown, build, drop)</option><option value="file">Loaded song</option></select>
     </div>
     <div class="btns">
-      <button id="drumTest" title="A 32 s drum loop whose every hit is known - the lanes show the found hits against the real ones, with a score">Drum test track</button>
-      <select id="ticks" title="A short tick on each hit found, over the music: if the ticks land on the drums, the detection is clean">
+      <button id="drumTest" class="dev" title="A 32 s drum loop whose every hit is known - the lanes show the found hits against the real ones, with a score">Drum test track</button>
+      <select id="ticks" class="dev" title="A short tick on each hit found, over the music: if the ticks land on the drums, the detection is clean">
         <option value="off">Ticks off</option><option value="beat">Ticks: the beat (metronome)</option><option value="drums">Ticks: all drums</option><option value="kick">Ticks: kicks</option>
         <option value="snare">Ticks: snares</option><option value="hat">Ticks: hats</option><option value="bass">Ticks: bass notes (not kicks)</option></select>
       <select id="musicLvl"><option value="1">Music 100%</option><option value="0.35">Music 35%</option><option value="0">Music muted</option></select>
@@ -221,11 +230,6 @@
           <option value="presetLive">Live show</option><option value="presetMapped">Live show + song map</option></optgroup>
       </select>
     </div>
-    <div class="btns">
-      <button id="copy" title="Copy every value as JSON">Copy values</button>
-      <button id="pin" title="Remember the current values; hold C to see them again">Pin as compare</button>
-      <button id="resetAll" title="Every slider back to its default">Reset all</button>
-    </div>
     <div hidden>
       <button id="presetShipped"></button><button id="presetFling"></button><button id="presetYours"></button>
       <button id="presetYours2"></button><button id="presetLive"></button><button id="presetMapped"></button>
@@ -260,10 +264,6 @@
     <div id="params"></div>
     <h2>Values</h2>
     <textarea id="out" readonly></textarea>
-    <div id="send">
-      <button id="copyStyle" class="primary" title="Copy this look - every value, the palette and its colour scheme - to paste into UniPlaySong's &quot;Visualizer style&quot; issue form">Copy style for UPS</button>
-      <a href="https://github.com/aHuddini/UniPlaySong/issues/new?template=visualizer_style.yml" target="_blank" rel="noopener">Send it in</a>
-    </div>
   </div>
 </div>
 <script>
@@ -622,8 +622,8 @@ function saved() {
   document.getElementById("out").value = JSON.stringify(o, null, 1);
 }
 buildPanel();
-// The VisualizerPrototyper (the bench as published on GitHub Pages) leaves out the tuning presets (.dev - the tunes
-// the shipped look was made from; first visits still open on it) and the PSP looks - their preset sections,
+// The VisualizerPrototyper (the bench as published on GitHub Pages) leaves out the tuning aids (.dev - the tunes the
+// shipped look was made from, which first visits still open on; the drum test track and its ticks) and the PSP looks - their preset sections,
 // sliders and the PSP visualizers. Opened from a file, the bench keeps them. Their values stay in every style, at the
 // defaults (off), so export_t8.mjs is unaffected. The signal graphs start off there too (a dev aid; View turns them on).
 if (location.protocol !== "file:") {
