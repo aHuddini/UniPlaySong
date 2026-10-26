@@ -2,7 +2,7 @@
 Packages:
   - Version: 1.9.0
     RequiredApiVersion: 6.16.0
-    ReleaseDate: 2026-10-11
+    ReleaseDate: 2026-10-26
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.0/UniPlaySong-1_9_0.pext'
     Changelog:
       - '[Fullscreen Theme Support] For all themes using UPS music player: all users can seek within songs now. Click or drag a music timeline like any MP3 player, or tilt the controller''s right stick while one is on screen. Works with Spotify too. Chiptune tracks not currently supported.'
