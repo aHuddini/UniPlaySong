@@ -20,19 +20,20 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.8.10
+## What's New - v1.9.0
 
 ### Added
-- Equalizer (EQ): a 15-band (or classic 10-band) equalizer with presets, under Live Effects and Quick Start. Works with or without Live Effects. ([#96](https://github.com/aHuddini/UniPlaySong/issues/96))
-- Experimental: alternative visualizer sync keeps the visualizer, peak meter and glow in time with what you hear (Settings → Experimental).
+- Seek within songs: click or drag a theme's music timeline, or tilt the controller's right stick. Works with Spotify too.
+- For themes: a Now-Playing player with a live spectrum on its seek bar, coloured from the album art (needs Live Effects on).
+- For themes: recent tracks for game music and Spotify, album-art colours for backdrops, skip buttons and a turntable cover you turn to seek ([guide](docs/dev_docs/Theme%20Support/THEME_INTEGRATION_GUIDE.md)).
+- Experimental: a music visualizer page for themes. The Jukebox Fountain takes its colours from the game's art and learns each song's beat, sections and bass line (Settings → Experimental).
 
 ### Fixed
-- Themes that show Now Playing cover art no longer pile up image files on disk; the leftovers are cleaned up automatically.
-- PlayStation (PSF) songs now loop and restart instead of going silent.
-- Failed downloads and previews now say why (like browser cookies yt-dlp can't read) and where to find the log.
+- Themes no longer show stale song info (like a Spotify title over game music) after you save settings.
+- Music timelines show "0:00" at the start of a song instead of going blank.
 
 ### Previous Version
-- **v1.8.9**: Added Add Music Folder; Set Primary Song and Add Music File accept chiptune and PSF files; SignalRGB, Rainmeter and YASB no longer pause your music.
+- **v1.8.10**: Added a 15/10-band Equalizer; Now Playing cover art no longer piles up on disk; PSF songs loop; failed downloads say why.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

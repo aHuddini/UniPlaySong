@@ -1,4 +1,4 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to UniPlaySong will be documented in this file.
 
@@ -8,15 +8,26 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Added
 
+- Added seeking for UPS music and Spotify: any `ProgressBar` bound to `ActiveMediaProgress` clicks and drags to seek, as does a two-way `Slider`, and the right stick scrubs any timeline on screen; chiptunes and PSF excluded
+- Added `UPS_SeekDisc` (a turntable overlay turned by stick or mouse, 30 s per turn), `UPS_MediaControllerTransport`, and `seek/{seconds}` and `seekto/{0-100}` URIs for theme skip buttons
+- Added `UPS_MusicVisualStrip`: the player's spectrum strip alone, for a theme's own player; an empty placeholder in another add-on's window (AnikiHelper's player) is filled at its first layout
 - Added the music visualizer for themes (Experimental): a 64-bit renderer shares its frames with Playnite through a D3D9Ex bridge into a `D3DImage`; styles Jukebox Fountain (default, drawn natively), Glow Bars and Fountain (projectM)
-- Added the Jukebox Fountain, a droplet style inspired by Tekken 8's music jukebox visualizer ("T8" in the bench): a native port of the bench's engine and shaders, with the bench's "Your tune #6" look
-- Added whole-song analysis in the renderer: beats, sections, drops, pads, melody, chords, key and distance from home, bit-exact with the bench, cached once per song as `VisualAnalysis\<song>.vab`
+- Added the Jukebox Fountain, a droplet style inspired by Tekken 8's music jukebox visualizer ("T8" in the bench): a native port of the bench's engine and shaders, with the bench's "Your tune #8" look
+- Added recent tracks for themes: `SpotifyRecentTracks` and `GameRecentTracks` lists plus ready-made `UPS_SpotifyRecentTracks`/`UPS_GameRecentTracks` elements; kept across restarts in `SpotifyRecentTracks.txt`/`GameRecentTracks.txt` (last 50)
+- Added `NowPlayingArtColor1`/`NowPlayingArtColor2` for themes: the current art's two colours, for backdrop gradients
+- Added whole-song analysis in the renderer: beats, sections, drops, pads, melody, chords, key, distance from home and the bass line, bit-exact with the bench, cached once per song as `VisualAnalysis\<song>.vab`
+- Added the bass line to the Jukebox Fountain: the body rises and falls with it, and the low columns bounce on each new note; its note name matches pYIN on Demucs bass stems on 74-90% of beats
+- Added `UPS_MusicPlayerControlVisual`: the Now-Playing popup with a spectrum and a knob on its seek bar, art-coloured bars and a frosted, tinted cover behind; needs no setting and borrows the renderer from a page visualizer while shown
+- Added a picture palette: the Jukebox Fountain takes three colours by k-means from the game's background, or the cover or now-playing art by the element's `Tag`, and eases to them over ~2 s
 - Added live hi-hat and snare reactions from per-band transient strength (0.82 and 0.57 correlation with Demucs drum stems); kicks follow the beat grid, since low-band detection scored 0.29 under a bass line
 - Added zero-copy frame hand-off: the renderer draws straight into the shared textures (`WGL_NV_DX_interop2`), cutting the hand-off at 2560×988 from 4.5 to 1.4 ms with identical frames; the GPU-to-CPU copy remains the fallback
 - Added a song-state badge to the demo theme (live, analysing, following the song), from the control's new `SongState` property
 
 ### Fixed
 
+- Fixed Ogg reads racing a position change: the UI thread set the reader's position on resume while the audio thread read it unlocked
+- Fixed theme values freezing after a settings save (e.g. turning Radio Mode off left Spotify's title showing over game music): themes now follow the saved settings object, and now-playing is published into it again
+- Fixed every timeline's position label vanishing at the start of each song: a zero position formatted as empty text, so it now reads "0:00"
 - Fixed the visualizer frame being resampled in Fullscreen: Playnite's `Viewbox` scale was missed (2560 px drawn into 2133 px) and layout rounding stretched it (988 px to 988.33); it now lands 1:1 on whole pixels
 - Fixed the Jukebox Fountain reading 25% softer in Playnite than in the bench: dots and the colour fringe now keep their 2050 px pixel size on wider frames
 

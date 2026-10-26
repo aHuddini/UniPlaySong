@@ -5,9 +5,12 @@ Packages:
     ReleaseDate: 2026-10-11
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.0/UniPlaySong-1_9_0.pext'
     Changelog:
-      - '[New Feature] Seek within songs: click or drag a music timeline, or tilt the controller''s right stick while one is on screen. Works with Spotify too.'
-      - '[New Feature] For themes: skip-forward/back commands, a buttons-only player control and a turntable-style cover you turn to seek. See the Theme Integration Guide.'
-      - '[New Feature] Experimental: a music visualizer for themes. Its Jukebox Fountain learns each song''s beat, sections and chords, and sparkles with hi-hats and snares (Settings -> Experimental).'
+      - '[Fullscreen Theme Support] For all themes using UPS music player: all users can seek within songs now. Click or drag a music timeline like any MP3 player, or tilt the controller''s right stick while one is on screen. Works with Spotify too. Chiptune tracks not currently supported.'
+      - '[Fullscreen Theme Support] For theme developers: Support to display a dedicated music visualizer page, with a new visualizer built by Huddini. Live Effects must be enabled for this to work. Skip-forward/back commands, a buttons-only player control and a turntable-style cover you turn to seek. See the Github Theme Integration Guide.'
+      - '[Fullscreen Theme Support] For theme developers: a Now-Playing player with a live spectrum on its seek bar, coloured from the album art. SDL2 users: turn on Live Effects to see it.'
+      - '[Fullscreen Theme Support] For theme developers: recent tracks for game music and Spotify, and the album art''s colours for backdrop gradients.'
+      - '[Experimental] Theme Support: a fullscreen music visualizer for themes. Its Jukebox Fountain takes its colours from the game''s artwork, learns each song''s beat, sections, chords and bass line, and sparkles with hi-hats and snares (Settings -> Experimental).'
+      - '[Fix] Themes no longer show stale song info (like a Spotify title over game music) after you save settings. Music timelines read 0:00 at the start of a song instead of going blank.'
   - Version: 1.8.10
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-10-06

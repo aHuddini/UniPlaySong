@@ -20,11 +20,12 @@ How to wire your Playnite Fullscreen theme into UniPlaySong's music playback.
 | Ship per-rarity achievement unlock sounds | `audio/Achievements/{rarity}.wav` in your theme's folder (v1.5.10+) |
 | Custom media-control buttons (play, pause, skip, volume) | `playnite://uniplaysong/...` URIs (v1.3.10+) |
 | Drop in a ready-made Now-Playing overlay, transport bar, or minimal play/skip control | `UPS_MediaControllerOverlay` / `UPS_MediaControllerBar` / `UPS_MediaControllerCompact` elements (v1.5.8+) |
-| Big previous / play-pause / next buttons for a player page that shows its own art, title and timeline | `UPS_MediaControllerTransport` element (next release) |
-| Let the user seek on your timeline — mouse and right stick | Nothing: any `ProgressBar` bound to `ActiveMediaProgress` already seeks (next release) — see [Seeking](#seeking--scrub-the-current-song-next-release) |
-| Skip forward / back buttons | `playnite://uniplaysong/seek/{seconds}` and `seekto/{0-100}` URIs (next release) |
-| A turntable-style cover the user turns to seek | `UPS_SeekDisc` overlay element (next release) |
-| An animated, music-reactive visualizer with real transparency, for a page or your music player | `UPS_MusicVisualControl` element, experimental (next release) — see [Music visualizer](#music-visualizer--ups_musicvisualcontrol-experimental-next-release) |
+| Big previous / play-pause / next buttons for a player page that shows its own art, title and timeline | `UPS_MediaControllerTransport` element (v1.9.0+) |
+| Let the user seek on your timeline — mouse and right stick | Nothing: any `ProgressBar` bound to `ActiveMediaProgress` already seeks (v1.9.0+) — see [Seeking](#seeking--scrub-the-current-song-v190) |
+| Skip forward / back buttons | `playnite://uniplaysong/seek/{seconds}` and `seekto/{0-100}` URIs (v1.9.0+) |
+| A turntable-style cover the user turns to seek | `UPS_SeekDisc` overlay element (v1.9.0+) |
+| The Now-Playing popup with a live, art-coloured spectrum on its seek bar | `UPS_MusicPlayerControlVisual` element (v1.9.0+) — see [Music player with a spectrum](#music-player-with-a-spectrum--ups_musicplayercontrolvisual-v190) |
+| An animated, music-reactive visualizer with real transparency, for a page or your music player | `UPS_MusicVisualControl` element, experimental (v1.9.0+) — see [Music visualizer](#music-visualizer--ups_musicvisualcontrol-experimental-v190) |
 
 ---
 
@@ -372,10 +373,30 @@ UniPlaySong publishes the active music's metadata as live, bindable properties (
 | `NowPlayingAlbum` | text (Spotify only) | `<TextBlock Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingAlbum}"/>` |
 | `NowPlayingGenre` | text (Spotify only) | `<TextBlock Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingGenre}"/>` |
 | `NowPlayingDuration` | text "m:ss" (Spotify only) | `<TextBlock Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingDuration}"/>` |
+| `NowPlayingArtColor1`, `NowPlayingArtColor2` | colour (darker first; black with no art) | The current art's two colours, for a backdrop gradient. In Fullscreen's main view a brush can't take `{PluginSettings}` - bind a hidden element's `Tag` to it and the `GradientStop.Color` to that `Tag` (see the demo theme's Spotify page). |
+| `SpotifyRecentTracks` | list, newest first (Spotify only) | `<ItemsControl ItemsSource="{PluginSettings Plugin=UniPlaySong, Path=SpotifyRecentTracks}"/>` - each item has `Title`, `Artist`, `Album`, `PlayedAt` and `Art` (cover image, tracks heard this session only). Kept across restarts (last 50). |
+| `GameRecentTracks` | list, newest first (game music) | The same for game music; `Album` is the game's name. See [Recent tracks](#recent-tracks--ups_spotifyrecenttracks-ups_gamerecenttracks-v190). |
 
 These reflect whichever source is the active music. Title, artist, and art are populated for both a UniPlaySong game track and a Spotify track. `NowPlayingAlbumArtPath` is a file path to the current art image — embedded ID3 art for game tracks (falling back to the game's cover when the track has none), or the Spotify track's album art — and is empty only when nothing is resolvable (show your own placeholder).
 
 `NowPlayingAlbum`, `NowPlayingGenre`, and `NowPlayingDuration` are populated **only when Spotify is the active music** (album, comma-joined genres, and total track length preformatted as `m:ss`). They are empty strings for game music, so bind them inside a panel you collapse when empty.
+
+### Recent tracks — `UPS_SpotifyRecentTracks`, `UPS_GameRecentTracks` (v1.9.0+)
+
+A ready-made list of the tracks heard recently, newest first: cover, title, artist and time. Text takes your theme's colour and font; the list clips to the space you give it.
+
+```xml
+<ContentControl x:Name="UPS_SpotifyRecentTracks" Height="220" />
+<ContentControl x:Name="UPS_GameRecentTracks" Height="220" />
+```
+
+Three ways to use it:
+
+1. **As is** — place the element.
+2. **Your own rows** — define a `DataTemplate` keyed `UPS_SpotifyRecentTracksTemplate` (or `UPS_GameRecentTracksTemplate`) in resources the element can reach. It binds `Title`, `Artist`, `Album` (the game's name, for game music), `PlayedAt` and `Art`.
+3. **Your own layout** — skip the element and bind `ItemsSource="{PluginSettings Plugin=UniPlaySong, Path=SpotifyRecentTracks}"` (or `GameRecentTracks`) on your own list.
+
+Both lists outlive a restart: UPS keeps the last 50 in `SpotifyRecentTracks.txt` and `GameRecentTracks.txt` in its data folder (`<Playnite config>\ExtraMetadata\UniPlaySong`), one tab-separated line per track, which other add-ons can read. Covers show only for tracks heard this session.
 
 ### Fire an animation when the track changes — `IsMusicChanged` (v1.5.9+)
 
@@ -625,8 +646,8 @@ For custom media control buttons embedded in your theme. Fire-and-forget — no 
 | Restart Current Song | `playnite://uniplaysong/restart` |
 | Stop Playback | `playnite://uniplaysong/stop` |
 | Set Volume (0–100) | `playnite://uniplaysong/volume/50` |
-| Skip forward / back by N seconds (next release) | `playnite://uniplaysong/seek/10`, `playnite://uniplaysong/seek/-10` |
-| Jump to a point, 0–100 % (next release) | `playnite://uniplaysong/seekto/50` |
+| Skip forward / back by N seconds (v1.9.0+) | `playnite://uniplaysong/seek/10`, `playnite://uniplaysong/seek/-10` |
+| Jump to a point, 0–100 % (v1.9.0+) | `playnite://uniplaysong/seekto/50` |
 
 **When to use which:**
 
@@ -663,7 +684,7 @@ Then any button can fire any UPS command:
   press — Playnite only auto-activates its own buttons.
 - **A URI takes a short trip through Windows and back into Playnite**, so expect a brief delay per press (typically a
   fraction of a second). Right for buttons; for continuous control like scrubbing, use a seekable timeline or the
-  right stick (see [Seeking](#seeking--scrub-the-current-song-next-release)).
+  right stick (see [Seeking](#seeking--scrub-the-current-song-v190)).
 - A bad or unknown command shows a UniPlaySong notification rather than failing silently, which makes typos easy to
   spot while building.
 
@@ -703,7 +724,7 @@ Three self-contained, transport-capable theme elements — display **and** contr
 | `UPS_MediaControllerOverlay` | PS5-style Now-Playing popup: large album art, source name, position/duration with a progress bar, full transport row (previous / play-pause / next / mute), and a volume slider. |
 | `UPS_MediaControllerBar` | Horizontal transport pill: album art + title/artist, with inline previous / play-pause / next buttons. |
 | `UPS_MediaControllerCompact` | Minimal one-line control: play-pause + next (skip), for a tight footprint. |
-| `UPS_MediaControllerTransport` (next release) | Previous / play-pause / next alone, at a large size — for a player page that lays out its own art, title and timeline. |
+| `UPS_MediaControllerTransport` (v1.9.0+) | Previous / play-pause / next alone, at a large size — for a player page that lays out its own art, title and timeline. |
 
 ```xml
 <!-- Full Now-Playing overlay -->
@@ -804,14 +825,14 @@ The existing `NowPlaying*` properties (`NowPlayingTitle`, `NowPlayingArtist`, `N
 | Next | `playnite://uniplaysong/next` (alias: `skip`) |
 | Previous | `playnite://uniplaysong/previous` |
 | Toggle Mute | `playnite://uniplaysong/togglemute` |
-| Skip forward / back N seconds (next release) | `playnite://uniplaysong/seek/{seconds}` (signed) |
-| Jump to a point, 0–100 % (next release) | `playnite://uniplaysong/seekto/{percent}` |
+| Skip forward / back N seconds (v1.9.0+) | `playnite://uniplaysong/seek/{seconds}` (signed) |
+| Jump to a point, 0–100 % (v1.9.0+) | `playnite://uniplaysong/seekto/{percent}` |
 
 These (and the two seek commands) are source-aware — they act on whichever source is audible (UPS or Spotify). `togglemute` mutes UPS's own music via its player volume, or Spotify at the Windows audio-session level (the same as Spotify's Volume Mixer entry, since the media-key API has no mute); either way `ActiveMediaIsMuted` reflects the result. The original `play`, `pause`, `stop`, `restart`, and `volume/{0-100}` URIs (see [External control via URIs](#5-external-control-via-uris-v1310)) are unchanged and remain UPS-only.
 
 > **Note:** Transport currently drives UniPlaySong's own music playback and the Spotify desktop app. Support for other media apps/sessions is planned.
 
-### Seeking — scrub the current song (next release)
+### Seeking — scrub the current song (v1.9.0+)
 
 UPS can move the current song to any point — its own music files and Spotify alike (not chiptunes or PSF, which can only restart). There are four ways in, and the first needs nothing from you.
 
@@ -932,7 +953,7 @@ on whatever is playing — UPS music or Spotify — and do nothing for chiptunes
 - While a disc is on screen it owns the right stick (circle to turn); timelines go back to tilt-to-scrub when it's gone.
 - `MyArt` above is an `Image` elsewhere on the page with its `Source` bound to `NowPlayingAlbumArtPath`. Don't bind `{PluginSettings}` straight into the brush in a Fullscreen **Main** view — see [Troubleshooting](#troubleshooting).
 
-### Music visualizer — `UPS_MusicVisualControl` (experimental, next release)
+### Music visualizer — `UPS_MusicVisualControl` (experimental, v1.9.0+)
 
 An animated MilkDrop-style visualizer that moves with the music, drawn with **real transparency** over whatever your
 view shows behind it. It reacts only to the music UniPlaySong plays — never to game or system sounds.
@@ -1001,10 +1022,73 @@ view shows behind it. It reacts only to the music UniPlaySong plays — never to
   - **Fountain**: columns of glowing sparks thrown up and down from the centre line.
 
   Both keep the same centre slot, so a page works with either. Future styles will keep it too.
+- **The Fountain takes its colours from a picture**, and the element's `Tag` picks which:
+
+  | `Tag` | Colours from | When that's missing |
+  |---|---|---|
+  | `Background` (or none) | the game's background - what fills the screen behind it | the cover, then the now-playing art |
+  | `Cover` | the game's cover | the background, then the now-playing art |
+  | `Disc` | the now-playing art (`NowPlayingAlbumArtPath`: the song's own art, else the game's cover) | the background |
+
+  ```xml
+  <ContentControl x:Name="UPS_MusicVisualControl" Tag="Disc" Focusable="False" IsHitTestVisible="False" />
+  ```
+
+  Pick the picture your page shows most of: a page over the game's background suits the default; a now-playing page
+  with the art in the centre suits `Disc`. With no picture at all it uses its own palette (white to magenta).
 - **Cost:** it uses the graphics card while on screen — a few milliseconds a frame on integrated graphics at 1080p.
 
 A complete Fullscreen example page — visualizer, centred spinning cover, seekable timeline, title and transport — is
 in the UniPlaySong repository at `native/visualizer/demo-theme/UPSNowPlayingDemoFS-Main.xaml`.
+
+### Music player with a spectrum — `UPS_MusicPlayerControlVisual` (v1.9.0+)
+
+`UPS_MediaControllerOverlay` — the same PS5-style Now-Playing popup, the same buttons and gamepad handling — with a
+strip of spectrum bars standing on its seek bar. The bars blend two colours from the album art the popup shows, the
+card is the album art, blurred (once per cover, so it costs nothing per frame), under a dark tint of the art's colour,
+and the seek bar has a knob at the song's position. Above the title, a pill names the game the song belongs to (or
+Spotify); music no game owns - default music, a custom folder - shows none. It keeps a fixed 420 px width.
+
+```xml
+<ContentControl x:Name="UPS_MusicPlayerControlVisual" />
+```
+
+- **No setting to turn on.** It draws whenever your theme places it — unlike `UPS_MusicVisualControl`, it doesn't need
+  the Experimental switch.
+- **It moves with UniPlaySong's own music** (game music, default music, Radio Mode, chiptunes) **and with Spotify while
+  Spotify Live Effects is on.** With nothing to hear it does nothing, and the seek bar shows plain.
+- **SDL2 users:** UniPlaySong plays through its lighter SDL2 player unless a feature needs its effects player. On SDL2
+  the strip stays plain — **turn on Live Effects** to see it. Mention this to your users if your theme relies on it.
+- **The seek bar still seeks** — click, drag, right stick — as on the overlay. The strip never takes the mouse and never
+  reaches over or below the bar.
+- **One visualizer at a time.** While the popup is on screen it borrows the visualizer's renderer: a
+  `UPS_MusicVisualControl` on the page behind it holds its last frame and picks up again when the popup closes.
+
+#### The strip alone, for your own player — `UPS_MusicVisualStrip` (v1.9.0+)
+
+Have your own music player? Put the same spectrum strip above **your** seek bar — nothing else changes:
+
+```xml
+<StackPanel>
+    <ContentControl x:Name="UPS_MusicVisualStrip" Height="24" Margin="0,0,0,4"
+                    Focusable="False" IsHitTestVisible="False" />
+    <!-- your seek bar, as it is -->
+    <ProgressBar Height="6" Minimum="0" Maximum="100"
+                 Value="{PluginSettings Plugin=UniPlaySong, Path=ActiveMediaProgress}" />
+</StackPanel>
+```
+
+- **Works where Playnite doesn't build the page too** - a template another add-on shows in its own window (a helper
+  plugin's music player, say). Name the element `UPS_MusicVisualStrip` and UniPlaySong fills it when it loads.
+- **Size it like the bar.** It draws at its own size: give it the bar's width (same column/panel) and a height of
+  your choice (24 is what the popup uses). The bars rise from its bottom edge, so put it directly above the bar.
+- **Keep its width steady.** A width change restarts it (a moment blank). A bar with the times *below* or beside it in
+  fixed-width cells stays put; times that grow and shrink beside the bar shift it.
+- **Colours** come from the now-playing art: its two most striking colours, blended up each bar (one-colour art
+  gives dark-to-bright shades of it).
+- Everything else is as for `UPS_MusicPlayerControlVisual`: no setting, it moves with UniPlaySong's music (and Spotify
+  while captured), **SDL2 users need Live Effects on** (on SDL2 the strip stays empty — its space stays), and it borrows
+  the renderer from a `UPS_MusicVisualControl` on the page while it's on screen.
 
 ---
 
@@ -1075,7 +1159,7 @@ For a brush, bind to an `Image` that already shows the art: `ImageSource="{Bindi
 
 | | |
 |---|---|
-| **UniPlaySong** | 1.1.9+ for `UPS_MusicControl`; 1.4.6+ for `{PluginSettings}`; 1.5.2+ for `UPS_BackgroundAudio`; 1.5.3+ for `UPS_MusicControl_PauseGamePlayDefault`; 1.5.7+ for live now-playing bindings (`NowPlayingTitle`/`NowPlayingArtist`/`NowPlayingAlbumArtPath`, plus Spotify-only `NowPlayingAlbum`/`NowPlayingGenre`/`NowPlayingDuration`); 1.5.7+ for the now-playing mini-player elements (UPS_NowPlayingMiniPlayer / UPS_NowPlayingMiniPlayerCompact); 1.5.8+ for the unified media controller elements (UPS_MediaControllerOverlay / UPS_MediaControllerBar / UPS_MediaControllerCompact), the `ActiveMedia*` data bindings, and the source-aware `playpausetoggle`/`next`/`previous`/`togglemute` URIs; next release for seeking (seekable `ActiveMediaProgress` timelines, two-way `Slider`, `seek`/`seekto` URIs, `UPS_SeekDisc`), `UPS_MediaControllerTransport`, and the experimental `UPS_MusicVisualControl` |
+| **UniPlaySong** | 1.1.9+ for `UPS_MusicControl`; 1.4.6+ for `{PluginSettings}`; 1.5.2+ for `UPS_BackgroundAudio`; 1.5.3+ for `UPS_MusicControl_PauseGamePlayDefault`; 1.5.7+ for live now-playing bindings (`NowPlayingTitle`/`NowPlayingArtist`/`NowPlayingAlbumArtPath`, plus Spotify-only `NowPlayingAlbum`/`NowPlayingGenre`/`NowPlayingDuration`); 1.5.7+ for the now-playing mini-player elements (UPS_NowPlayingMiniPlayer / UPS_NowPlayingMiniPlayerCompact); 1.5.8+ for the unified media controller elements (UPS_MediaControllerOverlay / UPS_MediaControllerBar / UPS_MediaControllerCompact), the `ActiveMedia*` data bindings, and the source-aware `playpausetoggle`/`next`/`previous`/`togglemute` URIs; 1.9.0+ for seeking (seekable `ActiveMediaProgress` timelines, two-way `Slider`, `seek`/`seekto` URIs, `UPS_SeekDisc`), `UPS_MediaControllerTransport`, `UPS_MusicPlayerControlVisual`, `UPS_MusicVisualStrip`, recent tracks (`UPS_SpotifyRecentTracks`/`UPS_GameRecentTracks`), `NowPlayingArtColor1`/`NowPlayingArtColor2`, and the experimental `UPS_MusicVisualControl` |
 | **Playnite** | 10.x and 11.x, Fullscreen and Desktop |
 | **PlayniteSound** | Coexists — both `Sounds_MusicControl` and `UPS_MusicControl` work in the same theme |
 | **ANIKI REMAKE** | Fully supported reference theme |

@@ -59,4 +59,4 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](Theme%
 
 ---
 
-**Last updated**: 2026-10-11 · **Covers**: v1.8.10 + seeking (unreleased, `feature/music-visual-control`)
+**Last updated**: 2026-10-25 · **Covers**: v1.9.0

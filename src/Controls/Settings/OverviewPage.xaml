@@ -38,13 +38,16 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: Equalizer (EQ) &#8212; 15 or 10 bands with presets, under Live Effects and Quick Start.
+                        Added: seek within songs &#8212; click or drag a theme's music timeline, or tilt the right stick. Works with Spotify too.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: Now Playing cover art no longer fills your disk, PSF songs loop properly, and failed downloads say why.
+                        Added for themes: a music player with a live spectrum, recent tracks, and album-art colours.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Experimental: visualizer sync that keeps the bars in time with what you hear.
+                        Fixed: themes no longer show stale song info after you save settings.
+                    </TextBlock>
+                    <TextBlock Style="{StaticResource UpsBody}">
+                        Experimental: a music visualizer page for themes, the Jukebox Fountain.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:
