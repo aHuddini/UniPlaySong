@@ -25,7 +25,7 @@ How to wire your Playnite Fullscreen theme into UniPlaySong's music playback.
 | Skip forward / back buttons | `playnite://uniplaysong/seek/{seconds}` and `seekto/{0-100}` URIs (v1.9.0+) |
 | A turntable-style cover the user turns to seek | `UPS_SeekDisc` overlay element (v1.9.0+) |
 | The Now-Playing popup with a live, art-coloured spectrum on its seek bar | `UPS_MusicPlayerControlVisual` element (v1.9.0+) — see [Music player with a spectrum](#music-player-with-a-spectrum--ups_musicplayercontrolvisual-v190) |
-| An animated, music-reactive visualizer with real transparency, for a page or your music player | `UPS_MusicVisualControl` element, experimental (v1.9.0+) — see [Music visualizer](#music-visualizer--ups_musicvisualcontrol-experimental-v190) |
+| An animated, music-reactive visualizer with real transparency, for a page or your music player | `UPS_MusicVisualControl` element (v1.9.0+) — see [Music visualizer](#music-visualizer--ups_musicvisualcontrol-v190) |
 
 ---
 
@@ -953,18 +953,19 @@ on whatever is playing — UPS music or Spotify — and do nothing for chiptunes
 - While a disc is on screen it owns the right stick (circle to turn); timelines go back to tilt-to-scrub when it's gone.
 - `MyArt` above is an `Image` elsewhere on the page with its `Source` bound to `NowPlayingAlbumArtPath`. Don't bind `{PluginSettings}` straight into the brush in a Fullscreen **Main** view — see [Troubleshooting](#troubleshooting).
 
-### Music visualizer — `UPS_MusicVisualControl` (experimental, v1.9.0+)
+### Music visualizer — `UPS_MusicVisualControl` (v1.9.0+)
 
-An animated MilkDrop-style visualizer that moves with the music, drawn with **real transparency** over whatever your
+An animated visualizer that moves with the music, drawn with **real transparency** over whatever your
 view shows behind it. It reacts only to the music UniPlaySong plays — never to game or system sounds.
 
 ```xml
-<!-- Fill a page or a panel; it draws nothing until the user turns it on -->
+<!-- Fill a page or a panel -->
 <ContentControl x:Name="UPS_MusicVisualControl" Focusable="False" IsHitTestVisible="False" />
 ```
 
-- **Users switch it on:** Settings → Experimental → *Music Visualizer for Themes*. It's off by default; until it's on,
-  the element stays empty and costs nothing, so it's safe to ship in a theme unconditionally.
+- **No setting to turn on.** It draws whenever your theme shows it and UniPlaySong plays through its effects player.
+  On the lighter SDL2 player (the default when no effect needs more) it stays empty and costs nothing - **users turn on
+  Live Effects** to see it. Mention this to your users if your theme relies on it. It's safe to ship unconditionally.
 - **It never takes focus** and doesn't take mouse input, so it can't disturb controller navigation. Put any buttons in
   front of it as usual.
 - **Size it the way you want it drawn.** It renders at the element's own size, so it stays sharp; the frame follows
@@ -1017,7 +1018,7 @@ view shows behind it. It reacts only to the music UniPlaySong plays — never to
 
   Trigger on `True`, not on `False`: without UniPlaySong the binding has nothing to read, and the fallback should still
   show.
-- **Three styles.** The user picks one in UniPlaySong's settings; your page can pick its own (below), which wins:
+- **Three styles.** Your page picks one (below); without a choice it's the Jukebox Fountain:
   - **Jukebox Fountain** (`JukeboxFountain`, the default): beads of light either side of the centre that learn each
     song's beat, sections, chords and bass line.
   - **Glow Bars** (`GlowBars`): slim bars either side of the centre, with a reflection and bloom.
@@ -1037,21 +1038,21 @@ view shows behind it. It reacts only to the music UniPlaySong plays — never to
   Spotify plays, its album art is used whatever `Palette` says.
 - **Style and palette go in the element's `Tag`**, as `Key=Value` parts separated by `;`. Case and spaces don't
   matter (`Glow Bars` works). A bare word is the palette, as in earlier builds (`Tag="Disc"`). A style UniPlaySong
-  doesn't have is ignored, leaving the user's - so a theme naming a style from a newer update still works on older
+  doesn't have falls back to the Jukebox Fountain - so a theme naming a style from a newer update still works on older
   ones. Changing the `Tag` at run time (a trigger, say) switches the style live.
 - **Your own style, made in the [VisualizerPrototyper](https://ahuddini.github.io/UniPlaySong/VisualizerPrototyper/).**
   Drop in a song, start from a palette or a Showcase look, or make your own colours with **Your colours** (three
   pickers: the gradient's start, middle and end), and tune the motion. Press **Copy style for UPS** and paste it into a
   [Visualizer Style issue](https://github.com/aHuddini/UniPlaySong/issues/new?template=visualizer_style.yml) with a
   name. It ships in a UniPlaySong update; your theme then picks it by that name - `Tag="Style=Midnight Neon"`. Until
-  that update, users get their own style. Styles use UniPlaySong's own engine, so they are values only: colours,
+  that update, users see the Jukebox Fountain. Styles use UniPlaySong's own engine, so they are values only: colours,
   motion and effects, no code.
 
   ```xml
-  <!-- your page's look, whatever the user chose -->
-  <ContentControl x:Name="UPS_MusicVisualControl" Tag="Style=JukeboxFountain; Palette=Disc"
+  <!-- Glow Bars, colours from the now-playing art -->
+  <ContentControl x:Name="UPS_MusicVisualControl" Tag="Style=GlowBars; Palette=Disc"
                   Focusable="False" IsHitTestVisible="False" />
-  <!-- the user's style, colours from the now-playing art -->
+  <!-- the Jukebox Fountain, colours from the now-playing art -->
   <ContentControl x:Name="UPS_MusicVisualControl" Tag="Disc" Focusable="False" IsHitTestVisible="False" />
   ```
 - **Cost:** it uses the graphics card while on screen — a few milliseconds a frame on integrated graphics at 1080p.
@@ -1071,8 +1072,7 @@ Spotify); music no game owns - default music, a custom folder - shows none. It k
 <ContentControl x:Name="UPS_MusicPlayerControlVisual" />
 ```
 
-- **No setting to turn on.** It draws whenever your theme places it — unlike `UPS_MusicVisualControl`, it doesn't need
-  the Experimental switch.
+- **No setting to turn on.** It draws whenever your theme places it.
 - **It moves with UniPlaySong's own music** (game music, default music, Radio Mode, chiptunes) **and with Spotify while
   Spotify Live Effects is on.** With nothing to hear it does nothing, and the seek bar shows plain.
 - **SDL2 users:** UniPlaySong plays through its lighter SDL2 player unless a feature needs its effects player. On SDL2
@@ -1177,7 +1177,7 @@ For a brush, bind to an `Image` that already shows the art: `ImageSource="{Bindi
 
 | | |
 |---|---|
-| **UniPlaySong** | 1.1.9+ for `UPS_MusicControl`; 1.4.6+ for `{PluginSettings}`; 1.5.2+ for `UPS_BackgroundAudio`; 1.5.3+ for `UPS_MusicControl_PauseGamePlayDefault`; 1.5.7+ for live now-playing bindings (`NowPlayingTitle`/`NowPlayingArtist`/`NowPlayingAlbumArtPath`, plus Spotify-only `NowPlayingAlbum`/`NowPlayingGenre`/`NowPlayingDuration`); 1.5.7+ for the now-playing mini-player elements (UPS_NowPlayingMiniPlayer / UPS_NowPlayingMiniPlayerCompact); 1.5.8+ for the unified media controller elements (UPS_MediaControllerOverlay / UPS_MediaControllerBar / UPS_MediaControllerCompact), the `ActiveMedia*` data bindings, and the source-aware `playpausetoggle`/`next`/`previous`/`togglemute` URIs; 1.9.0+ for seeking (seekable `ActiveMediaProgress` timelines, two-way `Slider`, `seek`/`seekto` URIs, `UPS_SeekDisc`), `UPS_MediaControllerTransport`, `UPS_MusicPlayerControlVisual`, `UPS_MusicVisualStrip`, recent tracks (`UPS_SpotifyRecentTracks`/`UPS_GameRecentTracks`), `NowPlayingArtColor1`/`NowPlayingArtColor2`, and the experimental `UPS_MusicVisualControl` |
+| **UniPlaySong** | 1.1.9+ for `UPS_MusicControl`; 1.4.6+ for `{PluginSettings}`; 1.5.2+ for `UPS_BackgroundAudio`; 1.5.3+ for `UPS_MusicControl_PauseGamePlayDefault`; 1.5.7+ for live now-playing bindings (`NowPlayingTitle`/`NowPlayingArtist`/`NowPlayingAlbumArtPath`, plus Spotify-only `NowPlayingAlbum`/`NowPlayingGenre`/`NowPlayingDuration`); 1.5.7+ for the now-playing mini-player elements (UPS_NowPlayingMiniPlayer / UPS_NowPlayingMiniPlayerCompact); 1.5.8+ for the unified media controller elements (UPS_MediaControllerOverlay / UPS_MediaControllerBar / UPS_MediaControllerCompact), the `ActiveMedia*` data bindings, and the source-aware `playpausetoggle`/`next`/`previous`/`togglemute` URIs; 1.9.0+ for seeking (seekable `ActiveMediaProgress` timelines, two-way `Slider`, `seek`/`seekto` URIs, `UPS_SeekDisc`), `UPS_MediaControllerTransport`, `UPS_MusicPlayerControlVisual`, `UPS_MusicVisualStrip`, recent tracks (`UPS_SpotifyRecentTracks`/`UPS_GameRecentTracks`), `NowPlayingArtColor1`/`NowPlayingArtColor2`, and `UPS_MusicVisualControl` |
 | **Playnite** | 10.x and 11.x, Fullscreen and Desktop |
 | **PlayniteSound** | Coexists — both `Sounds_MusicControl` and `UPS_MusicControl` work in the same theme |
 | **ANIKI REMAKE** | Fully supported reference theme |

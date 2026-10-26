@@ -2043,7 +2043,7 @@ namespace UniPlaySong
                 _fileLogger?.Debug($"OnSettingsServicePropertyChanged: CalmDownModeEnabled={_settings.CalmDownModeEnabled} (theme write)");
                 bool needsBackendSwap = !_settings.LiveEffectsEnabled
                     && !_settings.ShowSpectrumVisualizer && !_settings.ShowPeakMeter
-                    && !_settings.EnableTrueCrossfade && !_settings.EqualizerEnabled && !_settings.MusicVisualizerEnabled;
+                    && !_settings.EnableTrueCrossfade && !_settings.EqualizerEnabled;
                 if (needsBackendSwap)
                 {
                     _fileLogger?.Debug("OnSettingsServicePropertyChanged: CalmDownMode toggle requires backend swap, recreating player");
@@ -2055,28 +2055,13 @@ namespace UniPlaySong
                 return;
             }
 
-            // The MilkDrop visualizer feeds on the NAudio player's output; switched on while SDL2 plays, it would stay silent
-            // until the dialog's Save.
-            if (e.PropertyName == nameof(UniPlaySongSettings.MusicVisualizerEnabled))
-            {
-                bool needsBackendSwap = !_settings.LiveEffectsEnabled
-                    && !_settings.ShowSpectrumVisualizer && !_settings.ShowPeakMeter && !_settings.EnableTrueCrossfade
-                    && !_settings.CalmDownModeEnabled && !_settings.CalmDownOnIdle && !_settings.EqualizerEnabled;
-                if (needsBackendSwap)
-                {
-                    _fileLogger?.Debug($"OnSettingsServicePropertyChanged: MusicVisualizerEnabled={_settings.MusicVisualizerEnabled} requires backend swap, recreating player");
-                    RecreateMusicPlayerForLiveEffects();
-                }
-                return;
-            }
-
             // Same for the equalizer: switched on while SDL2 is playing, it would do nothing until the dialog's Save.
             // The settings dialog edits the live object, so this fires as the box is ticked.
             if (e.PropertyName == nameof(UniPlaySongSettings.EqualizerEnabled))
             {
                 bool needsBackendSwap = !_settings.LiveEffectsEnabled
                     && !_settings.ShowSpectrumVisualizer && !_settings.ShowPeakMeter && !_settings.EnableTrueCrossfade
-                    && !_settings.CalmDownModeEnabled && !_settings.CalmDownOnIdle && !_settings.MusicVisualizerEnabled;
+                    && !_settings.CalmDownModeEnabled && !_settings.CalmDownOnIdle;
                 if (needsBackendSwap)
                 {
                     _fileLogger?.Debug($"OnSettingsServicePropertyChanged: EqualizerEnabled={_settings.EqualizerEnabled} requires backend swap, recreating player");
@@ -2252,19 +2237,13 @@ namespace UniPlaySong
                     || e.OldSettings.CalmDownOnIdle != e.NewSettings.CalmDownOnIdle;
                 bool calmDownForcesBackendSwap = calmDownChanged && !e.NewSettings.LiveEffectsEnabled
                     && !e.NewSettings.ShowSpectrumVisualizer && !e.NewSettings.ShowPeakMeter
-                    && !e.NewSettings.EnableTrueCrossfade && !e.NewSettings.EqualizerEnabled && !e.NewSettings.MusicVisualizerEnabled;
+                    && !e.NewSettings.EnableTrueCrossfade && !e.NewSettings.EqualizerEnabled;
                 // The equalizer, like Calm Down, needs NAudio but only flips the backend when nothing else already holds it.
                 bool equalizerForcesBackendSwap = e.OldSettings.EqualizerEnabled != e.NewSettings.EqualizerEnabled
                     && !e.NewSettings.LiveEffectsEnabled && !e.NewSettings.ShowSpectrumVisualizer && !e.NewSettings.ShowPeakMeter
-                    && !e.NewSettings.EnableTrueCrossfade && !e.NewSettings.CalmDownModeEnabled && !e.NewSettings.CalmDownOnIdle
-                    && !e.NewSettings.MusicVisualizerEnabled;
-                // The MilkDrop visualizer takes its audio from the NAudio player's output; same rule as the equalizer.
-                bool musicVisualizerForcesBackendSwap = e.OldSettings.MusicVisualizerEnabled != e.NewSettings.MusicVisualizerEnabled
-                    && !e.NewSettings.LiveEffectsEnabled && !e.NewSettings.ShowSpectrumVisualizer && !e.NewSettings.ShowPeakMeter
-                    && !e.NewSettings.EnableTrueCrossfade && !e.NewSettings.CalmDownModeEnabled && !e.NewSettings.CalmDownOnIdle
-                    && !e.NewSettings.EqualizerEnabled;
+                    && !e.NewSettings.EnableTrueCrossfade && !e.NewSettings.CalmDownModeEnabled && !e.NewSettings.CalmDownOnIdle;
                 bool backendSwap = liveEffectsChanged || vizToggled || peakMeterToggled || crossfadeToggled || calmDownForcesBackendSwap
-                    || equalizerForcesBackendSwap || musicVisualizerForcesBackendSwap;
+                    || equalizerForcesBackendSwap;
                 bool applyToSpotifyChanged = e.OldSettings.ApplyLiveEffectsToSpotify != e.NewSettings.ApplyLiveEffectsToSpotify;
 
                 if (backendSwap)
@@ -3876,7 +3855,7 @@ namespace UniPlaySong
             // CalmDownOnIdle counts too: the processor has to already exist when idle engages,
             // because swapping the backend at that moment would restart the song mid-idle.
             bool useCalmDown = (_settings?.CalmDownModeEnabled ?? false) || (_settings?.CalmDownOnIdle ?? false);
-            bool needsNAudio = useLiveEffects || useCalmDown || (_settings?.ShowSpectrumVisualizer ?? false) || (_settings?.ShowPeakMeter ?? false) || (_settings?.EnableTrueCrossfade ?? false) || (_settings?.EqualizerEnabled ?? false) || (_settings?.MusicVisualizerEnabled ?? false) || _needsNAudioForFormat;
+            bool needsNAudio = useLiveEffects || useCalmDown || (_settings?.ShowSpectrumVisualizer ?? false) || (_settings?.ShowPeakMeter ?? false) || (_settings?.EnableTrueCrossfade ?? false) || (_settings?.EqualizerEnabled ?? false) || _needsNAudioForFormat;
 
             if (needsNAudio)
             {

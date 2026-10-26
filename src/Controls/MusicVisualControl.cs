@@ -21,14 +21,15 @@ using static UniPlaySong.Controls.VisualizerBridge;
 
 namespace UniPlaySong.Controls
 {
-    // Theme element "UPS_MusicVisualControl" (experimental, behind MusicVisualizerEnabled): a MilkDrop visualizer drawn by
-    // a separate 64-bit renderer (Visualizer\UniPlaySongVisualizer.exe, projectM) and shown here with real transparency
-    // over whatever the theme draws behind it. The renderer runs only while the element is on screen and the setting is
-    // on, takes its music from UPS itself (VisualizerAudioFeed), and draws one frame per WPF frame. Never focusable or
-    // hit-testable, so it can't take controller focus. Layout and native side: native/visualizer/.
-    // The same control is the music player's spectrum strip (UPS_MusicPlayerControlVisual, see MediaControllerOverlay): no
-    // setting, its own style (UPS - Seek Spectrum.vis) and the popup's art for colours. A strip on screen borrows the
-    // renderer from a page visualizer, which holds its last frame until the strip goes.
+    // Theme element "UPS_MusicVisualControl": a visualizer drawn by a separate 64-bit renderer
+    // (Visualizer\UniPlaySongVisualizer.exe) and shown here with real transparency over whatever the theme draws behind
+    // it. No setting: the renderer runs while the element is on screen and UPS plays through NAudio (Live Effects and the
+    // like - the renderer hears UPS's own output, VisualizerAudioFeed), and draws one frame per WPF frame. The theme picks
+    // the style by the Tag (ParseTag), the Jukebox Fountain by default. Never focusable or hit-testable, so it can't take
+    // controller focus. Layout and native side: native/visualizer/.
+    // The same control is the music player's spectrum strip (UPS_MusicPlayerControlVisual, see MediaControllerOverlay):
+    // its own style (UPS - Seek Spectrum.vis) and the popup's art for colours. A strip on screen borrows the renderer
+    // from a page visualizer, which holds its last frame until the strip goes.
     public class MusicVisualControl : PluginUserControl
     {
         private static readonly string Folder =
@@ -66,7 +67,7 @@ namespace UniPlaySong.Controls
         private string _tagPalette;
         private bool _coverSent;
         private readonly DispatcherTimer _resizeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
-        private UniPlaySongSettings _subscribedTo;
+        private bool _subscribed;
         private Process _renderer;
         private VisualizerAudioFeed _feed;
         private VisualizerSongAnalysis _songAnalysis;   // the Jukebox Fountain only: its beats and sections need the song analysed
@@ -145,11 +146,8 @@ namespace UniPlaySong.Controls
         public static readonly DependencyProperty SongStateProperty = SongStateKey.DependencyProperty;
         public int SongState => (int)GetValue(SongStateProperty);
 
-        private bool Enabled => WantsRenderer(IsStrip, _settings?.Current?.MusicVisualizerEnabled == true, VisualizationDataProvider.Current != null);
-
-        // The page visualizer runs when the setting is on (which also puts playback on NAudio); the strip has no setting
-        // and runs whenever there is NAudio playback to hear - on SDL2 there is none, so it starts nothing.
-        internal static bool WantsRenderer(bool strip, bool visualizerSetting, bool hearing) => strip ? hearing : visualizerSetting;
+        // Only NAudio playback can be heard (VisualizationDataProvider); on SDL2 there is none, so nothing starts
+        private static bool Enabled => VisualizationDataProvider.Current != null;
 
         // The frame in device pixels: at most 2560x1440, even. A page visualizer too small to measure falls back to 1280x720;
         // a strip is its own size, down to 4 px, and (0, 0) below that - too thin to draw, so it doesn't start.
@@ -182,9 +180,9 @@ namespace UniPlaySong.Controls
 
         // The chosen style's file: a MilkDrop preset made by native/visualizer/presets/make_presets.py, or the Jukebox
         // Fountain's style file, made by native/visualizer/bench/tools/export_t8.mjs. The strip has its own.
-        // The theme's style for this element wins over the user's.
+        // The theme's style, else the Jukebox Fountain.
         private string PresetPath => Path.Combine(Folder, "presets", IsStrip ? "UPS - Seek Spectrum.vis"
-            : ThemeStyleFile(_tagStyle, file => File.Exists(Path.Combine(Folder, "presets", file))) ?? StyleFile(_settings?.Current?.MusicVisualizerStyle));
+            : ThemeStyleFile(_tagStyle, file => File.Exists(Path.Combine(Folder, "presets", file))) ?? StyleFile(MusicVisualizerStyle.JukeboxFountain));
 
         // The theme's Tag: the palette's picture alone ("Cover"), or keyed parts - "Style=GlowBars; Palette=Cover". Keys
         // ignore case.
@@ -203,7 +201,7 @@ namespace UniPlaySong.Controls
             return (style, palette);
         }
 
-        // The theme's style as a preset file, or null (none, or one UniPlaySong doesn't have: the user's style then). A
+        // The theme's style as a preset file, or null (none, or one UniPlaySong doesn't have: the default then). A
         // built-in name (JukeboxFountain, GlowBars, Fountain; case and spaces ignored), else a shipped style by name -
         // "Midnight Neon" is presets\UPS - Midnight Neon.vis, a theme developer's VisualizerPrototyper style added in an
         // update. A name, never a path: a theme picks among UniPlaySong's own styles, not a file of its own.
@@ -226,7 +224,7 @@ namespace UniPlaySong.Controls
             Refresh();
         }
 
-        private static string StyleFile(MusicVisualizerStyle? style)
+        private static string StyleFile(MusicVisualizerStyle style)
         {
             switch (style)
             {
@@ -236,7 +234,7 @@ namespace UniPlaySong.Controls
             }
         }
 
-        // Start or stop to match "on screen and switched on". Deferred to after layout, so the renderer can match the
+        // Start or stop to match "on screen and something to hear". Deferred to after layout, so the renderer can match the
         // element's real size.
         private void Refresh() => Dispatcher.BeginInvoke(new Action(() =>
         {
@@ -246,44 +244,31 @@ namespace UniPlaySong.Controls
             Start();
         }), DispatcherPriority.Loaded);
 
-        // A settings save replaces the whole settings object, so follow it rather than the one seen at load.
+        // A settings save can move playback onto or off NAudio (Live Effects), so check again after one
         private void Subscribe()
         {
-            if (_settings == null || _subscribedTo != null) return;
+            if (_settings == null || _subscribed) return;
             _settings.SettingsChanged += OnSettingsReplaced;
-            _subscribedTo = _settings.Current;
-            if (_subscribedTo != null) _subscribedTo.PropertyChanged += OnSettingChanged;
+            _subscribed = true;
         }
 
         private void Unsubscribe()
         {
             if (_settings == null) return;
             _settings.SettingsChanged -= OnSettingsReplaced;
-            if (_subscribedTo != null) _subscribedTo.PropertyChanged -= OnSettingChanged;
-            _subscribedTo = null;
+            _subscribed = false;
         }
 
-        private void OnSettingsReplaced(object sender, SettingsChangedEventArgs e)
-        {
-            if (_subscribedTo != null) _subscribedTo.PropertyChanged -= OnSettingChanged;
-            _subscribedTo = e.NewSettings;
-            if (_subscribedTo != null) _subscribedTo.PropertyChanged += OnSettingChanged;
-            Refresh();
-        }
-
-        private void OnSettingChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(UniPlaySongSettings.MusicVisualizerEnabled)
-                || e.PropertyName == nameof(UniPlaySongSettings.MusicVisualizerStyle)) Refresh();
-        }
+        private void OnSettingsReplaced(object sender, SettingsChangedEventArgs e) => Refresh();
 
         private void Start()
         {
             if (!Enabled)
             {
-                if (IsStrip) _log?.Debug("[Visualizer] Strip not started: no NAudio playback to hear");
+                _log?.Debug("[Visualizer] Not started: no NAudio playback to hear");
                 return;
             }
+            var uiTime = Stopwatch.StartNew();   // how long starting holds the UI thread (the debug log)
             // The frame's box: the element in device pixels, centred and shown 1:1 - pixel for pixel is what keeps the
             // visualizer sharp. Past the cap the rest of the element stays empty rather than upscaled (an upscaled frame -
             // 1728 px stretched over 2880 - looked blurry all over, and filling the width also made every column wider than
@@ -359,7 +344,7 @@ namespace UniPlaySong.Controls
                 Fail();
                 return;
             }
-            _log?.Debug($"[Visualizer] Started {w}x{h}, channel {channel}");
+            _log?.Debug($"[Visualizer] Started {w}x{h}, channel {channel} ({uiTime.ElapsedMilliseconds} ms on the UI thread)");
 
             // The renderer's shared memory takes a moment to appear; don't hold the UI thread for it.
             Task.Run(() =>

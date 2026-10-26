@@ -1,6 +1,6 @@
 # `src/Audio/Native/Visualizer/` — the music visualizer
 
-The experimental MilkDrop visualizer behind the **Music Visualizer for Themes** setting, shown by the
+The theme music visualizer (Jukebox Fountain natively, Glow Bars and Fountain through projectM), shown by the
 `UPS_MusicVisualControl` theme element. Packaged into the `.pext` under `Visualizer\` by
 `scripts/package_extension.ps1`, and found at run time next to `UniPlaySong.dll` by
 [`MusicVisualControl.cs`](../../../Controls/MusicVisualControl.cs).

@@ -173,7 +173,7 @@ Native DLLs power SDL2 audio playback, retro chiptune decoding (GME), and Spotif
 - **License**: MIT (UniPlaySong's own).
 
 ### Music visualizer — `Visualizer\` folder (experimental)
-- **Purpose**: The MilkDrop visualizer behind the *Music Visualizer for Themes* setting (`UPS_MusicVisualControl`)
+- **Purpose**: The theme music visualizer (`UPS_MusicVisualControl`, `UPS_MusicPlayerControlVisual`)
 - **Files**: `UniPlaySongVisualizer.exe` (x64 renderer, first-party), `UniPlaySongVisualizerBridge.dll` (x86, first-party), `projectM-4.dll` (projectM 4.1.8, x64), `glew32.dll` (GLEW 2.2.0, x64), `presets\UPS - Glow Bars.milk`, `presets\UPS - Fountain.milk`
 - **Location**: `src/Audio/Native/Visualizer/`, packaged into `Visualizer\` in the `.pext` by `scripts/package_extension.ps1`
 - **Source archives**: `lib/source/projectm-source-4.1.8.tar.gz` (LGPL §6), `lib/source/glew-source-2.2.0.tgz`

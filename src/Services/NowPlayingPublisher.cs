@@ -175,9 +175,10 @@ namespace UniPlaySong.Services
                                 }
                                 // no art of Spotify's own: Spotify's colours, not the stand-in cover's
                                 Publish(title, artist, artPath, album, genre, duration, colourFrom: noArt ? SpotifyColours : null);
+                                var thumb = RecentTracks.Thumb(artBytes);   // decoded here, off the UI thread
                                 _runOnUi(() =>
                                 {
-                                    if (!_disposed) RecentTracks.Spotify.Add(title, artist, album, key, RecentTracks.Thumb(artBytes));
+                                    if (!_disposed) RecentTracks.Spotify.Add(title, artist, album, key, thumb);
                                 });
                                 _artWriter?.Sweep();
                             });
@@ -346,7 +347,7 @@ namespace UniPlaySong.Services
         // The art's two colours, worked out off the UI thread (a file decode) when the art changes. UI thread only, so
         // _colourArt needs no lock; a result for art that has since changed is dropped. SpotifyColours in place of a path:
         // Spotify's own dark and green.
-        private const string SpotifyColours = " spotify";
+        private const string SpotifyColours = "\0spotify";
         private string _colourArt;
         private void PublishArtColours(string artPath)
         {

@@ -125,31 +125,6 @@
             <TextBlock Text="&#x26A0; Experimental: still being tuned — the look may change."
                        Style="{StaticResource UpsWarning}"/>
 
-            <!-- Music Visualizer for themes -->
-            <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Music Visualizer for Themes" Style="{StaticResource UpsSectionTitle}"/></Border>
-            <CheckBox Style="{StaticResource UpsToggle}" Content="Show the music visualizer in themes that include it"
-                      IsChecked="{Binding Settings.MusicVisualizerEnabled}"
-                      Margin="0,5,0,5"/>
-            <TextBlock Text="An animated visualizer that moves with the music, shown wherever your theme places it. It reacts only to the music UniPlaySong is playing, never to game or system sounds. Nothing appears if your theme doesn't include it."
-                       Style="{StaticResource UpsHint}"
-                       TextWrapping="Wrap"
-                       Margin="32,0,0,5"/>
-            <StackPanel Orientation="Horizontal" Margin="32,5,0,5" IsEnabled="{Binding Settings.MusicVisualizerEnabled}">
-                <TextBlock Style="{StaticResource UpsLabel}" Text="Style: " VerticalAlignment="Center" Width="120"/>
-                <ComboBox Style="{StaticResource UpsComboBox}" SelectedValue="{Binding Settings.MusicVisualizerStyle}"
-                          SelectedValuePath="Tag" Width="200">
-                    <ComboBoxItem Content="Jukebox Fountain" Tag="{x:Static local:MusicVisualizerStyle.JukeboxFountain}"/>
-                    <ComboBoxItem Content="Glow Bars" Tag="{x:Static local:MusicVisualizerStyle.GlowBars}"/>
-                    <ComboBoxItem Content="Fountain" Tag="{x:Static local:MusicVisualizerStyle.Fountain}"/>
-                </ComboBox>
-            </StackPanel>
-            <TextBlock Text="Jukebox Fountain: beads of light that rise and fall with the music on either side of the cover. It takes its colours from the game's artwork, learns each song the first time it plays, then moves with its beat and bass line and shifts colour with its sections and chords; hi-hats and snares make it sparkle. Glow Bars: slim glowing bars. Fountain: columns of sparks that leap with each beat. The two fountains are busier than Glow Bars, and harder on your graphics card. A theme can choose its own style for its page."
-                       Style="{StaticResource UpsHint}"
-                       TextWrapping="Wrap"
-                       Margin="32,0,0,5"/>
-            <TextBlock Text="&#x26A0; Experimental: uses your graphics card while it's on screen."
-                       Style="{StaticResource UpsWarning}"/>
-
             <!-- Media Key Control -->
             <Border Style="{StaticResource UpsSectionBar}"><TextBlock ups:TrackedCaps.Text="Media Key Control" Style="{StaticResource UpsSectionTitle}"/></Border>
 

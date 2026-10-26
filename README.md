@@ -26,7 +26,7 @@ Built with the help of Claude Code and Cursor IDE
 - Seek within songs: click or drag a theme's music timeline, or tilt the controller's right stick. Works with Spotify too.
 - For themes: a Now-Playing player with a live spectrum on its seek bar, coloured from the album art (needs Live Effects on).
 - For themes: recent tracks for game music and Spotify, album-art colours for backdrops, skip buttons and a turntable cover you turn to seek ([guide](docs/dev_docs/Theme%20Support/THEME_INTEGRATION_GUIDE.md)).
-- Experimental: a music visualizer page for themes. The Jukebox Fountain takes its colours from the game's art and learns each song's beat, sections and bass line (Settings → Experimental).
+- For themes: a music visualizer page. The Jukebox Fountain takes its colours from the game's art and learns each song's beat, sections and bass line (needs Live Effects on).
 
 ### Fixed
 - Themes no longer show stale song info (like a Spotify title over game music) after you save settings.

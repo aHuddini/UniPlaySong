@@ -11,7 +11,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added seeking for UPS music and Spotify: any `ProgressBar` bound to `ActiveMediaProgress` clicks and drags to seek, as does a two-way `Slider`, and the right stick scrubs any timeline on screen; chiptunes and PSF excluded
 - Added `UPS_SeekDisc` (a turntable overlay turned by stick or mouse, 30 s per turn), `UPS_MediaControllerTransport`, and `seek/{seconds}` and `seekto/{0-100}` URIs for theme skip buttons
 - Added `UPS_MusicVisualStrip`: the player's spectrum strip alone, for a theme's own player; an empty placeholder in another add-on's window (AnikiHelper's player) is filled at its first layout
-- Added the music visualizer for themes (Experimental): a 64-bit renderer shares its frames with Playnite through a D3D9Ex bridge into a `D3DImage`; styles Jukebox Fountain (default, drawn natively), Glow Bars and Fountain (projectM)
+- Added the music visualizer for themes: a 64-bit renderer shares its frames with Playnite through a D3D9Ex bridge into a `D3DImage`; styles Jukebox Fountain (default, drawn natively), Glow Bars and Fountain (projectM); no setting, it runs on NAudio playback
 - Added the Jukebox Fountain, a droplet style inspired by Tekken 8's music jukebox visualizer ("T8" in the bench): a native port of the bench's engine and shaders, with the bench's "Your tune #8" look
 - Added recent tracks for themes: `SpotifyRecentTracks` and `GameRecentTracks` lists plus ready-made `UPS_SpotifyRecentTracks`/`UPS_GameRecentTracks` elements; kept across restarts in `SpotifyRecentTracks.txt`/`GameRecentTracks.txt` (last 50)
 - Added `NowPlayingArtColor1`/`NowPlayingArtColor2` for themes: the current art's two colours, for backdrop gradients; Spotify with no art of its own gives Spotify's dark and green, not the stand-in game cover's
@@ -21,8 +21,9 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added a picture palette: the Jukebox Fountain takes three colours by k-means from the game's background, or the cover or now-playing art by the element's `Tag`, and eases to them over ~2 s
 - Added live hi-hat and snare reactions from per-band transient strength (0.82 and 0.57 correlation with Demucs drum stems); kicks follow the beat grid, since low-band detection scored 0.29 under a bass line
 - Added zero-copy frame hand-off: the renderer draws straight into the shared textures (`WGL_NV_DX_interop2`), cutting the hand-off at 2560×988 from 4.5 to 1.4 ms with identical frames; the GPU-to-CPU copy remains the fallback
-- Added a theme style choice for the visualizer: the element's `Tag` takes `Style=` and `Palette=` parts (`Style=GlowBars; Palette=Disc`), overriding the user's style for that page; a bare word stays the palette
-- Added the VisualizerPrototyper: the bench on GitHub Pages, with a three-colour palette generator and "Copy style for UPS"; styles sent through the new issue form ship as `UPS - <name>.vis`, picked by `Style=<name>`- Added a song-state badge to the demo theme (live, analysing, following the song), from the control's new `SongState` property
+- Added a theme style choice for the visualizer: the element's `Tag` takes `Style=` and `Palette=` parts (`Style=GlowBars; Palette=Disc`), choosing that page's style; a bare word stays the palette
+- Added the VisualizerPrototyper: the bench on GitHub Pages, with a three-colour palette generator and "Copy style for UPS"; styles sent through the new issue form ship as `UPS - <name>.vis`, picked by `Style=<name>`
+- Added a song-state badge to the demo theme (live, analysing, following the song), from the control's new `SongState` property
 
 ### Fixed
 

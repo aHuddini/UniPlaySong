@@ -47,7 +47,7 @@
                         Fixed: themes no longer show stale song info after you save settings.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Experimental: a music visualizer page for themes, the Jukebox Fountain.
+                        Added for themes: a music visualizer page, the Jukebox Fountain (needs Live Effects on).
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:

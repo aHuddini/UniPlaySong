@@ -1,8 +1,8 @@
 # Music Visualizer — engine, transport and build
 
-How the experimental MilkDrop visualizer (`UPS_MusicVisualControl`, setting **Music Visualizer for Themes**) works,
-and how to rebuild its native parts. Theme authors want the
-[theme guide](../Theme%20Support/THEME_INTEGRATION_GUIDE.md#music-visualizer--ups_musicvisualcontrol-experimental-next-release) instead.
+How the theme music visualizer (`UPS_MusicVisualControl`, and the music player's strip) works, and how to rebuild its
+native parts. Theme authors want the
+[theme guide](../Theme%20Support/THEME_INTEGRATION_GUIDE.md#music-visualizer--ups_musicvisualcontrol-v190) instead.
 
 ## The shape of it
 
@@ -35,7 +35,8 @@ MusicVisualControl (UI thread, per WPF frame):                                  
   comes from the audio itself (`VisualizerAudioFeed.LastSoundTick`, anything above −80 dBFS): the player's clock keeps
   running through a pause, because the always-on mixer plays silence.
 - **One element at a time.** The bridge holds one D3D9Ex device and one set of textures.
-- **Starts and stops with visibility.** The renderer runs only while the element is visible *and* the setting is on.
+- **Starts and stops with visibility.** The renderer runs only while the element is visible *and* UPS plays through
+  NAudio (no setting since 1.9.0; it was an Experimental switch while the engine was built).
   A collapsed element stays loaded, so `IsVisibleChanged`, not `Loaded`, drives it. The frame size is fixed per
   renderer, so a settled resize (400 ms debounce) restarts it; a restart waits for the old renderer to exit, because a
   new one opening the old shared memory would reset its stop flag and leave it running.
@@ -60,8 +61,8 @@ Fixed-width fields only; the C# side mirrors the offsets (`MusicVisualControl.Vi
 - Only the clock of the **audible** player writes (`VisualizationDataProvider.Current`: game music, the library
   dashboard or a jingle), so two players never interleave. The renderer starts fresh a short window back after a
   pause, a seek or a player switch instead of replaying a backlog.
-- The setting forces the NAudio engine, exactly like the spectrum visualizer and the equalizer: SDL2 has no output
-  tap. Toggling it at runtime swaps engines only when nothing else already needs NAudio.
+- It needs the NAudio engine (SDL2 has no output tap) but doesn't force it: on SDL2 the element stays empty, and users
+  turn on Live Effects (or anything else that needs NAudio) to see it.
 
 There is **no speaker capture** any more (the spike used WASAPI loopback). That captured games, browsers and
 notifications too, and showed up to External Audio as "another app playing", pausing the music every half second.
@@ -78,7 +79,7 @@ to black, because any non-black pixel is partly visible and a faint tint over th
 
 UniPlaySong's own presets (MIT); community packs carry no licence and are never bundled. One generator, six styles
 (LED Bars, Glow Bars, Spark Bars, Aurora, Halo Ring, Fountain); **Glow Bars and Fountain ship** — `build.cmd` copies
-them, and the **Style** setting under Music Visualizer for Themes picks one.
+them, and a theme picks one by the element's `Tag` (`Style=GlowBars`); the default is the Jukebox Fountain.
 
 Each preset: per-frame code turns last frame's spectrum into log-spaced bars (auto-gain, 30 dB window, time-based
 rise/fall, peak hold) and packs them into `q1..q32`; the warp shader draws the bars per pixel with trails; the comp
