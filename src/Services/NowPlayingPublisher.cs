@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 using UniPlaySong.Common;
 using UniPlaySong.Services.Spotify;
@@ -21,6 +22,7 @@ namespace UniPlaySong.Services
         private readonly NowPlayingArtWriter _artWriter;
         private readonly Func<UniPlaySongSettings> _getSettings;
         private readonly Func<string, string> _getGameCoverArtPath;
+        private readonly Func<string, string> _getGameName;   // a track's file path to its game's name, for the recent tracks
         private readonly FileLogger _fileLogger;
         private readonly object _publishLock = new object();
         private bool _disposed;
@@ -71,8 +73,10 @@ namespace UniPlaySong.Services
             FileLogger fileLogger,
             Func<string, string> getGameCoverArtPath = null,
             Action<Action> runInBackground = null,
-            Action<Action> runOnUi = null)
+            Action<Action> runOnUi = null,
+            Func<string, string> getGameName = null)
         {
+            _getGameName = getGameName;
             _runInBackground = runInBackground ?? (work => Task.Run(work));
             _runOnUi = runOnUi ?? OnUi;
             _metadata = metadata;
@@ -88,6 +92,16 @@ namespace UniPlaySong.Services
         }
 
         private void OnUpsSongInfoChanged(SongInfo info) => Refresh();
+
+        // A settings save swapped the settings object: the new one has none of the live values. Forget what was sent, so
+        // the same track and art go out again, into it.
+        public void Republish()
+        {
+            if (_disposed) return;
+            lock (_publishLock) _lastSpotifyTrackKey = null;
+            _runOnUi(() => _colourArt = null);
+            Refresh();
+        }
 
         // Recompute the active source and publish title/artist/art onto the settings object.
         // Idempotent; safe to call from any thread (events arrive on UI thread + threadpool).
@@ -159,6 +173,10 @@ namespace UniPlaySong.Services
                                     }
                                 }
                                 Publish(title, artist, artPath, album, genre, duration);
+                                _runOnUi(() =>
+                                {
+                                    if (!_disposed) RecentTracks.Spotify.Add(title, artist, album, key, RecentTracks.Thumb(artBytes));
+                                });
                                 _artWriter?.Sweep();
                             });
                         });
@@ -205,6 +223,15 @@ namespace UniPlaySong.Services
                 var upsDuration = song.HasDuration ? song.DurationText : string.Empty;
                 Publish(song.Title ?? string.Empty, song.Artist ?? string.Empty, artPath,
                     duration: upsDuration, generation: generation);
+
+                // Game music's recent tracks: the game's name as the album, the cover thumbnail made here, off the UI thread
+                var game = _getGameName?.Invoke(song.FilePath) ?? string.Empty;
+                var thumb = RecentTracks.Thumb(artPath);
+                _runOnUi(() =>
+                {
+                    if (_disposed || generation != Volatile.Read(ref _publishGeneration)) return;
+                    RecentTracks.Games.Add(song.Title, song.Artist, game, song.FilePath, thumb);
+                });
 
                 _artWriter?.Sweep();
             }
@@ -310,6 +337,33 @@ namespace UniPlaySong.Services
                 var s = _getSettings?.Invoke();
                 if (s == null) return;
                 Apply(s, title, artist, artPath, album, genre, duration);
+                PublishArtColours(artPath);
+            });
+        }
+
+        // The art's two colours, worked out off the UI thread (a file decode) when the art changes. UI thread only, so
+        // _colourArt needs no lock; a result for art that has since changed is dropped.
+        private string _colourArt;
+        private void PublishArtColours(string artPath)
+        {
+            if (artPath == _colourArt) return;
+            _colourArt = artPath;
+            _runInBackground(() =>
+            {
+                Color a = Colors.Black, b = Colors.Black;
+                if (!string.IsNullOrEmpty(artPath))
+                {
+                    try { (a, b) = Audio.VisualizerStripColors.FromFile(artPath); }
+                    catch (Exception ex) { _fileLogger?.Debug($"[NowPlaying] Art colours failed: {ex.Message}"); }
+                }
+                _runOnUi(() =>
+                {
+                    if (_disposed || artPath != _colourArt) return;
+                    var s = _getSettings?.Invoke();
+                    if (s == null) return;
+                    s.NowPlayingArtColor1 = a;
+                    s.NowPlayingArtColor2 = b;
+                });
             });
         }
 

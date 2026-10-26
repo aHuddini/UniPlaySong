@@ -63,6 +63,22 @@ namespace UniPlaySong.Tests.Services.ActiveMedia
             Assert.AreEqual("UniPlaySong", snap.SourceName);
         }
 
+        // A song just started (position 0) shows "0:00": the position came back empty at 0, so every timeline's position
+        // label vanished at the start of each song - and the music player's strip, resized by it, restarted its renderer.
+        [Test]
+        public void Snapshot_UpsAtTheStart_PositionReadsZero()
+        {
+            _playback.SetupGet(p => p.IsLoaded).Returns(true);
+            _playback.SetupGet(p => p.IsPlaying).Returns(true);
+            _playback.Setup(p => p.GetCurrentSongCurrentTime()).Returns(TimeSpan.Zero);
+            _playback.Setup(p => p.GetCurrentSongTotalTime()).Returns(TimeSpan.FromSeconds(100));
+            _spotifyControl.Recompute();
+
+            var snap = _service.GetSnapshot();
+            Assert.AreEqual("0:00", snap.PositionText);
+            Assert.AreEqual("1:40", snap.DurationText);
+        }
+
         [Test]
         public void Resolve_NothingLoaded_SnapshotIsNone()
         {

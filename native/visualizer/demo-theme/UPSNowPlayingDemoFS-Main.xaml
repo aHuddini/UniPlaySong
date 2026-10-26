@@ -22,6 +22,35 @@
                             <FadeImage x:Name="PART_ImageBackground" Grid.RowSpan="3"
                                        HorizontalAlignment="Center" VerticalAlignment="Top"/>
 
+                            <!-- Spotify page backdrop: a gradient in the song's cover colours (UPS's NowPlayingArtColor1/2 - Spotify's
+                                 album art), fading to black; not the selected game's background. No WPF effect. The colours
+                                 reach the brush through the hidden elements' Tags: {PluginSettings} can't go in a brush here. -->
+                            <FrameworkElement x:Name="UpsArtColor1" Visibility="Collapsed"
+                                              Tag="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingArtColor1}" />
+                            <FrameworkElement x:Name="UpsArtColor2" Visibility="Collapsed"
+                                              Tag="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingArtColor2}" />
+                            <Grid Grid.RowSpan="3" Background="Black" IsHitTestVisible="False">
+                                <Grid.Style>
+                                    <Style TargetType="Grid">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsChecked, ElementName=UpsSpotifyToggle}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Grid.Style>
+                                <Rectangle Opacity="0.55">
+                                    <Rectangle.Fill>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0.7,1">
+                                            <GradientStop Offset="0" Color="{Binding Tag, ElementName=UpsArtColor2}" />
+                                            <GradientStop Offset="0.5" Color="{Binding Tag, ElementName=UpsArtColor1}" />
+                                            <GradientStop Offset="1" Color="Black" />
+                                        </LinearGradientBrush>
+                                    </Rectangle.Fill>
+                                </Rectangle>
+                            </Grid>
+
                             <Grid Grid.Row="0" Background="{DynamicResource TopBarBackgroundBrush}"
                                   Height="110">
                                 <Grid.ColumnDefinitions>
@@ -129,6 +158,10 @@
                                                 <Setter Property="Opacity" Value="0" />
                                                 <Setter Property="IsHitTestVisible" Value="False" />
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsChecked, ElementName=UpsSpotifyToggle}" Value="True">
+                                                <Setter Property="Opacity" Value="0" />
+                                                <Setter Property="IsHitTestVisible" Value="False" />
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </DockPanel.Style>
@@ -164,13 +197,17 @@
 
                             <!-- UPS Now Playing page, built around UPS's visualizer presets. Stage: the visualizer full-bleed with the
                                  cover art at its exact centre (inside Halo Ring's ring, above the bars' floor). Strip below: title,
-                                 artist, timeline and transport. The visualizer never takes focus; the transport buttons do. -->
+                                 artist, timeline and transport. The visualizer never takes focus; the transport buttons do.
+                                 The Spotify page is this same page with a Recently Played column on the right. -->
                             <Grid Grid.Row="1">
                                 <Grid.Style>
                                     <Style TargetType="Grid">
                                         <Setter Property="Visibility" Value="Collapsed" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsChecked, ElementName=UpsVisualizerToggle}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding IsChecked, ElementName=UpsSpotifyToggle}" Value="True">
                                                 <Setter Property="Visibility" Value="Visible" />
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -210,6 +247,16 @@
                                 </Border>
                                 <!-- Near black, darker towards the floor: the visualizer's glow and backlight carry the page -->
                                 <Rectangle Grid.RowSpan="2" IsHitTestVisible="False">
+                                    <!-- Lighter on the Spotify page, so the cover's tint behind shows -->
+                                    <Rectangle.Style>
+                                        <Style TargetType="Rectangle">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsChecked, ElementName=UpsSpotifyToggle}" Value="True">
+                                                    <Setter Property="Opacity" Value="0.6" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Rectangle.Style>
                                     <Rectangle.Fill>
                                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                             <GradientStop Offset="0" Color="#CC000000" />
@@ -492,6 +539,118 @@
                                     <ContentControl x:Name="UPS_MediaControllerTransport" Focusable="False"
                                                     KeyboardNavigation.IsTabStop="False" HorizontalAlignment="Center" />
                                 </StackPanel>
+
+                                <!-- Spotify page: Recently Played, newest first (UPS's SpotifyRecentTracks - kept across restarts;
+                                     covers only for tracks heard this session). Triggers read UpsSpotifyState, never
+                                     {PluginSettings} directly (see UpsPlayState above). -->
+                                <FrameworkElement x:Name="UpsSpotifyState" Visibility="Collapsed"
+                                                  Tag="{PluginSettings Plugin=UniPlaySong, Path=SpotifyActive}" />
+                                <!-- Visualizer page: game music's recent tracks, UPS's ready-made element (UPS_GameRecentTracks)
+                                     in the same slot as the Spotify page's own list. Hidden on the Spotify page. -->
+                                <Border Grid.Row="1" Width="320" Height="200" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                        Margin="0,4,32,0" Padding="14,10" CornerRadius="12" Background="#80000000"
+                                        IsHitTestVisible="False" TextElement.Foreground="White">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsChecked, ElementName=UpsVisualizerToggle}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsChecked, ElementName=UpsSpotifyToggle}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Top" Text="Recently played" Foreground="White"
+                                                   FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8" />
+                                        <ContentControl x:Name="UPS_GameRecentTracks" Focusable="False" />
+                                    </DockPanel>
+                                </Border>
+
+                                <!-- In the strip's row, right of the title: off the stage, so it never covers the visualizer.
+                                     Capped below the strip's height so it never grows the row; the newest few show. -->
+                                <Border Grid.Row="1" Width="320" MaxHeight="200" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                        Margin="0,4,32,0" Padding="14,10" CornerRadius="12" Background="#80000000"
+                                        ClipToBounds="True" IsHitTestVisible="False">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsChecked, ElementName=UpsSpotifyToggle}" Value="True">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Top" Text="Recently played on Spotify" Foreground="#FF1ED760"
+                                                   FontSize="14" FontWeight="SemiBold" Margin="0,0,0,2" />
+                                        <TextBlock DockPanel.Dock="Top" Text="Spotify isn't UniPlaySong's music right now"
+                                                   Foreground="White" Opacity="0.6" FontSize="12" Margin="0,0,0,4">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Tag, ElementName=UpsSpotifyState}" Value="False">
+                                                            <Setter Property="Visibility" Value="Visible" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <ItemsControl ItemsSource="{PluginSettings Plugin=UniPlaySong, Path=SpotifyRecentTracks}"
+                                                      Margin="0,6,0,0" ClipToBounds="True">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Margin="0,0,0,6">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="32" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Width="32" Height="32" CornerRadius="4" Background="#33FFFFFF">
+                                                            <Grid>
+                                                                <TextBlock Text="&#9835;" Foreground="White" Opacity="0.5" FontSize="14"
+                                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                                <Image Source="{Binding Art}" Stretch="UniformToFill" />
+                                                            </Grid>
+                                                        </Border>
+                                                        <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Title}" Foreground="White" FontSize="13"
+                                                                       FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock Foreground="White" Opacity="0.6" FontSize="11"
+                                                                       TextTrimming="CharacterEllipsis">
+                                                                <Run Text="{Binding Artist, Mode=OneWay}" />
+                                                                <Run Text=" · " />
+                                                                <Run Text="{Binding PlayedAt, Mode=OneWay, StringFormat=t}" />
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </DockPanel>
+                                </Border>
+                            </Grid>
+
+                            <!-- UPS player test page: the Now-Playing popup with its spectrum strip (UPS_MusicPlayerControlVisual),
+                                 centred over a dimmed backdrop. A layer on top of whatever row 1 shows - the library or the
+                                 Visualizer page - so it can be opened over the Jukebox Fountain (the strip borrows its renderer). -->
+                            <Grid Grid.Row="1" Background="#B3000000">
+                                <Grid.Style>
+                                    <Style TargetType="Grid">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsChecked, ElementName=UpsPlayerToggle}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Grid.Style>
+                                <ContentControl x:Name="UPS_MusicPlayerControlVisual"
+                                                HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Grid>
 
                             <Grid Grid.Row="2" Background="{DynamicResource TopBarBackgroundBrush}"
@@ -534,6 +693,16 @@
                                                   Content="&#9835; Visualizer" FontSize="22" Padding="18,8" Margin="10,0"
                                                   VerticalAlignment="Center"
                                                   Background="#EE1DB954" Foreground="White" BorderThickness="0" />
+                                    <!--UPS Spotify test page: the Visualizer page with Spotify's recently played tracks-->
+                                    <ToggleButton x:Name="UpsSpotifyToggle"
+                                                  Content="&#9835; Spotify" FontSize="22" Padding="18,8" Margin="10,0"
+                                                  VerticalAlignment="Center"
+                                                  Background="#EE191414" Foreground="#FF1ED760" BorderThickness="0" />
+                                    <!--UPS player test page: the popup with the spectrum strip-->
+                                    <ToggleButton x:Name="UpsPlayerToggle"
+                                                  Content="&#9654; Player" FontSize="22" Padding="18,8" Margin="10,0"
+                                                  VerticalAlignment="Center"
+                                                  Background="#EE3DA5FF" Foreground="White" BorderThickness="0" />
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="2" x:Name="PART_ElemSearchActive"

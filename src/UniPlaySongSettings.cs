@@ -750,6 +750,21 @@ namespace UniPlaySong
             set { nowPlayingTitle = value ?? string.Empty; OnPropertyChanged(); }
         }
 
+        // The Spotify tracks heard recently, newest first (Title, Artist, Album, PlayedAt, Art) - themes bind
+        // ItemsSource="{PluginSettings Plugin=UniPlaySong, Path=SpotifyRecentTracks}". One list for the session, shared by
+        // every settings object, so a settings save doesn't empty it; kept across restarts in SpotifyRecentTracks.txt.
+        // DontSerialize, not only JsonIgnore: Playnite saves and loads settings with its own Newtonsoft.Json, which doesn't
+        // know UPS's JsonIgnore - so the list was written to config.json, and its cover image couldn't be read back, and
+        // UPS failed to load.
+        [JsonIgnore, Playnite.SDK.Data.DontSerialize]
+        public System.Collections.ObjectModel.ObservableCollection<Services.RecentTrack> SpotifyRecentTracks
+            => Services.RecentTracks.Spotify.Items;
+
+        // The same for game music (GameRecentTracks.txt); Album is the game's name
+        [JsonIgnore, Playnite.SDK.Data.DontSerialize]
+        public System.Collections.ObjectModel.ObservableCollection<Services.RecentTrack> GameRecentTracks
+            => Services.RecentTracks.Games.Items;
+
         // Live now-playing ARTIST of the active music. [JsonIgnore] runtime state — theme devs bind
         // via {PluginSettings Plugin=UniPlaySong, Path=NowPlayingArtist}. Empty when none.
         [JsonIgnore]
@@ -768,6 +783,22 @@ namespace UniPlaySong
         {
             get => nowPlayingAlbumArtPath;
             set { nowPlayingAlbumArtPath = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        // The current art's two colours, darker first (the spectrum strip's pair) - for a theme's backdrop gradient.
+        // Black while there is no art. Set by NowPlayingPublisher. Not saved (see SpotifyRecentTracks for why DontSerialize).
+        private Color nowPlayingArtColor1 = Colors.Black, nowPlayingArtColor2 = Colors.Black;
+        [JsonIgnore, Playnite.SDK.Data.DontSerialize]
+        public Color NowPlayingArtColor1
+        {
+            get => nowPlayingArtColor1;
+            set { nowPlayingArtColor1 = value; OnPropertyChanged(); }
+        }
+        [JsonIgnore, Playnite.SDK.Data.DontSerialize]
+        public Color NowPlayingArtColor2
+        {
+            get => nowPlayingArtColor2;
+            set { nowPlayingArtColor2 = value; OnPropertyChanged(); }
         }
 
         // Live ALBUM of the current Spotify track. [JsonIgnore] runtime state — theme devs bind via

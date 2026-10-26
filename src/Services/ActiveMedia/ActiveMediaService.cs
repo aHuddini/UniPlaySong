@@ -106,7 +106,7 @@ namespace UniPlaySong.Services.ActiveMedia
             {
                 progress = Math.Max(0.0, Math.Min(100.0,
                     tl.Position.TotalSeconds / tl.Duration.TotalSeconds * 100.0));
-                posText = SongTitleCleaner.FormatDuration(tl.Position);
+                posText = FormatPosition(tl.Position);
                 durText = SongTitleCleaner.FormatDuration(tl.Duration);
             }
 
@@ -126,6 +126,11 @@ namespace UniPlaySong.Services.ActiveMedia
                 canPrevious: true);
         }
 
+        // A position, where 0 is "0:00": FormatDuration gives "" for zero (no length), which blanked every timeline's
+        // position label at the start of each song.
+        private static string FormatPosition(TimeSpan position) =>
+            position.TotalSeconds <= 0 ? "0:00" : SongTitleCleaner.FormatDuration(position);
+
         private ActiveMediaSnapshot BuildUpsSnapshot()
         {
             var cur = _playback?.GetCurrentSongCurrentTime();
@@ -136,7 +141,7 @@ namespace UniPlaySong.Services.ActiveMedia
             {
                 progress = Math.Max(0.0, Math.Min(100.0,
                     cur.Value.TotalSeconds / total.Value.TotalSeconds * 100.0));
-                posText = SongTitleCleaner.FormatDuration(cur.Value);
+                posText = FormatPosition(cur.Value);
                 durText = SongTitleCleaner.FormatDuration(total.Value);
             }
             double vol = (_playback?.GetInternalVolume() ?? 0.0) * 100.0;

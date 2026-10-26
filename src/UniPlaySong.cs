@@ -30,7 +30,7 @@ namespace UniPlaySong
 {
     // UniPlaySong - Console-like game music preview extension for Playnite Plays game-specific music when
     // browsing your library
-    public class UniPlaySong : GenericPlugin
+    public class UniPlaySong : GenericPlugin, INotifyPropertyChanged
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
         private static readonly int _selfPid = System.Diagnostics.Process.GetCurrentProcess().Id;
@@ -264,6 +264,9 @@ namespace UniPlaySong
         // UniPlaySongSettings's INotifyPropertyChanged.
         public UniPlaySongSettings Settings => _settings;
 
+        // Raised for Settings when a save swaps the settings object (OnSettingsServiceChanged)
+        public event PropertyChangedEventHandler PropertyChanged;
+
         // Direct in-process entry point for other plugins, as an alternative to the
         // playnite://uniplaysong/... URI. Same handler, same debounce, same settings gate — only the
         // transport differs: this skips Process.Start and Windows' shell resolution of the
@@ -397,7 +400,7 @@ namespace UniPlaySong
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "UPS",
-                ElementList = new List<string> { "MusicControl", "SpectrumVisualizer", "MusicControl_PauseGamePlayDefault", "NowPlayingMiniPlayer", "NowPlayingMiniPlayerCompact", "MediaControllerBar", "MediaControllerOverlay", "MediaControllerCompact", "MediaControllerTransport", "SeekDisc", "MusicVisualControl" }
+                ElementList = new List<string> { "MusicControl", "SpectrumVisualizer", "MusicControl_PauseGamePlayDefault", "NowPlayingMiniPlayer", "NowPlayingMiniPlayerCompact", "MediaControllerBar", "MediaControllerOverlay", "MediaControllerCompact", "MediaControllerTransport", "SeekDisc", "MusicVisualControl", "MusicPlayerControlVisual", "MusicVisualStrip", "SpotifyRecentTracks", "GameRecentTracks" }
             });
 
             // Register settings support for theme integration via Playnite's {PluginSettings} markup extension (v1.4.6+).
@@ -2407,6 +2410,12 @@ namespace UniPlaySong
                 e.NewSettings.PropertyChanged += OnSettingsChanged;
             }
 
+            // Themes bind {PluginSettings} through this plugin's Settings property: without this they keep the previous
+            // object for good, and every live value they show (now playing, progress, art) freezes at the save. The new
+            // object starts with none of the live values, so the now-playing ones are published into it again.
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Settings)));
+            _nowPlayingPublisher?.Republish();
+
             // Hand the new settings object to the consumers that CAPTURE it rather than reading it
             // live, or they go on using the previous one for the rest of the session.
             //
@@ -3577,6 +3586,8 @@ namespace UniPlaySong
                 }
             })
             { IsBackground = true, Priority = System.Threading.ThreadPriority.BelowNormal, Name = "UPS art sweep" }.Start();
+            Services.RecentTracks.Spotify.Load(basePath, _fileLogger);
+            Services.RecentTracks.Games.Load(basePath, _fileLogger);
             _publisherMetadata = new Services.SongMetadataService(_playbackService, _fileLogger, () => _settings);
             _nowPlayingPublisher = new Services.NowPlayingPublisher(
                 _publisherMetadata,
@@ -3585,7 +3596,8 @@ namespace UniPlaySong
                 nowPlayingArtWriter,
                 () => _settings,
                 _fileLogger,
-                ResolveGameCoverPathForTrack); // cover fallback: track's owning game, else selected game
+                ResolveGameCoverPathForTrack, // cover fallback: track's owning game, else selected game
+                getGameName: path => (ResolveOwningGameFromPath(path) ?? _playbackService?.CurrentGame)?.Name);
             _nowPlayingPublisher.Refresh(); // publish initial state
 
             // ActiveMediaService: resolves the single audible active source (UPS or Spotify)
@@ -3601,6 +3613,20 @@ namespace UniPlaySong
             _activeMediaViewModel = new Controls.ActiveMediaViewModel(_settingsService, _activeMediaService);
             _activeMediaViewModel.Attach();
             Controls.TimelineSeek.Register(_activeMediaViewModel, _activeMediaService, _api, _fileLogger); // themes' UPS-bound progress bars become seekable
+            // UPS_MusicVisualStrip also where Playnite doesn't build the template - another add-on's window, such as
+            // AnikiHelper's music player: an empty one is filled at its first layout. Playnite fills its own views first.
+            // SizeChanged, not Loaded: WPF only broadcasts Loaded into subtrees where something listens to it, so a class
+            // handler on Loaded never saw AnikiHelper's placeholder; every element raises SizeChanged when first laid out.
+            if (!_stripHandlerRegistered)
+            {
+                _stripHandlerRegistered = true;
+                EventManager.RegisterClassHandler(typeof(ContentControl), FrameworkElement.SizeChangedEvent, new SizeChangedEventHandler((s, e) =>
+                {
+                    if (!(s is ContentControl cc) || cc.Content != null || cc.Name != "UPS_MusicVisualStrip") return;
+                    _fileLogger?.Debug($"[Visualizer] Strip placeholder filled, in a {Window.GetWindow(cc)?.GetType().Name ?? "(no window)"}");
+                    cc.Content = CreateMusicVisualStrip();
+                }));
+            }
 
             // ExternalControlService: routes playnite://uniplaysong/{command} URIs. Constructed
             // after _activeMediaService so source-aware transport commands (next/previous/
@@ -3774,6 +3800,14 @@ namespace UniPlaySong
                 return null;
             }
         }
+
+        private static bool _stripHandlerRegistered;   // the class handler lives for the process: register it once
+
+        // Song analyses of music outside the game folders, and the picture-colour store (palettes.json)
+        private string VisualAnalysisFolder => Path.Combine(Path.GetDirectoryName(_gamesPath) ?? string.Empty, Constants.VisualAnalysisFolderName);
+
+        private Controls.MusicVisualControl CreateMusicVisualStrip() =>
+            new Controls.MusicVisualControl(_settingsService, _fileLogger, VisualAnalysisFolder, strip: true);
 
         // Extracts the owning game from a UPS music path (...\UniPlaySong\Games\{GameId}\track.mp3).
         // Returns null for non-game-owned paths (custom folder, default music, Spotify/no path).
@@ -4795,8 +4829,20 @@ namespace UniPlaySong
             if (args.Name == "SeekDisc")
                 return new Controls.SeekDisc(_activeMediaService, _api);
             if (args.Name == "MusicVisualControl")
-                return new Controls.MusicVisualControl(_settingsService, _fileLogger,
-                    Path.Combine(Path.GetDirectoryName(_gamesPath) ?? string.Empty, Constants.VisualAnalysisFolderName));
+                return new Controls.MusicVisualControl(_settingsService, _fileLogger, VisualAnalysisFolder);
+            // the spectrum strip alone, for a theme's own music player: placed above its seek bar
+            if (args.Name == "MusicVisualStrip")
+                return CreateMusicVisualStrip();
+            // the recent tracks, ready-made; a theme's DataTemplate keyed UPS_<name>Template restyles the rows
+            if (args.Name == "SpotifyRecentTracks")
+                return new Controls.RecentTracksControl(Services.RecentTracks.Spotify, "UPS_SpotifyRecentTracksTemplate");
+            if (args.Name == "GameRecentTracks")
+                return new Controls.RecentTracksControl(Services.RecentTracks.Games, "UPS_GameRecentTracksTemplate");
+            // the popup with a spectrum strip on its seek bar, drawn by the visualizer's renderer
+            if (args.Name == "MusicPlayerControlVisual")
+                return new Controls.MediaControllerOverlay(_activeMediaViewModel, CreateMusicVisualStrip(),
+                    Path.Combine(VisualAnalysisFolder, "palettes.json"),
+                    () => ResolveOwningGameFromPath(_playbackService?.CurrentSongPath)?.Name);
             return null;
         }
 

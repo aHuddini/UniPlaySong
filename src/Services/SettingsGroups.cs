@@ -381,6 +381,8 @@ namespace UniPlaySong.Services
             nameof(UniPlaySongSettings.LastUpsRadioSource),
             nameof(UniPlaySongSettings.NowPlayingAlbum),
             nameof(UniPlaySongSettings.NowPlayingAlbumArtPath),
+            nameof(UniPlaySongSettings.NowPlayingArtColor1),
+            nameof(UniPlaySongSettings.NowPlayingArtColor2),
             nameof(UniPlaySongSettings.NowPlayingArtist),
             nameof(UniPlaySongSettings.NowPlayingDuration),
             nameof(UniPlaySongSettings.NowPlayingGenre),

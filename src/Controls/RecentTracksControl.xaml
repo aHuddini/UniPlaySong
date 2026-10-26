@@ -1,0 +1,33 @@
+<PluginUserControl x:Class="UniPlaySong.Controls.RecentTracksControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- The recent tracks, newest first: cover, title, artist (or game) and time. Text takes the theme's own colour and
+         font; the list clips to the space the theme gives it. -->
+    <ItemsControl x:Name="List" ClipToBounds="True" Focusable="False">
+        <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="40" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Width="40" Height="40" CornerRadius="4" Background="#33FFFFFF">
+                        <Grid>
+                            <TextBlock Text="&#9835;" Opacity="0.5" FontSize="16"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Image Source="{Binding Art}" Stretch="UniformToFill" />
+                        </Grid>
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Opacity="0.6" FontSize="12" TextTrimming="CharacterEllipsis">
+                            <Run Text="{Binding Artist, Mode=OneWay}" />
+                            <Run Text=" · " />
+                            <Run Text="{Binding PlayedAt, Mode=OneWay, StringFormat=t}" />
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</PluginUserControl>

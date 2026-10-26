@@ -209,6 +209,26 @@ namespace UniPlaySong.Tests.Services
             Assert.AreEqual("3:45", _settings.NowPlayingDuration); // 225s formatted m:ss
         }
 
+        // A settings save swaps the settings object, and the new one starts blank: the track already playing must be
+        // published into it, though the publisher has already sent it (themes showed the old values, then blanks)
+        [Test]
+        public void Republish_AfterASettingsSwap_FillsTheNewObject()
+        {
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
+            var (pub, spotify, meta, pb) = BuildPublisher();
+            spotify.Recompute();
+            pub.Refresh();
+
+            var saved = new UniPlaySongSettings { RadioModeEnabled = true, RadioMusicSource = RadioMusicSource.Spotify };
+            _settings = saved;
+            pub.Refresh();
+            Assert.AreEqual(string.Empty, saved.NowPlayingTitle, "the same track is not re-sent on a plain refresh");
+
+            pub.Republish();
+            Assert.AreEqual("Tokyo Rain", saved.NowPlayingTitle);
+        }
+
         [Test]
         public void Refresh_GameMusic_ClearsSpotifyOnlyMetadata()
         {
