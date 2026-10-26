@@ -1,7 +1,8 @@
 # UniPlaySong Demo (Fullscreen)
 
 A Fullscreen theme for trying UniPlaySong's theme features, and a working reference for theme developers. It is
-Playnite's default Fullscreen theme with three pages added to the main view, opened from the bottom bar:
+Playnite's default Fullscreen theme with three pages added to the main view, opened from the bottom bar
+([see it in action](../../docs/assets/UPSDemoVisualizerFSMode.mp4)):
 
 | Button | Page | UniPlaySong features |
 |---|---|---|
