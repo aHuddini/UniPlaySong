@@ -24,6 +24,23 @@ namespace UniPlaySong.Tests.Controls
             Assert.IsFalse(MusicVisualControl.HandsBack(false, false, false), "a page lends nothing");
         }
 
+        // A theme picks the page's style and palette by the element's Tag (a bare word stays the palette, as before): a
+        // built-in style, or one shipped as a .vis by name - never a path, and never one UniPlaySong doesn't have
+        [Test]
+        public void ThemeTag_PicksStyleAndPalette()
+        {
+            Assert.AreEqual(((string)null, "Cover"), MusicVisualControl.ParseTag("Cover"));
+            Assert.AreEqual(("Glow Bars", "Disc"), MusicVisualControl.ParseTag("style = Glow Bars; Palette=Disc"));
+            Assert.AreEqual(((string)null, (string)null), MusicVisualControl.ParseTag(null));
+
+            System.Func<string, bool> shipped = f => f == "UPS - Midnight Neon.vis";
+            Assert.AreEqual("UPS - Glow Bars.milk", MusicVisualControl.ThemeStyleFile("Glow Bars", shipped));
+            Assert.AreEqual("UPS - Midnight Neon.vis", MusicVisualControl.ThemeStyleFile("Midnight Neon", shipped));
+            Assert.IsNull(MusicVisualControl.ThemeStyleFile("Not Shipped", shipped), "unknown style: the user's");
+            Assert.IsNull(MusicVisualControl.ThemeStyleFile("5", shipped), "a number is not a style");
+            Assert.IsNull(MusicVisualControl.ThemeStyleFile(@"..\..\Themes\Mine", f => true), "a path is not a style");
+        }
+
         // SDL2 (no NAudio provider): the popup keeps the plain bar - no empty strip row above it.
         [Test, Apartment(System.Threading.ApartmentState.STA)]
         public void Overlay_OnSdl2_ShowsThePlainBar()

@@ -270,6 +270,9 @@ namespace UniPlaySong.Tests.Services
             pub.Refresh();
             Assert.AreEqual("Tokyo Rain", _settings.NowPlayingTitle);
             Assert.AreEqual(string.Empty, _settings.NowPlayingAlbumArtPath);
+            // no art of its own: Spotify's dark and green, for the theme's backdrop
+            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0x12, 0x12, 0x12), _settings.NowPlayingArtColor1);
+            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0x1D, 0xB9, 0x54), _settings.NowPlayingArtColor2);
         }
 
         [Test]

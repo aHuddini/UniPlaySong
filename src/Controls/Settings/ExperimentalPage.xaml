@@ -143,7 +143,7 @@
                     <ComboBoxItem Content="Fountain" Tag="{x:Static local:MusicVisualizerStyle.Fountain}"/>
                 </ComboBox>
             </StackPanel>
-            <TextBlock Text="Jukebox Fountain: beads of light that rise and fall with the music on either side of the cover. It takes its colours from the game's artwork, learns each song the first time it plays, then moves with its beat and bass line and shifts colour with its sections and chords; hi-hats and snares make it sparkle. Glow Bars: slim glowing bars. Fountain: columns of sparks that leap with each beat. The two fountains are busier than Glow Bars, and harder on your graphics card."
+            <TextBlock Text="Jukebox Fountain: beads of light that rise and fall with the music on either side of the cover. It takes its colours from the game's artwork, learns each song the first time it plays, then moves with its beat and bass line and shifts colour with its sections and chords; hi-hats and snares make it sparkle. Glow Bars: slim glowing bars. Fountain: columns of sparks that leap with each beat. The two fountains are busier than Glow Bars, and harder on your graphics card. A theme can choose its own style for its page."
                        Style="{StaticResource UpsHint}"
                        TextWrapping="Wrap"
                        Margin="32,0,0,5"/>

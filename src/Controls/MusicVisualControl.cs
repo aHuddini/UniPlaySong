@@ -62,6 +62,8 @@ namespace UniPlaySong.Controls
         // now-playing art: the song's own, else the cover). Each falls back to the others when its picture is missing.
         private string _gameBackground, _gameCover;   // the game shown's, when the file is there (GameContextChanged)
         private string _coverFor;   // the art the renderer last got colours for (null: none sent since it started)
+        private string _tagStyle;   // the Tag's parts (ParseTag)
+        private string _tagPalette;
         private bool _coverSent;
         private readonly DispatcherTimer _resizeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
         private UniPlaySongSettings _subscribedTo;
@@ -91,7 +93,8 @@ namespace UniPlaySong.Controls
             IsStrip = strip;
             Focusable = false;
             IsHitTestVisible = false;
-            // the theme's element carries the Tag (the palette's picture); Playnite doesn't pass it on, so take it from there
+            // the theme's element carries the Tag (the palette's picture and the style, see ParseTag); Playnite doesn't
+            // pass it on, so take it from there
             if (!IsStrip)
                 SetBinding(TagProperty, new System.Windows.Data.Binding(nameof(Tag))
                 {
@@ -179,7 +182,49 @@ namespace UniPlaySong.Controls
 
         // The chosen style's file: a MilkDrop preset made by native/visualizer/presets/make_presets.py, or the Jukebox
         // Fountain's style file, made by native/visualizer/bench/tools/export_t8.mjs. The strip has its own.
-        private string PresetPath => Path.Combine(Folder, "presets", IsStrip ? "UPS - Seek Spectrum.vis" : StyleFile(_settings?.Current?.MusicVisualizerStyle));
+        // The theme's style for this element wins over the user's.
+        private string PresetPath => Path.Combine(Folder, "presets", IsStrip ? "UPS - Seek Spectrum.vis"
+            : ThemeStyleFile(_tagStyle, file => File.Exists(Path.Combine(Folder, "presets", file))) ?? StyleFile(_settings?.Current?.MusicVisualizerStyle));
+
+        // The theme's Tag: the palette's picture alone ("Cover"), or keyed parts - "Style=GlowBars; Palette=Cover". Keys
+        // ignore case.
+        internal static (string style, string palette) ParseTag(string tag)
+        {
+            string style = null, palette = null;
+            foreach (var part in (tag ?? string.Empty).Split(';'))
+            {
+                int eq = part.IndexOf('=');
+                string key = eq < 0 ? "Palette" : part.Substring(0, eq).Trim();
+                string value = (eq < 0 ? part : part.Substring(eq + 1)).Trim();
+                if (value.Length == 0) continue;
+                if (key.Equals("Style", StringComparison.OrdinalIgnoreCase)) style = value;
+                else if (key.Equals("Palette", StringComparison.OrdinalIgnoreCase)) palette = value;
+            }
+            return (style, palette);
+        }
+
+        // The theme's style as a preset file, or null (none, or one UniPlaySong doesn't have: the user's style then). A
+        // built-in name (JukeboxFountain, GlowBars, Fountain; case and spaces ignored), else a shipped style by name -
+        // "Midnight Neon" is presets\UPS - Midnight Neon.vis, a theme developer's VisualizerPrototyper style added in an
+        // update. A name, never a path: a theme picks among UniPlaySong's own styles, not a file of its own.
+        internal static string ThemeStyleFile(string name, Func<string, bool> shipped)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+            if (Enum.TryParse(name.Replace(" ", string.Empty), true, out MusicVisualizerStyle s) && Enum.IsDefined(typeof(MusicVisualizerStyle), s))
+                return StyleFile(s);
+            if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) return null;
+            string file = "UPS - " + name + ".vis";
+            return shipped(file) ? file : null;
+        }
+
+        // Read once per Tag change, not per frame (PaletteArt runs every frame); a new style restarts the renderer
+        protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
+        {
+            base.OnPropertyChanged(e);
+            if (e.Property != TagProperty || IsStrip) return;
+            (_tagStyle, _tagPalette) = ParseTag(e.NewValue as string);
+            Refresh();
+        }
 
         private static string StyleFile(MusicVisualizerStyle? style)
         {
@@ -286,7 +331,8 @@ namespace UniPlaySong.Controls
             {
                 Load(Folder);
                 _feed = VisualizerAudioFeed.Open(channel + "_Audio");
-                if (!IsStrip && _settings?.Current?.MusicVisualizerStyle == MusicVisualizerStyle.JukeboxFountain)
+                // every .vis style is the Jukebox Fountain engine, which follows the song's analysis
+                if (!IsStrip && preset.EndsWith(".vis", StringComparison.OrdinalIgnoreCase))
                     _songAnalysis = new VisualizerSongAnalysis(_feed, _log, _otherMusicFolder);
             }
             catch (Exception ex)
@@ -440,7 +486,7 @@ namespace UniPlaySong.Controls
             string disc = _settings?.Current?.NowPlayingAlbumArtPath;
             if (string.IsNullOrEmpty(disc)) disc = null;
             if (IsStrip || (_settings?.Current?.SpotifyActive == true && disc != null)) return disc;
-            string source = Tag as string;
+            string source = _tagPalette;
             if ("Disc".Equals(source, StringComparison.OrdinalIgnoreCase)) return disc ?? _gameBackground;
             if ("Cover".Equals(source, StringComparison.OrdinalIgnoreCase)) return _gameCover ?? _gameBackground ?? disc;
             return _gameBackground ?? _gameCover ?? disc;

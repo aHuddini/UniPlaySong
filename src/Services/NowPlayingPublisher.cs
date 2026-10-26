@@ -160,7 +160,8 @@ namespace UniPlaySong.Services
                                 }
 
                                 var artPath = _artWriter?.WriteBytes(artBytes) ?? string.Empty;
-                                if (string.IsNullOrEmpty(artPath))
+                                bool noArt = string.IsNullOrEmpty(artPath);
+                                if (noArt)
                                 {
                                     // No Spotify album art — fall back to the selected game's cover
                                     // so the now-playing slot isn't empty (same fallback as game music).
@@ -172,7 +173,8 @@ namespace UniPlaySong.Services
                                         artPath = cover;
                                     }
                                 }
-                                Publish(title, artist, artPath, album, genre, duration);
+                                // no art of Spotify's own: Spotify's colours, not the stand-in cover's
+                                Publish(title, artist, artPath, album, genre, duration, colourFrom: noArt ? SpotifyColours : null);
                                 _runOnUi(() =>
                                 {
                                     if (!_disposed) RecentTracks.Spotify.Add(title, artist, album, key, RecentTracks.Thumb(artBytes));
@@ -328,7 +330,7 @@ namespace UniPlaySong.Services
         // generation: a UPS art result carries the Refresh generation it was started for, and is dropped here
         // if a newer Refresh has happened since.
         private void Publish(string title, string artist, string artPath,
-            string album = "", string genre = "", string duration = "", int? generation = null)
+            string album = "", string genre = "", string duration = "", int? generation = null, string colourFrom = null)
         {
             _runOnUi(() =>
             {
@@ -337,12 +339,14 @@ namespace UniPlaySong.Services
                 var s = _getSettings?.Invoke();
                 if (s == null) return;
                 Apply(s, title, artist, artPath, album, genre, duration);
-                PublishArtColours(artPath);
+                PublishArtColours(colourFrom ?? artPath);
             });
         }
 
         // The art's two colours, worked out off the UI thread (a file decode) when the art changes. UI thread only, so
-        // _colourArt needs no lock; a result for art that has since changed is dropped.
+        // _colourArt needs no lock; a result for art that has since changed is dropped. SpotifyColours in place of a path:
+        // Spotify's own dark and green.
+        private const string SpotifyColours = " spotify";
         private string _colourArt;
         private void PublishArtColours(string artPath)
         {
@@ -351,7 +355,8 @@ namespace UniPlaySong.Services
             _runInBackground(() =>
             {
                 Color a = Colors.Black, b = Colors.Black;
-                if (!string.IsNullOrEmpty(artPath))
+                if (artPath == SpotifyColours) { a = Color.FromRgb(0x12, 0x12, 0x12); b = Color.FromRgb(0x1D, 0xB9, 0x54); }
+                else if (!string.IsNullOrEmpty(artPath))
                 {
                     try { (a, b) = Audio.VisualizerStripColors.FromFile(artPath); }
                     catch (Exception ex) { _fileLogger?.Debug($"[NowPlaying] Art colours failed: {ex.Message}"); }

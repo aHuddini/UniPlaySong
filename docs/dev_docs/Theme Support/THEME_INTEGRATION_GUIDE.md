@@ -373,7 +373,7 @@ UniPlaySong publishes the active music's metadata as live, bindable properties (
 | `NowPlayingAlbum` | text (Spotify only) | `<TextBlock Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingAlbum}"/>` |
 | `NowPlayingGenre` | text (Spotify only) | `<TextBlock Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingGenre}"/>` |
 | `NowPlayingDuration` | text "m:ss" (Spotify only) | `<TextBlock Text="{PluginSettings Plugin=UniPlaySong, Path=NowPlayingDuration}"/>` |
-| `NowPlayingArtColor1`, `NowPlayingArtColor2` | colour (darker first; black with no art) | The current art's two colours, for a backdrop gradient. In Fullscreen's main view a brush can't take `{PluginSettings}` - bind a hidden element's `Tag` to it and the `GradientStop.Color` to that `Tag` (see the demo theme's Spotify page). |
+| `NowPlayingArtColor1`, `NowPlayingArtColor2` | colour (darker first; black with no art) | The current art's two colours, for a backdrop gradient. Spotify with no art of its own gives Spotify's dark `#121212` and green `#1DB954`. In Fullscreen's main view a brush can't take `{PluginSettings}` - bind a hidden element's `Tag` to it and the `GradientStop.Color` to that `Tag` (see the demo theme's Spotify page). |
 | `SpotifyRecentTracks` | list, newest first (Spotify only) | `<ItemsControl ItemsSource="{PluginSettings Plugin=UniPlaySong, Path=SpotifyRecentTracks}"/>` - each item has `Title`, `Artist`, `Album`, `PlayedAt` and `Art` (cover image, tracks heard this session only). Kept across restarts (last 50). |
 | `GameRecentTracks` | list, newest first (game music) | The same for game music; `Album` is the game's name. See [Recent tracks](#recent-tracks--ups_spotifyrecenttracks-ups_gamerecenttracks-v190). |
 
@@ -1017,25 +1017,36 @@ view shows behind it. It reacts only to the music UniPlaySong plays — never to
 
   Trigger on `True`, not on `False`: without UniPlaySong the binding has nothing to read, and the fallback should still
   show.
-- **Two styles**, picked by the user in UniPlaySong's settings:
-  - **Glow Bars**: slim bars either side of the centre, with a reflection and bloom.
-  - **Fountain**: columns of glowing sparks thrown up and down from the centre line.
+- **Three styles.** The user picks one in UniPlaySong's settings; your page can pick its own (below), which wins:
+  - **Jukebox Fountain** (`JukeboxFountain`, the default): beads of light either side of the centre that learn each
+    song's beat, sections, chords and bass line.
+  - **Glow Bars** (`GlowBars`): slim bars either side of the centre, with a reflection and bloom.
+  - **Fountain** (`Fountain`): columns of glowing sparks thrown up and down from the centre line.
 
-  Both keep the same centre slot, so a page works with either. Future styles will keep it too.
-- **The Fountain takes its colours from a picture**, and the element's `Tag` picks which:
+  All keep the same centre slot, so a page works with any. Future styles will keep it too.
+- **The Jukebox Fountain takes its colours from a picture.** `Palette` picks which:
 
-  | `Tag` | Colours from | When that's missing |
+  | `Palette` | Colours from | When that's missing |
   |---|---|---|
   | `Background` (or none) | the game's background - what fills the screen behind it | the cover, then the now-playing art |
   | `Cover` | the game's cover | the background, then the now-playing art |
   | `Disc` | the now-playing art (`NowPlayingAlbumArtPath`: the song's own art, else the game's cover) | the background |
 
+  Pick the picture your page shows most of: a page over the game's background suits the default; a now-playing page
+  with the art in the centre suits `Disc`. With no picture at all it uses its own palette (white to magenta). While
+  Spotify plays, its album art is used whatever `Palette` says.
+- **Style and palette go in the element's `Tag`**, as `Key=Value` parts separated by `;`. Case and spaces don't
+  matter (`Glow Bars` works). A bare word is the palette, as in earlier builds (`Tag="Disc"`). A style UniPlaySong
+  doesn't have is ignored, leaving the user's - so a theme naming a style from a newer update still works on older
+  ones. Changing the `Tag` at run time (a trigger, say) switches the style live.
+
   ```xml
+  <!-- your page's look, whatever the user chose -->
+  <ContentControl x:Name="UPS_MusicVisualControl" Tag="Style=JukeboxFountain; Palette=Disc"
+                  Focusable="False" IsHitTestVisible="False" />
+  <!-- the user's style, colours from the now-playing art -->
   <ContentControl x:Name="UPS_MusicVisualControl" Tag="Disc" Focusable="False" IsHitTestVisible="False" />
   ```
-
-  Pick the picture your page shows most of: a page over the game's background suits the default; a now-playing page
-  with the art in the centre suits `Disc`. With no picture at all it uses its own palette (white to magenta).
 - **Cost:** it uses the graphics card while on screen — a few milliseconds a frame on integrated graphics at 1080p.
 
 A complete Fullscreen example page — visualizer, centred spinning cover, seekable timeline, title and transport — is
