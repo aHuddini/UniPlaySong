@@ -107,8 +107,8 @@
       <span class="swatches" title="Colour generator: pick three colours - the start, middle and end of the gradient - and they become the Custom palette, built as UniPlaySong builds one">Your colours
         <input type="color" id="gen1" value="#1a2a6c"><input type="color" id="gen2" value="#b21f1f"><input type="color" id="gen3" value="#fdbb2d"></span>
     </div>
-    <h2 class="sec">Presets</h2>
-    <div class="btns">
+    <h2 class="sec dev">Presets</h2>
+    <div class="btns dev">
       <button id="presetYours5Full" class="main" title="The T8 standard (inspired by Tekken 8's music jukebox visualizer) - the look UniPlaySong's visualizer is built to first: your tune #5 plus a tint per song section and the lead-melody highlight (both need a loaded song; on the synthetic beat it looks the same as Your tune #5). Kept as a reference - UniPlaySong ships Your tune #6">T8 standard: Tune #5 + sections + melody</button>
       <button id="presetT8Chords" class="main" title="The T8 standard plus the chord layer: one steady tint per chord, major warm / minor cool, heat away from the home key, a swell on each chord change (a loaded song only). Compare with the T8 standard button above">T8 + chords (try)</button>
       <button id="presetT8Hits" class="main" title="T8 + chords plus the live band hits: the treble glints with the hats, the middle of each wing cracks on snares - any music, no song analysis needed">T8 + chords + hits (try)</button>
@@ -206,7 +206,7 @@
       <button id="pspTiles" title="A band of square tiles, drifting between blue on sky and pink on grey, growing with the music, pale tiles where the level just was">Tile Band</button>
       <button id="pspTrail" title="One glowing ribbon looping over lime green, faster and curlier with the music">Light Trail</button>
     </div>
-    <div class="btns">
+    <div class="btns dev">
       <select id="presetPick" title="Every other preset">
         <option value="">More presets...</option>
         <optgroup label="Your tunes">
@@ -622,11 +622,13 @@ function saved() {
   document.getElementById("out").value = JSON.stringify(o, null, 1);
 }
 buildPanel();
-// The VisualizerPrototyper (the bench as published on GitHub Pages) leaves out the PSP looks - their preset sections,
+// The VisualizerPrototyper (the bench as published on GitHub Pages) leaves out the tuning presets (.dev - the tunes
+// the shipped look was made from; first visits still open on it) and the PSP looks - their preset sections,
 // sliders and the PSP visualizers. Opened from a file, the bench keeps them. Their values stay in every style, at the
-// defaults (off), so export_t8.mjs is unaffected.
+// defaults (off), so export_t8.mjs is unaffected. The signal graphs start off there too (a dev aid; View turns them on).
 if (location.protocol !== "file:") {
-  for (const el of document.querySelectorAll(".psp")) el.hidden = true;
+  document.getElementById("graphs").value = "off";
+  for (const el of document.querySelectorAll(".psp, .dev")) el.hidden = true;
   for (const k in rows) if (/^PSP/.test(k)) rows[k].remove();
   for (const name in groups) if (!groups[name].querySelector(".row")) groups[name].hidden = true;   // kept in groups: counts look groups up by name
 }
