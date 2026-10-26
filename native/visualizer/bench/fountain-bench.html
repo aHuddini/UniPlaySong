@@ -38,6 +38,22 @@
   .row { margin: 6px 0 8px; }
   h2.sec { color: var(--text); font-size: 12px; }
   button.main { border-color: var(--accent); }
+  [hidden] { display: none !important; }
+  h1 .by { color: var(--dim); font-weight: 400; font-size: 12px; margin-left: 4px; }
+  .transport { width: 40px; height: 40px; border-radius: 50%; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+    background: var(--accent); border-color: var(--accent); color: #fff; }
+  .transport:hover { filter: brightness(1.15); border-color: var(--accent); }
+  .transport svg { width: 20px; height: 20px; fill: currentColor; }
+  .transport .i-pause, .transport.on .i-play { display: none; }
+  .transport.on .i-pause { display: block; }
+  .btns.transportRow { align-items: center; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.primary:hover { filter: brightness(1.15); }
+  .swatches { display: inline-flex; align-items: center; gap: 4px; color: var(--dim); }
+  .swatches input[type=color] { width: 30px; height: 26px; padding: 0; border: 1px solid #3a3a44; border-radius: 6px; background: none; cursor: pointer; }
+  #send { position: sticky; bottom: -24px; margin: 16px -14px -24px; padding: 10px 14px 14px; background: var(--panel); border-top: 1px solid var(--line);
+    display: flex; align-items: center; gap: 10px; }
+  #send a { color: var(--accent); }
   #search { flex: 1; min-width: 0; background: #0c0c10; color: var(--text); border: 1px solid #3a3a44; border-radius: 6px; padding: 5px 8px; font: inherit; }
   details.grp { border-top: 1px solid var(--line); }
   details.grp > summary { cursor: pointer; list-style: none; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); padding: 9px 0 7px; user-select: none; }
@@ -62,13 +78,14 @@
 <div id="wrap">
   <div id="stage"><canvas id="c"></canvas><canvas id="graph"></canvas><div id="hud"></div><div id="flash"></div><div id="ab">COMPARE (pinned values)</div><div id="err"></div></div>
   <div id="panel">
-    <h1>Fountain bench</h1>
-    <h2 class="sec">Song &amp; analysis</h2>
+    <h1>VisualizerPrototyper <span class="by">for UniPlaySong</span></h1>
+    <p class="note">Load a song, pick colours and a look, tune it - then <b>Copy style for UPS</b> and send it in.</p>
+    <h2 class="sec">Song</h2>
     <div class="btns">
       <input type="file" id="file" accept="audio/*">
     </div>
-    <div class="btns">
-      <button id="play">Play / pause</button>
+    <div class="btns transportRow">
+      <button id="play" class="transport" title="Play / pause"><svg class="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><svg class="i-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>
       <select id="source"><option value="synth">Synthetic beat</option><option value="song">Synthetic song (breakdown, build, drop)</option><option value="file">Loaded song</option></select>
     </div>
     <div class="btns">
@@ -77,6 +94,18 @@
         <option value="off">Ticks off</option><option value="beat">Ticks: the beat (metronome)</option><option value="drums">Ticks: all drums</option><option value="kick">Ticks: kicks</option>
         <option value="snare">Ticks: snares</option><option value="hat">Ticks: hats</option><option value="bass">Ticks: bass notes (not kicks)</option></select>
       <select id="musicLvl"><option value="1">Music 100%</option><option value="0.35">Music 35%</option><option value="0">Music muted</option></select>
+    </div>
+    <h2 class="sec">Colours</h2>
+    <div class="btns">
+      <select id="palette" title="Palette: the two colours each dot blends between"></select>
+      <select id="gradient" title="What picks each dot's blend between the palette's two colours">
+        <option value="0">Colour: random per dot</option><option value="1">Colour: lows to highs across the line</option>
+        <option value="2">Colour: core to tips</option><option value="3">Colour: spectrum across the line</option><option value="4">Colour: left to right (e.g. warm to cool)</option></select>
+    </div>
+    <div class="btns">
+      <button id="coverBtn" title="Pick a cover image (or any picture): its colours become a palette, and it's shown in the disc">Palette from cover art</button><input type="file" id="cover" accept="image/*" hidden>
+      <span class="swatches" title="Colour generator: pick three colours - the start, middle and end of the gradient - and they become the Custom palette, built as UniPlaySong builds one">Your colours
+        <input type="color" id="gen1" value="#1a2a6c"><input type="color" id="gen2" value="#b21f1f"><input type="color" id="gen3" value="#fdbb2d"></span>
     </div>
     <h2 class="sec">Presets</h2>
     <div class="btns">
@@ -152,16 +181,16 @@
       <button id="atWaters" title="A relic beneath still water: its reflection below, energy streams flowing behind, orbs of light rising">Ancient Waters</button>
       <button id="atCore" title="A reactor's core: spiral arms turning once per bar around a heavy centre that bends the light, beads in orbit">Ancient Core</button>
     </div>
-    <h2 class="sec">Handheld</h2>
-    <div class="btns" title="Inspired by a handheld console's music player - LED light displays, menu waves, bubble lights">
+    <h2 class="sec psp">Handheld</h2>
+    <div class="btns psp" title="Inspired by a handheld console's music player - LED light displays, menu waves, bubble lights">
       <button id="psLed" title="Your fountain shown on a board of round LEDs - each lit in the colour behind it, unlit ones faintly visible, softly glowing">LED Board</button>
       <button id="psVu" title="A segmented LED level meter: green at the line, yellow, red at the peaks, each LED lighting in steps">VU Matrix</button>
       <button id="psWaves" title="Soft ribbons of light flowing behind a calm fountain, like a console menu, swelling with the music">Menu Waves</button>
       <button id="psBubbles" title="Out-of-focus light orbs drifting up behind small glowing LEDs">Bubble Lights</button>
       <button id="psNight" title="An LED road into the distance under drifting menu waves">Night Drive</button>
     </div>
-    <h2 class="sec">LED Meter (PSP Style)</h2>
-    <div class="btns" title="The PSP's LED meter as a foundation - the same reaction, modern looks (PSP meter sliders)">
+    <h2 class="sec psp">LED Meter (PSP Style)</h2>
+    <div class="btns psp" title="The PSP's LED meter as a foundation - the same reaction, modern looks (PSP meter sliders)">
       <button id="pspDots" title="The firmware's own meter, crisp: 12 x 8 pill LEDs with their texture luster, bars and peaks falling under gravity">PSP Original</button>
       <button id="ledHD" title="24 x 16 smaller LEDs, glossy pills in metal bezels, a wider bloom, a glossy floor, deep black">LED HD</button>
       <button id="ledShowroom" title="The firmware's meter as a display piece: glossy pills in metal bezels, standing on a glossy floor that reflects the lit LEDs">Showroom</button>
@@ -170,8 +199,8 @@
       <button id="ledNeon" title="Synthwave neon: 24 x 16 in the palette's colours, a heavy bloom, a reflective floor, a little LCD trail">Neon Stack</button>
       <button id="ledIce" title="Cyan glass in metal: the firmware grid in the Ancient Tech colours, high gloss">Ice Crystal</button>
     </div>
-    <h2 class="sec">PSP originals</h2>
-    <div class="btns" title="The PSP music player's own visualizers, rebuilt from footage of a PSP-2000 - they replace the fountain">
+    <h2 class="sec psp">PSP originals</h2>
+    <div class="btns psp" title="The PSP music player's own visualizers, rebuilt from footage of a PSP-2000 - they replace the fountain">
       <button id="pspStrings" title="Fourteen glowing strings pinned at both ends, swelling in the middle with the music; the colour drifts blue, violet, pink">Strings</button>
       <button id="pspSwirl" title="Multicolour smoke - red, magenta, violet, yellow - turning round a wandering centre, wider with the bass">Swirl</button>
       <button id="pspTiles" title="A band of square tiles, drifting between blue on sky and pink on grey, growing with the music, pale tiles where the level just was">Tile Band</button>
@@ -194,7 +223,6 @@
     </div>
     <div class="btns">
       <button id="copy" title="Copy every value as JSON">Copy values</button>
-      <button id="copyStyle" title="Copy this look - every value, the palette and its colour scheme - to paste into UniPlaySong's &quot;Visualizer style&quot; issue form">Copy style for UPS</button>
       <button id="pin" title="Remember the current values; hold C to see them again">Pin as compare</button>
       <button id="resetAll" title="Every slider back to its default">Reset all</button>
     </div>
@@ -207,13 +235,6 @@
     </div>
     <h2 class="sec">View</h2>
     <div class="btns">
-      <select id="palette" title="Palette: the two colours each dot blends between"></select>
-      <select id="gradient" title="What picks each dot's blend between the palette's two colours">
-        <option value="0">Colour: random per dot</option><option value="1">Colour: lows to highs across the line</option>
-        <option value="2">Colour: core to tips</option><option value="3">Colour: spectrum across the line</option><option value="4">Colour: left to right (e.g. warm to cool)</option></select>
-      <button id="coverBtn" title="Pick a cover image (or any picture): its colours become a palette, and it's shown in the disc">Palette from cover art</button><input type="file" id="cover" accept="image/*" hidden>
-      <span title="Colour generator: pick three colours - the start, middle and end of the gradient - and they become the Custom palette, built as UniPlaySong builds one">Your colours
-        <input type="color" id="gen1" value="#1a2a6c"><input type="color" id="gen2" value="#b21f1f"><input type="color" id="gen3" value="#fdbb2d"></span>
       <select id="bg"><option value="dark">Dark theme</option><option value="grey">Grey</option><option value="black">Black</option></select>
       <select id="speed"><option value="1">Speed 1x</option><option value="0.5">Speed 1/2x</option><option value="0.25">Speed 1/4x</option></select>
       <select id="graphs"><option value="on">Signal graphs on</option><option value="off">Signal graphs off</option></select>
@@ -239,6 +260,10 @@
     <div id="params"></div>
     <h2>Values</h2>
     <textarea id="out" readonly></textarea>
+    <div id="send">
+      <button id="copyStyle" class="primary" title="Copy this look - every value, the palette and its colour scheme - to paste into UniPlaySong's &quot;Visualizer style&quot; issue form">Copy style for UPS</button>
+      <a href="https://github.com/aHuddini/UniPlaySong/issues/new?template=visualizer_style.yml" target="_blank" rel="noopener">Send it in</a>
+    </div>
   </div>
 </div>
 <script>
@@ -597,6 +622,14 @@ function saved() {
   document.getElementById("out").value = JSON.stringify(o, null, 1);
 }
 buildPanel();
+// The VisualizerPrototyper (the bench as published on GitHub Pages) leaves out the PSP looks - their preset sections,
+// sliders and the PSP visualizers. Opened from a file, the bench keeps them. Their values stay in every style, at the
+// defaults (off), so export_t8.mjs is unaffected.
+if (location.protocol !== "file:") {
+  for (const el of document.querySelectorAll(".psp")) el.hidden = true;
+  for (const k in rows) if (/^PSP/.test(k)) rows[k].remove();
+  for (const name in groups) if (!groups[name].querySelector(".row")) groups[name].hidden = true;   // kept in groups: counts look groups up by name
+}
 document.getElementById("search").addEventListener("input", e => applySearch(e.target.value));
 document.getElementById("openAll").onclick = () => { for (const n in groups) { groups[n].open = true; openState[n] = true; } saveOpen(); };
 document.getElementById("closeAll").onclick = () => { for (const n in groups) { groups[n].open = false; openState[n] = false; } saveOpen(); };
@@ -2801,7 +2834,9 @@ const fixedDt = (m => m ? 1 / +m[1] : 0)(/fixeddt=(\d+)/.exec(location.hash));
 // where a frame's CPU time goes (eased averages, ms): the engine, ticks/analysis scheduling, the graphs - shown on the HUD
 const perfMs = [0, 0, 0];
 const perfMark = (k, t0) => { perfMs[k] += (performance.now() - t0 - perfMs[k]) * 0.05; };
+const playBtn = document.getElementById("play");
 function frame(now) {
+  playBtn.classList.toggle("on", sourceSel.value === "file" ? playing : synthOn);
   const speed = parseFloat(document.getElementById("speed").value);
   const dt = (fixedDt || Math.min(0.1, (now - last) / 1000)) * speed; last = now;
   simT += dt;
