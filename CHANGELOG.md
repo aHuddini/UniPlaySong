@@ -22,6 +22,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added live hi-hat and snare reactions from per-band transient strength (0.82 and 0.57 correlation with Demucs drum stems); kicks follow the beat grid, since low-band detection scored 0.29 under a bass line
 - Added zero-copy frame hand-off: the renderer draws straight into the shared textures (`WGL_NV_DX_interop2`), cutting the hand-off at 2560×988 from 4.5 to 1.4 ms with identical frames; the GPU-to-CPU copy remains the fallback
 - Added a theme style choice for the visualizer: the element's `Tag` takes `Style=` and `Palette=` parts (`Style=GlowBars; Palette=Disc`), overriding the user's style for that page; a bare word stays the palette
+- Added the VisualizerPrototyper: the bench on GitHub Pages, with a three-colour palette generator and "Copy style for UPS"; styles sent through the new issue form ship as `UPS - <name>.vis`, picked by `Style=<name>`- Added a song-state badge to the demo theme (live, analysing, following the song), from the control's new `SongState` property
 
 ### Fixed
 

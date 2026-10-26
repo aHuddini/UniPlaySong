@@ -3,8 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fountain bench</title>
+<title>VisualizerPrototyper - UniPlaySong</title>
 <!--
+  VisualizerPrototyper (published on GitHub Pages; "the bench" in the repo): theme developers tune a Jukebox Fountain
+  look here - palette, colour generator, motion - and send it with "Copy style for UPS" through the "Visualizer style"
+  issue form; bench/tools/export_t8.mjs turns it into a shipped style file.
+
   Fountain bench: the UniPlaySong Fountain visualizer (native/visualizer/presets/make_presets.py, its "Tunable"
   experiment) ported to WebGL, with every knob live. A dev tool - nothing here ships. Load a song or use the synthetic
   beat, move sliders, and press "Copy values" to hand the numbers back for the real preset.
@@ -190,6 +194,7 @@
     </div>
     <div class="btns">
       <button id="copy" title="Copy every value as JSON">Copy values</button>
+      <button id="copyStyle" title="Copy this look - every value, the palette and its colour scheme - to paste into UniPlaySong's &quot;Visualizer style&quot; issue form">Copy style for UPS</button>
       <button id="pin" title="Remember the current values; hold C to see them again">Pin as compare</button>
       <button id="resetAll" title="Every slider back to its default">Reset all</button>
     </div>
@@ -207,6 +212,8 @@
         <option value="0">Colour: random per dot</option><option value="1">Colour: lows to highs across the line</option>
         <option value="2">Colour: core to tips</option><option value="3">Colour: spectrum across the line</option><option value="4">Colour: left to right (e.g. warm to cool)</option></select>
       <button id="coverBtn" title="Pick a cover image (or any picture): its colours become a palette, and it's shown in the disc">Palette from cover art</button><input type="file" id="cover" accept="image/*" hidden>
+      <span title="Colour generator: pick three colours - the start, middle and end of the gradient - and they become the Custom palette, built as UniPlaySong builds one">Your colours
+        <input type="color" id="gen1" value="#1a2a6c"><input type="color" id="gen2" value="#b21f1f"><input type="color" id="gen3" value="#fdbb2d"></span>
       <select id="bg"><option value="dark">Dark theme</option><option value="grey">Grey</option><option value="black">Black</option></select>
       <select id="speed"><option value="1">Speed 1x</option><option value="0.5">Speed 1/2x</option><option value="0.25">Speed 1/4x</option></select>
       <select id="graphs"><option value="on">Signal graphs on</option><option value="off">Signal graphs off</option></select>
@@ -585,7 +592,8 @@ function setParam(k, v) { P[k] = v; inputs[k].input.value = v; inputs[k].val.tex
 function saved() {
   try { localStorage.setItem("fountainBench", JSON.stringify(P)); } catch (e) { }
   const o = {}; for (const p of PARAMS) o[p[0]] = +fmt(p[0], P[p[0]]);
-  o.PALETTE = PALETTES[P.PALETTE || 0][0]; o.GRADIENT = ["random", "across", "core-to-tips", "spectrum", "left-to-right"][P.GRADIENT || 0];
+  // PALETTES[0] while the Custom palette a saved look points at isn't made yet (later in the load)
+  o.PALETTE = (PALETTES[P.PALETTE || 0] || PALETTES[0])[0]; o.GRADIENT = ["random", "across", "core-to-tips", "spectrum", "left-to-right"][P.GRADIENT || 0];
   document.getElementById("out").value = JSON.stringify(o, null, 1);
 }
 buildPanel();
@@ -816,22 +824,7 @@ async function coverPalette(file) {
   const top = [...byPixels.filter(c => sat(c) >= 0.05), ...byPixels.filter(c => sat(c) < 0.05)];
   const three = top.slice(0, 3).sort((a, b) => lum(a) - lum(b));
   const hdr = c => { const m = Math.max(...c, 1e-3); return c.map(v => +(v / m * 10).toFixed(2)); };
-  const lo = hdr(three[0]), hi = hdr(three[2]), mid = hdr(three[1]), kick = hdr([...three].sort((a, b) => sat(b) - sat(a))[0]);
-  const mixc = (a, b, t) => a.map((v, q) => +(v + (b[q] - v) * t).toFixed(2));
-  // the cool shade: the cover's own colour nearest blue (by how saturated), and it blended with the dark end - a fixed
-  // blue and violet mixed in pushed every cover violet (Shadow of Mordor's blue-teal went purple)
-  const hueOf = c => { const mx = Math.max(...c), mn = Math.min(...c), d = mx - mn; if (d < 1e-6) return -1;
-    const h = mx === c[0] ? 60 * (((c[1] - c[2]) / d + 6) % 6) : mx === c[1] ? 60 * ((c[2] - c[0]) / d + 2) : 60 * ((c[0] - c[1]) / d + 4); return h; };
-  const coolness = c => { const h = hueOf(c); if (h < 0) return -1; let d = Math.abs(h - 210); d = Math.min(d, 360 - d); return (180 - d) * sat(c); };
-  const coolest = hdr([...three].sort((a, b) => coolness(b) - coolness(a))[0]);
-  SCHEMES["Cover art"] = { mid, kick, cool: [coolest, mixc(coolest, lo, 0.5)],
-    calm: [mixc(lo, [5, 5, 5], 0.4), mixc(kick, [5, 5, 5], 0.5)], glint: mixc(hi, [10, 10, 10], 0.5), bloom: hdr(mixc(lo, kick, 0.5)).map(v => +(v / 10).toFixed(3)), grad: 0 };
-  let idx = PALETTES.findIndex(p => p[0] === "Cover art");
-  if (idx < 0) {
-    idx = PALETTES.length; PALETTES.push(["Cover art", lo, hi, "Made from the picture you picked"]);
-    const gp = document.createElement("optgroup"); gp.label = "From the cover"; const o = document.createElement("option");
-    o.value = idx; o.textContent = "Palette: Cover art"; gp.appendChild(o); palSel.appendChild(gp);
-  } else PALETTES[idx] = ["Cover art", lo, hi, "Made from the picture you picked"];
+  const idx = paletteFromThree(three, "Cover art", "Made from the picture you picked", "From the cover");
   // the picture itself, for the disc
   const t2 = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t2);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bmp);
@@ -839,6 +832,45 @@ async function coverPalette(file) {
   coverTex = t2;
   setColour(idx, 0);
 }
+
+// A palette and its colour scheme from three colours (0-1 RGB): the first the start of the gradient, the last its end,
+// the middle one between; the most vivid is the kick, the one nearest blue the cool shade. The picture palette and the
+// colour generator both make theirs here. Returns its index in PALETTES, adding it (under group) the first time.
+function paletteFromThree(three, name, note, group) {
+  const sat = c => Math.max(...c) - Math.min(...c);
+  const hdr = c => { const m = Math.max(...c, 1e-3); return c.map(v => +(v / m * 10).toFixed(2)); };
+  const lo = hdr(three[0]), hi = hdr(three[2]), mid = hdr(three[1]), kick = hdr([...three].sort((a, b) => sat(b) - sat(a))[0]);
+  const mixc = (a, b, t) => a.map((v, q) => +(v + (b[q] - v) * t).toFixed(2));
+  // the cool shade: the colours' own nearest blue (by how saturated), and it blended with the dark end - a fixed
+  // blue and violet mixed in pushed every cover violet (Shadow of Mordor's blue-teal went purple)
+  const hueOf = c => { const mx = Math.max(...c), mn = Math.min(...c), d = mx - mn; if (d < 1e-6) return -1;
+    const h = mx === c[0] ? 60 * (((c[1] - c[2]) / d + 6) % 6) : mx === c[1] ? 60 * ((c[2] - c[0]) / d + 2) : 60 * ((c[0] - c[1]) / d + 4); return h; };
+  const coolness = c => { const h = hueOf(c); if (h < 0) return -1; let d = Math.abs(h - 210); d = Math.min(d, 360 - d); return (180 - d) * sat(c); };
+  const coolest = hdr([...three].sort((a, b) => coolness(b) - coolness(a))[0]);
+  SCHEMES[name] = { mid, kick, cool: [coolest, mixc(coolest, lo, 0.5)],
+    calm: [mixc(lo, [5, 5, 5], 0.4), mixc(kick, [5, 5, 5], 0.5)], glint: mixc(hi, [10, 10, 10], 0.5), bloom: hdr(mixc(lo, kick, 0.5)).map(v => +(v / 10).toFixed(3)), grad: 0 };
+  const entry = [name, lo, hi, note];
+  let idx = PALETTES.findIndex(p => p[0] === name);
+  if (idx >= 0) { PALETTES[idx] = entry; return idx; }
+  idx = PALETTES.length; PALETTES.push(entry);
+  const gp = document.createElement("optgroup"); gp.label = group; const o = document.createElement("option");
+  o.value = idx; o.textContent = "Palette: " + name; gp.appendChild(o); palSel.appendChild(gp);
+  return idx;
+}
+
+// The colour generator: three pickers make the Custom palette, live. Its colours are kept between visits, and it is
+// made at load (before anything reads P.PALETTE), so a look saved on Custom comes back on it.
+const genInputs = ["gen1", "gen2", "gen3"].map(id => document.getElementById(id));
+try { const g = JSON.parse(localStorage.getItem("fountainBenchCustom") || "null"); if (g) g.forEach((v, i) => genInputs[i].value = v); } catch (e) { }
+const genRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+const customPalette = () => paletteFromThree(genInputs.map(i => genRgb(i.value)), "Custom", "Your three colours (the colour generator)", "Your colours");
+customPalette();
+if (!PALETTES[P.PALETTE || 0]) P.PALETTE = 0;   // a picture palette from an earlier visit isn't remade
+palSel.value = P.PALETTE;
+genInputs.forEach(inp => inp.oninput = () => {
+  try { localStorage.setItem("fountainBenchCustom", JSON.stringify(genInputs.map(i => i.value))); } catch (e) { }
+  setColour(customPalette(), +gradSel.value);
+});
 document.getElementById("coverBtn").onclick = () => document.getElementById("cover").click();
 document.getElementById("cover").onchange = e => { if (e.target.files[0]) coverPalette(e.target.files[0]).catch(err => fail("cover: " + err.message)); };
 for (const id in BEAT_PRESETS) document.getElementById(id).onclick = () => { applyAll({ ...BEAT_LOOK, ...BEAT_PRESETS[id] }); setColour(PALETTES.findIndex(p => p[0] === "White to magenta"), 0); };
@@ -846,6 +878,15 @@ document.getElementById("presetMapped").onclick = () => { applyAll(LIVE_MAPPED);
 document.getElementById("copy").onclick = async () => {
   const t = document.getElementById("out").value;
   try { await navigator.clipboard.writeText(t); } catch (e) { document.getElementById("out").select(); document.execCommand("copy"); }
+};
+// The look as export_t8.mjs reads it: every value resolved, with the palette's two ends and its colour scheme
+const styleSpec = () => {
+  const pl = PALETTES[P.PALETTE || 0];
+  return JSON.stringify({ params: JSON.parse(document.getElementById("out").value), palette: { name: pl[0], low: pl[1], high: pl[2] }, scheme: schemeOf(pl) }, null, 1);
+};
+document.getElementById("copyStyle").onclick = async () => {
+  const t = styleSpec();
+  try { await navigator.clipboard.writeText(t); } catch (e) { const out = document.getElementById("out"); out.value = t; out.select(); document.execCommand("copy"); saved(); }
 };
 const errBox = document.getElementById("err");
 const fail = m => { errBox.textContent += m + "\n"; };
@@ -3071,9 +3112,8 @@ if (/src=song/.test(location.hash)) sourceSel.value = "song";
 // #spec: write the current look, every value resolved, with its palette and colour scheme, into the page (to freeze the
 // shipped look as standard-tune8.json: open with #preset=presetYours8&spec; #7, #6 and the T8 reference were frozen the same way)
 if (/[#&]spec(&|$)/.test(location.hash)) {
-  const pl = PALETTES[P.PALETTE || 0], o = JSON.parse(document.getElementById("out").value);
   const pre = document.createElement("pre"); pre.id = "specdump";
-  pre.textContent = JSON.stringify({ params: o, palette: { name: pl[0], low: pl[1], high: pl[2] }, scheme: schemeOf(pl) }, null, 1);
+  pre.textContent = styleSpec();
   document.body.appendChild(pre);
 }
 { const pp = /pal=(\d+)/.exec(location.hash), gg = /grad=(\d+)/.exec(location.hash); if (pp || gg) setColour(pp ? +pp[1] : P.PALETTE, gg ? +gg[1] : (P.GRADIENT || 0)); }

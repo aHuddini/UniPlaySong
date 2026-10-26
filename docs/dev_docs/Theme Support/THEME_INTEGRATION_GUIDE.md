@@ -1039,6 +1039,13 @@ view shows behind it. It reacts only to the music UniPlaySong plays — never to
   matter (`Glow Bars` works). A bare word is the palette, as in earlier builds (`Tag="Disc"`). A style UniPlaySong
   doesn't have is ignored, leaving the user's - so a theme naming a style from a newer update still works on older
   ones. Changing the `Tag` at run time (a trigger, say) switches the style live.
+- **Your own style, made in the [VisualizerPrototyper](https://ahuddini.github.io/UniPlaySong/VisualizerPrototyper/).**
+  Drop in a song, start from a palette or a Showcase look, or make your own colours with **Your colours** (three
+  pickers: the gradient's start, middle and end), and tune the motion. Press **Copy style for UPS** and paste it into a
+  [Visualizer Style issue](https://github.com/aHuddini/UniPlaySong/issues/new?template=visualizer_style.yml) with a
+  name. It ships in a UniPlaySong update; your theme then picks it by that name - `Tag="Style=Midnight Neon"`. Until
+  that update, users get their own style. Styles use UniPlaySong's own engine, so they are values only: colours,
+  motion and effects, no code.
 
   ```xml
   <!-- your page's look, whatever the user chose -->

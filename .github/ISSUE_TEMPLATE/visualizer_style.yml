@@ -1,0 +1,45 @@
+name: Visualizer Style
+description: Send a visualizer style you made in the VisualizerPrototyper, to ship in a UniPlaySong update
+title: "[STYLE] "
+labels: ["visualizer-style"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Made a look in the [VisualizerPrototyper](https://ahuddini.github.io/UniPlaySong/VisualizerPrototyper/)? Press
+        **Copy style for UPS** and paste it below. Once it ships, your theme picks it with
+        `Tag="Style=<your style name>"` on its `UPS_MusicVisualControl` element (see the Theme Integration Guide).
+
+  - type: input
+    id: style-name
+    attributes:
+      label: Style name
+      description: How themes will pick it. Letters, digits, spaces and , ' & ( ) - only.
+      placeholder: Midnight Neon
+    validations:
+      required: true
+
+  - type: input
+    id: theme
+    attributes:
+      label: Theme
+      description: The theme it's for, if any.
+    validations:
+      required: false
+
+  - type: textarea
+    id: style
+    attributes:
+      label: Style
+      description: Paste what "Copy style for UPS" copied.
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or a short clip
+      description: Optional - how it looks in the VisualizerPrototyper.
+    validations:
+      required: false

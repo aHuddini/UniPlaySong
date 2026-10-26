@@ -227,7 +227,9 @@ if (Test-Path $spotifyLoopbackPath) {
 # native/visualizer/build.cmd) so the shipped bytes are the documented ones. Fail-soft: without it the element stays empty.
 Write-Host "Copying music visualizer..." -ForegroundColor Yellow
 $visualizerDir = Join-Path $projectRoot "src\Audio\Native\Visualizer"
-$visualizerFiles = @("UniPlaySongVisualizer.exe", "UniPlaySongVisualizerBridge.dll", "projectM-4.dll", "glew32.dll", "presets\UPS - Glow Bars.milk", "presets\UPS - Fountain.milk", "presets\UPS - Jukebox Fountain.vis", "presets\UPS - Seek Spectrum.vis")
+# Every preset in its presets folder ships: it holds only the shipped styles, theme developers' styles included
+$visualizerFiles = @("UniPlaySongVisualizer.exe", "UniPlaySongVisualizerBridge.dll", "projectM-4.dll", "glew32.dll") +
+    @(Get-ChildItem (Join-Path $visualizerDir "presets") -File -ErrorAction SilentlyContinue | ForEach-Object { "presets\$($_.Name)" })
 $visualizerDest = Join-Path $packageDir "Visualizer"
 $visualizerMissing = $visualizerFiles | Where-Object { -not (Test-Path (Join-Path $visualizerDir $_)) }
 if ($visualizerMissing) {

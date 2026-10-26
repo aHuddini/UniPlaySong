@@ -1,0 +1,44 @@
+name: VisualizerPrototyper
+
+# Publishes the visualizer bench (native/visualizer/bench/fountain-bench.html) to GitHub Pages as the
+# VisualizerPrototyper, for theme developers: https://ahuddini.github.io/UniPlaySong/VisualizerPrototyper/
+# The page is the bench file as it is - one source, so what theme developers tune is what export_t8.mjs ships.
+# One-time setup: repo Settings -> Pages -> Source: GitHub Actions.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - native/visualizer/bench/fountain-bench.html
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}VisualizerPrototyper/
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage the page
+        run: |
+          mkdir -p _site/VisualizerPrototyper
+          cp native/visualizer/bench/fountain-bench.html _site/VisualizerPrototyper/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

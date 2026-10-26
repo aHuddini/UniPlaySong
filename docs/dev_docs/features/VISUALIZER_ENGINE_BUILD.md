@@ -281,6 +281,22 @@ Renderer env for the bench mode: `VIS_ANALYZE=1` (analyse the PCM, through a `.v
 `VIS_DUMP_D3D=1` (read the dumped frame through Direct3D, as the bridge does), `VIS_COVER=r,g,b;r,g,b` (0-1: a cover's
 two colours, to see its palette).
 
+## Theme developers' styles — the VisualizerPrototyper
+
+The bench is published as the **VisualizerPrototyper** (`.github/workflows/visualizer-prototyper.yml`, on a push to
+`main` that touches it; Pages source must be "GitHub Actions"). A theme developer tunes a look there - **Your colours**
+makes a Custom palette from three pickers, through the same three-colour builder as the picture palette - presses
+**Copy style for UPS** and sends it with the **Visualizer Style** issue form. To ship one:
+
+1. Save the pasted JSON as `native/visualizer/bench/styles/<name>.json` and open it in the bench to check it.
+2. `node bench/tools/export_t8.mjs styles/<name>.json "<Style Name>"` - writes `presets/UPS - <Style Name>.vis` here and
+   in `src/Audio/Native/Visualizer/presets/`. It refuses anything but numbers, so pasted text can't add lines (or
+   shader code) to the file, and names with path characters.
+3. Package: every file in `src/Audio/Native/Visualizer/presets/` ships. No renderer rebuild, no new binary.
+
+Themes pick it with `Tag="Style=<Style Name>"`; a name the installed UniPlaySong doesn't have falls back to the user's
+style (`MusicVisualControl.ThemeStyleFile`), so a theme can name a style before its update reaches everyone.
+
 ## Known limits and next steps
 
 - **Zero-copy hand-off** (done): the key pass draws straight into the shared D3D11 textures through
