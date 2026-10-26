@@ -10,6 +10,7 @@ Packages:
       - '[Fullscreen Theme Support] For theme developers: a Now-Playing player control with a live spectrum on its seek bar, coloured from the album art. SDL2 users: turn on Live Effects to see it.'
       - '[Fullscreen Theme Support] For theme developers: recent tracks control for game music and Spotify, and the album art''s colours for backdrop gradients.'
       - '[Fix] Themes no longer show stale song info (like a Spotify title over game music) after you save settings. Music timelines read 0:00 at the start of a song instead of going blank when using the visualizer.'
+      - '[Known Issue] After the PC wakes from sleep, music may stay silent until Playnite is restarted. Will look into a fix in a future update.'
   - Version: 1.8.10
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-10-06
