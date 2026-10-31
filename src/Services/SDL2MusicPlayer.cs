@@ -55,9 +55,8 @@ namespace UniPlaySong.Services
         private double _rampDuration;
         private const double RampIntervalMs = 16; // ~60 steps/sec
 
-        // Only the MAIN player may release the process-wide SDL audio device.
-        // A transient jingle player is created with enableIdleTeardown:false and must not
-        // close the device out from under the main player.
+        // Set by the constructor but no longer read: whether the shared device may close is decided by
+        // CloseSharedDeviceIfUnused (no instance may hold Mix_* handles), not by the player's role.
         private readonly bool _enableIdleTeardown;
 
         // True while this instance owns any Mix_* handle that Mix_CloseAudio would invalidate.
@@ -603,9 +602,8 @@ namespace UniPlaySong.Services
             }
         }
 
-        // Releases the process-wide SDL audio device immediately (idle/lock/suspend). Only the
-        // teardown-enabled (main) instance may close it — a secondary jingle player must not, or
-        // it would kill audio for the main player. Idempotent; reopens lazily on next Load()/Play().
+        // Releases this instance's handles and, if no other instance still holds any, the process-wide SDL
+        // audio device (idle/lock/suspend). Idempotent; reopens lazily on next Load()/Play().
         public void ReleaseAudioDevice()
         {
             try

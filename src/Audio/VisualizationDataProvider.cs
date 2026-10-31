@@ -116,9 +116,9 @@ namespace UniPlaySong.Audio
         // but skips the expensive computation (FFT + smoothing + buffer swap).
         // Audio passthrough (Read()) is unaffected — only the spectrum analysis is skipped.
         //
-        // Currently used to save CPU in fullscreen mode where the desktop visualizer is not visible.
-        // When fullscreen visualizer support is implemented, this gate should be made
-        // mode-aware (e.g., pause only if no fullscreen visualizer is subscribed).
+        // Fullscreen pauses it to save CPU: the theme visualizer and spectrum player read raw audio through
+        // VisualizerAudioFeed (passthrough keeps running), not this FFT. An FFT-based control shown in
+        // Fullscreen would need the gate to become mode-aware.
         private volatile bool _paused;
         public bool Paused { get => _paused; set => _paused = value; }
 

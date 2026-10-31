@@ -687,8 +687,8 @@ namespace UniPlaySong
             }
         }
 
-        // Tracks if a video is currently playing (set by MediaElementsMonitor). Runtime-only state —
-        // excluded from serialization so it always starts false.
+        // Tracks if a video is currently playing (set by MediaElementsMonitor). Runtime-only state. Playnite still
+        // saves it (it ignores JsonIgnore), so the plugin constructor resets it to false.
         [JsonIgnore]
         public bool VideoIsPlaying
         {
@@ -698,8 +698,8 @@ namespace UniPlaySong
 
         // Tracks if a theme overlay is active (set by MusicControl from theme Tag bindings). This is separate from
         // VideoIsPlaying to prevent MediaElementsMonitor from overriding theme pause requests. Music is paused if
-        // EITHER VideoIsPlaying OR ThemeOverlayActive is true. Runtime-only state — excluded from serialization so it
-        // always starts false.
+        // EITHER VideoIsPlaying OR ThemeOverlayActive is true. Runtime-only state. Playnite still saves it (it ignores
+        // JsonIgnore), so the plugin constructor resets it to false.
         [JsonIgnore]
         public bool ThemeOverlayActive
         {
@@ -709,7 +709,8 @@ namespace UniPlaySong
 
         // Theme-integration trigger: when true, UPS skips game music and plays default music instead. Driven by
         // the UPS_MusicControl_PauseGamePlayDefault element via Tag=True, or by theme XAML via {PluginSettings}
-        // binding. Runtime-only state — excluded from serialization so it always starts false.
+        // binding. Runtime-only state, but Playnite still saves it (it ignores JsonIgnore) and nothing resets it at
+        // startup, so a true saved at shutdown carries into the next launch.
         [JsonIgnore]
         public bool ForceDefaultMusicOverride
         {

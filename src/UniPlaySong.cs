@@ -3443,16 +3443,12 @@ namespace UniPlaySong
                 //
                 // Device model: SDL2's audio device is PROCESS-WIDE — one shared device
                 // (static Mix_OpenAudio/Mix_CloseAudio), not one per player. This player is its own
-                // C# object with its own music handle, but it RIDES that shared device. It is a
-                // secondary holder (enableIdleTeardown defaults to false), so:
-                //   - disposing it frees only its music (Mix_FreeMusic), never Mix_CloseAudio — it
-                //     can't accidentally kill the main player's audio;
-                //   - it must NOT close the shared device itself (that would); only the main,
-                //     teardown-enabled player may.
-                // We still Register it so the idle/lock/suspend release SEES its open device via IsAnyDeviceOpen — the
-                // actual close is then performed by the main player on the shared device. Net: an achievement sound that opened
-                // the device is torn down after IdleAudioDeviceTeardownMinutes (Experimental) just like any other playback, and
-                // it never blocks Windows sleep.
+                // C# object with its own music handle, but it RIDES that shared device. Disposing it frees its music
+                // (Mix_FreeMusic); the shared device closes only when no instance still holds a Mix handle
+                // (SDL2MusicPlayer.CloseSharedDeviceIfUnused), so it can't kill the main player's audio.
+                // We still Register it so the idle/lock/suspend release SEES its open device via IsAnyDeviceOpen. Net: an
+                // achievement sound that opened the device is torn down after IdleAudioDeviceTeardownMinutes (Experimental)
+                // just like any other playback, and it never blocks Windows sleep.
                 () =>
                 {
                     var player = new Services.SDL2MusicPlayer(_errorHandler);
@@ -4389,8 +4385,8 @@ namespace UniPlaySong
         }
 
         // Pauses or resumes FFT spectrum processing globally. Audio passthrough is unaffected. Uses GlobalPaused so new
-        // providers (created per song) auto-inherit the state. In fullscreen mode the desktop visualizer is not
-        // visible, so FFT is wasted CPU. When fullscreen visualizer support is added, remove or make this mode-aware.
+        // providers (created per song) auto-inherit the state. Fullscreen pauses it: the theme visualizer and spectrum
+        // player take raw audio through VisualizerAudioFeed, so the FFT would be wasted CPU there.
         private void PauseFftProcessing(bool pause)
         {
             Audio.VisualizationDataProvider.GlobalPaused = pause;
