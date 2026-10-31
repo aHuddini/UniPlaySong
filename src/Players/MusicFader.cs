@@ -66,7 +66,7 @@ namespace UniPlaySong.Players
             // or via the player's own DispatcherTimer (SDL2/WPF).
             //
             // Input priority (5), not Normal (9): this tick only polls a volume the audio side is already driving, so it
-            // must not outrank Render (7) — at Normal it preempted the render pass ~20x/sec for the whole fade, which is
+            // must not outrank Render (7) — at Normal it would preempt the render pass ~20x/sec for the whole fade, which is
             // exactly when Fullscreen navigation is busiest. Completion is detected from the player's volume, so a late
             // tick detects the same thing a moment later rather than missing it.
             _fadeTimer = new DispatcherTimer(DispatcherPriority.Input)
@@ -161,12 +161,9 @@ namespace UniPlaySong.Players
                     _isPaused = _pauseAction != null;
                     _stopAction = _pauseAction = null;
 
-                    // Belt and braces against the same leak. Switch() now clears a pending pause so
-                    // both should never be armed together, but this branch used to clear only the
-                    // pause and stop actions - leaving a play action that would never fire and
-                    // never be cleared, so the fader looked idle while a song sat pending forever.
-                    // If some future path does arm both, dropping the play here fails silent rather
-                    // than leaving a permanent phantom.
+                    // Belt and braces against the same leak. Switch() clears a pending pause so both
+                    // should never be armed together; if some path does arm both, dropping the play here
+                    // fails silent rather than leaving a play action that never fires or clears.
                     if (_playAction != null)
                     {
                         _fileLogger?.Debug("[Fader] Discarding a play action that was pending behind a pause");
@@ -237,14 +234,9 @@ namespace UniPlaySong.Players
             // makes the tick's branch order safe.
             //
             // The switch branch requires `_pauseAction == null && _playAction != null`. A pause
-            // armed earlier and still pending - the ThemeOverlay pause during startup is the one
-            // that bit users - therefore made the tick skip the switch entirely and take the PAUSE
-            // branch instead, which invoked the pause, cleared itself, and left _playAction set but
-            // never called. The song was preloaded and then simply never played, and the NEXT game
-            // worked because by then _pauseAction was null.
-            //
-            // Reported as "no music on the first game details view after a cold start" and "second
-            // game silent, third onward fine". Diagnosed from a user log by Mike Aniki.
+            // still pending (e.g. the ThemeOverlay pause during startup) would make the tick take
+            // the PAUSE branch instead, leaving _playAction set but never called: the song is
+            // preloaded and never plays. Diagnosed from a user log by Mike Aniki.
             //
             // _isPaused is deliberately NOT touched: whether playback is logically paused is
             // separate state, and PlayGameMusic's play action checks it independently.
@@ -346,7 +338,7 @@ namespace UniPlaySong.Players
         {
             _isFadingOut = false;
             // Callers invoke FadeIn right after (re)starting playback themselves, so the player is
-            // audibly playing — a leftover paused flag here made HasPendingPlayAction go stale-true
+            // audibly playing — a leftover paused flag here would make HasPendingPlayAction go stale-true
             // on the next Switch(), firing zombie load+plays on later pause-source removals.
             _isPaused = false;
             _pauseAction = null;

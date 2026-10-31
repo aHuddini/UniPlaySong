@@ -765,10 +765,7 @@ namespace UniPlaySong.Menus
             }
         }
 
-        /// <summary>
-        /// Opens a dialog to download audio from a specific YouTube URL
-        /// </summary>
-        /// <param name="game">The game to download music for</param>
+        // Opens a dialog to download audio from a specific YouTube URL
         public void DownloadFromUrl(Game game)
         {
             if (_errorHandler != null)
@@ -815,11 +812,7 @@ namespace UniPlaySong.Menus
 
         #region Batch Download (Download All)
 
-        /// <summary>
-        /// Downloads music for multiple selected games with batch options
-        /// </summary>
-        /// <param name="games">List of games to download music for</param>
-        /// <param name="source">Download source (KHInsider, YouTube, or All)</param>
+        // Batch download for multiple selected games; source is KHInsider, YouTube, or All.
         public void DownloadMusicForGames(List<Game> games, Source source = Source.KHInsider)
         {
             if (_errorHandler != null)

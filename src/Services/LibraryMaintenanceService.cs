@@ -8,11 +8,10 @@ using UniPlaySong.Common;
 namespace UniPlaySong.Services
 {
     // Storage-side maintenance for the music library: measuring what is on disk, finding orphaned and oversized
-    // files, and deleting them. This was the bulk of UniPlaySong.cs's "Cleanup Operations" region, where it reached
-    // the plugin class for nothing but an API handle, a logger and the music path.
+    // files, and deleting them. Needs nothing from the plugin class but an API handle, a logger and the music path.
     //
-    // Three neighbours in that region deliberately stayed behind, because they are not storage work and do depend
-    // on plugin state: settings reset/import (live settings object plus SavePluginSettings), the snapshot export
+    // Three related operations deliberately stay on the plugin class, because they are not storage work and do
+    // depend on plugin state: settings reset/import (live settings object plus SavePluginSettings), the snapshot export
     // (needs IsFullscreen), and FactoryReset (spans both concerns and clears the search cache).
     //
     // Every method reports rather than throws — each is wired to a settings-dialog button, so a
@@ -166,11 +165,7 @@ namespace UniPlaySong.Services
             return _trailerAudioService()?.ClearCache() ?? (0, 0);
         }
 
-        /// <summary>
-        /// Scans the Games music folder for orphaned directories (music for games no longer in the library)
-        /// and deletes them.
-        /// </summary>
-        /// <returns>Tuple of (deletedFolders, deletedFiles, success)</returns>
+        // Deletes orphaned folders in the Games music folder (music for games no longer in the library).
         public (int deletedFolders, int deletedFiles, bool success) CleanupOrphanedMusic()
         {
             try
@@ -233,10 +228,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Counts orphaned music directories (music for games no longer in the library).
-        /// </summary>
-        /// <returns>Number of orphaned game music directories</returns>
+        // Orphaned = music for games no longer in the library.
         public int CountOrphanedMusicFolders()
         {
             try
@@ -272,12 +264,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Scans all music files and returns info about songs longer than the specified duration.
-        /// </summary>
-        /// <param name="maxMinutes">Maximum allowed duration in minutes</param>
-        /// <param name="progressArgs">Optional progress args for UI updates</param>
-        /// <returns>List of (filePath, duration, fileSize, gameFolder) for songs exceeding the limit</returns>
+        // Every music file longer than maxMinutes; progressArgs is optional UI progress.
         public List<(string filePath, TimeSpan duration, long fileSize, string gameFolder)> GetLongSongs(int maxMinutes, GlobalProgressActionArgs progressArgs = null)
         {
             var longSongs = new List<(string filePath, TimeSpan duration, long fileSize, string gameFolder)>();
@@ -351,12 +338,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Deletes the specified list of long songs.
-        /// </summary>
-        /// <param name="longSongs">List of songs to delete (from GetLongSongs)</param>
-        /// <param name="progressArgs">Optional progress args for UI updates</param>
-        /// <returns>Number of deleted files, freed bytes, and success status</returns>
+        // Deletes the list GetLongSongs returned.
         public (int deletedFiles, long freedBytes, bool success) DeleteLongSongs(List<(string filePath, TimeSpan duration, long fileSize, string gameFolder)> longSongs, GlobalProgressActionArgs progressArgs = null)
         {
             try

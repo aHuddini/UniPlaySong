@@ -19,19 +19,12 @@ namespace UniPlaySong.Services.Controller
         // Event fired when a controller action is requested
         event EventHandler<ControllerAction> ActionRequested;
         
-        /// <summary>
-        /// Attaches the controller overlay to a target control
-        /// </summary>
-        /// <param name="targetControl">The control to enhance with controller support</param>
         void AttachTo(Control targetControl);
         
         // Detaches the controller overlay from its current target
         void Detach();
         
-        /// <summary>
-        /// Forces controller mode on or off (overrides automatic detection)
-        /// </summary>
-        /// <param name="enabled">True to force controller mode, false to force keyboard/mouse mode</param>
+        // Overrides automatic detection: true forces controller mode, false keyboard/mouse mode.
         void ForceControllerMode(bool enabled);
         
         // Restores automatic controller detection

@@ -52,8 +52,8 @@ namespace UniPlaySong.Services.Spotify
         public event Action NowPlayingChanged;
 
         // isAppReady: gates the radio engage-Resume until the app is visible (OnApplicationStarted).
-        // Without it the engage fired during the startup window BEFORE the theme-overlay/login pause
-        // sources register, so Spotify played for ~1s and was then paused (pause->play->pause churn
+        // Without it the engage fires during the startup window BEFORE the theme-overlay/login pause
+        // sources register, so Spotify plays for ~1s and is then paused (pause->play->pause churn
         // on a Desktop<->Fullscreen switch). null = always ready (tests, no gating).
         public SpotifyControlService(
             IMusicPlaybackService playbackService,
@@ -123,7 +123,7 @@ namespace UniPlaySong.Services.Spotify
             bool raiseNowPlaying = false;
             var s = _getSettings?.Invoke();
 
-            // ---- RADIO PATH (v1.5.8 rebuild): minimal two-flag state machine, off-thread. ----
+            // ---- RADIO PATH: minimal two-flag state machine, off-thread. ----
             if (s != null && s.SpotifyRadioMode)
             {
                 bool radioActive = _client != null && _client.IsAvailable;
@@ -259,10 +259,10 @@ namespace UniPlaySong.Services.Spotify
             else if (_drivingSpotify)
             {
                 // Spotify should be paused (game music took over, mode off, or a lifecycle pause). We pause UNCONDITIONALLY —
-                // NOT gated on _client.IsPlaying — because gating caused a race: when a no-music game (gap) is immediately
+                // NOT gated on _client.IsPlaying — because gating races: when a no-music game (gap) is immediately
                 // followed by a game WITH music (e.g. on a Fullscreen→Desktop mode switch), our just-issued TryResume may not
-                // have flipped Spotify's SMTC status to Playing yet. With the old IsPlaying gate, the pause was skipped AND the
-                // wheel released; then Spotify actually started and nothing was driving it, so it played over the game forever.
+                // have flipped Spotify's SMTC status to Playing yet. A gated pause would be skipped while the wheel is
+                // released, and Spotify would then start with nothing driving it, playing over the game forever.
                 // TryPause() self-guards via IsPauseEnabled, so calling it when Spotify isn't (yet) playing is a safe no-op;
                 // SMTC serializes our resume+pause and the pause wins because it is issued last.
                 _client?.TryPause();

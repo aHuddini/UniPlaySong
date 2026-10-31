@@ -54,9 +54,8 @@ namespace UniPlaySong.Monitors
             _isFullscreen = null;
         }
 
-        // The picker plays music only where the user allows music at all. Without this it ran in
-        // whichever mode the dialog happened to open in, ignoring Where Music Plays entirely -
-        // reported on the Fullscreen side, where the picker sang with the setting on Desktop only.
+        // The picker plays music only where the user allows music at all (Where Music Plays), not in
+        // whichever mode the dialog happened to open in.
         //
         // Only the mode-state rule applies. The rest of the coordinator's gating is about how a
         // library selection arrived (first-select skip, login skip, the Desktop auto-play lock) and

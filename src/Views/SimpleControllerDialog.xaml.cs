@@ -40,7 +40,7 @@ namespace UniPlaySong.Views
         private Album _selectedAlbum;
         private List<DownloadItemViewModel> _cachedAlbumResults; // Cached album search results for back navigation
 
-        // Search-variant state (v1.4.5): persists which source + keyword was last searched so
+        // Search-variant state: persists which source + keyword was last searched so
         // the variant buttons know what to re-run. null variant = default YouTubeDownloader
         // auto-OST-append behavior.
         private Source _lastAlbumSource = Source.YouTube;
@@ -157,7 +157,7 @@ namespace UniPlaySong.Views
                 _sourceOptions = new List<GenericItemOption>
                 {
                     // DISABLED: KHInsider source temporarily removed (GitHub TOS review).
-                    // Matches the Desktop dialog's source list (DownloadDialogService.cs ~line 118).
+                    // Matches the Desktop dialog's source list (DownloadDialogService).
                     // new GenericItemOption("KHInsider", "Download from KHInsider (Game soundtracks)"),
                     new GenericItemOption("YouTube",
                         youtubeConfigured
@@ -951,13 +951,8 @@ namespace UniPlaySong.Views
             }
         }
 
-        /// <summary>
-        /// Load album selection for the chosen source.
-        /// </summary>
-        /// <param name="source">Download source to search.</param>
-        /// <param name="searchVariant">Optional keyword to append to the game name
-        /// (e.g., "OST", "soundtrack", "music", "theme"). Null = default behavior
-        /// (YouTubeDownloader auto-appends "OST" if no keyword present).</param>
+        // searchVariant: keyword appended to the game name ("OST", "soundtrack", "theme"...);
+        // null keeps the default, where the YouTube downloader appends "OST" if no keyword is present.
         private void LoadAlbumSelection(Source source, string searchVariant = null)
         {
             try
@@ -1337,13 +1332,9 @@ namespace UniPlaySong.Views
                                             // (StopCurrentPreview would have tried to Resume, but we want a fresh start)
                                             _wasGameMusicPlaying = false;
 
-                                            // Clear any pause sources that accumulated during the download subprocess. yt-dlp / ffmpeg subprocesses can
-                                            // briefly steal focus from Playnite on some systems in Fullscreen, which triggers OnApplicationDeactivate →
-                                            // PauseSource.FocusLoss. If FocusLossStayPaused is on (v1.4.2 feature), the FocusLoss source is then converted
-                                            // to Manual on focus return — which ClearAllPauseSources preserves and auto-resume paths don't clear. The net
-                                            // effect is that after a Fullscreen download, music stays silent for every subsequent game switch until the
-                                            // user manually presses Play. Post-download we're explicitly starting music on the user's behalf, so clear
-                                            // those transient sources before PlayGameMusic runs.
+                                            // Clear pause sources left by the download: yt-dlp / ffmpeg can steal focus in Fullscreen (FocusLoss), and
+                                            // with FocusLossStayPaused that becomes Manual, which ClearAllPauseSources preserves — music would then stay
+                                            // silent on every later game switch. We are starting music on the user's behalf, so clear them first.
                                             _playbackService.RemovePauseSource(Models.PauseSource.FocusLoss);
                                             _playbackService.Resume(); // clears PauseSource.Manual if present
 

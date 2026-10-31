@@ -33,7 +33,7 @@ namespace UniPlaySong.Services
         private static List<BundledPresetInfo> _presets;
         private static string _presetsDirectory;
 
-        // v1.5.0: session-scoped random pick used when RandomizeBundledTrackOnStartup
+        // Session-scoped random pick used when RandomizeBundledTrackOnStartup
         // is enabled. Picked once at first access (per Playnite session) and held
         // across game switches so the ambient track stays consistent. Cleared on
         // Initialize() — i.e. on Playnite startup — so each new session re-randomizes.
@@ -112,7 +112,7 @@ namespace UniPlaySong.Services
             return presets.Count > 0 ? presets[0].File : string.Empty;
         }
 
-        // v1.5.0: returns the effective preset filename for the current session.
+        // Returns the effective preset filename for the current session.
         // When RandomizeBundledTrackOnStartup is on, picks one preset randomly the FIRST time this is called per
         // session and caches it for the rest of the session — so the user gets variety across Playnite restarts but
         // consistent ambient music within a single session. When the flag is off, returns the user's manually-picked
@@ -165,7 +165,7 @@ namespace UniPlaySong.Services
             return _sessionRandomPresetFilename;
         }
 
-        // v1.5.0: clears the cached session random pick so the next call to
+        // Clears the cached session random pick so the next call to
         // GetEffectivePresetFilename re-rolls. Called by the settings-change handler when
         // RandomizeBundledTrackOnStartup is toggled so each toggle ON gets a fresh roll (instead of reusing a stale
         // cached pick from earlier in the session).

@@ -23,14 +23,11 @@ namespace UniPlaySong.Services
         private bool _isDisposed = false;
         private bool _isActive = false;
         private bool _isLoaded = false;
-        // v1.6.8: logical-pause parity with NAudio's _logicallyPaused. Pause() used to just drop
-        // _isActive, making a paused song indistinguishable from a loaded-but-never-started one —
-        // MusicPlaybackService's resume branches (gated on IsActive) then RESTARTED game music from 0:00 on every
-        // focus-loss round-trip instead of resuming. Paused-mid-playback now counts as active, same as NAudio, so
-        // resume routes through the fader's real Resume().
+        // Logical-pause parity with NAudio's _logicallyPaused: paused-mid-playback counts as active, so
+        // MusicPlaybackService's IsActive-gated resume goes through the fader's Resume() instead of restarting at 0:00.
         private bool _isPausedMidPlayback = false;
         private double _volume = 1.0;
-        // issue #81: set when the device is released (idle/lock/suspend) while a song was loaded.
+        // Set when the device is released (idle/lock/suspend) while a song was loaded.
         // SDL frees the decoded music on teardown, so resume must reload from this path + seek back
         // (NAudio can just rebuild the mixer; SDL cannot). Consumed + cleared by ReloadFromDeviceRelease().
         private string _resumeReloadPath = string.Empty;
@@ -38,9 +35,8 @@ namespace UniPlaySong.Services
         // Guards the preload slot: PreLoad runs on a worker thread, Load consumes it on the UI thread.
         private readonly object _preloadLock = new object();
         private static bool _isSDLAudioInitialized = false;
-        // Mix_HookMusicFinished is ONE process-global hook. Installing it per-instance let the
-        // last-constructed player (the prewarmed jingle player, since v1.5.10) steal it from the
-        // main player, whose MediaEnded then never fired — music stopped after one song (issue #89).
+        // Mix_HookMusicFinished is ONE process-global hook: installed per instance, the last-constructed
+        // player (e.g. the prewarmed jingle player) steals it and the main player's MediaEnded never fires.
         // Install the hook ONCE with a static callback that dispatches to every live instance;
         // each instance's OnMusicFinishedInternal gates on its own _isActive, and SDL2_mixer has
         // a single music stream, so at most one instance handles it.
@@ -59,7 +55,7 @@ namespace UniPlaySong.Services
         private double _rampDuration;
         private const double RampIntervalMs = 16; // ~60 steps/sec
 
-        // Only the MAIN player may release the process-wide SDL audio device (issue #81).
+        // Only the MAIN player may release the process-wide SDL audio device.
         // A transient jingle player is created with enableIdleTeardown:false and must not
         // close the device out from under the main player.
         private readonly bool _enableIdleTeardown;
@@ -76,8 +72,7 @@ namespace UniPlaySong.Services
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
         // Sleep/power diagnostics belong in UniPlaySong.log beside the [Sleep] lines rather than in
-        // Playnite's extensions.log. Splitting them across two files is what made a device close
-        // that HAD happened look like it never did. Static because the close is static - the
+        // Playnite's extensions.log, so a device close shows up in the same file as its trigger. Static because the close is static - the
         // instance that opened the device is often gone by then.
         private static FileLogger _sleepLogger;
         public static void SetSleepLogger(FileLogger logger) => _sleepLogger = logger;
@@ -192,12 +187,9 @@ namespace UniPlaySong.Services
 
         // Closes the process-wide SDL device when no live instance still holds a Mix_* handle.
         //
-        // Static because ownership is not a reliable gate. PrewarmExternalPlayer builds a throwaway
-        // probe, opens the device through it, then drops it - and since _isSDLAudioInitialized is
-        // static, that disposed probe still reports IsAudioDeviceOpen true while its own
-        // ReleaseAudioDevice early-returns on _isDisposed. The device was left open for the life of
-        // the process with nobody able to close it, which is the "UPS holds the driver open even
-        // when it plays nothing" report.
+        // Static because ownership is not a reliable gate. PrewarmExternalPlayer opens the device through a
+        // throwaway probe and drops it; since _isSDLAudioInitialized is static, that disposed probe still reports
+        // IsAudioDeviceOpen true while its own ReleaseAudioDevice early-returns on _isDisposed, so no instance closes it.
         //
         // The handle check is what _enableIdleTeardown was really protecting: Mix_CloseAudio
         // invalidates handles process-wide, so closing while another instance owns one leaves it
@@ -314,9 +306,7 @@ namespace UniPlaySong.Services
 
                 // Claim the preload under the lock — PreLoad runs on a worker thread and could land
                 // at any moment, so the slot must never be observed half-swapped. Mix_FreeMusic is
-                // called outside the lock. (This also drops a latent use-after-free the old code
-                // carried: it freed _preloadedMusic and then assigned that freed pointer to _music.
-                // Only unreachable because Close() above zeroes _music first.)
+                // called outside the lock.
                 IntPtr claimed = IntPtr.Zero, stalePreload = IntPtr.Zero;
                 lock (_preloadLock)
                 {
@@ -378,7 +368,7 @@ namespace UniPlaySong.Services
             {
                 EnsureNotDisposed();
 
-                // issue #81: if the device was released and the music freed, reload it here (seeking to
+                // If the device was released and the music freed, reload it here (seeking to
                 // the stashed position). ReloadFromDeviceRelease calls back into Play(pos), so return after.
                 if (_music == IntPtr.Zero && !string.IsNullOrEmpty(_resumeReloadPath))
                 {
@@ -442,7 +432,7 @@ namespace UniPlaySong.Services
 
         public void Resume(Action onReady = null)
         {
-            // issue #81: if the device was released and the music freed, reload from the stash + seek
+            // If the device was released and the music freed, reload from the stash + seek
             // back rather than resuming a nonexistent stream (which would come back silent).
             if (_music == IntPtr.Zero && !string.IsNullOrEmpty(_resumeReloadPath))
             {
@@ -465,18 +455,13 @@ namespace UniPlaySong.Services
         // Playnite's own Fullscreen background music, which runs on the same library. So this only
         // halts when THIS instance is the one using the stream — otherwise stopping a UniPlaySong
         // player silences whatever else happened to be playing.
-        //
-        // Reported via Solaris issue #137: with "Suppress Playnite Vanilla Theme Music" off (so the
-        // user wants Playnite's own music and UniPlaySong only for jingles), Playnite's music
-        // started at Fullscreen launch and then cut out a few seconds later. The culprit was the
-        // jingle device prewarm: it loads a warm-up file, never plays it, and its cleanup called
-        // Close() -> Stop() -> Mix_HaltMusic(), stopping Playnite mid-track. Nobody with the default
-        // suppression on could see it, because that music was not playing to begin with.
+        // E.g. the jingle device prewarm loads a file it never plays; its Close() -> Stop() must not
+        // halt Playnite's music mid-track.
         //
         // _isActive is set only by Play(), and _isPausedMidPlayback marks a player that paused the
         // stream and still owns it — together they are "this instance is using the music stream".
-        // Same shape as the per-instance gate on the process-global Mix_HookMusicFinished above
-        // (issue #89). Deliberate suppression of Playnite's music is a separate, explicit
+        // Same shape as the per-instance gate on the process-global Mix_HookMusicFinished above.
+        // Deliberate suppression of Playnite's music is a separate, explicit
         // Mix_HaltMusic call in UniPlaySong.cs and is unaffected.
         public void Stop()
         {
@@ -507,7 +492,7 @@ namespace UniPlaySong.Services
             _source = string.Empty;
         }
 
-        // Exponential-curve volume ramp matching the old fader's behavior.
+        // Exponential-curve volume ramp.
         // Fade-in: progress^2 (starts fast, slows). Fade-out: 1-(1-progress)^2 (starts slow, speeds up).
         public void SetVolumeRamp(double targetVolume, double durationSeconds)
         {
@@ -595,7 +580,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        // --- IAudioDeviceHolder (issue #81) ---
+        // --- IAudioDeviceHolder ---
 
         public bool IsAudioDeviceOpen => _isSDLAudioInitialized;
 
@@ -629,7 +614,7 @@ namespace UniPlaySong.Services
                 // safe, and the shared device close is guarded by CloseSharedDeviceIfUnused.
                 if (_isDisposed || !_isSDLAudioInitialized) return;
 
-                // issue #81: if a song was loaded, stash its path + position so resume can reload it
+                // If a song was loaded, stash its path + position so resume can reload it
                 // (TearDownSDLAudio frees _music and clears _source/_isLoaded). Keep _isLoaded logically
                 // true afterward so the playback service still routes resume to this player; Play()/Resume()
                 // transparently reload from the stash when _music is null.
@@ -654,7 +639,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        // issue #81: reloads a song that was freed by ReleaseAudioDevice, seeking back to the stashed
+        // Reloads a song that was freed by ReleaseAudioDevice, seeking back to the stashed
         // position. Returns true if a reload happened. Reopens the device lazily via Load().
         private bool ReloadFromDeviceRelease()
         {

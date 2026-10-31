@@ -121,15 +121,9 @@ namespace UniPlaySong
     public enum DefaultMusicSource
     {
         CustomFile,     // User-selected music file
-        // v1.5.0: NativeTheme deprecated. Kept as enum slot to preserve
-        // ordinal positions for existing users' serialized settings
-        // (Newtonsoft serializes enums as integers by default; removing
-        // this entry would shift every value after it). On settings
-        // load, NativeTheme is silently migrated to BundledPreset.
-        // Reason: UPS + Playnite both tried to play the same
-        // background.mp3 file producing audible overlap. The bundled
-        // "Shades of Orange" preset provides the same vanilla-theme
-        // ambient experience without the file-handle conflict.
+        // NativeTheme is deprecated but kept as an enum slot: settings serialize enums as
+        // integers, so removing it would shift every value after it. On settings load it is
+        // migrated to BundledPreset.
         [System.Obsolete("Migrated to BundledPreset in v1.5.0 — UPS now ships Shades of Orange as the equivalent vanilla-theme ambient option without the file-handle conflict against Playnite's native player.")]
         NativeTheme,    // (deprecated) Playnite's built-in theme music
         BundledPreset,  // Bundled ambient tracks shipped with the plugin
@@ -138,8 +132,8 @@ namespace UniPlaySong
         CustomRotation,         // Songs from user-selected games
         CompletionStatusPool,   // Songs from games matching selected completion statuses
         ActiveThemeMusic,       // Background music from the currently active fullscreen theme
-        DeferToTrailerAudio,    // v1.5.3+ — no UPS music; lets ExtraMetadataLoader's trailer audio play uncontested
-        Spotify                 // v1.5.7+ — control the Spotify desktop app (SMTC); UPS conducts, Spotify plays
+        DeferToTrailerAudio,    // No UPS music; lets ExtraMetadataLoader's trailer audio play uncontested
+        Spotify                 // Control the Spotify desktop app (SMTC); UPS conducts, Spotify plays
     }
 
     public static class DefaultMusicSourceExtensions
@@ -162,7 +156,7 @@ namespace UniPlaySong
         CustomFolder,         // User-selected directory (same as DefaultMusicSource.CustomFolder)
         CustomRotation,       // Songs from user-selected games (same as DefaultMusicSource.CustomRotation)
         CompletionStatusPool, // Songs from games matching selected completion statuses
-        Spotify               // v1.5.8 — Spotify is the radio source (continuous Spotify, not a UPS pool)
+        Spotify               // Spotify is the radio source (continuous Spotify, not a UPS pool)
     }
 
     public enum CookieMode
@@ -178,12 +172,10 @@ namespace UniPlaySong
 
     public enum CelebrationSoundType
     {
-        // Removed in v1.7.4 — it existed to bring the jingle system up and was never a sound
-        // anyone wanted. The member STAYS so the numbering does not shift: these persist to
+        // Removed option. The member STAYS so the numbering does not shift: these persist to
         // config.json as integers, so deleting it would silently turn every stored BundledJingle
-        // (1) into CustomFile and every CustomFile (2) into an out-of-range value, breaking
-        // working setups on upgrade. Migration maps it to BundledJingle on load; nothing in the
-        // UI offers it, and no playback path honours it.
+        // (1) into CustomFile and every CustomFile (2) into an out-of-range value. Migration maps
+        // it to BundledJingle on load; nothing in the UI offers it, and no playback path honours it.
         SystemBeep_Removed,
         BundledJingle,  // Jingle preset shipped with the plugin
         CustomFile      // User-selected audio file (.wav recommended)
@@ -337,8 +329,8 @@ namespace UniPlaySong
 
     public class UniPlaySongSettings : ObservableObject
     {
-        // v1.6.8 crash tripwire. Reopening the settings dialog after a save StackOverflowed WPF (0xc00000fd) via a
-        // two-way binding feedback loop re-entering these setters. This hides the SDK's non-virtual OnPropertyChanged
+        // Crash tripwire against a two-way binding feedback loop re-entering these setters until WPF overflows
+        // the stack (0xc00000fd). This hides the SDK's non-virtual OnPropertyChanged
         // with a depth-guarded version: normal notification is unaffected (fan-out depth is 1-3), but a runaway loop is
         // broken at depth 25 — well below the ~thousands of frames that overflow the UI stack — and logged with the
         // offending property.
@@ -355,15 +347,10 @@ namespace UniPlaySong
         private AudioState musicState = AudioState.Always;
         private bool autoPlayOnFirstLaunchDesktop = true;
         private bool skipFirstSelectionAfterModeSwitch = false;
-        // OFF, matching what the Theme Support page has always told users ("Default: Off") and what
-        // the feature is for. It is a compatibility workaround for Fullscreen themes with a
-        // login/welcome screen: it holds music back until a key or controller button is pressed.
-        //
-        // Defaulting that ON meant every fresh install waited for input before playing anything,
-        // which presents as "no music on the first game" and resolves itself as soon as the user
-        // touches something - a symptom that looks like a playback bug rather than a setting. Reset
-        // and Quick Start did not help either, because Reset copies from a pristine instance (this
-        // line) and no Quick Start profile sets it.
+        // OFF, matching the Theme Support page ("Default: Off"). It is a compatibility workaround for
+        // Fullscreen themes with a login/welcome screen: it holds music back until a key or controller
+        // button is pressed. ON by default, every fresh install would wait for input before playing,
+        // which looks like a playback bug; Reset copies this line and no Quick Start profile sets it.
         private bool themeCompatibleSilentSkip = false;
         private bool hoverSettleEnabled = false; // Fullscreen: wait for the selection to rest before starting game music
         private double hoverSettleSeconds = Constants.DefaultHoverSettleSeconds;
@@ -389,16 +376,15 @@ namespace UniPlaySong
         private bool isMusicChanged = false;
         private bool enablePreviewMode = false;
         private int previewDuration = Constants.DefaultPreviewDuration;
-        private int idleAudioDeviceTeardownMinutes = 5; // v1.5.3 (issue #81) — see IdleAudioDeviceTeardownMinutes property
-        private int audioBufferSamples = Constants.DefaultAudioBufferSamples; // v1.7.2 — see AudioBufferSamples property
+        private int idleAudioDeviceTeardownMinutes = 5; // see IdleAudioDeviceTeardownMinutes property
+        private int audioBufferSamples = Constants.DefaultAudioBufferSamples; // see AudioBufferSamples property
         // Id of the Quick Start profile last applied, empty when none. Stored so the page can show
         // "Hover Preview (modified)" once an owned setting drifts, and offer a meaningful re-apply.
         // An id rather than a display name so renaming a tile does not orphan existing installs.
         // The user's profile-owned settings as they were before the FIRST Quick Start profile was
         // ever applied, serialized as JSON. Persisted rather than held in memory because the
-        // baseline has to outlive a Playnite restart: without this, applying a profile, restarting,
-        // then applying another made the SECOND capture the first profile's values, so "Reset to my
-        // settings" restored a profile instead of the user's own configuration.
+        // baseline has to outlive a Playnite restart: otherwise a second apply after a restart would
+        // capture the first profile's values, and "Reset to my settings" would restore a profile.
         //
         // Written once and then left alone. Cleared when the user resets, so the next apply starts
         // a fresh baseline.
@@ -721,7 +707,7 @@ namespace UniPlaySong
             set { themeOverlayActive = value; OnPropertyChanged(); }
         }
 
-        // v1.5.3 theme-integration trigger: when true, UPS skips game music and plays default music instead. Driven by
+        // Theme-integration trigger: when true, UPS skips game music and plays default music instead. Driven by
         // the UPS_MusicControl_PauseGamePlayDefault element via Tag=True, or by theme XAML via {PluginSettings}
         // binding. Runtime-only state — excluded from serialization so it always starts false.
         [JsonIgnore]
@@ -755,8 +741,8 @@ namespace UniPlaySong
         // ItemsSource="{PluginSettings Plugin=UniPlaySong, Path=SpotifyRecentTracks}". One list for the session, shared by
         // every settings object, so a settings save doesn't empty it; kept across restarts in SpotifyRecentTracks.txt.
         // DontSerialize, not only JsonIgnore: Playnite saves and loads settings with its own Newtonsoft.Json, which doesn't
-        // know UPS's JsonIgnore - so the list was written to config.json, and its cover image couldn't be read back, and
-        // UPS failed to load.
+        // know UPS's JsonIgnore - without DontSerialize the list is written to config.json, its cover image can't be read
+        // back, and UPS fails to load.
         [JsonIgnore, Playnite.SDK.Data.DontSerialize]
         public System.Collections.ObjectModel.ObservableCollection<Services.RecentTrack> SpotifyRecentTracks
             => Services.RecentTracks.Spotify.Items;
@@ -846,7 +832,7 @@ namespace UniPlaySong
             set { isMusicChanged = value; OnPropertyChanged(); }
         }
 
-        // ── Unified active-media surface (v1.5.8) ──────────────────────────
+        // ── Unified active-media surface ──────────────────────────
         // Runtime-only mirror of ActiveMediaViewModel for decoupled {PluginSettings}
         // binding. Set by ActiveMediaService. All [JsonIgnore] — never persisted.
         private double activeMediaProgress;
@@ -987,11 +973,11 @@ namespace UniPlaySong
             set { enableDebugLogging = value; OnPropertyChanged(); }
         }
 
-        // v1.5.3 (issue #81): minutes UPS waits after going idle (no song loaded, no pending fade, no active game
+        // Minutes UPS waits after going idle (no song loaded, no pending fade, no active game
         // switch) before tearing down its persistent audio device. Closing the device releases the Windows audio
         // session that would otherwise keep the system awake. Default 5 minutes balances "fast enough for autosuspend
         // users" against "first song after wake-up costs ~70ms latency to reopen the device." 0 = disabled (device
-        // stays open forever — the pre-v1.5.3 behavior). Valid range: 0-60.
+        // stays open forever). Valid range: 0-60.
         public int IdleAudioDeviceTeardownMinutes
         {
             get => idleAudioDeviceTeardownMinutes;
@@ -1007,11 +993,11 @@ namespace UniPlaySong
             }
         }
 
-        // v1.7.2 — SDL2 output buffer in samples. Sets output latency directly: a chunk must fill
+        // SDL2 output buffer in samples. Sets output latency directly: a chunk must fill
         // before anything is audible, so at 44100Hz 2048 measured ~45ms to first audible sample,
         // 1024 ~19ms, 4096 ~90ms. Lower is more responsive (noticeable on short notification sounds),
         // higher is safer against dropouts on a loaded machine, since each halving doubles how often
-        // the audio thread must wake. 2048 is the default and the pre-v1.7.2 behavior.
+        // the audio thread must wake. 2048 is the default.
         //
         // Applies on the next audio-device open, which in practice means restarting Playnite —
         // Mix_OpenAudio takes the buffer as an argument and the device is process-wide.
@@ -1228,9 +1214,7 @@ namespace UniPlaySong
 
         // Show a moon button on the Desktop top panel that toggles Calm Down Mode.
         //
-        // Fullscreen has had this on its quick menu since 1.5.0; Desktop only had the settings
-        // checkbox, which is a poor fit for something you reach for when the music is too much
-        // right now. Off by default: it adds a button to a top panel that themes and other
+        // Fullscreen has this on its quick menu. Off by default: it adds a button to a top panel that themes and other
         // extensions also compete for, so it is opt-in rather than imposed.
         public bool ShowCalmDownButton
         {
@@ -1306,12 +1290,8 @@ namespace UniPlaySong
         }
 
         // Loudness of jingles and notification sounds. An INDEPENDENT level, not a proportion of
-        // Music Volume - turn the music down as far as you like and the jingles stay put.
-        //
-        // It was relative in 1.8.6, which made Music Volume a ceiling the jingles could never rise
-        // above: with music at 20%, a jingle could not exceed 0.20 at any setting. Users who game
-        // with quiet music reported they could not hear achievement sounds at all, and no position
-        // on the old scale would fix it.
+        // Music Volume - turn the music down as far as you like and the jingles stay put. A relative
+        // level would make Music Volume a ceiling: quiet music would make the jingles inaudible.
         //
         // Deliberately one setting for every non-music sound rather than one per event. Nobody has
         // asked for a completion jingle at a different level from an achievement; what they ask for
@@ -1507,19 +1487,19 @@ namespace UniPlaySong
         private bool playOnlyOnGameSelect = false; // Fullscreen: only play game music on explicit A-button select, not D-pad hover
         private RadioMusicSource radioMusicSource = RadioMusicSource.FullLibrary; // Which pool Radio Mode draws from
         private RadioMusicSource lastUpsRadioSource = RadioMusicSource.FullLibrary; // Remembers the UPS pool so SwitchRadioMode can toggle back off Spotify
-        private string radioCustomFolderPath = null; // Radio Mode "Custom Folder" source folder path (v1.5.8)
+        private string radioCustomFolderPath = null; // Radio Mode "Custom Folder" source folder path
         private bool radioPlaysThroughGames = false; // Radio Mode keeps playing during a game session instead of pausing
         private List<Guid> gamePropFilterPlatformIds = new List<Guid>();
         private List<Guid> gamePropFilterGenreIds = new List<Guid>();
         private List<Guid> gamePropFilterSourceIds = new List<Guid>();
         private DefaultMusicSource defaultMusicSourceOption = DefaultMusicSource.BundledPreset;
         private string selectedBundledPreset = "tunetank-dark-ambient-soundscape-music.mp3"; // Filename of selected bundled preset
-        private bool bundledPresetMigrated = false; // One-time migration flag for v1.2.11 bundled preset feature
-        private bool randomizeBundledTrackOnStartup = false; // v1.5.0: pick a random bundled preset once at Playnite startup
-        private string lastRandomizedBundledPreset = string.Empty; // v1.5.0: tracks the last session's random pick so the next session can avoid repeating it
+        private bool bundledPresetMigrated = false; // One-time migration flag for the bundled preset feature
+        private bool randomizeBundledTrackOnStartup = false; // Pick a random bundled preset once at Playnite startup
+        private string lastRandomizedBundledPreset = string.Empty; // Tracks the last session's random pick so the next session can avoid repeating it
         private string defaultMusicFolderPath = string.Empty; // Directory for CustomFolder source
         private List<Guid> customRotationGameIds = new List<Guid>(); // Game IDs for CustomRotation source
-        private bool defaultMusicContinueSameSong = true; // Keep playing same song across game switches (default true as of v1.4.2 — most users want a persistent backdrop)
+        private bool defaultMusicContinueSameSong = true; // Keep playing same song across game switches (default true — most users want a persistent backdrop)
 
         // Enable default music fallback when no game music is found
         public bool EnableDefaultMusic
@@ -1531,7 +1511,7 @@ namespace UniPlaySong
                 OnPropertyChanged();
                 // Notify that UseNativeMusicAsDefault enabled state may have changed
                 OnPropertyChanged(nameof(IsUseNativeMusicAsDefaultEnabled));
-                // v1.5.0: bundled preset picker's IsEnabled also depends on this
+                // Bundled preset picker's IsEnabled also depends on this
                 OnPropertyChanged(nameof(IsBundledPresetPickerEnabled));
             }
         }
@@ -1689,7 +1669,7 @@ namespace UniPlaySong
             set { radioModeEnabled = value; OnPropertyChanged(); OnPropertyChanged(nameof(SpotifyRadioMode)); }
         }
 
-        // Spotify Radio Mode is DERIVED (v1.5.8 unification): radio is on AND the source is Spotify.
+        // Spotify Radio Mode is DERIVED: radio is on AND the source is Spotify.
         // Read-only + [JsonIgnore] so the old persisted key is ignored on load (reset-to-off migration)
         // and no stale key is written. All engine readers (ComputeActive, PlayGameMusic suppression,
         // NowPlayingPublisher) read this property unchanged.
@@ -1706,8 +1686,7 @@ namespace UniPlaySong
         }
 
         // On Playnite startup, launch the Spotify desktop app if it isn't running and Spotify is the
-        // active Radio/Default source. Off by default. Graduated out of Experimental in 1.8.7; lives on
-        // General -> Miscellaneous. See SpotifyLauncher / TryAutoLaunchSpotify.
+        // active Radio/Default source. Off by default. Lives on General -> Miscellaneous. See SpotifyLauncher / TryAutoLaunchSpotify.
         public bool AutoLaunchSpotifyOnStartup
         {
             get => autoLaunchSpotifyOnStartup;
@@ -1766,8 +1745,8 @@ namespace UniPlaySong
             set => RadioMusicSource = value ? RadioMusicSource.Spotify : lastUpsRadioSource;
         }
 
-        // Radio Mode "Custom Folder" source. null/empty = fall back to DefaultMusicFolderPath
-        // (v1.5.8 — preserves pre-decouple behavior for users who never picked a radio folder).
+        // Radio Mode "Custom Folder" source. null/empty = fall back to DefaultMusicFolderPath,
+        // so users who never picked a radio folder keep using the default-music folder.
         public string RadioCustomFolderPath
         {
             get => radioCustomFolderPath;
@@ -1784,7 +1763,7 @@ namespace UniPlaySong
         }
 
         // Which default music source to use: CustomFile, BundledPreset, CustomFolder, etc.
-        // NativeTheme deprecated in v1.5.0 — migrated to BundledPreset on settings load.
+        // NativeTheme is deprecated — migrated to BundledPreset on settings load.
         public DefaultMusicSource DefaultMusicSourceOption
         {
             get => defaultMusicSourceOption;
@@ -1813,7 +1792,7 @@ namespace UniPlaySong
             }
         }
 
-        // v1.5.0: when true, BundledPresetService picks a random bundled preset once
+        // When true, BundledPresetService picks a random bundled preset once
         // at Playnite startup and uses it for the whole session — the SelectedBundledPreset value above is ignored
         // while this flag is on (UI greys it out via IsBundledPresetPickerEnabled). Single pick per session so the
         // ambient track stays consistent across game switches; users get variety across sessions without the chaos of
@@ -1829,7 +1808,7 @@ namespace UniPlaySong
             }
         }
 
-        // v1.5.0: remembers the last session's random pick so the next session can
+        // Remembers the last session's random pick so the next session can
         // avoid repeating it. Persisted across sessions; only updated when the random
         // picker actually rolls (not when the user manually picks).
         public string LastRandomizedBundledPreset
@@ -1933,8 +1912,8 @@ namespace UniPlaySong
         public bool UseCustomHintsDatabase
         {
             get => useCustomHintsDatabase;
-            // Equality-guarded: this property sat in the HintsDatabase radio-group binding loop
-            // (v1.6.8 reopen StackOverflow) — never re-raise PropertyChanged for an unchanged value.
+            // Equality-guarded: this property sits in the HintsDatabase radio-group binding loop, which
+            // can StackOverflow on settings reopen — never re-raise PropertyChanged for an unchanged value.
             set { if (useCustomHintsDatabase == value) return; useCustomHintsDatabase = value; OnPropertyChanged(); }
         }
 
@@ -2234,7 +2213,7 @@ namespace UniPlaySong
         // ObjectCreationHandling.Replace: without it Newtonsoft appends onto the
         // constructor-populated default list every load, so the defaults multiply
         // on each save/load cycle. Setter also de-dupes to self-heal configs that
-        // already grew before this fix.
+        // already grew.
         [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
         public List<string> WhitelistedYouTubeChannelIds
         {
@@ -2250,7 +2229,7 @@ namespace UniPlaySong
         }
 
         // Live Effects Settings
-        // v1.5.0: Calm Down Mode — post-mixer low-pass + volume attenuation, gradual
+        // Calm Down Mode — post-mixer low-pass + volume attenuation, gradual
         // S-curve transition. Independent of LiveEffectsEnabled (sits downstream).
         // Forces NAudio backend like Live Effects does.
         private bool calmDownModeEnabled = false;
@@ -2367,10 +2346,9 @@ namespace UniPlaySong
         public int Equalizer15Band10k { get => equalizer15Band10k; set { equalizer15Band10k = value; OnPropertyChanged(); } }
         public int Equalizer15Band16k { get => equalizer15Band16k; set { equalizer15Band16k = value; OnPropertyChanged(); } }
 
-        // v1.5.0: Calm Down Mode. When on, the post-mixer CalmDownProcessor applies
+        // Calm Down Mode. When on, the post-mixer CalmDownProcessor applies
         // a low-pass filter (CalmDownLowPassCutoffHz) and volume attenuation (CalmDownVolumeMultiplier) with an S-curve
-        // crossfade over CalmDownTransitionDurationSeconds so toggling sounds gradual. The four tuning params are not
-        // exposed in the UI — they're tweakable via settings file for power users. Fullscreen-only toggle lives in
+        // crossfade over CalmDownTransitionDurationSeconds so toggling sounds gradual. Fullscreen toggle lives in
         // the Quick Settings menu; setting also forces the NAudio backend (SDL2 can't host the processor).
         public bool CalmDownModeEnabled
         {
@@ -2378,9 +2356,8 @@ namespace UniPlaySong
             set { calmDownModeEnabled = value; OnPropertyChanged(); }
         }
 
-        // Low-pass cutoff, 200-8000 Hz. Lower muffles harder. Clamped because these four were
-        // config-file-only until the Calm Down page exposed them - a cutoff of 0 makes the filter
-        // output silence, and one above Nyquist makes it a no-op.
+        // Low-pass cutoff, 200-8000 Hz. Lower muffles harder. Clamped because a cutoff of 0 makes the
+        // filter output silence, and one above Nyquist makes it a no-op.
         public float CalmDownLowPassCutoffHz
         {
             get => calmDownLowPassCutoffHz;

@@ -284,10 +284,7 @@ namespace UniPlaySong.Services
             return songs.Count > 0;
         }
 
-        /// <summary>
-        /// Deletes all music files for a game using parallel I/O
-        /// </summary>
-        /// <returns>Number of files deleted</returns>
+        // Parallel I/O; returns the number of files deleted.
         public int DeleteAllMusic(Game game)
         {
             var directory = GetGameMusicDirectory(game);

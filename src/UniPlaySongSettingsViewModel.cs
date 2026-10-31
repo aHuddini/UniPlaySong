@@ -24,9 +24,8 @@ namespace UniPlaySong
         private double _previewVolume;
         private CancellationTokenSource _audioScanCts;
 
-        // v1.6.8 crash tripwire — same depth guard as UniPlaySongSettings. The settings-reopen
-        // StackOverflow (0xc00000fd, WPF binding layer) could route through the VM's own
-        // notifications (e.g. the now-playing preview refresh); break + log a runaway loop here too.
+        // Crash tripwire — same depth guard as UniPlaySongSettings. A runaway notification loop in the
+        // WPF binding layer can route through the VM's own notifications; break + log it here too.
         [System.ThreadStatic] private static int _pcDepth;
         public new void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string name = null)
         {
@@ -100,7 +99,7 @@ namespace UniPlaySong
             {
                 RefreshRarityRows();
             }
-            // Note: ShowNowPlayingInTopPanel and ShowDesktopMediaControls now use SetRestartRequired command
+            // Note: ShowNowPlayingInTopPanel and ShowDesktopMediaControls use SetRestartRequired command
             // which sets IsRestartRequired on the Playnite settings window for safe restart handling
         }
 
@@ -188,10 +187,8 @@ namespace UniPlaySong
         private bool _quickStartAddReverb;
         // Composes with every profile in both modes, so a checkbox rather than more tiles. Turns on
         // live effects with the HuddiniRehearsal preset — note this forces the NAudio backend.
-        // Reads from the live settings rather than a plain field, like the other page checkboxes.
-        // As a field it always opened unchecked, so someone who already had Live Effects on — or who
-        // had just applied Huddini Showcase, which turns them on itself — saw an unticked box that
-        // contradicted their actual state.
+        // Reads from the live settings rather than a plain field, like the other page checkboxes, so
+        // it shows ticked when Live Effects are already on (e.g. after applying Huddini Showcase).
         public bool QuickStartAddReverb
         {
             get => Settings?.LiveEffectsEnabled ?? false;
@@ -360,7 +357,7 @@ namespace UniPlaySong
         // === External-audio exclusions ===
         // The setting stays a comma-joined string - UniPlaySong.cs splits it on ',' and
         // SettingsService's migration appends to it in the same form - so this is a view over it,
-        // not a change of storage. Editing seven names inside one sentence was the problem.
+        // not a change of storage.
 
         public string NewExcludedApp
         {
@@ -414,19 +411,12 @@ namespace UniPlaySong
         // SDL2 output buffer choices for the Experimental tab.
         public List<AudioBufferOption> AudioBufferOptions => AudioBufferOption.All;
 
-        // Plays a sound preview. Always tears down the previous player and builds a fresh one, and gates Play() on
-        // MediaOpened — WPF MediaPlayer.Open is async, so playing immediately can replay the previously-loaded file
-        // (the "preview doesn't update when I change the option" bug). Gating on MediaOpened guarantees the
-        // just-selected file is what plays. Persistent preview player: created once and reused. Reusing the same
-        // MediaPlayer keeps the Windows Media Foundation session warm, so only the FIRST preview pays the ~1-2s
-        // cold-start cost; later clicks play near-instantly. We never Close() it (that tears the session down and makes
-        // the next Open cold again) — we Stop() and re-Open the new source instead.
+        // Plays a sound preview on one reused MediaPlayer, which keeps the Media Foundation session warm so only the
+        // first preview pays the ~1-2s cold start. Play() is gated on MediaOpened — Open is async, so playing
+        // immediately can replay the previously loaded file.
         private void PlayPreview(string filePath)
         {
-            // Same level the sound will actually play at, from the one rule both playback paths
-            // use. It read MusicVolume until 1.8.7 decoupled jingles from it — after which the
-            // preview and the real thing could differ by any amount, and did. Reported as "the
-            // volume slider doesn't apply when clicking Preview, but works when one pops for real".
+            // Same level the sound will actually play at, from the one rule both playback paths use.
             _previewVolume = Services.JingleService.JingleLevel(Settings);
             ++_previewGen;
 
@@ -454,7 +444,6 @@ namespace UniPlaySong
             // MediaPlayer.Open only raises MediaOpened when the source actually changes, so
             // re-opening an identical URI is a no-op: the handler above never runs, and nothing
             // plays. Close() drops the current source so the next Open is always a real change.
-            // (Reopening the settings window used to "fix" it only because that built a new player.)
             try { _jinglePreviewPlayer.Close(); } catch { }
             _jinglePreviewPlayer.Open(new Uri(filePath));
         }
@@ -550,7 +539,7 @@ namespace UniPlaySong
         public string ThemeAchievementStatus =>
             $"Active theme provides {Common.PlayniteThemeHelper.CountThemeAchievementSounds()}/6 rarity sounds (audio/Achievements/{{rarity}}.wav). Missing rarities use the PA Starter Pack.";
 
-        // === Active Theme UPS Audio status surface (v1.5.2) ===
+        // === Active Theme UPS Audio status surface ===
         // Bound by the Active Theme Music section in the Playback tab. Recomputed on demand
         // when the user opens the settings page or clicks the radio button.
 
@@ -618,7 +607,7 @@ namespace UniPlaySong
         });
 
         // Deep-clones current settings via JSON roundtrip, then applies the update.
-        // This ensures ALL properties are preserved (previously only ~30 of 180 were copied).
+        // The roundtrip preserves every property, including ones added later.
         private UniPlaySongSettings CreateSettingsWithUpdate(Action<UniPlaySongSettings> updateAction)
         {
             if (settings == null)
@@ -1684,8 +1673,8 @@ namespace UniPlaySong
 
                     // When UPS isn't playing a file of its own (e.g. Spotify is the active music — UPS stays silent during the
                     // gap), fall back to the unified now-playing title the NowPlayingPublisher resolved. That's the same data the
-                    // album art below reflects, so the ticker no longer says "(No song playing)" during Spotify. UPS's OWN playback
-                    // keeps the richer legacy display below (duration, default).
+                    // album art below reflects, so the ticker shows the Spotify track. UPS's OWN playback keeps the richer
+                    // display below (duration, default).
                     if (playbackService == null || !playbackService.IsPlaying
                         || string.IsNullOrEmpty(playbackService.CurrentSongPath))
                     {

@@ -115,7 +115,7 @@ namespace UniPlaySong.Services.ActiveMedia
                 sourceKind: ActiveMediaSourceKind.Spotify,
                 sourceName: "Spotify",
                 isPlaying: playing,
-                // Cached WASAPI reads — a live read here (this runs on the UI thread every ~2s) was
+                // Cached WASAPI reads — a live read here (this runs on the UI thread every ~2s) is
                 // a ~90ms stall while Spotify played. See SpotifyAudioSession cache.
                 isMuted: SpotifyAudioSession.IsMutedCached(),
                 progress: progress,
@@ -217,8 +217,8 @@ namespace UniPlaySong.Services.ActiveMedia
             else
             {
                 // Unmuting: restore the saved level. Fall back to the target volume (GetVolume,
-                // = _targetVolume) if we have no saved value — NEVER a hardcoded 1.0, which was
-                // the "way louder / wipes Calm Down" bug. First press when already silent also
+                // = _targetVolume) if we have no saved value — NEVER a hardcoded 1.0, which would
+                // play far louder and wipe Calm Down. First press when already silent also
                 // lands here and restores a sane level instead of blasting to 100%.
                 double restore = _upsVolumeBeforeMute > 0.0
                     ? _upsVolumeBeforeMute

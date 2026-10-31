@@ -14,10 +14,9 @@ namespace UniPlaySong.Common
     // AudioSessionDetector documents. Spotify runs several processes and can own SEVERAL
     // audio sessions at once — one per output device it has touched, per child PID, plus
     // expired leftovers in the enumerator — and the live one is NOT always on the default
-    // endpoint (gaming PCs with headset/DAC/virtual devices). v1.6.8: writes therefore apply
-    // to EVERY Spotify session on EVERY active render device (hitting the extras is harmless;
-    // first-match-on-default-device ducked a dead session and left the real one at full
-    // volume), and reads prefer the ACTIVE session. All calls fail-soft — if Spotify isn't
+    // endpoint (gaming PCs with headset/DAC/virtual devices). Writes therefore apply to EVERY
+    // Spotify session on EVERY active render device (hitting the extras is harmless; first match
+    // on the default device can be a dead session), and reads prefer the ACTIVE session. All calls fail-soft — if Spotify isn't
     // running or no session exists, they no-op and report unmuted.
     public static class SpotifyAudioSession
     {
@@ -71,7 +70,7 @@ namespace UniPlaySong.Common
         }
 
         // Cached (muted, volume) — one enumeration for both, ~1s TTL. Snapshot builders and theme bindings poll on
-        // the UI thread every ~2s; enumerating an ACTIVE Spotify session takes ~90ms, so a live read there was a 90ms
+        // the UI thread every ~2s; enumerating an ACTIVE Spotify session takes ~90ms, so a live read there is a 90ms
         // UI stall per tick (worse while playing). The cache makes the read instant; the enumeration still happens,
         // just at most ~1x/sec off the caller.
         private static readonly object _cacheLock = new object();
@@ -163,11 +162,9 @@ namespace UniPlaySong.Common
             IMMDeviceCollection devices = null;
             try
             {
-                // Resolve Spotify's PIDs ONCE per enumeration instead of calling Process.GetProcessById per session. That
-                // per-session lookup was the dominant cost here and it got worse the longer the machine ran: it opens a process
-                // handle for EVERY audio session on EVERY render device (not just Spotify's), never disposes it (a leaked
-                // handle per session per enumeration), and THROWS for the dead PIDs of expired sessions — which accumulate
-                // over a long Spotify run. Now it's a cheap integer set lookup: no per-session handles, no exceptions, no leak.
+                // Resolve Spotify's PIDs ONCE per enumeration, not Process.GetProcessById per session: that opens (and
+                // leaks) a process handle for EVERY audio session on EVERY render device, and THROWS for the dead PIDs of
+                // expired sessions, which accumulate over a long Spotify run. A PID set lookup has none of that.
                 var spotifyPids = new System.Collections.Generic.HashSet<uint>();
                 try
                 {

@@ -25,16 +25,8 @@ namespace UniPlaySong.Services.Controller
         // Event fired when a controller action is requested
         event EventHandler<ControllerAction> ActionRequested;
         
-        /// <summary>
-        /// Attaches input handling to a control
-        /// </summary>
-        /// <param name="control">The control to monitor for input</param>
         void AttachToControl(Control control);
-        
-        /// <summary>
-        /// Detaches input handling from a control
-        /// </summary>
-        /// <param name="control">The control to stop monitoring</param>
+
         void DetachFromControl(Control control);
         
         // Gets whether the service is currently attached to any controls

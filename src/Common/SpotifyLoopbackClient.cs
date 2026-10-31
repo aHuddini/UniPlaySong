@@ -86,9 +86,9 @@ namespace UniPlaySong.Common
         [DllImport("SpotifyLoopback.dll", CallingConvention = CallingConvention.StdCall)]
         private static extern int SpotifyLoopback_IsCapturing();
 
-        // ~1s @ 44.1k float32 stereo (352800 B/s). Was 250ms: too small to absorb the burst the native shim delivers
-        // when a managed stall (GC pause / heavy theme view) unblocks its callback, so the surplus was dropped and the
-        // gap surfaced as static. Pairs with the shim's 5s WASAPI buffer — that keeps the samples, this accepts them
+        // ~1s @ 44.1k float32 stereo (352800 B/s). Must absorb the burst the native shim delivers when a managed stall
+        // (GC pause / heavy theme view) unblocks its callback; 250ms is too small, drops the surplus and the gap
+        // surfaces as static. Pairs with the shim's 5s WASAPI buffer — that keeps the samples, this accepts them
         // on the way back out.
         private readonly RingBuffer _ring = new RingBuffer(352800);
         private PcmCallback _cbDelegate; // keep rooted against GC

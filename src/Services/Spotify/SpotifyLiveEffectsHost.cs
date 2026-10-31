@@ -72,7 +72,7 @@ namespace UniPlaySong.Services.Spotify
 
         // Armed at OnApplicationStarted (set + Evaluate there). Until then Evaluate no-ops: settings-load events fire
         // during InitializeServices, which otherwise starts effected Spotify output several seconds before the theme
-        // binds its overlay flags — audible during login views. Same gating rule as the Spotify radio engage (v1.5.8).
+        // binds its overlay flags — audible during login views. Same gating rule as the Spotify radio engage.
         public bool Armed { get; set; }
 
         // True while effected Spotify output is running (device is producing audio even though

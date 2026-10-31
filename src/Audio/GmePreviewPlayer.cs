@@ -136,7 +136,7 @@ namespace UniPlaySong.Audio
             }
         }
 
-        // --- IAudioDeviceHolder (issue #81) ---
+        // --- IAudioDeviceHolder ---
         public bool IsAudioDeviceOpen
         {
             get { lock (_lock) { return _waveOut != null; } }

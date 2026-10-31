@@ -64,16 +64,8 @@ namespace UniPlaySong.Services
             _fileLogger?.Debug("MusicPlaybackCoordinator: Subscribed to SettingsService");
         }
         
-        /// <summary>
-        /// Determines whether music should play for the given game.
-        /// This is the central gatekeeper for all playback decisions.
-        /// </summary>
-        /// <param name="game">The game to check. Must not be null.</param>
-        /// <returns>True if music should play; otherwise, false.</returns>
-        /// <remarks>
-        /// Checks skip logic, settings, mode, video state, and volume.
-        /// All music playback decisions must pass through this method.
-        /// </remarks>
+        // Central gatekeeper: every playback decision passes through here. Checks skip logic, settings, mode,
+        // video state and volume. game must not be null.
         public bool ShouldPlayMusic(Game game)
         {
             if (_settings == null || !_settings.EnableMusic)
@@ -136,7 +128,7 @@ namespace UniPlaySong.Services
 
             // Session auto-play lock (Desktop). When AutoPlayOnFirstLaunchDesktop is OFF and we're in Desktop mode,
             // suppress auto-play until the user has manually pressed Play at least once this session. After that the flag
-            // stays true (sticky-on) — manual Pause does NOT re-lock, per user-confirmed design.
+            // stays true (sticky-on) — manual Pause does NOT re-lock.
             if (_isDesktop()
                 && !_settings.AutoPlayOnFirstLaunchDesktop
                 && !_playbackService.UserHasManuallyStartedThisSession)
@@ -154,14 +146,10 @@ namespace UniPlaySong.Services
         {
             // Picker owns all playback while its dialog is open - don't interfere.
             //
-            // This has to be the FIRST check in the method. It used to sit after the ShouldPlayMusic
-            // gate, which left every branch above it free to act on playback while the picker was
-            // running: the EnableMusic=off route into PlayGameMusic, the null-game fade, and
-            // ShouldPlayMusic's own _playbackService.Stop() on a MusicState mismatch. Reported as
-            // the picker's music and the library's music playing at the same time in Fullscreen,
-            // and as the picker ignoring Where Music Plays - both are this one ordering fault, since
-            // Playnite raises selection events while the dialog is open and each of those paths
-            // started or stopped a track underneath the picker's own.
+            // This has to be the FIRST check in the method: Playnite raises selection events while the
+            // dialog is open, and every branch below (the EnableMusic=off route into PlayGameMusic, the
+            // null-game fade, ShouldPlayMusic's own Stop() on a MusicState mismatch) would start or stop
+            // a track underneath the picker's own.
             if (RandomPickerMonitor.IsActive)
             {
                 _fileLogger?.Debug($"HandleGameSelected: Random Picker active, skipping normal playback for {game?.Name ?? "(none)"}");
@@ -180,17 +168,10 @@ namespace UniPlaySong.Services
             
             if (game == null)
             {
-                // v1.5.0 (Bug A): Playnite transiently empties SelectedGames during filter-preset switches, tab changes
-                // (Aniki/Solaris), and overlay clears. The old defensive behavior here was an unconditional fade-out via
-                // PlayGameMusic(null), which wiped any in-flight default music. Multiple Discord reports + an in-house repro on
-                // the "Recent Games" preset confirmed this manifests as: default music plays, user switches to a custom filter
-                // preset → music stops; or worse, the loop "plays for a second, stops, tries to play again" when Playnite
-                // re-emits the selection a beat later.
-                //
-                // Default music is session-persistent by design (memory: "ClearAllPauseSources Preservation"), so a transient
-                // null-selection is NOT a "user wants no music" signal — it's a list-mutation in progress. If default music
-                // is currently playing AND EnableDefaultMusic is on, treat null as a no-op. The next OnGameSelected with a real
-                // game (or a settings change) will route through PlayGameMusic normally.
+                // Default music is session-persistent, and Playnite transiently empties SelectedGames during filter-preset
+                // switches, tab changes and overlay clears, so a null selection is NOT a "user wants no music" signal. If
+                // default music is currently playing AND EnableDefaultMusic is on, treat null as a no-op. The next
+                // OnGameSelected with a real game (or a settings change) will route through PlayGameMusic normally.
                 if (_playbackService?.IsPlayingDefaultMusic == true && _settings?.EnableDefaultMusic == true)
                 {
                     _fileLogger?.Debug("HandleGameSelected: No game but default music playing — preserving (skip fade-out)");
@@ -206,10 +187,8 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            // EnableMusic=off + game present: route through PlayGameMusic so the
-            // EnableMusic-off + EnableDefaultMusic-on fallback path can fire (cleared game songs → default-music block at
-            // MusicPlaybackService.cs:744). Without this branch, switching games while Game Music is off used to fade the
-            // currently-playing default ambient instead of letting it persist for the new game. Now PlayGameMusic decides:
+            // EnableMusic=off + game present: route through PlayGameMusic so its EnableMusic-off + EnableDefaultMusic-on
+            // fallback can fire and the default ambient persists for the new game instead of fading. PlayGameMusic decides:
             // default music if EnableDefaultMusic=on, silence if both Game and Default are off.
             if (_settings?.EnableMusic != true)
             {
@@ -316,10 +295,9 @@ namespace UniPlaySong.Services
         }
 
         // === Hover settle (PS5-style) ===
-        // Scrolling a Fullscreen library fires OnGameSelected per row, and each one used to tear
-        // down the playing default music to load a track it abandoned a moment later - the chop
-        // users hear when moving fast. Holding the start until the selection rests lets the ambient
-        // ride through the scroll, which is what the PS5 dashboard does.
+        // Scrolling a Fullscreen library fires OnGameSelected per row, and starting each one would tear
+        // down the playing default music for a track abandoned a moment later. Holding the start until
+        // the selection rests lets the ambient ride through the scroll, which is what the PS5 dashboard does.
 
         private System.Windows.Threading.DispatcherTimer _hoverSettleTimer;
         private Game _hoverSettleGame;
@@ -356,8 +334,8 @@ namespace UniPlaySong.Services
             {
                 // Render priority, not the DispatcherTimer default of Background. A Fullscreen
                 // theme mid-scroll keeps the dispatcher busy, and a Background tick waits behind
-                // that work - so the wait ran longer than the slider said, by however long the UI
-                // happened to be busy.
+                // that work - so the wait would run longer than the slider says, by however long the
+                // UI happens to be busy.
                 _hoverSettleTimer = new System.Windows.Threading.DispatcherTimer(
                     System.Windows.Threading.DispatcherPriority.Render);
                 _hoverSettleTimer.Tick += OnHoverSettleTick;
@@ -412,8 +390,8 @@ namespace UniPlaySong.Services
             // The theme flipped its Tag to "keep the default music" mid-wait - the user moved to
             // the nav menu or otherwise left the game. Not conditioned on which path armed the
             // wait: the Tag states what should be playing regardless, and conditioning this on
-            // viaOverride let a selection-armed timer fire game music ~140ms after the Tag asked
-            // for default - the race the logs caught at 51.937/52.076/52.179.
+            // viaOverride would let a selection-armed timer fire game music ~140ms after the Tag asked
+            // for default.
             if (_settings?.ForceDefaultMusicOverride == true)
             {
                 _fileLogger?.Debug($"HoverSettle: Tag wants default music - dropping {game.Name}");
@@ -448,7 +426,7 @@ namespace UniPlaySong.Services
             _skipFirstSelectActive = false;
             _firstSelect = false;
             
-            // Short delay then attempt to play (matches current behavior)
+            // Short delay then attempt to play
             var timer = new System.Timers.Timer(150) { AutoReset = false };
             timer.Elapsed += (s, args) =>
             {
@@ -501,15 +479,7 @@ namespace UniPlaySong.Services
             }
         }
         
-        /// <summary>
-        /// Handles video playback state changes from MediaElementsMonitor.
-        /// Uses the multi-source pause system to properly integrate with other pause reasons.
-        ///
-        /// When VideoIsPlaying=true, adds Video pause source (pauses music).
-        /// When VideoIsPlaying=false, removes Video pause source (resumes if no other sources).
-        /// If music is not loaded when video stops, attempts to start playback.
-        /// </summary>
-        /// <param name="isPlaying">True if video is playing; false if video stopped.</param>
+        // Adds/removes the Video pause source; if music isn't loaded when the video stops, starts playback.
         public void HandleVideoStateChange(bool isPlaying)
         {
             if (isPlaying)
@@ -535,25 +505,15 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Handles theme overlay state changes from MusicControl (theme Tag bindings).
-        /// Uses the multi-source pause system to properly integrate with other pause reasons.
-        ///
-        /// When ThemeOverlayActive=true, adds ThemeOverlay pause source (pauses music).
-        /// When ThemeOverlayActive=false, removes ThemeOverlay pause source (resumes if no other sources).
-        /// If music is not loaded when overlay ends, attempts to start playback.
-        ///
-        /// This is separate from HandleVideoStateChange to prevent conflicts between
-        /// theme pause requests (via MusicControl) and MediaElementsMonitor video detection.
-        /// </summary>
-        /// <param name="isActive">True if theme overlay is active; false if ended.</param>
+        // Adds/removes the ThemeOverlay pause source (theme Tag bindings); if music isn't loaded when the overlay ends,
+        // starts playback. Separate from HandleVideoStateChange so theme pauses and video detection don't conflict.
         public void HandleThemeOverlayChange(bool isActive)
         {
             if (isActive)
             {
                 // Gate is intentionally only on the pause-ADD path. The overlay-cleared else branch
                 // always RemovePauseSource, so PauseOnThemeOverlay=false self-heals when the overlay
-                // clears. Default ON — existing behavior unchanged for normal users.
+                // clears. Default ON.
                 if (_settings?.PauseOnThemeOverlay != true)
                 {
                     _fileLogger?.Debug("HandleThemeOverlayChange: ThemeOverlayActive=true but PauseOnThemeOverlay is off — not pausing");
@@ -608,16 +568,15 @@ namespace UniPlaySong.Services
             }
         }
 
-        // v1.5.3: theme-integration trigger. When the flag flips we just re-call
+        // Theme-integration trigger. When the flag flips we just re-call
         // PlayGameMusic for the currently-selected game — the override check inside PlayGameMusic
-        // ([src/Services/MusicPlaybackService.cs] around the PlayOnlyOnGameSelect block) clears the song list when the
+        // (around the PlayOnlyOnGameSelect block) clears the song list when the
         // flag is true, forcing the default-music fall-through path. When the flag goes false, the same re-call lets
         // game music come back naturally.
         //
-        // v1.5.6: PS5ThemeCompatMode (opt-in, OFF by default) routes the flip through a
+        // PS5ThemeCompatMode (opt-in, OFF by default) routes the flip through a
         // debounce so focus-driven Tag flicker on the PS5-Experience theme collapses to a
-        // single apply of the settled value. When the toggle is OFF the handler runs the
-        // exact pre-1.5.6 path below — no new behavior — so normal themes are unaffected.
+        // single apply of the settled value. With the toggle OFF the direct path below runs.
         public void HandleForceDefaultMusicOverrideChange(bool isActive)
         {
             // Tag on means "play the default music now". A wait still pending is for a game the
@@ -644,7 +603,7 @@ namespace UniPlaySong.Services
             _playbackService?.PlayGameMusic(game, _settings, true);
         }
 
-        // v1.5.6: force-reapply the current ForceDefaultMusicOverride state for the
+        // Force-reapply the current ForceDefaultMusicOverride state for the
         // selected game, even when the flag value did not change. The theme control
         // (UPS_MusicControl_PauseGamePlayDefault) is often not in the visual tree until the user logs in — by then
         // Playnite has already force-selected the first game and played its music. When the control finally loads with
@@ -653,7 +612,7 @@ namespace UniPlaySong.Services
         // control load re-asserts the override authoritatively. No-ops cleanly when no game is resolvable.
         //
         // Gated like HandleForceDefaultMusicOverrideChange: only the debounced PS5-compat
-        // path differs. With the toggle OFF this runs the original re-assert unchanged.
+        // path differs. With the toggle OFF this re-asserts directly.
         public void HandleForceDefaultMusicOverrideLoaded()
         {
             if (_settings?.PS5ThemeCompatMode == true)

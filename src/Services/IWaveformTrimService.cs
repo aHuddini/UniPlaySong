@@ -8,57 +8,20 @@ namespace UniPlaySong.Services
     // Service for waveform generation and precise audio trimming
     public interface IWaveformTrimService
     {
-        /// <summary>
-        /// Generate waveform data for display (~1000 samples)
-        /// </summary>
-        /// <param name="audioFilePath">Path to the audio file</param>
-        /// <param name="token">Cancellation token</param>
-        /// <returns>Waveform data for rendering</returns>
+        // ~1000 samples, enough to draw the waveform.
         Task<WaveformData> GenerateWaveformAsync(string audioFilePath, CancellationToken token = default);
 
-        /// <summary>
-        /// Apply trim using FFmpeg, save to output path.
-        /// Original file is moved to PreservedOriginals folder.
-        /// </summary>
-        /// <param name="inputPath">Path to the audio file to trim</param>
-        /// <param name="trimWindow">The trim selection window</param>
-        /// <param name="suffix">Suffix to add to trimmed file (e.g., "-ptrimmed")</param>
-        /// <param name="token">Cancellation token</param>
-        /// <returns>True if trim was successful</returns>
+        // Trims with FFmpeg and appends suffix (e.g. "-ptrimmed"); the original moves to PreservedOriginals.
         Task<bool> ApplyTrimAsync(string inputPath, TrimWindow trimWindow, string suffix, CancellationToken token = default);
 
-        /// <summary>
-        /// Apply trim using FFmpeg with explicit FFmpeg path.
-        /// Original file is moved to PreservedOriginals folder.
-        /// </summary>
-        /// <param name="inputPath">Path to the audio file to trim</param>
-        /// <param name="trimWindow">The trim selection window</param>
-        /// <param name="suffix">Suffix to add to trimmed file (e.g., "-ptrimmed")</param>
-        /// <param name="ffmpegPath">Path to FFmpeg executable</param>
-        /// <param name="token">Cancellation token</param>
-        /// <returns>True if trim was successful</returns>
+        // Same as above with an explicit FFmpeg path.
         Task<bool> ApplyTrimAsync(string inputPath, TrimWindow trimWindow, string suffix, string ffmpegPath, CancellationToken token = default);
 
-        /// <summary>
-        /// Get audio duration for calculating trim positions
-        /// </summary>
-        /// <param name="audioFilePath">Path to the audio file</param>
-        /// <returns>Duration of the audio file</returns>
         Task<TimeSpan> GetAudioDurationAsync(string audioFilePath);
 
-        /// <summary>
-        /// Validate that FFmpeg is available at the specified path
-        /// </summary>
-        /// <param name="ffmpegPath">Path to FFmpeg executable</param>
-        /// <returns>True if FFmpeg is available and working</returns>
         bool ValidateFFmpegAvailable(string ffmpegPath);
 
-        /// <summary>
-        /// Check if a file has already been precise-trimmed (has the suffix)
-        /// </summary>
-        /// <param name="filePath">Path to check</param>
-        /// <param name="suffix">The trim suffix to check for</param>
-        /// <returns>True if the file has already been trimmed</returns>
+        // True if the filename already carries the trim suffix.
         bool IsAlreadyTrimmed(string filePath, string suffix);
     }
 }

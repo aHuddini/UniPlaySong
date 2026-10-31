@@ -39,10 +39,8 @@ namespace UniPlaySong.Services
         // True only when settings were genuinely read from disk (or no config exists — a real first run). False when
         // a config file EXISTS but failed to load: the in-memory defaults are then a stand-in and must NEVER be
         // auto-saved over the user's file. Automatic saves (OnLibraryUpdated timestamps, startup migrations) check
-        // this; user-initiated saves (settings dialog, imports) do not — an explicit save is user intent. Root cause
-        // this guards against: a transient load failure on a .pext update-restart put defaults in memory, and the
-        // OnLibraryUpdated timestamp save persisted them ~6s later — silently wiping the user's settings (seen as
-        // "radio mode resets after updating").
+        // this; user-initiated saves (settings dialog, imports) do not — an explicit save is user intent. A transient
+        // load failure on a .pext update-restart would otherwise let the timestamp save wipe the user's settings.
         public bool SettingsLoadedFromDisk { get; private set; }
 
         public void LoadSettings()
@@ -80,12 +78,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Updates settings and notifies all subscribers
-        /// This is the ONLY place settings are updated - ensures consistency
-        /// </summary>
-        /// <param name="newSettings">New settings to apply</param>
-        /// <param name="source">Source of the update (for logging)</param>
+        // The ONLY place settings are replaced; notifies all subscribers. source is for logging.
         public void UpdateSettings(UniPlaySongSettings newSettings, string source = "Unknown")
         {
             if (newSettings == null)
@@ -190,10 +183,8 @@ namespace UniPlaySong.Services
             return errors;
         }
 
-        // v1.5.0: UseNativeMusicAsDefault deprecated alongside the NativeTheme source.
-        // v1.5.2: validator no longer probes background.{ext} — that file belongs to
-        // Playnite's SDL player. If the legacy flag is somehow still set after migration,
-        // we silently clear it so the next save persists the cleanup.
+        // UseNativeMusicAsDefault is deprecated along with the NativeTheme source, and background.{ext} belongs to
+        // Playnite's SDL player, so nothing is probed. A legacy flag still set is cleared so the next save persists it.
         public bool ValidateNativeMusicFile(UniPlaySongSettings settings, bool showErrors = false)
         {
             if (settings?.UseNativeMusicAsDefault == true)
@@ -221,17 +212,13 @@ namespace UniPlaySong.Services
 
         // One-time migrations for existing users when new defaults are added.
         // Each migration is idempotent — safe to run on every load.
-        // TODO: Remove migration code after v1.3.9 — by then all active users will have the updated defaults.
         private void MigrateSettings(UniPlaySongSettings settings)
         {
             bool changed = false;
 
-            // v1.7.4: System beep was removed as a sound choice. Anyone who had it selected gets
-            // the bundled jingle instead — without this their sound silently stops working, since
-            // no playback path honours the removed value any more and the UI no longer offers it,
-            // so they could not see what their setting was stuck on. The enum member itself is
-            // kept as a numbering placeholder (see CelebrationSoundType) so stored integers do
-            // not shift underneath existing configs.
+            // System beep is not a sound choice: map it to the bundled jingle, or the sound silently stops and the UI
+            // cannot show the stale value. The enum member stays as a numbering placeholder (see CelebrationSoundType)
+            // so stored integers do not shift underneath existing configs.
             if (settings.CelebrationSoundType == CelebrationSoundType.SystemBeep_Removed)
             {
                 settings.CelebrationSoundType = CelebrationSoundType.BundledJingle;
@@ -256,10 +243,8 @@ namespace UniPlaySong.Services
                 changed = true;
             }
 
-            // v1.3.8: Add Wallpaper Engine to default excluded apps.
-            // v1.6.3: Add Sunshine game-streaming host — its audio-capture session mirrors system
-            // output, so UPS's own music reads back as "external audio" and pause-oscillates.
-            // v1.8.9: Add SignalRGB, Rainmeter and YASB — reported interfering with normal playback.
+            // Default excluded apps: Wallpaper Engine; Sunshine, whose audio-capture session mirrors system output so
+            // UPS's own music reads back as "external audio" and pause-oscillates; SignalRGB, Rainmeter and YASB.
             var requiredExclusions = new[] { "wallpaper64", "wallpaper32", "webwallpaper32", "sunshine", "sunshinesvc", "signalrgb", "rainmeter", "yasb" };
             var currentExclusions = (settings.ExternalAudioExcludedApps ?? "")
                 .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
@@ -276,12 +261,9 @@ namespace UniPlaySong.Services
                 }
             }
 
-            // v1.5.10: achievement sounds moved to the pack model. The master default sound keeps
-            // its BundledJingle picker; older configs may point it at a celebration-pack file ("Streets of Rage ...") that
-            // isn't in the achievement pack, leaving the ComboBox blank. Reset a master SelectedAchievementJingle that
-            // isn't a valid achievement-pack file to the bundled default. The per-rarity Selected*Jingle fields are gone
-            // (replaced by AchievementSoundPack, which defaults to PAStarterPack via its backing field, so old configs
-            // missing the key adopt it automatically). Idempotent.
+            // A master SelectedAchievementJingle that isn't an achievement-pack file (e.g. a celebration-pack file) leaves
+            // the ComboBox blank, so reset it to the bundled default. AchievementSoundPack needs no migration: its backing
+            // field defaults to PAStarterPack. Idempotent.
             var achievementFiles = new HashSet<string>(
                 BundledJingleService.GetAchievementJingles().Select(j => j.File),
                 StringComparer.OrdinalIgnoreCase);

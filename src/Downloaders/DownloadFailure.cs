@@ -3,9 +3,8 @@ using System.IO;
 
 namespace UniPlaySong.Downloaders
 {
-    // Why a download failed, in words the user can act on. yt-dlp's stderr names the cause; the dialogs used to
-    // show a generic "see the log" pointing at a hard-coded %AppData% path, and the most common cause - a browser
-    // whose cookies yt-dlp could not read (issue #99) - was not recognised at all.
+    // Why a download failed, in words the user can act on, read from yt-dlp's stderr. The most common cause is a
+    // browser whose cookies yt-dlp could not read.
     public static class DownloadFailure
     {
         public enum Kind { Unknown, Cookies, BrokenYtDlp, BotCheck, Network, FFmpeg, Unavailable, Permission, DiskSpace }

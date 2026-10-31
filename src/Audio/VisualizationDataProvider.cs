@@ -59,9 +59,7 @@ namespace UniPlaySong.Audio
 
         // Alphas are per step and scaled to the real time between updates, so the look doesn't depend on update rate.
         // Rise is per FFT hop (~23 ms): a hit lands within one update. Fall is per ~49 ms, the pace the fall settings
-        // were tuned against: the old loop woke for each 150 ms output block and on a 50 ms timeout in between, so it
-        // smoothed three times per block (the "43 fps" in the old settings text was never true). Measured on a
-        // synthetic kick, bass now clears between hits as it did then.
+        // were tuned against: three smoothing steps per 150 ms output block.
         private const double RiseStepMs = 1024 * 1000.0 / 44100;
         private const double FallStepMs = 147.0 / 3;
         private const int FrameIntervalMs = 16;

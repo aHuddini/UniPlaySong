@@ -37,13 +37,13 @@ namespace UniPlaySong.Services
         private readonly Func<IMusicPlayer> _createJinglePlayer;
         // Separate, deliberately lightweight factory for EXTERNAL notification sounds (achievement unlocks fired via
         // URI, etc.). Always a plain SDL2 player — never the NAudio Live-Effects pipeline, whose per-fire
-        // persistent-layer setup added ~130ms latency and whose reverb/viz machinery is pointless for a short
+        // persistent-layer setup adds ~130ms latency and whose reverb/viz machinery is pointless for a short
         // notification "ding" fired over a running game. Kept wholly separate from the regular jingle path so the
         // completion/abandoned system is unaffected.
         private readonly Func<IMusicPlayer> _createLightweightPlayer;
         private readonly ErrorHandlerService _errorHandler;
         private readonly FileLogger _fileLogger;
-        private readonly AudioDeviceRegistry _deviceRegistry; // issue #81
+        private readonly AudioDeviceRegistry _deviceRegistry;
 
         private IMusicPlayer _jinglePlayer;      // regular jingles (completion/abandoned) — PERSISTENT, reused
         private IMusicPlayer _externalPlayer;    // external notification sounds (achievement/URI)
@@ -75,17 +75,8 @@ namespace UniPlaySong.Services
             _jingleWantsLiveEffects = jingleWantsLiveEffects;
         }
 
-        // Jingle volume is its OWN level, independent of Music Volume.
-        //
-        // It used to be relative (music * jingle), which made Music Volume a ceiling: with music at
-        // 20%, a jingle could never exceed 0.20 no matter what this was set to. Users who keep their
-        // music low while gaming reported they could not hear achievement sounds at all, and the
-        // relative scale had no position that would fix it. So the two are simply separate now -
-        // turn the music down as far as you like, the jingles stay where you put them.
-        //
-        // The default was rebased 100 -> 50 to match, so a fresh install sounds exactly as it did
-        // when the two were multiplied (50% x 100%). Existing configs are NOT migrated: anyone who
-        // had moved their Music Volume will hear their jingles change level once, on upgrade.
+        // Jingle volume is its OWN level, independent of Music Volume: scaling by music would make Music Volume
+        // a ceiling, so low game music would make achievement sounds inaudible.
         //
         // Deliberately NOT scaled by Playnite's fullscreen Background Volume either. Music is;
         // jingles are not, so they still cut through in Fullscreen.
@@ -413,10 +404,9 @@ namespace UniPlaySong.Services
 
             try
             {
-                // Reuse the PERSISTENT jingle player across fires. Disposing it per-jingle (the old behavior) tore down the
-                // NAudio audio device every time, so the next jingle paid a ~700ms cold device-reopen whenever nothing else
-                // (e.g. Spotify) kept the endpoint warm. We only rebuild when the backend must change (Live Effects toggled
-                // between fires).
+                // Reuse the PERSISTENT jingle player across fires. Disposing it per jingle tears down the NAudio audio
+                // device, so the next jingle pays a ~700ms cold device-reopen whenever nothing else (e.g. Spotify) keeps
+                // the endpoint warm. Rebuild only when the backend must change (Live Effects toggled between fires).
                 bool wantEffects = _jingleWantsLiveEffects?.Invoke() ?? _jinglePlayerUsesLiveEffects;
                 if (_jinglePlayer != null && wantEffects != _jinglePlayerUsesLiveEffects)
                     DisposeJinglePlayer();
@@ -454,7 +444,7 @@ namespace UniPlaySong.Services
         {
             if (_jinglePlayer != null)
             {
-                if (_jinglePlayer is IAudioDeviceHolder jh) _deviceRegistry?.Unregister(jh); // issue #81
+                if (_jinglePlayer is IAudioDeviceHolder jh) _deviceRegistry?.Unregister(jh);
                 _jinglePlayer.MediaEnded -= OnJingleEnded;
                 _jinglePlayer.Stop();
                 _jinglePlayer.Close();
@@ -504,7 +494,7 @@ namespace UniPlaySong.Services
         {
             if (_externalPlayer != null)
             {
-                if (_externalPlayer is IAudioDeviceHolder xh) _deviceRegistry?.Unregister(xh); // issue #81
+                if (_externalPlayer is IAudioDeviceHolder xh) _deviceRegistry?.Unregister(xh);
                 _externalPlayer.MediaEnded -= OnExternalEnded;
                 _externalPlayer.Stop();
                 _externalPlayer.Close();
@@ -515,7 +505,7 @@ namespace UniPlaySong.Services
 
         // Builds the persistent jingle player and opens its audio device ahead of the first jingle, so that first
         // completion/abandoned sound doesn't pay the ~700ms cold endpoint-open. Safe to call repeatedly (no-op if the
-        // player already exists with the right backend). Call at startup and after idle-exit (issue #81). Never plays
+        // player already exists with the right backend). Call at startup and after idle-exit. Never plays
         // anything.
         public void PrewarmJinglePlayer()
         {
@@ -542,7 +532,7 @@ namespace UniPlaySong.Services
                 // External notification sounds (achievement/URI, ControlUp) always ride SDL2's
                 // process-wide device, which the line above only opens when the jingle player is
                 // itself SDL2. With Live Effects on it's NAudio, opening a WASAPI endpoint instead —
-                // so the first external sound paid a ~110ms cold SDL2 open (measured) before its
+                // so the first external sound would pay a ~110ms cold SDL2 open (measured) before its
                 // first note. Warming it here costs nothing when the device is already open.
                 PrewarmExternalPlayer();
             }
@@ -556,7 +546,7 @@ namespace UniPlaySong.Services
         // achievement/ControlUp path doesn't pay a cold device-open on its first fire.
         //
         // Deliberately does NOT keep the player: PlayExternalSound builds a fresh one per fire and
-        // disposing it never closes the shared device (secondary holder, issue #81), so the warmth
+        // disposing it never closes the shared device (secondary holder), so the warmth
         // outlives this throwaway instance. Holding one here instead would collide with that
         // per-fire lifecycle for no gain.
         private void PrewarmExternalPlayer()

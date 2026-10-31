@@ -642,8 +642,8 @@ namespace UniPlaySong.DeskMediaControl
                     bool isPlaying = playbackService?.IsPlaying == true && playbackService?.IsPaused != true;
 
                     // Play/pause GLYPH: when Spotify is the active source, reflect SPOTIFY's transport state (UPS plays nothing in
-                    // radio mode, so its own IsPlaying is always false). The visualizer/peak meter use the same Spotify-aware state
-                    // (v1.6.5): the process- loopback capture feeds them Spotify audio, so they react whenever Spotify plays. The
+                    // radio mode, so its own IsPlaying is always false). The visualizer/peak meter use the same Spotify-aware state:
+                    // the process- loopback capture feeds them Spotify audio, so they react whenever Spotify plays. The
                     // progress bar stays on UPS state — UPS doesn't know Spotify's track position.
                     var spotify = _getSpotifyService?.Invoke();
                     bool iconPlaying = (spotify != null && spotify.IsSpotifyActive)

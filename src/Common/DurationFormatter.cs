@@ -4,10 +4,8 @@ namespace UniPlaySong.Common
 {
     // Durations measured in hours rather than minutes.
     //
-    // Lifted out of UniPlaySongSettingsViewModel, where it was private, once the dashboard needed
-    // the same figure. It was the only duration helper in the codebase shaped for long spans -
-    // SongTitleCleaner.FormatDuration prints m:ss, which reads as nonsense past an hour or two
-    // ("143:07"), and the three MusicInfoCard copies do the same.
+    // Shared by the settings view model and the dashboard. The other duration helpers print m:ss
+    // (SongTitleCleaner.FormatDuration, MusicInfoCard), which reads as nonsense past an hour ("143:07").
     public static class DurationFormatter
     {
         // "< 1m", "47m", "3h 12m", "2d 4h 30m".

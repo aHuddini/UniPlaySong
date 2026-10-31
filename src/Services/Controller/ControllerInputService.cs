@@ -146,11 +146,7 @@ namespace UniPlaySong.Services.Controller
             }
         }
 
-        /// <summary>
-        /// Gets a user-friendly description of the controller mapping
-        /// </summary>
-        /// <param name="action">The controller action</param>
-        /// <returns>Description string for UI hints</returns>
+        // Action label for UI hints.
         public static string GetActionDescription(ControllerAction action)
         {
             switch (action)
@@ -180,11 +176,7 @@ namespace UniPlaySong.Services.Controller
             }
         }
 
-        /// <summary>
-        /// Gets the controller button name for UI hints
-        /// </summary>
-        /// <param name="action">The controller action</param>
-        /// <returns>Button name (A, B, X, Y, etc.)</returns>
+        // Button name (A, B, X, Y, ...) for UI hints.
         public static string GetButtonName(ControllerAction action)
         {
             switch (action)

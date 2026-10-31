@@ -87,7 +87,7 @@ namespace UniPlaySong.Common
                         if (isSystemHr == 0) continue;
 
                         // Peak first (cheap COM read); resolve the process name only for a session
-                        // that trips — per-session GetProcessById every tick was a 300-1500ms poll.
+                        // that trips — per-session GetProcessById every tick makes a 300-1500ms poll.
                         var meter = control as IAudioMeterInformation;
                         if (meter == null) continue;
                         meter.GetPeakValue(out float peak);

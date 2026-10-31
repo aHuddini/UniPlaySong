@@ -34,12 +34,6 @@ namespace UniPlaySong.Services
             return FFmpegHelper.IsAvailable(ffmpegPath);
         }
 
-        /// <summary>
-        /// Checks if a file is already trimmed (has the trim suffix).
-        /// </summary>
-        /// <param name="filePath">The file path to check.</param>
-        /// <param name="suffix">The trim suffix to look for.</param>
-        /// <returns>True if the file is already trimmed; otherwise, false.</returns>
         private bool IsFileAlreadyTrimmed(string filePath, string suffix)
         {
             if (string.IsNullOrWhiteSpace(suffix)) return false;
@@ -57,13 +51,7 @@ namespace UniPlaySong.Services
             return $"{baseFileName}{trimSuffix}";
         }
 
-        /// <summary>
-        /// Detects leading silence in an audio file using FFmpeg silencedetect filter
-        /// </summary>
-        /// <param name="filePath">Path to the audio file</param>
-        /// <param name="settings">Trim settings</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Silence end time in seconds if found at start, null otherwise</returns>
+        // Uses FFmpeg silencedetect; returns where the leading silence ends (seconds), or null if the file doesn't start silent.
         private async Task<double?> DetectLeadingSilenceAsync(
             string filePath,
             TrimSettings settings,

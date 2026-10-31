@@ -157,7 +157,7 @@ namespace UniPlaySong.Common
 
             var result = query;
 
-            // 1. Remove trademark/copyright/registered symbols (Issue #48)
+            // 1. Remove trademark/copyright/registered symbols
             result = result
                 .Replace("™", "")
                 .Replace("®", "")

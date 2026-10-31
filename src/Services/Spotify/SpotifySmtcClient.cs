@@ -70,7 +70,7 @@ namespace UniPlaySong.Services.Spotify
         private void OnSessionsChanged(MediaManager.MediaSession session) { RefreshCache(); AvailabilityChanged?.Invoke(); }
         private void OnPlaybackChanged(MediaManager.MediaSession session, GlobalSystemMediaTransportControlsSessionPlaybackInfo info) { RefreshCache(); AvailabilityChanged?.Invoke(); }
         // The OS pushes this when the current track's metadata changes (a track change). Without this subscription the
-        // now-playing UI never learned Spotify changed tracks (the mini-player went stale). Fan out through the
+        // now-playing UI never learns Spotify changed tracks (the mini-player goes stale). Fan out through the
         // existing AvailabilityChanged → SpotifyControlService.Recompute → NowPlayingChanged →
         // NowPlayingPublisher chain, which refreshes now-playing. Cheap handler: it only raises the event; the
         // publisher does the (already-existing) metadata fetch.

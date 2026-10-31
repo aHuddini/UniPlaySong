@@ -36,7 +36,7 @@ namespace UniPlaySong.Services
         public bool SuppressVisualizationProvider { get; set; }
 
         // Persistent infrastructure (created once on first Load, torn down by Dispose
-        // OR — issue #81 — by ReleaseAudioDevice() when the AudioDeviceRegistry releases
+        // OR by ReleaseAudioDevice() when the AudioDeviceRegistry releases
         // devices on idle/lock/suspend so Windows can sleep)
         private WaveOutEvent _outputDevice;
         private MixingSampleProvider _mixer;              // game-music inputs, pre-master
@@ -59,7 +59,7 @@ namespace UniPlaySong.Services
         private SmoothVolumeSampleProvider _primaryInputVolume;
 
         // Secondary song state used only during a crossfade (next song overlapping with current).
-        // All null when not crossfading. Populated by StartCrossfadeIntoNext() (Task 4).
+        // All null when not crossfading. Populated by StartCrossfadeIntoNext().
         private SmoothVolumeSampleProvider _secondaryInputVolume;
         private WaveStream _secondaryAudioFile;
         private EffectsChain _secondaryEffectsChain;
@@ -81,8 +81,8 @@ namespace UniPlaySong.Services
 
         private bool _isInMixer;
 
-        // Preloaded file reader — built during fade-out so Load() doesn't pay for it. Guarded because PreLoad now
-        // runs on a worker thread (building the reader is ~57ms of file I/O that used to block the UI thread
+        // Preloaded file reader — built during fade-out so Load() doesn't pay for it. Guarded because PreLoad
+        // runs on a worker thread (building the reader is ~57ms of file I/O, too slow for the UI thread
         // mid-navigation) while Load() consumes it on the UI thread. The lock only ever covers the field swap, never
         // the expensive build.
         private readonly object _preloadLock = new object();
@@ -149,7 +149,7 @@ namespace UniPlaySong.Services
 
             _mixer = new MixingSampleProvider(MixerFormat) { ReadFully = true };
 
-            // v1.5.0: CalmDownProcessor sits post-mixer, pre-volume. It applies a
+            // CalmDownProcessor sits post-mixer, pre-volume. It applies a
             // low-pass + volume attenuation when CalmDownModeEnabled is set, with
             // an internal S-curve ramp on toggle. Independent of LiveEffectsEnabled —
             // works whether or not the per-song EffectsChain is doing anything.
@@ -252,7 +252,7 @@ namespace UniPlaySong.Services
             catch (Exception ex)
             {
                 // Preload is purely an optimisation: on any failure leave the slot empty and let
-                // Load() build the reader itself, exactly as it did before preloading existed.
+                // Load() build the reader itself.
                 Logger.Error(ex, $"[{LogPrefix}] Failed to preload: {filePath}");
                 WaveStream stale;
                 lock (_preloadLock)
@@ -339,7 +339,7 @@ namespace UniPlaySong.Services
 
                 // When crossfade is enabled, wrap the normalized chain in a per-input volume provider so this song can be
                 // ramped independently of any other mixer input. When crossfade is OFF this wrap is SKIPPED entirely —
-                // pipeline shape matches v1.4.3 exactly. This is the isolation contract.
+                // the non-crossfade pipeline is untouched. This is the isolation contract.
                 if (_settingsService.Current?.EnableTrueCrossfade == true)
                 {
                     // Crossfade uses Linear ramps, NOT the user's fade-in/out curves. The user's curves are tuned for song
@@ -504,7 +504,7 @@ namespace UniPlaySong.Services
         // completes and the mixer input is back in place.
         public void Resume(Action onReady = null)
         {
-            // issue #81: if the persistent audio device was released (idle/lock/suspend), the mixer + output were disposed
+            // If the persistent audio device was released (idle/lock/suspend), the mixer + output were disposed
             // while the song reader (_audioFile) + its mixer input survived. Rebuild the device and re-add the input BEFORE
             // seeking/fading, otherwise the fade-in ramp runs against a null volume provider and stays stuck at 0 (silent
             // resume). Resumes at position.
@@ -589,7 +589,7 @@ namespace UniPlaySong.Services
                 }
             }
 
-            // Fast path: the emu is already at (or within 100ms of) the target. This is the common case now that Pause()
+            // Fast path: the emu is already at (or within 100ms of) the target. This is the common case because Pause()
             // detaches the mixer input — the emu was frozen at _pausedPosition, so no seek is needed. Just re-add to the
             // mixer and invoke onReady synchronously. No Task.Run, no UI stutter, no fade-in delay. Non-trivial seeks (user
             // scrub, future seek-to-position APIs) still fall through to the background path.
@@ -820,7 +820,7 @@ namespace UniPlaySong.Services
 
                 _secondarySongEndDetector = new SongEndDetectorSampleProvider(_secondaryVisualizationProvider);
                 // Do NOT subscribe to SongEnded on secondary — secondary's EOF is handled by
-                // normal mixer auto-remove; promotion is triggered by PRIMARY's EOF (Task 5).
+                // normal mixer auto-remove; promotion is triggered by PRIMARY's EOF.
 
                 ISampleProvider secNormalized = _secondarySongEndDetector;
                 if (secNormalized.WaveFormat.Channels == 1)
@@ -856,9 +856,8 @@ namespace UniPlaySong.Services
             }
         }
 
-        // Removes secondary state and disposes resources. Used by CancelCrossfade(),
-        // StartCrossfadeIntoNext() failure path, and later by promotion (Task 5) where
-        // the mixer has already auto-removed the secondary input.
+        // Removes secondary state and disposes resources. Used by CancelCrossfade() and the
+        // StartCrossfadeIntoNext() failure path; keepMixerReference skips the mixer removal.
         private void CleanupSecondaryState(bool keepMixerReference)
         {
             try
@@ -1026,10 +1025,8 @@ namespace UniPlaySong.Services
         //
         // The external input is added to the OUTPUT mixer, deliberately past the master fader that
         // carries this player's Volume - that is what keeps theme overlays from silencing Spotify.
-        // The cost is that the fullscreen multiplier rides on Volume and therefore never reached it:
-        // in Desktop the multiplier is 1.0 so UniPlaySong's own Music Volume governed Spotify
-        // correctly, while in Fullscreen the Background Volume slider moved nothing and Spotify
-        // played at full level. Reported as exactly that difference between the two modes.
+        // The cost is that the fullscreen multiplier on Volume never reaches it, so it is applied here;
+        // otherwise Fullscreen's Background Volume slider would not move Spotify at all.
         public double ExternalVolumeMultiplier { get; set; } = 1.0;
 
         private float TargetExternalVolume()
@@ -1130,7 +1127,7 @@ namespace UniPlaySong.Services
                     }
                     else
                     {
-                        // Normal path: preserved v1.4.3 behavior.
+                        // Normal path: raise MediaEnded on the UI thread.
                         dispatcher.BeginInvoke(new Action(() =>
                         {
                             MediaEnded?.Invoke(this, EventArgs.Empty);
@@ -1239,7 +1236,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        // --- IAudioDeviceHolder (issue #81) ---
+        // --- IAudioDeviceHolder ---
 
         public bool IsAudioDeviceOpen => _persistentLayerInitialized;
 
@@ -1270,7 +1267,7 @@ namespace UniPlaySong.Services
             {
                 if (_isDisposed || !_persistentLayerInitialized) return;
 
-                // issue #81: leave the player in a clean paused-at-position state before tearing the
+                // Leave the player in a clean paused-at-position state before tearing the
                 // device down, mirroring Pause(). If a song was actively playing (not already logically
                 // paused), save its position and mark it paused so the later Resume()/self-heal knows to
                 // rebuild the device and seek back — otherwise resume-after-suspend comes back silent.

@@ -701,8 +701,7 @@ namespace UniPlaySong.Services
                 AutoNormalizeDownloadedFiles(downloadedFiles);
 
                 // Update the game's music status tag after download — but ONLY if auto-tagging is enabled. Mirrors the
-                // OnLibraryUpdated gate; without this, downloading music tagged the game even with the auto-tag feature turned
-                // off (so "off" didn't fully stop tagging and a manual "Remove All Tags" was undone by the next download).
+                // OnLibraryUpdated gate, so "off" fully stops tagging and a manual "Remove All Tags" survives the next download.
                 if (_settingsService?.Current?.AutoTagOnLibraryUpdate == true && _tagService != null && game != null)
                 {
                     try
@@ -2284,7 +2283,7 @@ namespace UniPlaySong.Services
             return dialogOutcome == true;
         }
 
-        /// <summary>Handle Auto-Add More Songs - downloads additional songs as albums are found</summary>
+        // Auto-Add More Songs: downloads additional songs as albums are found.
         private void HandleAutoAddMoreSongs(Views.BatchDownloadProgressDialog progressDialog, List<GameDownloadResult> allResults, int songsPerGame)
         {
             if (allResults == null)

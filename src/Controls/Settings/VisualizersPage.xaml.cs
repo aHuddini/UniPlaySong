@@ -13,8 +13,7 @@ namespace UniPlaySong.Controls.Settings
 
         // Icon Glow is a section reset, narrower than the Advanced group button in the strip.
         // It names the properties but not their values — those come off a pristine settings
-        // object, so this can no longer disagree with the shipped defaults the way it did when
-        // it hardcoded EnableIconGlow = true against a default of false.
+        // object, so it always agrees with the shipped defaults.
         private static readonly string[] IconGlowSettings =
         {
             nameof(UniPlaySongSettings.IconGlowPreset),

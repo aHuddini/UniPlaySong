@@ -84,11 +84,7 @@ namespace UniPlaySong.Services
             return FFmpegHelper.IsAvailable(ffmpegPath);
         }
 
-        /// <summary>Probes an audio file for issues that could cause SDL_mixer failures.</summary>
-        /// <param name="filePath">Path to the audio file</param>
-        /// <param name="ffmpegPath">Path to FFmpeg executable</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Probe result with detected issues</returns>
+        // Looks for issues that could make SDL_mixer fail to play the file.
         public async Task<AudioProbeResult> ProbeFileAsync(string filePath, string ffmpegPath, CancellationToken cancellationToken = default)
         {
             var result = new AudioProbeResult { FilePath = filePath };
@@ -301,11 +297,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>Re-encodes a problematic audio file to standard format. Backs up original first.</summary>
-        /// <param name="filePath">Path to the audio file to repair</param>
-        /// <param name="ffmpegPath">Path to FFmpeg executable</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>True if repair was successful</returns>
+        // Re-encodes to a standard format after backing up the original.
         public async Task<bool> RepairFileAsync(string filePath, string ffmpegPath, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
@@ -500,11 +492,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>Probes file and repairs if needed. Convenience wrapper combining probe + repair.</summary>
-        /// <param name="filePath">Path to the audio file</param>
-        /// <param name="ffmpegPath">Path to FFmpeg executable</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>True if file is now playable (was OK or repaired successfully)</returns>
+        // Probe, then repair if needed; true if the file is now playable (was fine or got repaired).
         public async Task<bool> CheckAndRepairIfNeededAsync(string filePath, string ffmpegPath, CancellationToken cancellationToken = default)
         {
             var probeResult = await ProbeFileAsync(filePath, ffmpegPath, cancellationToken);

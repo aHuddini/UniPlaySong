@@ -19,12 +19,7 @@ namespace UniPlaySong.Services
             _playniteApi = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
         }
 
-        /// <summary>
-        /// Executes an action with error handling
-        /// </summary>
-        /// <param name="action">The action to execute</param>
-        /// <param name="context">Context description for logging (e.g., "downloading music")</param>
-        /// <param name="showUserMessage">Whether to show a user-friendly error message dialog</param>
+        // context names the operation for the log and message (e.g. "downloading music"); showUserMessage shows an error dialog.
         public void Try(Action action, string context = null, bool showUserMessage = false)
         {
             try
@@ -37,15 +32,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Executes a function with error handling, returns default value on error
-        /// </summary>
-        /// <typeparam name="T">Return type</typeparam>
-        /// <param name="func">The function to execute</param>
-        /// <param name="defaultValue">Value to return on error</param>
-        /// <param name="context">Context description for logging</param>
-        /// <param name="showUserMessage">Whether to show a user-friendly error message dialog</param>
-        /// <returns>The function result, or defaultValue on error</returns>
+        // Returns defaultValue on error.
         public T Try<T>(Func<T> func, T defaultValue = default, string context = null, bool showUserMessage = false)
         {
             try
@@ -59,13 +46,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Handles an exception with logging and optional user notification
-        /// </summary>
-        /// <param name="ex">The exception to handle</param>
-        /// <param name="context">Context description for logging</param>
-        /// <param name="showUserMessage">Whether to show a user-friendly error message dialog</param>
-        /// <param name="userFriendlyMessage">Custom user-friendly message (optional)</param>
+        // Logs to both loggers; the dialog shows userFriendlyMessage, else a message derived from the exception type.
         public void HandleError(Exception ex, string context = null, bool showUserMessage = false, string userFriendlyMessage = null)
         {
             // Log to Playnite logger
@@ -112,11 +93,7 @@ namespace UniPlaySong.Services
             return "An unexpected error occurred. Please check the logs for details.";
         }
 
-        /// <summary>
-        /// Logs an informational message
-        /// </summary>
-        /// <param name="message">Message to log</param>
-        /// <param name="fileOnly">If true, only log to file logger (not Playnite logger)</param>
+        // fileOnly skips the Playnite logger and writes only to the file logger.
         public void LogInfo(string message, bool fileOnly = false)
         {
             if (!fileOnly)
@@ -124,11 +101,7 @@ namespace UniPlaySong.Services
             _fileLogger?.Info(message);
         }
 
-        /// <summary>
-        /// Logs a warning message
-        /// </summary>
-        /// <param name="message">Message to log</param>
-        /// <param name="fileOnly">If true, only log to file logger (not Playnite logger)</param>
+        // fileOnly skips the Playnite logger and writes only to the file logger.
         public void LogWarning(string message, bool fileOnly = false)
         {
             if (!fileOnly)

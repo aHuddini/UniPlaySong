@@ -133,9 +133,8 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             HeaderSubtitle.Foreground = _accentBrush;
             IconGlowEffect.Color = color;
 
-            // Whole-card tint at ~5% alpha (alpha=13 of 255). Bumped from 3% — the blurred background image is now dimmer
-            // (Opacity 0.40), so the tint layer needs to carry a bit more of the per-game color signal. Still well below
-            // the ~10% level that previously made the card feel saturated.
+            // Whole-card tint at ~5% alpha (alpha=13 of 255): enough per-game colour over the dimmed (Opacity 0.40)
+            // background image, well below the ~10% that makes the card feel saturated.
             var tintColor = Color.FromArgb(13, color.R, color.G, color.B);
             var tintBrush = new SolidColorBrush(tintColor);
             tintBrush.Freeze();

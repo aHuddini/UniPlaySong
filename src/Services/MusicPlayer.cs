@@ -306,7 +306,7 @@ namespace UniPlaySong.Services
             onReady?.Invoke();
         }
 
-        // Exponential-curve volume ramp matching the old fader's behavior.
+        // Exponential-curve volume ramp.
         public void SetVolumeRamp(double targetVolume, double durationSeconds)
         {
             _rampTimer?.Stop();
@@ -389,7 +389,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        // --- IAudioDeviceHolder (issue #81) ---
+        // --- IAudioDeviceHolder ---
         // WPF MediaPlayer opens/closes its device per-media, so there's no persistent device to
         // release. Report closed and no-op.
         public bool IsAudioDeviceOpen => false;

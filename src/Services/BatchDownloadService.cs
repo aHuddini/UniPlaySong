@@ -56,7 +56,6 @@ namespace UniPlaySong.Services
             _errorHandler = errorHandler;
         }
 
-        /// <summary>Downloads music for multiple games in parallel</summary>
         public async Task<List<GameDownloadResult>> DownloadMusicParallelAsync(
             List<Game> games,
             Source source,
@@ -285,7 +284,6 @@ namespace UniPlaySong.Services
             return result;
         }
 
-        /// <summary>Downloads music for multiple games sequentially</summary>
         public async Task<List<GameDownloadResult>> DownloadMusicSequentialAsync(
             List<Game> games,
             Source source,

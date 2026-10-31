@@ -5,13 +5,7 @@ namespace UniPlaySong.Common
     // Conditional debug logging extensions for ILogger
     public static class LoggerExtensions
     {
-        /// <summary>
-        /// Logs a debug message with a prefix only if debug logging is enabled in settings.
-        /// Centralizes the conditional debug logging pattern used throughout the codebase.
-        /// </summary>
-        /// <param name="logger">The logger instance</param>
-        /// <param name="prefix">The component prefix (e.g., "Amplify", "PreciseTrim")</param>
-        /// <param name="message">The debug message to log</param>
+        // Logs "[prefix] message" only when debug logging is enabled; prefix is the component, e.g. "Amplify".
         public static void DebugIf(this ILogger logger, string prefix, string message)
         {
             if (FileLogger.IsDebugLoggingEnabled)
@@ -20,13 +14,6 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// <summary>
-        /// Logs a debug message with exception and prefix only if debug logging is enabled.
-        /// </summary>
-        /// <param name="logger">The logger instance</param>
-        /// <param name="prefix">The component prefix</param>
-        /// <param name="ex">The exception to log</param>
-        /// <param name="message">The debug message to log</param>
         public static void DebugIf(this ILogger logger, string prefix, System.Exception ex, string message)
         {
             if (FileLogger.IsDebugLoggingEnabled)

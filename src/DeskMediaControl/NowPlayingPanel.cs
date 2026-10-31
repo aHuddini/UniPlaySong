@@ -12,7 +12,7 @@ namespace UniPlaySong.DeskMediaControl
 {
     // "Now Playing" panel with scrolling text and fade edges for the Desktop top panel bar.
     // Uses Timeline.DesiredFrameRate=60 to cap WPF's render rate globally, then processes
-    // every CompositionTarget.Rendering callback for smooth, consistent animation. #55
+    // every CompositionTarget.Rendering callback for smooth, consistent animation.
     public class NowPlayingPanel : Grid
     {
         private readonly TextBlock _songText;

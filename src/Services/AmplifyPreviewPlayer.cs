@@ -21,12 +21,7 @@ namespace UniPlaySong.Services
             Logger.DebugIf(LogPrefix,"AmplifyPreviewPlayer created");
         }
 
-        /// <summary>
-        /// Play an audio file at the specified volume.
-        /// Volume is 0.0 to 1.0, matching the add-on's volume setting scale.
-        /// </summary>
-        /// <param name="filePath">Path to the audio file</param>
-        /// <param name="volume">Volume level (0.0 to 1.0)</param>
+        // volume is 0.0-1.0, the same scale as the add-on's volume setting.
         public void Play(string filePath, double volume)
         {
             if (_isDisposed) return;

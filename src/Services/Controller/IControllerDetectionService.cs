@@ -17,10 +17,7 @@ namespace UniPlaySong.Services.Controller
         // Stops monitoring for controller state changes
         void StopMonitoring();
         
-        /// <summary>
-        /// Forces a one-time detection check
-        /// </summary>
-        /// <returns>True if controller is detected</returns>
+        // One-off check; true if a controller is detected.
         bool DetectControllerNow();
     }
 }

@@ -94,7 +94,7 @@ namespace UniPlaySong.Services
         
         public SearchCacheData()
         {
-            Version = "2.0"; // v2.0: Minimal cache format (id, name, source only)
+            Version = "2.0"; // Minimal cache format (id, name, source only)
             LastCleanup = DateTime.UtcNow;
             Entries = new Dictionary<string, GameSearchCache>(StringComparer.OrdinalIgnoreCase);
         }
@@ -247,7 +247,7 @@ namespace UniPlaySong.Services
             }
         }
         
-        // Removes expired and empty entries from cache (empty entries are legacy, no longer created)
+        // Removes expired and empty entries from cache (empty entries are leftovers from an older cache format)
         public int CleanupExpiredEntries()
         {
             lock (_cacheLock)

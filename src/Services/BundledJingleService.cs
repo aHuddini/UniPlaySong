@@ -62,7 +62,7 @@ namespace UniPlaySong.Services
 
         // Returns all jingles in the "celebration" category (the default — fanfare for
         // Completed/Beaten). Jingles without an explicit category tag are treated as
-        // celebration for backward compatibility with pre-v1.4.1 manifests.
+        // celebration for backward compatibility with older manifests.
         public static List<BundledJingleInfo> GetJingles()
         {
             return GetAllJingles()

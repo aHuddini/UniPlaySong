@@ -533,14 +533,7 @@ namespace UniPlaySong.Services
             return _bundledHints?.Count ?? 0;
         }
 
-        /// <summary>
-        /// Checks if the GitHub hints database has more entries than the currently loaded hints.
-        /// This performs a lightweight check by fetching the GitHub file and comparing entry counts.
-        /// </summary>
-        /// <returns>
-        /// Tuple of (hasUpdate, gitHubEntryCount, currentEntryCount) where hasUpdate is true if GitHub has more entries.
-        /// Returns (false, 0, currentCount) if the check fails.
-        /// </returns>
+        // hasUpdate when the GitHub hints file has more entries than are loaded; (false, 0, currentCount) if the check fails.
         public (bool hasUpdate, int gitHubEntryCount, int currentEntryCount) CheckForHintsUpdates()
         {
             var currentCount = _hints?.Count ?? 0;

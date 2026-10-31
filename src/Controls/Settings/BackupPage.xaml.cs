@@ -6,7 +6,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Controls.Settings
 {
-    // Settings Import/Export (v1.5.0). All three handlers share the same shape: get settings, ask
+    // Settings Import/Export. All three handlers share the same shape: get settings, ask
     // the user for a path via Playnite SDK Dialogs, delegate the actual work to
     // SettingsBackupService, surface a result dialog. Errors are caught here and surfaced friendlier
     // to the user than letting an exception bubble into the settings host.

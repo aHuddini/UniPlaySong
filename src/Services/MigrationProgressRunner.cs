@@ -8,11 +8,10 @@ using UniPlaySong.Common;
 namespace UniPlaySong.Services
 {
     // Runs the long-running library operations (PlayniteSound migration, bulk delete, music tag
-    // scan) behind a progress dialog. Lifted out of UniPlaySong.cs, which only ever passed its
-    // PlayniteAPI to this code — it had no other reason to live on the plugin class.
+    // scan) behind a progress dialog. Needs nothing from the plugin class but PlayniteAPI.
     //
-    // The migration and delete flows were near-identical copies differing only in how they mapped
-    // their result and worded their summary, so they now share one implementation.
+    // The migration and delete flows differ only in how they map their result and word their
+    // summary, so they share one implementation.
     public class MigrationProgressRunner
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();

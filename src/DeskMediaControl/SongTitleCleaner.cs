@@ -42,13 +42,7 @@ namespace UniPlaySong.DeskMediaControl
             " music"
         };
 
-        /// <summary>
-        /// Parses a filename to extract artist/game and title components.
-        /// Looks for patterns like "Artist - Title" or "Game Soundtrack - Title".
-        /// </summary>
-        /// <param name="filePath">Full path or filename of the song</param>
-        /// <param name="title">Extracted song title</param>
-        /// <param name="artist">Extracted artist/game name (null if not found)</param>
+        // Splits "Artist - Title" / "Game Soundtrack - Title" filenames; artist is null when there is no separator.
         public static void ParseFilename(string filePath, out string title, out string artist)
         {
             title = string.Empty;
@@ -124,33 +118,20 @@ namespace UniPlaySong.DeskMediaControl
             }
         }
 
-        /// <summary>
-        /// Cleans a song filename to produce a user-friendly display title.
-        /// </summary>
-        /// <param name="filePath">Full path or filename of the song</param>
-        /// <returns>Cleaned song title</returns>
         public static string CleanTitle(string filePath)
         {
             ParseFilename(filePath, out string title, out string artist);
             return title;
         }
 
-        /// <summary>
-        /// Cleans a filename and extracts the artist/game portion if present.
-        /// </summary>
-        /// <param name="filePath">Full path or filename of the song</param>
-        /// <returns>Extracted artist/game name, or null if not found</returns>
+        // Returns null when the filename has no artist/game portion.
         public static string ExtractArtistFromFilename(string filePath)
         {
             ParseFilename(filePath, out _, out string artist);
             return artist;
         }
 
-        /// <summary>
-        /// Formats a duration as m:ss or h:mm:ss.
-        /// </summary>
-        /// <param name="duration">Duration to format</param>
-        /// <returns>Formatted duration string, or empty string if zero/negative</returns>
+        // m:ss or h:mm:ss; empty for a zero or negative duration.
         public static string FormatDuration(TimeSpan duration)
         {
             if (duration.TotalSeconds <= 0)
@@ -161,13 +142,7 @@ namespace UniPlaySong.DeskMediaControl
                 : duration.ToString(@"m\:ss");
         }
 
-        /// <summary>
-        /// Formats song info for display (title with optional artist and duration).
-        /// </summary>
-        /// <param name="title">Song title</param>
-        /// <param name="artist">Artist name (can be null/empty)</param>
-        /// <param name="duration">Song duration (can be null)</param>
-        /// <returns>Formatted display string</returns>
+        // Title with optional artist and duration; artist and duration may be null.
         public static string FormatDisplayText(string title, string artist, TimeSpan? duration)
         {
             if (string.IsNullOrWhiteSpace(title))

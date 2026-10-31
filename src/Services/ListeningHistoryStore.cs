@@ -74,9 +74,8 @@ namespace UniPlaySong.Services
             //
             // Set low on purpose. The job is to drop true no-ops - a game switch that loads and
             // closes a track without ever sounding it produces a span of microseconds - not to
-            // judge whether a listen was worthwhile. Half a second, the first value here, was
-            // already deciding that a track heard briefly never happened, and it silently threw
-            // away real listening time.
+            // judge whether a listen was worthwhile. Even half a second decides that a track
+            // heard briefly never happened, silently throwing away real listening time.
             if (span.Seconds < NegligibleSpanSeconds)
             {
                 return;

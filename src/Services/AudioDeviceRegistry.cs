@@ -5,7 +5,7 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
-    // Central registry of audio-device holders (issue #81). The sleep coordinator calls ReleaseAllDevices() on
+    // Central registry of audio-device holders. The sleep coordinator calls ReleaseAllDevices() on
     // idle/lock/suspend to close EVERY open audio device so Windows can sleep. Holders register on creation and
     // unregister on dispose, so any future device holder participates automatically. Thread-safe (releases may run
     // off the UI thread).

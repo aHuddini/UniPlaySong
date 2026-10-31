@@ -31,28 +31,28 @@ namespace UniPlaySong.Common
         // Color Constants
         // ============================================================================
 
-        /// Dialog background (#212121)
+        // Dialog background (#212121)
         public static readonly Color DefaultDarkBackground = Color.FromRgb(33, 33, 33);
 
-        /// Toast background (#1E1E1E)
+        // Toast background (#1E1E1E)
         public static readonly Color ToastBackgroundColor = Color.FromRgb(30, 30, 30);
 
-        /// Success border - Material Design green (#4CAF50)
+        // Success border - Material Design green (#4CAF50)
         public static readonly Color ToastSuccessBorderColor = Color.FromRgb(76, 175, 80);
 
-        /// Success accent (#81C784)
+        // Success accent (#81C784)
         public static readonly Color ToastSuccessAccentColor = Color.FromRgb(129, 199, 132);
 
-        /// Error border - Material Design red (#F44336)
+        // Error border - Material Design red (#F44336)
         public static readonly Color ToastErrorBorderColor = Color.FromRgb(244, 67, 54);
 
-        /// Error accent (#FF8A80)
+        // Error accent (#FF8A80)
         public static readonly Color ToastErrorAccentColor = Color.FromRgb(255, 138, 128);
 
-        /// Toast text (#E0E0E0)
+        // Toast text (#E0E0E0)
         public static readonly Color ToastTextColor = Color.FromRgb(224, 224, 224);
 
-        /// Default border (#424242) - configurable via ToastBorderColorValue
+        // Default border (#424242) - configurable via ToastBorderColorValue
         public static readonly Color ToastOuterBorderColorDefault = Color.FromRgb(66, 66, 66);
 
         // Controller Dialog UI Colors
@@ -66,52 +66,52 @@ namespace UniPlaySong.Common
         // Configurable Toast Settings (synced from UniPlaySongSettings)
         // ============================================================================
 
-        /// Border color as 0xRRGGBB (default: #2A2A2A)
+        // Border color as 0xRRGGBB (default: #2A2A2A)
         public static uint ToastBorderColorValue = 0x2A2A2A;
 
-        /// Border thickness in pixels (default: 1)
+        // Border thickness in pixels (default: 1)
         public static double ToastBorderThickness = 1;
 
         public enum ToastPosition { TopRight, TopLeft, BottomRight, BottomLeft, TopCenter, BottomCenter }
 
-        /// Where toasts appear on screen (default: TopRight)
+        // Where toasts appear on screen (default: TopRight)
         public static ToastPosition CurrentToastPosition = ToastPosition.TopRight;
 
-        /// Margin from screen edge in pixels (default: 30)
+        // Margin from screen edge in pixels (default: 30)
         public static int ToastEdgeMargin = 30;
 
-        /// Enable acrylic blur effect (default: true, requires Windows 10 1803+)
+        // Enable acrylic blur effect (default: true, requires Windows 10 1803+)
         public static bool EnableToastAcrylicBlur = true;
 
-        /// Blur opacity 0-255 (default: 94 = 37%)
+        // Blur opacity 0-255 (default: 94 = 37%)
         public static byte ToastBlurOpacity = 94;
 
-        /// Blur tint color as 0xRRGGBB (default: #000521)
+        // Blur tint color as 0xRRGGBB (default: #000521)
         public static uint ToastBlurTintColor = 0x000521;
 
-        /// Blur mode: 0 = Basic, 1 = Acrylic (default: 1)
+        // Blur mode: 0 = Basic, 1 = Acrylic (default: 1)
         public static int ToastBlurMode = 1;
 
-        /// Corner radius in pixels (default: 0 to avoid blur artifacts)
+        // Corner radius in pixels (default: 0 to avoid blur artifacts)
         public static double ToastCornerRadius = 0;
 
-        /// Toast width in pixels (default: 420)
+        // Toast width in pixels (default: 420)
         public static double ToastWidth = 420;
 
-        /// Toast min height in pixels (default: 90)
+        // Toast min height in pixels (default: 90)
         public static double ToastMinHeight = 90;
 
-        /// Toast max height in pixels (default: 180)
+        // Toast max height in pixels (default: 180)
         public static double ToastMaxHeight = 180;
 
-        /// Display duration in ms (default: 4000)
+        // Display duration in ms (default: 4000)
         public static int ToastDurationMs = 4000;
 
         // ============================================================================
         // Helper Methods
         // ============================================================================
 
-        /// Parses hex color string ("RRGGBB" or "#RRGGBB") to uint (0xRRGGBB). Returns defaultValue on error.
+        // Parses hex color string ("RRGGBB" or "#RRGGBB") to uint (0xRRGGBB). Returns defaultValue on error.
         private static uint ParseHexColor(string hexColor, uint defaultValue)
         {
             if (string.IsNullOrEmpty(hexColor)) return defaultValue;
@@ -123,11 +123,10 @@ namespace UniPlaySong.Common
             catch { return defaultValue; }
         }
 
-        /// Extracts RGB bytes from uint color (0xRRGGBB format).
+        // Extracts RGB bytes from uint color (0xRRGGBB format).
         private static (byte R, byte G, byte B) HexToRgb(uint hexColor) =>
             ((byte)((hexColor >> 16) & 0xFF), (byte)((hexColor >> 8) & 0xFF), (byte)(hexColor & 0xFF));
 
-        /// Syncs toast settings from UniPlaySongSettings to DialogHelper static fields.
         public static void SyncToastSettings(UniPlaySongSettings settings)
         {
             if (settings == null) return;
@@ -222,7 +221,7 @@ namespace UniPlaySong.Common
             public int AnimationId;
         }
 
-        /// Returns true if Windows 11 22H2+ (build 22621+) with DWMWA_SYSTEMBACKDROP_TYPE support.
+        // Returns true if Windows 11 22H2+ (build 22621+) with DWMWA_SYSTEMBACKDROP_TYPE support.
         private static bool IsWindows11WithBackdropSupport()
         {
             try
@@ -233,7 +232,7 @@ namespace UniPlaySong.Common
             catch { return false; }
         }
 
-        /// Returns true if Windows 11 (build 22000+) with DWMWA_WINDOW_CORNER_PREFERENCE support.
+        // Returns true if Windows 11 (build 22000+) with DWMWA_WINDOW_CORNER_PREFERENCE support.
         private static bool IsWindows11()
         {
             try
@@ -244,7 +243,7 @@ namespace UniPlaySong.Common
             catch { return false; }
         }
 
-        /// Sets a rounded rectangle region on the window at Win32 level (clips blur to rounded corners).
+        // Sets a rounded rectangle region on the window at Win32 level (clips blur to rounded corners).
         private static void SetRoundedWindowRegion(Window window, int cornerRadius)
         {
             try
@@ -277,7 +276,7 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// Enables acrylic blur on a window (Windows 10 1803+, falls back to basic blur).
+        // Enables acrylic blur on a window (Windows 10 1803+, falls back to basic blur).
         private static void EnableWindowBlur(Window window)
         {
             try
@@ -364,14 +363,12 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// Scales a dimension based on DPI scale factor.
         public static double ScaleForDpi(double baseDimension)
         {
             var scaleFactor = GetDpiScaleFactor();
             return baseDimension * scaleFactor;
         }
 
-        /// Dialog window configuration options.
         public class DialogOptions
         {
             public string Title { get; set; } = "Dialog";
@@ -386,11 +383,11 @@ namespace UniPlaySong.Common
             public bool ApplyDarkBackground { get; set; } = false;
             public bool SetOwner { get; set; } = false;
             public WindowStartupLocation StartupLocation { get; set; } = WindowStartupLocation.CenterOwner;
-            /// DPI scaling (disabled by default - doesn't work well with remote streaming)
+            // DPI scaling (disabled by default - doesn't work well with remote streaming)
             public bool ScaleForDpi { get; set; } = false;
         }
 
-        /// Creates a resizable dialog with maximize button.
+        // Creates a resizable dialog with maximize button.
         public static Window CreateStandardDialog(
             IPlayniteAPI playniteApi,
             string title,
@@ -408,7 +405,7 @@ namespace UniPlaySong.Common
             });
         }
 
-        /// Creates a fixed-size dialog (no resize/maximize).
+        // Creates a fixed-size dialog (no resize/maximize).
         public static Window CreateFixedDialog(
             IPlayniteAPI playniteApi,
             string title,
@@ -426,7 +423,7 @@ namespace UniPlaySong.Common
             });
         }
 
-        /// Creates a fullscreen-optimized dialog (topmost, dark background when in fullscreen mode).
+        // Creates a fullscreen-optimized dialog (topmost, dark background when in fullscreen mode).
         public static Window CreateFullscreenDialog(
             IPlayniteAPI playniteApi,
             string title,
@@ -449,7 +446,7 @@ namespace UniPlaySong.Common
             });
         }
 
-        /// Creates a dialog with full customization options.
+        // Creates a dialog with full customization options.
         public static Window CreateDialog(
             IPlayniteAPI playniteApi,
             object content,
@@ -547,7 +544,7 @@ namespace UniPlaySong.Common
             return window;
         }
 
-        /// Attaches a closing handler that returns focus to Playnite's main window.
+        // Attaches a closing handler that returns focus to Playnite's main window.
         public static void AddFocusReturnHandler(Window window, IPlayniteAPI playniteApi, string context = null)
         {
             if (window == null || playniteApi == null)
@@ -556,7 +553,7 @@ namespace UniPlaySong.Common
             window.Closing += (s, e) => ReturnFocusToMainWindow(playniteApi, context);
         }
 
-        /// Returns focus to Playnite's main window (important for fullscreen mode).
+        // Returns focus to Playnite's main window (important for fullscreen mode).
         public static void ReturnFocusToMainWindow(IPlayniteAPI playniteApi, string context = null)
         {
             try
@@ -578,13 +575,13 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// Shows a dialog and returns true if confirmed (DialogResult == true).
+        // Shows a dialog and returns true if confirmed (DialogResult == true).
         public static bool ShowDialogAndGetResult(Window window)
         {
             return window?.ShowDialog() == true;
         }
 
-        /// Shows a controller-friendly message dialog with XInput support (A/Enter to close).
+        // Shows a controller-friendly message dialog with XInput support (A/Enter to close).
         public static void ShowControllerMessage(IPlayniteAPI playniteApi, string message, string title, bool isError = false)
         {
             if (playniteApi == null) return;
@@ -708,7 +705,7 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// Shows a controller-friendly Yes/No dialog with XInput support. Returns true if Yes selected.
+        // Shows a controller-friendly Yes/No dialog with XInput support. Returns true if Yes selected.
         public static bool ShowControllerConfirmation(IPlayniteAPI playniteApi, string message, string title)
         {
             if (playniteApi == null) return false;
@@ -918,7 +915,7 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// Shows a non-blocking Playnite notification (auto-dismisses, no XInput issues).
+        // Shows a non-blocking Playnite notification (auto-dismisses, no XInput issues).
         public static void ShowNotification(
             IPlayniteAPI playniteApi,
             string id,
@@ -939,19 +936,18 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// Shows a success notification (Info type).
+        // Shows a success notification (Info type).
         public static void ShowSuccessNotification(IPlayniteAPI playniteApi, string id, string message)
         {
             ShowNotification(playniteApi, id, message, NotificationType.Info);
         }
 
-        /// Shows an error notification (Error type).
+        // Shows an error notification (Error type).
         public static void ShowErrorNotification(IPlayniteAPI playniteApi, string id, string message)
         {
             ShowNotification(playniteApi, id, message, NotificationType.Error);
         }
 
-        /// Removes a notification by its ID.
         public static void RemoveNotification(IPlayniteAPI playniteApi, string id)
         {
             if (playniteApi == null || string.IsNullOrEmpty(id)) return;
@@ -966,7 +962,7 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// Positions a toast window based on CurrentToastPosition setting.
+        // Positions a toast window based on CurrentToastPosition setting.
         private static void PositionToastWindow(Window toastWindow)
         {
             var screenWidth = SystemParameters.PrimaryScreenWidth;
@@ -1015,7 +1011,7 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// Shows an auto-closing toast (works in fullscreen mode, no button dismiss needed).
+        // Shows an auto-closing toast (works in fullscreen mode, no button dismiss needed).
         public static void ShowAutoCloseToast(
             IPlayniteAPI playniteApi,
             string message,
@@ -1239,13 +1235,13 @@ namespace UniPlaySong.Common
             }
         }
 
-        /// Shows a success toast (auto-closes).
+        // Shows a success toast (auto-closes).
         public static void ShowSuccessToast(IPlayniteAPI playniteApi, string message, string title = "Success", int? durationMs = null)
         {
             ShowAutoCloseToast(playniteApi, message, title, isError: false, durationMs: durationMs);
         }
 
-        /// Shows an error toast (auto-closes, 25% longer duration than success).
+        // Shows an error toast (auto-closes, 25% longer duration than success).
         public static void ShowErrorToast(IPlayniteAPI playniteApi, string message, string title = "Error", int? durationMs = null)
         {
             // Error toasts get 25% more time by default for reading error details
@@ -1611,8 +1607,8 @@ namespace UniPlaySong.Common
                     };
                 case AbandonedToastTheme.Ash:
                     // Darker, colder, faint violet-blue shift — the "funeral grey" end
-                    // of the palette. Distinctly different from the neutral Tombstone
-                    // default (reported to look identical at the previous brightness).
+                    // of the palette. Kept dark enough to read as distinct from the neutral
+                    // Tombstone default.
                     return new CelebrationColors
                     {
                         Border = Color.FromRgb(47, 48, 54),

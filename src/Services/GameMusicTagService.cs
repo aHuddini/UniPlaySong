@@ -59,11 +59,7 @@ namespace UniPlaySong.Services
             return _noMusicTagId.Value;
         }
 
-        /// <summary>
-        /// Updates the music status tag for a single game.
-        /// </summary>
-        /// <param name="game">The game to update</param>
-        /// <returns>True if the game was modified, false if no change was needed</returns>
+        // Updates the game's music status tag; false if no change was needed.
         public bool UpdateGameMusicTag(Game game)
         {
             if (game == null) return false;
@@ -117,12 +113,6 @@ namespace UniPlaySong.Services
             }
         }
 
-        /// <summary>
-        /// Scans all games and updates their music status tags.
-        /// </summary>
-        /// <param name="progress">Progress reporter</param>
-        /// <param name="cancellationToken">Cancellation token</param>
-        /// <returns>Result containing counts of games processed</returns>
         public async Task<TagScanResult> ScanAndTagAllGamesAsync(
             IProgress<TagScanProgress> progress = null,
             CancellationToken cancellationToken = default)

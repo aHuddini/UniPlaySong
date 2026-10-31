@@ -17,7 +17,7 @@ namespace UniPlaySong.Services
     //   - ExportToMarkdown: human-readable snapshot for sharing in support requests;
     //                       includes everything, redacts sensitive values, derived stats
     //
-    // Design parity with the existing global-reset path at UniPlaySong.cs:5248
+    // Design parity with the global-reset path
     // (JsonConvert.SerializeObject + PopulateObject round-trip).
     public static class SettingsBackupService
     {
@@ -32,12 +32,10 @@ namespace UniPlaySong.Services
             "DefaultMusicFolderPath",
             "CustomCookiesFilePath",
             "CustomRotationGameIds",
-            // Future: add LastfmSessionKey here when Feature 6 (Last.fm Scrobbling) lands
         };
 
         // Settings whose value should be redacted in Markdown snapshots (shown as "*****"). The field name itself is
         // still listed so support requests are informative ("yes, Last.fm is configured") without leaking secrets.
-        // Initially empty; Feature 6 (Last.fm Scrobbling) will add LastfmSessionKey.
         private static readonly string[] SensitiveFields = new string[0];
 
         // === JSON Export ===
@@ -218,11 +216,9 @@ namespace UniPlaySong.Services
             AppendSettingRow(sb, "Selected Reverb Preset", settings.SelectedReverbPreset);
             sb.AppendLine();
 
-            // --- Integrations (v1.5.0) ---
+            // --- Integrations ---
             sb.AppendLine("## Integrations (v1.5.0)");
-            // These are placeholders for Features 5 & 6; the property names may not exist yet
-            // when this code runs against the v1.4.6 settings class. Use reflection so the
-            // section degrades gracefully if a field isn't present.
+            // Optional rows go through reflection so the section degrades gracefully if a property isn't present.
             AppendSettingRow(sb, "Listening History", settings.EnableListeningHistory ? "On" : "Off");
             AppendOptionalSettingRow(sb, settings, "EnableDiscordRichPresence", "Discord Rich Presence");
             AppendOptionalSettingRow(sb, settings, "EnableLastfmScrobbling", "Last.fm Scrobbling");
@@ -277,8 +273,7 @@ namespace UniPlaySong.Services
             sb.AppendLine($"- {label}: `{rendered}`");
         }
 
-        // Reflection-based row appender for settings that may or may not exist yet
-        // (forward-compat with Features 5/6 properties added later in the v1.5.0 cycle).
+        // Reflection-based row appender for settings that may or may not exist.
         private static void AppendOptionalSettingRow(StringBuilder sb, UniPlaySongSettings settings, string propertyName, string displayLabel)
         {
             var prop = typeof(UniPlaySongSettings).GetProperty(propertyName);

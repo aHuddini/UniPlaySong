@@ -15,7 +15,7 @@ namespace UniPlaySong.Services
         private readonly SettingsService _settingsService;
         private readonly IMusicPlaybackService _mainService;
         private readonly FileLogger _fileLogger;
-        private readonly AudioDeviceRegistry _deviceRegistry; // issue #81
+        private readonly AudioDeviceRegistry _deviceRegistry;
 
         private NAudioMusicPlayer _player;
         private VisualizationDataProvider _savedMainVizProvider;
@@ -65,7 +65,7 @@ namespace UniPlaySong.Services
 
             _player = new NAudioMusicPlayer(_settingsService, _fileLogger);
             _player.MediaEnded += OnMediaEnded;
-            _deviceRegistry?.Register(_player); // issue #81
+            _deviceRegistry?.Register(_player);
             _fileLogger?.Debug("DashboardPlayback: NAudioMusicPlayer created");
         }
 
@@ -132,7 +132,7 @@ namespace UniPlaySong.Services
             {
                 if (_player != null)
                 {
-                    _deviceRegistry?.Unregister(_player); // issue #81
+                    _deviceRegistry?.Unregister(_player);
                     _player.MediaEnded -= OnMediaEnded;
                     _player.Close();
                     (_player as IDisposable)?.Dispose();

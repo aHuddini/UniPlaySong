@@ -152,7 +152,7 @@ namespace UniPlaySong.Services
         // Called when app init is complete; processes any deferred playback if window state allows
         void MarkInitializationComplete();
 
-        // Unified-media pass-throughs (v1.5.8). Thin wrappers over the internal IMusicPlayer.
+        // Unified-media pass-throughs. Thin wrappers over the internal IMusicPlayer.
         // Toggle play/pause on the internal player (used by unified PlayPause for UPS).
         void TogglePlayPauseInternal();
 

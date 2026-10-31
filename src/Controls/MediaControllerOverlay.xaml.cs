@@ -46,7 +46,7 @@ namespace UniPlaySong.Controls
             // length - a width change restarts the strip's renderer
             PositionLabel.MinWidth = DurationLabel.MinWidth = 34;
             DurationLabel.TextAlignment = TextAlignment.Right;
-            // Fixed width: sized to its title and art it jumped between songs, and every jump restarted the strip's renderer
+            // Fixed width: sized to its title and art it would jump between songs, and every jump restarts the strip's renderer
             CardRoot.Width = 420;
             // The frosted cover: blurred once per cover and reused every frame (BitmapCache), clipped to the card's rounded
             // corners

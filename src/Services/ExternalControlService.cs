@@ -19,9 +19,8 @@ namespace UniPlaySong.Services
 
         // Debounce window for ControlUp's controller-detected event (see HandleControlUp).
         //
-        // 250ms, not the original 1000ms: that was sized for connect-event bursts only, from when the
-        // URI was the sole entry point. The hotkey now reaches the same handler, and a full second of
-        // deafness swallowed a deliberate hotkey press that landed shortly after a connect — plugging
+        // 250ms, not longer: the hotkey reaches the same handler as the URI, and a full second of
+        // deafness swallows a deliberate hotkey press that lands shortly after a connect — plugging
         // a controller in and immediately pressing the hotkey is ordinary use, not a burst. 250ms is
         // still far longer than the millisecond-scale repeats a flaky USB port or Bluetooth re-pair
         // produces, and short enough that no press a person makes on purpose is lost.

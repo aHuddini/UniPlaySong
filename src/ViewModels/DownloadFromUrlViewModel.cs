@@ -311,12 +311,8 @@ namespace UniPlaySong.ViewModels
             ShowValidationResult = true;
         }
 
-        // Builds the --dump-json command for URL validation.
-        //
-        // Cookies previously covered only Firefox and CustomFile, so a Chrome/Edge/Brave/Opera user
-        // with cookies configured had them silently dropped here while the downloader honoured them —
-        // validation could fail on a video that then downloaded fine, which reads as "the URL box is
-        // broken". All six modes are handled now, matching YouTubeDownloader.
+        // Builds the --dump-json command for URL validation. Cookie handling must match YouTubeDownloader
+        // for all six modes, or validation fails on a video that would then download fine.
         private string BuildVideoInfoArguments(string url, string rateLimitOptions, CookieMode cookieMode, bool forceClientPin)
         {
             string cookiesArg;
@@ -459,10 +455,7 @@ namespace UniPlaySong.ViewModels
                     {
                         Logger.Error($"yt-dlp failed to get video info: {error}");
                         // The command and working directory, matching what YouTubeDownloader logs on
-                        // failure. Diagnosing the 403s in v1.7.3 stalled because this path logged the
-                        // error text alone, so there was no way to tell which options were actually
-                        // sent or where the process ran — the two things that differ between a normal
-                        // and a portable install.
+                        // failure: the two things that differ between a normal and a portable install.
                         Logger.Error($"Failed command: {ytDlpPath} {arguments}");
                         Logger.Error($"Working directory: {processInfo.WorkingDirectory}");
                         return null;

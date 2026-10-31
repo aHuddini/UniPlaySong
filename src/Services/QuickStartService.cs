@@ -22,9 +22,8 @@ namespace UniPlaySong.Services
         private string _undoProfileId;
 
         // Whether a pre-profile baseline exists. Read from the SETTINGS rather than a field: the
-        // baseline is persisted, so it survives a Playnite restart. Holding it in memory meant a
-        // restart between two applies made the second capture the first profile's values, and
-        // "Reset to my settings" then restored a profile rather than the user's own configuration.
+        // baseline is persisted, so a restart between two applies cannot make the second capture the
+        // first profile's values and "Reset to my settings" restore a profile instead of the user's own.
         public bool HasBaseline(UniPlaySongSettings settings) =>
             !string.IsNullOrWhiteSpace(settings?.QuickStartOriginalSettings);
 

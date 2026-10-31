@@ -8,12 +8,10 @@ using UniPlaySong.Common;
 namespace UniPlaySong.Services
 {
     // Builds the candidate song lists for the pool-based sources — the Default Music pool and the
-    // Radio Mode pool. Lifted out of UniPlaySong.cs, where the two switch statements sat side by
-    // side and repeated the same four lookups with one-word differences.
+    // Radio Mode pool.
     //
     // The two pools resolve different settings but share their gathering strategies, so each strategy lives in one
-    // place here. That matters for CompletionStatusPool in particular: it has to be handled in BOTH pools, and when
-    // the cases were duplicated it was easy to add a source to one switch and forget the other.
+    // place here. That matters for CompletionStatusPool in particular: it has to be handled in BOTH pools.
     public class SongPoolProvider
     {
         private readonly IPlayniteAPI _api;
@@ -60,8 +58,7 @@ namespace UniPlaySong.Services
                     return SongsFromAllGames();
 
                 case RadioMusicSource.CustomFolder:
-                    // Radio has its own folder, falling back to the Default Music folder when unset
-                    // (v1.5.8 — preserves pre-decouple behavior for users who never picked one).
+                    // Radio has its own folder, falling back to the Default Music folder when unset.
                     var folder = settings?.RadioCustomFolderPath;
                     if (string.IsNullOrWhiteSpace(folder))
                         folder = settings?.DefaultMusicFolderPath;

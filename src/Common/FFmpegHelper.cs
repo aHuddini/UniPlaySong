@@ -10,11 +10,7 @@ namespace UniPlaySong.Common
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
 
-        /// <summary>
-        /// Validates that FFmpeg is available and executable at the specified path
-        /// </summary>
-        /// <param name="ffmpegPath">Path to the FFmpeg executable</param>
-        /// <returns>True if FFmpeg is available and working; otherwise, false</returns>
+        // True if the file exists and actually runs as FFmpeg.
         public static bool IsAvailable(string ffmpegPath)
         {
             if (string.IsNullOrWhiteSpace(ffmpegPath) || !File.Exists(ffmpegPath))

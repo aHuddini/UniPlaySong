@@ -31,9 +31,8 @@ namespace UniPlaySong.Common
 
     // Resolves the active fullscreen theme's UPS audio file.
     //
-    // v1.5.2: strict UPS_BackgroundAudio.* filename only — no fallback to background.*.
-    // Reading background.* directly caused playback glitches because Playnite's built-in
-    // SDL player opens the same file simultaneously in fullscreen mode.
+    // Strict UPS_BackgroundAudio.* filename only — no fallback to background.*: Playnite's
+    // built-in SDL player opens background.* at the same time in fullscreen, which glitches playback.
     public static class PlayniteThemeHelper
     {
         private static readonly string[] SupportedExtensions = { ".mp3", ".ogg", ".wav", ".flac" };
@@ -262,9 +261,9 @@ namespace UniPlaySong.Common
         // Returns Playnite's data-folder roots to probe for themes/config, most-likely
         // first. ConfigurationPath comes from the SDK and is correct for BOTH installed
         // (%AppData%\Playnite) and portable (data folder next to the .exe, any drive)
-        // installs — portable installs were the cause of issue #76. The %AppData% and
-        // %LocalAppData% paths are kept as fallbacks so the built-in Default theme
-        // (historically under %LocalAppData%) still resolves for installed users.
+        // installs, so never hardcode %AppData%. The %AppData% and %LocalAppData% paths
+        // are only fallbacks so the built-in Default theme (which can live under
+        // %LocalAppData%) still resolves for installed users.
         private static System.Collections.Generic.IEnumerable<string> GetPlayniteDataRoots()
         {
             var seen = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -346,7 +345,7 @@ namespace UniPlaySong.Common
 
             // Approach 2: Read from fullscreenConfig.json. Probe each Playnite data root
             // so portable installs (data folder next to the .exe, any drive) resolve too,
-            // not just %AppData% installs (issue #76).
+            // not just %AppData% installs.
             try
             {
                 foreach (var root in GetPlayniteDataRoots())

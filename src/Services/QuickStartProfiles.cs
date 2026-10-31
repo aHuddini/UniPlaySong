@@ -78,9 +78,7 @@ namespace UniPlaySong.Services
         // mean the same profile behaves differently for two users.
         private static Dictionary<string, object> PerGameBase() => new Dictionary<string, object>
         {
-            // Owned explicitly so a profile always leaves the plugin switched on. A brief earlier
-            // build had Ambient Background set this false; anyone who applied it gets repaired by
-            // applying any profile now, rather than being left with UPS reading as disabled.
+            // Owned explicitly so a profile always leaves the plugin switched on.
             { nameof(UniPlaySongSettings.EnableMusic), true },
             { nameof(UniPlaySongSettings.RadioModeEnabled), false },
             { nameof(UniPlaySongSettings.EnableDefaultMusic), true },
@@ -212,13 +210,12 @@ namespace UniPlaySong.Services
                 Name = "Select to Play",
                 Mode = QuickStartMode.Fullscreen,
                 Summary = "Default music while you browse; a game's own music when you open it.",
-                // A separate "Library Background" tile was tried and removed: it differed from this
-                // one by exactly two settings — the default source and its randomize flag — which is
-                // a checkbox, not a way of listening.
+                // No separate "Library Background" tile: it would differ from this one by exactly two
+                // settings — the default source and its randomize flag — which is a checkbox, not a
+                // way of listening.
                 //
-                // Its bundled-preset pin was NOT folded in here. Doing that overwrote a CustomFolder
-                // the user had deliberately chosen, which the declared-keys principle exists to
-                // prevent, and a test caught it. Apply already guarantees a playable fallback: an
+                // No bundled-preset pin here: it would overwrite a CustomFolder the user deliberately
+                // chose, which the declared-keys principle exists to prevent. Apply already guarantees a playable fallback: an
                 // unconfigured source falls back to the bundled preset on its own, so a user with no
                 // default music set still gets one, and a user who picked their own keeps it.
                 Values = Merge(PerGameBase(), new Dictionary<string, object>
@@ -276,8 +273,7 @@ namespace UniPlaySong.Services
                 //
                 // Known cost, accepted deliberately: the General tab's "Enable Music" checkbox then
                 // reads as unchecked, which looks like the plugin is off rather than deliberately in
-                // background mode. The alternative was a new persisted DefaultMusicOnly flag; using
-                // the existing toggle was chosen instead. Every other tile owns EnableMusic=true, so
+                // background mode — preferred over adding a persisted DefaultMusicOnly flag. Every other tile owns EnableMusic=true, so
                 // switching away from this one restores game music.
                 //
                 // ForceDefaultMusicOverride is NOT the tool for this: it is [JsonIgnore] runtime-only

@@ -7,10 +7,9 @@ namespace UniPlaySong.Services
 {
     // Everything the listening data can be asked, and nothing about how it is stored.
     //
-    // Split out of ListeningHistoryStore, which was doing both. The store's job is to keep records
-    // safely - locking, atomic writes, surviving a corrupt file at startup. Deciding what a "top
-    // game" is has nothing to do with any of that, and leaving the two together meant every new
-    // metric would land in the class that must not break.
+    // Kept apart from ListeningHistoryStore on purpose. The store's job is to keep records safely -
+    // locking, atomic writes, surviving a corrupt file at startup. Deciding what a "top game" is has
+    // nothing to do with that, and new metrics must not land in the class that must not break.
     //
     // Every method here is a pure function of a snapshot. That is the whole point: a new metric is
     // a new method, it needs no change to storage, and it is testable without a temp directory or

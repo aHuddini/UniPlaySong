@@ -10,7 +10,7 @@ using Playnite.SDK.Controls;
 
 namespace UniPlaySong.Controls
 {
-    // v1.5.3 theme-integration sibling of MusicControl. Tag=True on any active instance flips
+    // Theme-integration sibling of MusicControl. Tag=True on any active instance flips
     // ForceDefaultMusicOverride=true, which makes PlayGameMusic skip the current game's own songs and fall through
     // to the default-music branch. Tag=False reverts to game music. Multiple instances stack via OR (if ANY
     // instance has Tag=True, the override is active) — same pattern as MusicControl's UpdateMute().
@@ -134,11 +134,9 @@ namespace UniPlaySong.Controls
         // the flag back to the truth for the theme we actually started in: no control loaded → false (game music
         // plays); a control present in the current theme → its Tag wins.
         //
-        // Why recompute instead of _instances.Clear() + force-false: in a Fullscreen-with-theme launch the override
-        // control's OnLoaded runs and sets its Tag BEFORE OnApplicationStarted fires (~400ms earlier in practice).
-        // Clearing here would deregister that live control and clobber its legitimate Tag=true at the Welcome Hub, so
-        // the theme's "play default music" intent was lost. Statics are fresh per process (mode/theme switch =
-        // restart), so there is no prior-process instance to clear anyway — only the current theme's live controls.
+        // Recompute, never _instances.Clear() + force-false: in a Fullscreen-with-theme launch the override control's
+        // OnLoaded sets its Tag BEFORE OnApplicationStarted fires, and clearing would discard that live Tag=true.
+        // Statics are fresh per process (mode/theme switch = restart), so there is no prior-process instance to clear.
         public static void SyncOverrideFromLiveControls()
         {
             UpdateOverride();

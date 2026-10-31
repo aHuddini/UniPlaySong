@@ -325,7 +325,7 @@ namespace UniPlaySong.Services
         // The ONLY place the settings object is changed, and it always runs on the UI thread, asynchronously:
         // setting a property raises PropertyChanged into UPS's own handlers, one of which reads Playnite's
         // MainView.SelectedGames - a synchronous Dispatcher.Invoke. Raised from a worker that holds a lock the
-        // UI thread is waiting on, that is a deadlock (it froze Playnite on a game switch in 1.8.10 testing).
+        // UI thread is waiting on, that is a deadlock that freezes Playnite.
         // Never call this under a lock expecting it to have run on return.
         //
         // generation: a UPS art result carries the Refresh generation it was started for, and is dropped here

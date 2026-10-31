@@ -4,7 +4,7 @@ using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
-    // Owns the issue-#81 sleep triggers. One 1-minute idle timer (loaded-but-paused COUNTS toward
+    // Owns the audio-device sleep triggers. One 1-minute idle timer (loaded-but-paused COUNTS toward
     // idle), plus immediate release on lock/suspend (routed from UniPlaySong's SystemEvents handlers).
     // All releases go through AudioDeviceRegistry.ReleaseAllDevices so every holder closes.
     public class SleepCoordinator
@@ -128,8 +128,8 @@ namespace UniPlaySong.Services
             var idleFor = nowUtc - _idleBaselineUtc;
             if (idleFor.TotalMinutes < minutes) return false;
 
-            // Logged because a tick that decides NOT to release used to be silent, which made
-            // "the idle timer doesn't work" impossible to confirm or refute from a log.
+            // Logged even when a tick decides NOT to release, so "the idle timer doesn't work" can be
+            // confirmed or refuted from a log.
             bool anyOpen = _registry?.IsAnyDeviceOpen ?? false;
             _fileLogger?.Debug($"[Sleep] idle {idleFor.TotalMinutes:F1}min >= {minutes}min threshold, deviceOpen={anyOpen}");
             if (!anyOpen)

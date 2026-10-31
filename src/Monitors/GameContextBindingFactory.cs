@@ -19,11 +19,7 @@ namespace UniPlaySong.Monitors
             string.Empty                       // Fallback to DataContext itself
         };
 
-        /// <summary>
-        /// Creates a priority binding that tries multiple paths until one works
-        /// </summary>
-        /// <param name="contextSource">The source object (usually window.DataContext)</param>
-        /// <returns>A PriorityBinding that will use the first available path</returns>
+        // Priority binding over the candidate paths, first that resolves wins; contextSource is usually window.DataContext.
         internal static BindingBase Create(object contextSource)
         {
             var priorityBinding = new PriorityBinding();

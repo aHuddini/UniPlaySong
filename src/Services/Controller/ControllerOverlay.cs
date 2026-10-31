@@ -276,7 +276,7 @@ namespace UniPlaySong.Services.Controller
                     _visualService.ApplyControllerStyles(_targetListBox);
                 }
 
-                // Phase 2: Show quick filters instead of hiding search
+                // Show quick filters instead of hiding search
                 if (_quickFiltersContainer != null)
                 {
                     _visualService.ShowQuickFilters(_quickFiltersContainer);
