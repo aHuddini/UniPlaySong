@@ -19,36 +19,25 @@ namespace UniPlaySong.Tests.Services
         }
 
         [Test]
-        public void AlwaysPlaysInBothModes()
+        public void AllowsMusicInMode_TruthTable()
         {
-            var s = With(AudioState.Always);
-            Assert.IsTrue(s.AllowsMusicInMode(isFullscreen: true));
-            Assert.IsTrue(s.AllowsMusicInMode(isFullscreen: false));
-        }
-
-        [Test]
-        public void DesktopOnlyIsSilentInFullscreen()
-        {
-            // The reported case: the picker sang in Fullscreen with this set to Desktop only.
-            var s = With(AudioState.Desktop);
-            Assert.IsFalse(s.AllowsMusicInMode(isFullscreen: true));
-            Assert.IsTrue(s.AllowsMusicInMode(isFullscreen: false));
-        }
-
-        [Test]
-        public void FullscreenOnlyIsSilentOnDesktop()
-        {
-            var s = With(AudioState.Fullscreen);
-            Assert.IsTrue(s.AllowsMusicInMode(isFullscreen: true));
-            Assert.IsFalse(s.AllowsMusicInMode(isFullscreen: false));
-        }
-
-        [Test]
-        public void NeverIsSilentEverywhere()
-        {
-            var s = With(AudioState.Never);
-            Assert.IsFalse(s.AllowsMusicInMode(isFullscreen: true));
-            Assert.IsFalse(s.AllowsMusicInMode(isFullscreen: false));
+            var cases = new[]
+            {
+                new { State = AudioState.Always, Fullscreen = true, Desktop = true },
+                // The reported case: the picker sang in Fullscreen with this set to Desktop only.
+                new { State = AudioState.Desktop, Fullscreen = false, Desktop = true },
+                new { State = AudioState.Fullscreen, Fullscreen = true, Desktop = false },
+                new { State = AudioState.Never, Fullscreen = false, Desktop = false },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var c in cases)
+                {
+                    var s = With(c.State);
+                    Assert.That(s.AllowsMusicInMode(isFullscreen: true), Is.EqualTo(c.Fullscreen), $"{c.State} in Fullscreen");
+                    Assert.That(s.AllowsMusicInMode(isFullscreen: false), Is.EqualTo(c.Desktop), $"{c.State} on Desktop");
+                }
+            });
         }
 
         [Test]

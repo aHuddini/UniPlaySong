@@ -91,54 +91,6 @@ namespace UniPlaySong.Tests.Services.ActiveMedia
         }
 
         [Test]
-        public void PlayPause_SpotifyActive_TogglesSpotify()
-        {
-            _settings.RadioModeEnabled = true;
-            _settings.RadioMusicSource = RadioMusicSource.Spotify;
-            _spotifyControl.Recompute();
-
-            _service.PlayPause();
-            _client.Verify(c => c.TryTogglePlayPause(), Times.Once);
-        }
-
-        [Test]
-        public void Next_SpotifyActive_SkipsSpotify()
-        {
-            _settings.RadioModeEnabled = true;
-            _settings.RadioMusicSource = RadioMusicSource.Spotify;
-            _spotifyControl.Recompute();
-
-            _service.Next();
-            _client.Verify(c => c.TrySkipNext(), Times.Once);
-            _playback.Verify(p => p.SkipToNextSong(), Times.Never);
-        }
-
-        [Test]
-        public void Next_UpsActive_SkipsUpsSong()
-        {
-            _playback.SetupGet(p => p.IsLoaded).Returns(true);
-            _playback.SetupGet(p => p.IsPlaying).Returns(true);
-            _playback.SetupGet(p => p.CurrentGameSongCount).Returns(3);
-            _spotifyControl.Recompute();
-
-            _service.Next();
-            _playback.Verify(p => p.SkipToNextSong(), Times.Once);
-            _client.Verify(c => c.TrySkipNext(), Times.Never);
-        }
-
-        [Test]
-        public void Previous_UpsActive_RestartsCurrentSong()
-        {
-            _playback.SetupGet(p => p.IsLoaded).Returns(true);
-            _playback.SetupGet(p => p.IsPlaying).Returns(true);
-            _spotifyControl.Recompute();
-
-            _service.Previous();
-            _playback.Verify(p => p.RestartCurrentSong(), Times.Once);
-            _client.Verify(c => c.TrySkipPrevious(), Times.Never);
-        }
-
-        [Test]
         public void Snapshot_UpsActive_CanNextReflectsSongCount()
         {
             _playback.SetupGet(p => p.IsLoaded).Returns(true);

@@ -10,71 +10,35 @@ namespace UniPlaySong.Tests.Services
     [TestFixture]
     public class HoverSettlePolicyTests
     {
+        // One truth table for the defer rule. Inputs are (enabled, isFullscreen, isPlaying).
         [Test]
-        public void Defers_WhenMusicIsPlaying_InFullscreen()
+        public void ShouldDefer_TruthTable()
         {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlaying: true),
-                Is.True, "the case the feature exists for");
-        }
-
-        // Gated on "any music playing" deliberately. IsPlayingDefaultMusic is cleared before the
-        // outgoing fade starts, so during a scroll it reads false while the ambient is still
-        // audible - a gate on it made every switch in that window chop. Pinned so the narrower
-        // gate does not come back looking like a refinement.
-        [Test]
-        public void Defers_EvenWhenTheDefaultFlagHasAlreadyCleared()
-        {
-            const bool ambientStillAudible_flagAlreadyFalse = true; // isPlaying: the ear's truth
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true,
-                            isPlaying: ambientStillAudible_flagAlreadyFalse),
-                Is.True);
-        }
-
-        [Test]
-        public void DoesNotDefer_WhenDisabled()
-        {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: false, isFullscreen: true, isPlaying: true),
-                Is.False);
-        }
-
-        // Waiting on silence produces more silence. Without this the option would make things
-        // worse than not having it whenever playback had not started yet.
-        [Test]
-        public void DoesNotDefer_WhenNothingIsPlaying()
-        {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlaying: false),
-                Is.False, "nothing to protect - starting now beats waiting on silence");
-        }
-
-        // Observed on the PS5: leaving the dashboard ambient takes a couple of seconds, but moving
-        // between titles switches quickly. Once a game's track is playing the ambient is already
-        // gone, so there is nothing left for the delay to protect.
-        [Test]
-        public void DoesNotDefer_GameToGame()
-        {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlaying: false),
-                Is.False, "game-to-game stays snappy - the ambient is already gone");
-        }
-
-        // Some themes switch between default and game music through the
-        // UPS_MusicControl_PauseGamePlayDefault Tag rather than through game selection, so the
-        // delay hooked to selection never reaches them. GameHoverDelayPatch carries it there.
-        // The direction decides: leaving the default music waits, returning does not, and the
-        // default-is-playing check IS the "leaving it" case.
-        [Test]
-        public void Defers_LeavingDefaultMusic_OnTheTagPath()
-        {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlaying: true),
-                Is.True);
-        }
-
-        [Test]
-        public void DoesNotDefer_ReturningToDefaultMusic()
-        {
-            // wantDefault==true is filtered before the policy is consulted, and the state it
-            // arrives in - a game's track playing - independently says do not wait.
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: true, isPlaying: false),
-                Is.False, "going back to the default music is immediate");
+            var cases = new[]
+            {
+                // The case the feature exists for. Also the Tag path: some themes switch default/game
+                // music through the UPS_MusicControl_PauseGamePlayDefault Tag rather than selection,
+                // and GameHoverDelayPatch carries the delay there - leaving the default music waits,
+                // and the default-is-playing check IS the "leaving it" case.
+                // Gated on "any music playing" deliberately: IsPlayingDefaultMusic is cleared before
+                // the outgoing fade starts, so during a scroll it reads false while the ambient is
+                // still audible - a gate on it made every switch in that window chop. isPlaying is the
+                // ear's truth; pinned so the narrower gate does not come back looking like a refinement.
+                new { Enabled = true, Fullscreen = true, Playing = true, Expected = true, Why = "music playing in Fullscreen (incl. default flag already cleared, Tag path)" },
+                new { Enabled = false, Fullscreen = true, Playing = true, Expected = false, Why = "disabled" },
+                // Waiting on silence produces more silence. Also game-to-game (PS5: once a game's track
+                // plays the ambient is already gone) and returning to default music (wantDefault is
+                // filtered before the policy, and a game's track playing independently says do not wait).
+                new { Enabled = true, Fullscreen = true, Playing = false, Expected = false, Why = "nothing to protect / game-to-game / returning to default" },
+                // Desktop selection is click-driven, so a delay reads as lag rather than as polish.
+                new { Enabled = true, Fullscreen = false, Playing = true, Expected = false, Why = "Desktop - Fullscreen-gated by design" },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var c in cases)
+                    Assert.That(HoverSettlePolicy.ShouldDefer(enabled: c.Enabled, isFullscreen: c.Fullscreen, isPlaying: c.Playing),
+                        Is.EqualTo(c.Expected), $"enabled={c.Enabled} fullscreen={c.Fullscreen} playing={c.Playing}: {c.Why}");
+            });
         }
 
         // Three independent toggles, all off on a fresh install, so nothing about playback changes
@@ -98,61 +62,48 @@ namespace UniPlaySong.Tests.Services
 
         // The bridge is what makes game-to-game feel like the PS5: leaving a game returns to the
         // default music at once, and the NEW game's music takes the delay. The abandoned track
-        // never plays out the wait.
+        // never plays out the wait. With default music disabled there is nothing to bridge WITH;
+        // the wait still defers the switch and the old track simply plays it out.
         [Test]
-        public void Bridges_WhenLeavingAGamesTrack()
+        public void ShouldBridgeToDefault_TruthTable()
         {
-            Assert.That(HoverSettlePolicy.ShouldBridgeToDefault(isPlayingDefaultMusic: false, defaultMusicEnabled: true),
-                Is.True, "the ambient returns immediately while the wait runs");
+            Assert.Multiple(() =>
+            {
+                Assert.That(HoverSettlePolicy.ShouldBridgeToDefault(isPlayingDefaultMusic: false, defaultMusicEnabled: true),
+                    Is.True, "leaving a game's track - the ambient returns immediately while the wait runs");
+                Assert.That(HoverSettlePolicy.ShouldBridgeToDefault(isPlayingDefaultMusic: true, defaultMusicEnabled: true),
+                    Is.False, "already on default music - nothing to bridge");
+                Assert.That(HoverSettlePolicy.ShouldBridgeToDefault(isPlayingDefaultMusic: false, defaultMusicEnabled: false),
+                    Is.False, "default music disabled - nothing to bridge with");
+            });
         }
 
+        // The slider reads as "how long until the game's music starts". The transition fades the
+        // old track out first, so that fade has to come out of the budget - otherwise a 3s setting
+        // put the new music at 3 + fadeOut + fadeIn, which is why 3s measured as 4-6s.
+        // Two speeds, per the PS5 recording: leaving the idle ambient is the weighty transition and
+        // takes the full slider; game-to-game still bridges through the ambient but settles in half
+        // the time. The origin is latched at session start, so these are what a user actually waits.
+        // A long fade-out must never collapse the wait to nothing - that would restore the
+        // scroll-chop the whole feature exists to prevent.
         [Test]
-        public void DoesNotBridge_WhenAlreadyOnDefaultMusic()
+        public void SettleTiming_Table()
         {
-            Assert.That(HoverSettlePolicy.ShouldBridgeToDefault(isPlayingDefaultMusic: true, defaultMusicEnabled: true),
-                Is.False, "nothing to bridge - it is already playing");
-        }
-
-        // With default music disabled there is nothing to bridge WITH. The wait still defers the
-        // switch; the old track simply plays it out.
-        [Test]
-        public void DoesNotBridge_WhenDefaultMusicIsDisabled()
-        {
-            Assert.That(HoverSettlePolicy.ShouldBridgeToDefault(isPlayingDefaultMusic: false, defaultMusicEnabled: false),
-                Is.False);
-        }
-
-        // Two speeds, per the PS5 recording: leaving the idle ambient is the weighty transition
-        // and takes the full slider; game-to-game still bridges through the ambient but settles in
-        // half the time. The origin is latched at session start, so the numbers here are what a
-        // user actually waits.
-        [Test]
-        public void FromTheAmbient_TakesTheFullBudget()
-        {
-            Assert.That(HoverSettlePolicy.SecondsForSwitch(3.0, 0.7, fromDefaultMusic: true),
-                Is.EqualTo(2.3).Within(0.001), "full slider minus the fade-out spent inside it");
-        }
-
-        [Test]
-        public void GameToGame_TakesHalf()
-        {
-            Assert.That(HoverSettlePolicy.SecondsForSwitch(3.0, 0.7, fromDefaultMusic: false),
-                Is.EqualTo(0.8).Within(0.001), "half of 3s, minus the fade-out - music starts ~1.5s after rest");
-        }
-
-        [Test]
-        public void GameToGame_NeverCollapsesBelowTheFloor()
-        {
-            Assert.That(HoverSettlePolicy.SecondsForSwitch(1.0, 5.0, fromDefaultMusic: false),
-                Is.EqualTo(0.5), "a long fade-out must still leave a real debounce");
-        }
-
-        [Test]
-        public void TheTwoSpeeds_AreActuallyDifferent()
-        {
-            var full = HoverSettlePolicy.SecondsForSwitch(3.0, 0.7, fromDefaultMusic: true);
-            var half = HoverSettlePolicy.SecondsForSwitch(3.0, 0.7, fromDefaultMusic: false);
-            Assert.That(half, Is.LessThan(full), "game-to-game is the snappy one");
+            var cases = new[]
+            {
+                new { Name = "TimerSeconds(3, 0.7)", Get = (System.Func<double>)(() => HoverSettlePolicy.TimerSeconds(3.0, 0.7)), Expected = 2.3, Why = "old track starts fading at 2.3s so the new one starts on the 3s mark" },
+                new { Name = "TimerSeconds(3, 0)", Get = (System.Func<double>)(() => HoverSettlePolicy.TimerSeconds(3.0, 0)), Expected = 3.0, Why = "unchanged when there is no fade-out" },
+                new { Name = "TimerSeconds(1, 5)", Get = (System.Func<double>)(() => HoverSettlePolicy.TimerSeconds(1.0, 5.0)), Expected = Constants.MinHoverSettleSeconds, Why = "a fade-out longer than the setting must still leave a real wait" },
+                new { Name = "TimerSeconds(999, 0)", Get = (System.Func<double>)(() => HoverSettlePolicy.TimerSeconds(999, 0)), Expected = Constants.MaxHoverSettleSeconds, Why = "an out-of-range setting is clamped" },
+                new { Name = "SecondsForSwitch(3, 0.7, fromDefault)", Get = (System.Func<double>)(() => HoverSettlePolicy.SecondsForSwitch(3.0, 0.7, fromDefaultMusic: true)), Expected = 2.3, Why = "from the ambient: full slider minus the fade-out spent inside it" },
+                new { Name = "SecondsForSwitch(3, 0.7, gameToGame)", Get = (System.Func<double>)(() => HoverSettlePolicy.SecondsForSwitch(3.0, 0.7, fromDefaultMusic: false)), Expected = 0.8, Why = "game-to-game: half of 3s minus the fade-out - music starts ~1.5s after rest" },
+                new { Name = "SecondsForSwitch(1, 5, gameToGame)", Get = (System.Func<double>)(() => HoverSettlePolicy.SecondsForSwitch(1.0, 5.0, fromDefaultMusic: false)), Expected = 0.5, Why = "game-to-game never collapses below the floor" },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var c in cases)
+                    Assert.That(c.Get(), Is.EqualTo(c.Expected).Within(0.001), $"{c.Name}: {c.Why}");
+            });
         }
 
         // The bridge's outgoing fade is a quick duck, not the configured FadeOutDuration - the
@@ -169,14 +120,6 @@ namespace UniPlaySong.Tests.Services
                 "must finish inside even the shortest game-to-game wait");
         }
 
-        // Desktop selection is click-driven, so a delay reads as lag rather than as polish.
-        [Test]
-        public void DoesNotDefer_InDesktop()
-        {
-            Assert.That(HoverSettlePolicy.ShouldDefer(enabled: true, isFullscreen: false, isPlaying: true),
-                Is.False, "Fullscreen-gated by design");
-        }
-
         [Test]
         public void ClampSeconds_HoldsTheSupportedRange()
         {
@@ -187,13 +130,6 @@ namespace UniPlaySong.Tests.Services
                 Assert.That(HoverSettlePolicy.ClampSeconds(999), Is.EqualTo(Constants.MaxHoverSettleSeconds));
                 Assert.That(HoverSettlePolicy.ClampSeconds(3), Is.EqualTo(3));
             });
-        }
-
-        [Test]
-        public void Default_IsWithinTheSliderRange()
-        {
-            Assert.That(Constants.DefaultHoverSettleSeconds,
-                Is.InRange(Constants.MinHoverSettleSeconds, Constants.MaxHoverSettleSeconds));
         }
 
         // The settings setter clamps too; a config edited by hand must not escape the range.
@@ -208,45 +144,6 @@ namespace UniPlaySong.Tests.Services
 
             s.HoverSettleSeconds = 0;
             Assert.That(s.HoverSettleSeconds, Is.EqualTo(Constants.MinHoverSettleSeconds));
-        }
-
-        // The slider reads as "how long until the game's music starts". The transition fades the
-        // old track out first, so that fade has to come out of the budget - otherwise a 3s setting
-        // put the new music at 3 + fadeOut + fadeIn, which is why 3s measured as 4-6s.
-        [Test]
-        public void TimerSeconds_SpendsTheFadeOutInsideTheBudget()
-        {
-            Assert.That(HoverSettlePolicy.TimerSeconds(3.0, 0.7), Is.EqualTo(2.3).Within(0.001),
-                "old track starts fading at 2.3s so the new one starts on the 3s mark");
-        }
-
-        [Test]
-        public void TimerSeconds_UnchangedWhenThereIsNoFadeOut()
-        {
-            Assert.That(HoverSettlePolicy.TimerSeconds(3.0, 0), Is.EqualTo(3.0));
-        }
-
-        // A long fade-out must not collapse the wait to nothing - that would restore the
-        // scroll-chop the whole feature exists to prevent.
-        [Test]
-        public void TimerSeconds_NeverCollapsesBelowTheMinimum()
-        {
-            Assert.That(HoverSettlePolicy.TimerSeconds(1.0, 5.0),
-                Is.EqualTo(Constants.MinHoverSettleSeconds),
-                "a fade-out longer than the setting must still leave a real wait");
-        }
-
-        [Test]
-        public void TimerSeconds_ClampsAnOutOfRangeSetting()
-        {
-            Assert.That(HoverSettlePolicy.TimerSeconds(999, 0), Is.EqualTo(Constants.MaxHoverSettleSeconds));
-        }
-
-        // Off by default: an existing user's playback must not change until they ask for it.
-        [Test]
-        public void DisabledByDefault()
-        {
-            Assert.That(new UniPlaySongSettings().HoverSettleEnabled, Is.False);
         }
     }
 }

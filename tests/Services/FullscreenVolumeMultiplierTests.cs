@@ -34,35 +34,27 @@ namespace UniPlaySong.Tests.Services
             // to overrule a slider they deliberately moved. UniPlaySong raises a one-time
             // notification instead, because this is otherwise undiagnosable from the interface:
             // UniPlaySong's own Music Volume still reads 50% and tracks still "play".
-            Assert.AreEqual(0.0, Multiplier(0.0, 0, suppressesPlayniteMusic: true, musicEnabled: true), 1e-9,
-                "an explicit zero must be respected, not silently overridden");
-        }
-
-        [Test]
-        public void EveryOtherValueStillTracksTheSlider()
-        {
             // The integration is deliberate and stays intact - only exact zero is special-cased, so
-            // anyone using the slider as a volume control sees no change.
-            Assert.AreEqual(0.5, Multiplier(0.5, 0, true, true), 1e-9);
-            Assert.AreEqual(1.0, Multiplier(1.0, 0, true, true), 1e-9);
-            Assert.AreEqual(0.01, Multiplier(0.01, 0, true, true), 1e-9);
-        }
-
-        [Test]
-        public void TheBoostStillAppliesAndStillCannotExceedFull()
-        {
-            Assert.AreEqual(0.75, Multiplier(0.5, 50, true, true), 1e-9);
-            Assert.AreEqual(1.0, Multiplier(0.9, 100, true, true), 1e-9, "clamped at 100%");
-        }
-
-        [Test]
-        public void ZeroIsZeroWhateverElseIsConfigured()
-        {
-            // No combination quietly rescues it - the notification is the whole remedy.
-            Assert.AreEqual(0.0, Multiplier(0.0, 0, suppressesPlayniteMusic: false, musicEnabled: true), 1e-9);
-            Assert.AreEqual(0.0, Multiplier(0.0, 0, suppressesPlayniteMusic: true, musicEnabled: false), 1e-9);
-            Assert.AreEqual(0.0, Multiplier(0.0, 100, suppressesPlayniteMusic: true, musicEnabled: true), 1e-9,
-                "boosting zero is still zero, which is why the boost slider cannot rescue this either");
+            // anyone using the slider as a volume control sees no change. No combination quietly
+            // rescues a zero either - the notification is the whole remedy.
+            var cases = new[]
+            {
+                new { Slider = 0.0, Boost = 0, Suppresses = true, Music = true, Expected = 0.0, Why = "an explicit zero must be respected, not silently overridden" },
+                new { Slider = 0.5, Boost = 0, Suppresses = true, Music = true, Expected = 0.5, Why = "tracks the slider" },
+                new { Slider = 1.0, Boost = 0, Suppresses = true, Music = true, Expected = 1.0, Why = "tracks the slider" },
+                new { Slider = 0.01, Boost = 0, Suppresses = true, Music = true, Expected = 0.01, Why = "tracks the slider" },
+                new { Slider = 0.5, Boost = 50, Suppresses = true, Music = true, Expected = 0.75, Why = "the boost still applies" },
+                new { Slider = 0.9, Boost = 100, Suppresses = true, Music = true, Expected = 1.0, Why = "boost clamped at 100%" },
+                new { Slider = 0.0, Boost = 0, Suppresses = false, Music = true, Expected = 0.0, Why = "zero whatever else is configured" },
+                new { Slider = 0.0, Boost = 0, Suppresses = true, Music = false, Expected = 0.0, Why = "zero whatever else is configured" },
+                new { Slider = 0.0, Boost = 100, Suppresses = true, Music = true, Expected = 0.0, Why = "boosting zero is still zero, which is why the boost slider cannot rescue this either" },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var c in cases)
+                    Assert.AreEqual(c.Expected, Multiplier(c.Slider, c.Boost, c.Suppresses, c.Music), 1e-9,
+                        $"slider={c.Slider} boost={c.Boost}% suppresses={c.Suppresses} music={c.Music}: {c.Why}");
+            });
         }
 
         [Test]

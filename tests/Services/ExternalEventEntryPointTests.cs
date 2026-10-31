@@ -29,31 +29,21 @@ namespace UniPlaySong.Tests.Services
                 () => new UniPlaySongSettings());
         }
 
+        // Case must not decide whether the event lands — a caller shouldn't have to guess. False is
+        // the caller's signal to fall back to the URI, so an unknown source must say so rather than
+        // silently swallowing the event.
         [Test]
-        public void KnownSources_ReportHandled()
+        public void SourceRouting_ReportsHandledOnlyForKnownSources()
         {
             var service = CreateService();
-
-            Assert.IsTrue(service.HandleExternalEvent("controlup", "detecttrigger"));
-            Assert.IsTrue(service.HandleExternalEvent("playniteachievements", "rareachievement"));
-        }
-
-        // Case must not decide whether the event lands — a caller shouldn't have to guess.
-        [Test]
-        public void SourceMatchingIsCaseInsensitive()
-        {
-            Assert.IsTrue(CreateService().HandleExternalEvent("ControlUp", "detecttrigger"));
-        }
-
-        // False is the caller's signal to fall back to the URI, so an unknown source must say so
-        // rather than silently swallowing the event.
-        [Test]
-        public void UnknownSource_ReportsUnhandled()
-        {
-            var service = CreateService();
-
-            Assert.IsFalse(service.HandleExternalEvent("someotherplugin", "whatever"));
-            Assert.IsFalse(service.HandleExternalEvent(null, null));
+            Assert.Multiple(() =>
+            {
+                Assert.IsTrue(service.HandleExternalEvent("controlup", "detecttrigger"), "controlup");
+                Assert.IsTrue(service.HandleExternalEvent("playniteachievements", "rareachievement"), "playniteachievements");
+                Assert.IsTrue(CreateService().HandleExternalEvent("ControlUp", "detecttrigger"), "case-insensitive source");
+                Assert.IsFalse(service.HandleExternalEvent("someotherplugin", "whatever"), "unknown source");
+                Assert.IsFalse(service.HandleExternalEvent(null, null), "null source");
+            });
         }
 
         // The in-process path can hand over nulls the URI never could — its segments were always

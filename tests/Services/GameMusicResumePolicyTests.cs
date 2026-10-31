@@ -23,38 +23,33 @@ namespace UniPlaySong.Tests.Services
         // --- ShouldRemember ---
 
         [Test]
-        public void ShouldRemember_MidTrackWithFeatureOn_Remembers()
+        public void ShouldRemember_Table()
         {
-            Assert.IsTrue(GameMusicResumePolicy.ShouldRemember(true, Song, Thirty, FourMinutes));
-        }
-
-        [Test]
-        public void ShouldRemember_FeatureOff_DoesNot()
-        {
-            Assert.IsFalse(GameMusicResumePolicy.ShouldRemember(false, Song, Thirty, FourMinutes));
-        }
-
-        [Test]
-        public void ShouldRemember_AtTheVeryStart_DoesNot()
-        {
-            // Nothing to resume to, and a mark here would only cost a pointless seek.
-            Assert.IsFalse(GameMusicResumePolicy.ShouldRemember(true, Song, TimeSpan.Zero, FourMinutes));
-        }
-
-        [Test]
-        public void ShouldRemember_NearTheEnd_DoesNot()
-        {
-            // Resuming with under MinRemainingSeconds left plays a stub then auto-advances,
-            // which reads as a bug rather than as resume.
             var nearEnd = FourMinutes - TimeSpan.FromSeconds(2);
-            Assert.IsFalse(GameMusicResumePolicy.ShouldRemember(true, Song, nearEnd, FourMinutes));
-        }
-
-        [Test]
-        public void ShouldRemember_ExactlyAtTheRemainingThreshold_Remembers()
-        {
             var atThreshold = FourMinutes - TimeSpan.FromSeconds(GameMusicResumePolicy.MinRemainingSeconds);
-            Assert.IsTrue(GameMusicResumePolicy.ShouldRemember(true, Song, atThreshold, FourMinutes));
+            var cases = new[]
+            {
+                new { Name = "mid-track, feature on", On = true, Path = Song, Pos = Thirty, Total = (TimeSpan?)FourMinutes, Expected = true },
+                // With resume off nothing is remembered, so Switch Mode shuffle behaves precisely as
+                // it did before this feature existed.
+                new { Name = "feature off", On = false, Path = Song, Pos = Thirty, Total = (TimeSpan?)FourMinutes, Expected = false },
+                // Only tracks left part-way through are worth a mark. At the very start there is
+                // nothing to resume to, and a mark would only cost a pointless seek.
+                new { Name = "at the very start", On = true, Path = Song, Pos = TimeSpan.Zero, Total = (TimeSpan?)FourMinutes, Expected = false },
+                // Resuming with under MinRemainingSeconds left plays a stub then auto-advances,
+                // which reads as a bug rather than as resume.
+                new { Name = "near the end", On = true, Path = Song, Pos = nearEnd, Total = (TimeSpan?)FourMinutes, Expected = false },
+                new { Name = "exactly at the remaining threshold", On = true, Path = Song, Pos = atThreshold, Total = (TimeSpan?)FourMinutes, Expected = true },
+                // A backend that cannot report length should not disable the feature outright.
+                new { Name = "unknown total time", On = true, Path = Song, Pos = Thirty, Total = (TimeSpan?)null, Expected = true },
+                new { Name = "null song path", On = true, Path = (string)null, Pos = Thirty, Total = (TimeSpan?)FourMinutes, Expected = false },
+                new { Name = "empty song path", On = true, Path = "", Pos = Thirty, Total = (TimeSpan?)FourMinutes, Expected = false },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var c in cases)
+                    Assert.AreEqual(c.Expected, GameMusicResumePolicy.ShouldRemember(c.On, c.Path, c.Pos, c.Total), c.Name);
+            });
         }
 
         [Test]
@@ -74,78 +69,33 @@ namespace UniPlaySong.Tests.Services
             Assert.IsFalse(GameMusicResumePolicy.ShouldRemember(true, @"C:\music\GameA\ff7-101.minipsf", Thirty, FourMinutes));
         }
 
-        [Test]
-        public void ShouldRemember_UnknownTotalTime_StillRemembers()
-        {
-            // A backend that cannot report length should not disable the feature outright.
-            Assert.IsTrue(GameMusicResumePolicy.ShouldRemember(true, Song, Thirty, null));
-        }
-
-        [Test]
-        public void ShouldRemember_NoSongPath_DoesNot()
-        {
-            Assert.IsFalse(GameMusicResumePolicy.ShouldRemember(true, null, Thirty, FourMinutes));
-            Assert.IsFalse(GameMusicResumePolicy.ShouldRemember(true, "", Thirty, FourMinutes));
-        }
-
         // --- ResumeFrom ---
 
         [Test]
-        public void ResumeFrom_SameTrack_ReturnsTheRememberedPosition()
+        public void ResumeFrom_Table()
         {
-            Assert.AreEqual(Thirty, GameMusicResumePolicy.ResumeFrom(true, Song, MarkAt(Song, Thirty)));
-        }
-
-        [Test]
-        public void ResumeFrom_DifferentTrackForTheSameGame_StartsOver()
-        {
-            // Randomization can hand back a different track next visit. Dropping song A's
-            // position into song B is worse than starting from the beginning.
-            Assert.AreEqual(TimeSpan.Zero, GameMusicResumePolicy.ResumeFrom(true, OtherSong, MarkAt(Song, Thirty)));
-        }
-
-        [Test]
-        public void ResumeFrom_PathCasingDiffers_StillResumes()
-        {
-            var shouty = Song.ToUpperInvariant();
-            Assert.AreEqual(Thirty, GameMusicResumePolicy.ResumeFrom(true, shouty, MarkAt(Song, Thirty)));
-        }
-
-        [Test]
-        public void ResumeFrom_FeatureOff_StartsOver()
-        {
-            Assert.AreEqual(TimeSpan.Zero, GameMusicResumePolicy.ResumeFrom(false, Song, MarkAt(Song, Thirty)));
-        }
-
-        [Test]
-        public void ResumeFrom_NoMarkForThisGame_StartsOver()
-        {
-            // A default(Mark) is what Dictionary.TryGetValue leaves behind on a miss.
-            Assert.AreEqual(TimeSpan.Zero, GameMusicResumePolicy.ResumeFrom(true, Song, default(GameMusicResumePolicy.Mark)));
-        }
-
-        [Test]
-        public void ResumeFrom_MarkAtZero_StartsOver()
-        {
-            Assert.AreEqual(TimeSpan.Zero, GameMusicResumePolicy.ResumeFrom(true, Song, MarkAt(Song, TimeSpan.Zero)));
-        }
-
-        [Test]
-        public void ResumeFrom_NoIncomingSong_StartsOver()
-        {
-            Assert.AreEqual(TimeSpan.Zero, GameMusicResumePolicy.ResumeFrom(true, null, MarkAt(Song, Thirty)));
-        }
-
-        // --- the round trip the feature actually promises ---
-
-        [Test]
-        public void LeaveGameAThirtySecondsIn_ReturnToGameA_ResumesAtThirty()
-        {
-            Assert.IsTrue(GameMusicResumePolicy.ShouldRemember(true, Song, Thirty, FourMinutes),
-                "leaving mid-track should record a mark");
-
-            var resumed = GameMusicResumePolicy.ResumeFrom(true, Song, MarkAt(Song, Thirty));
-            Assert.AreEqual(Thirty, resumed, "returning to the same track should pick up where it left off");
+            var cases = new[]
+            {
+                new { Name = "same track", On = true, Path = Song, Mark = MarkAt(Song, Thirty), Expected = Thirty },
+                // Randomization can hand back a different track next visit. Dropping song A's
+                // position into song B is worse than starting from the beginning. The store is keyed
+                // by path so a mismatch should be unreachable, but ResumeFrom still refuses it - a
+                // lookup bug must not transplant one track's position onto another.
+                new { Name = "different track for the same game", On = true, Path = OtherSong, Mark = MarkAt(Song, Thirty), Expected = TimeSpan.Zero },
+                new { Name = "path casing differs", On = true, Path = Song.ToUpperInvariant(), Mark = MarkAt(Song, Thirty), Expected = Thirty },
+                // With resume off nothing is honoured either.
+                new { Name = "feature off", On = false, Path = Song, Mark = MarkAt(Song, Thirty), Expected = TimeSpan.Zero },
+                // A default(Mark) is what Dictionary.TryGetValue leaves behind on a miss - e.g. a
+                // track never left part-way through. Shuffle's fresh picks start at zero.
+                new { Name = "no mark for this track", On = true, Path = Song, Mark = default(GameMusicResumePolicy.Mark), Expected = TimeSpan.Zero },
+                new { Name = "mark at zero", On = true, Path = Song, Mark = MarkAt(Song, TimeSpan.Zero), Expected = TimeSpan.Zero },
+                new { Name = "no incoming song", On = true, Path = (string)null, Mark = MarkAt(Song, Thirty), Expected = TimeSpan.Zero },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var c in cases)
+                    Assert.AreEqual(c.Expected, GameMusicResumePolicy.ResumeFrom(c.On, c.Path, c.Mark), c.Name);
+            });
         }
 
         // --- composing with Switch Mode (RandomizeOnEverySelect) ---
@@ -165,42 +115,6 @@ namespace UniPlaySong.Tests.Services
 
             Assert.AreEqual(Thirty, GameMusicResumePolicy.ResumeFrom(true, Song, songMark));
             Assert.AreEqual(TimeSpan.FromSeconds(90), GameMusicResumePolicy.ResumeFrom(true, OtherSong, otherMark));
-        }
-
-        [Test]
-        public void ShuffleLandingOnAnUnheardTrack_StartsFromTheBeginning()
-        {
-            // No mark exists for a track never left part-way through, which is what
-            // Dictionary.TryGetValue yields on a miss. Shuffle's fresh picks start at zero.
-            Assert.AreEqual(TimeSpan.Zero,
-                GameMusicResumePolicy.ResumeFrom(true, OtherSong, default(GameMusicResumePolicy.Mark)));
-        }
-
-        [Test]
-        public void AMarkNeverLeaksOntoADifferentTrack()
-        {
-            // The store is keyed by path so a mismatch should be unreachable, but ResumeFrom
-            // still refuses it - a lookup bug must not transplant one track's position onto another.
-            Assert.AreEqual(TimeSpan.Zero, GameMusicResumePolicy.ResumeFrom(true, OtherSong, MarkAt(Song, Thirty)));
-        }
-
-        [Test]
-        public void ResumeOff_LeavesSwitchModeExactlyAsItWas()
-        {
-            // With resume off nothing is remembered and nothing is honoured, so shuffle behaves
-            // precisely as it did before this feature existed.
-            Assert.IsFalse(GameMusicResumePolicy.ShouldRemember(false, Song, Thirty, FourMinutes));
-            Assert.AreEqual(TimeSpan.Zero, GameMusicResumePolicy.ResumeFrom(false, Song, MarkAt(Song, Thirty)));
-        }
-
-        [Test]
-        public void TrackNeverLeftMidSong_RecordsNothing()
-        {
-            // Only tracks left part-way through are worth a mark. A first play, or one left in
-            // the last few seconds, records nothing at all.
-            var nearEnd = FourMinutes - TimeSpan.FromSeconds(2);
-            Assert.IsFalse(GameMusicResumePolicy.ShouldRemember(true, Song, nearEnd, FourMinutes));
-            Assert.IsFalse(GameMusicResumePolicy.ShouldRemember(true, Song, TimeSpan.Zero, FourMinutes));
         }
     }
 }

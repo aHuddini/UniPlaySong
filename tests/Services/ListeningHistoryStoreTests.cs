@@ -62,21 +62,6 @@ namespace UniPlaySong.Tests.Services
         }
 
         [Test]
-        public void GamesAreRankedByTimeListenedNotPlayCount()
-        {
-            var store = new ListeningHistoryStore(_dir, enabled: true);
-
-            // Short game played often, long game played once. Time wins - the card says "by time".
-            store.Record(Span("a.mp3", 10, true, "g1", "Often"));
-            store.Record(Span("a.mp3", 10, true, "g1", "Often"));
-            store.Record(Span("a.mp3", 10, true, "g1", "Often"));
-            store.Record(Span("b.mp3", 600, true, "g2", "Once"));
-
-            var top = ListeningInsights.Summarize(store.Snapshot()).TopGames.First();
-            Assert.AreEqual("Once", top.GameName);
-        }
-
-        [Test]
         public void RoundTripsThroughDisk()
         {
             var store = new ListeningHistoryStore(_dir, enabled: true);

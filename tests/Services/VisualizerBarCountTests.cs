@@ -124,12 +124,5 @@ namespace UniPlaySong.Tests.Services
             s.VizBarCount = 0;
             Assert.AreEqual(1, s.VizBarCount, "zero bars is not a visualizer");
         }
-
-        [Test]
-        public void TheDefaultIsTheFullTwelve()
-        {
-            // Anything else would narrow every existing user's visualizer on upgrade.
-            Assert.AreEqual(12, new UniPlaySongSettings().VizBarCount);
-        }
     }
 }

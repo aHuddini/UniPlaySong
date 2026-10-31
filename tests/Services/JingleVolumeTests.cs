@@ -68,15 +68,6 @@ namespace UniPlaySong.Tests.Services
         }
 
         [Test]
-        public void TheResultIsNeverOutOfRange()
-        {
-            // The setter clamps 0-100, so the level cannot exceed 1 - but the clamp stays as the
-            // guard, because a player handed a volume above 1.0 distorts.
-            Assert.LessOrEqual(Level(100), 1.0);
-            Assert.GreaterOrEqual(Level(0), 0.0);
-        }
-
-        [Test]
         public void TheSettingIsClampedAtBothEnds()
         {
             var s = new UniPlaySongSettings();

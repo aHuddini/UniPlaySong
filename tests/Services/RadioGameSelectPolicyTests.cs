@@ -14,63 +14,31 @@ namespace UniPlaySong.Tests.Services
             new UniPlaySongSettings { PlayOnlyOnGameSelect = playOnSelect, RadioModeEnabled = radio };
 
         [Test]
-        public void Yields_WhenBothOptionsOn_InDetailsView_WithSongs()
+        public void ShouldYieldToSelectedGame_TruthTable()
         {
-            Assert.IsTrue(RadioGameSelectPolicy.ShouldYieldToSelectedGame(
-                isFullscreenDetailsView: true, selectedGameSongCount: 3,
-                settings: Settings(playOnSelect: true, radio: true)));
-        }
-
-        [Test]
-        public void DoesNotYield_InListView_SoRadioKeepsPlayingWhileBrowsing()
-        {
-            Assert.IsFalse(RadioGameSelectPolicy.ShouldYieldToSelectedGame(
-                isFullscreenDetailsView: false, selectedGameSongCount: 3,
-                settings: Settings(playOnSelect: true, radio: true)));
-        }
-
-        [Test]
-        public void DoesNotYield_WhenSelectedGameHasNoSongs()
-        {
-            // Yielding to nothing would drop the user into silence; the radio continues instead.
-            Assert.IsFalse(RadioGameSelectPolicy.ShouldYieldToSelectedGame(
-                isFullscreenDetailsView: true, selectedGameSongCount: 0,
-                settings: Settings(playOnSelect: true, radio: true)));
-        }
-
-        [Test]
-        public void DoesNotYield_WhenPlayOnlyOnGameSelectIsOff()
-        {
-            // Radio Mode alone keeps its pre-existing behaviour: it ignores game switches.
-            Assert.IsFalse(RadioGameSelectPolicy.ShouldYieldToSelectedGame(
-                isFullscreenDetailsView: true, selectedGameSongCount: 3,
-                settings: Settings(playOnSelect: false, radio: true)));
-        }
-
-        [Test]
-        public void DoesNotYield_WhenRadioIsOff()
-        {
-            // Radio off = the normal-playback path already honours PlayOnlyOnGameSelect itself.
-            Assert.IsFalse(RadioGameSelectPolicy.ShouldYieldToSelectedGame(
-                isFullscreenDetailsView: true, selectedGameSongCount: 3,
-                settings: Settings(playOnSelect: true, radio: false)));
-        }
-
-        [Test]
-        public void DoesNotYield_WhenSettingsNull()
-        {
-            Assert.IsFalse(RadioGameSelectPolicy.ShouldYieldToSelectedGame(true, 3, null));
-        }
-
-        // Desktop mode reaches the policy with isFullscreenDetailsView=false (GetActiveFullscreenView
-        // returns null there), so Desktop radio behaviour is unchanged — pinned so a future refactor
-        // of that call site can't quietly turn this into a Desktop feature.
-        [Test]
-        public void DoesNotYield_InDesktopMode()
-        {
-            Assert.IsFalse(RadioGameSelectPolicy.ShouldYieldToSelectedGame(
-                isFullscreenDetailsView: false, selectedGameSongCount: 5,
-                settings: Settings(playOnSelect: true, radio: true)));
+            var cases = new[]
+            {
+                new { Details = true, Songs = 3, Settings = Settings(true, true), Expected = true, Why = "both options on, Details view, game has songs" },
+                new { Details = false, Songs = 3, Settings = Settings(true, true), Expected = false, Why = "list view - radio keeps playing while browsing" },
+                // Yielding to nothing would drop the user into silence; the radio continues instead.
+                new { Details = true, Songs = 0, Settings = Settings(true, true), Expected = false, Why = "selected game has no songs" },
+                // Radio Mode alone keeps its pre-existing behaviour: it ignores game switches.
+                new { Details = true, Songs = 3, Settings = Settings(false, true), Expected = false, Why = "PlayOnlyOnGameSelect off" },
+                // Radio off = the normal-playback path already honours PlayOnlyOnGameSelect itself.
+                new { Details = true, Songs = 3, Settings = Settings(true, false), Expected = false, Why = "radio off" },
+                new { Details = true, Songs = 3, Settings = (UniPlaySongSettings)null, Expected = false, Why = "settings null" },
+                // Desktop mode reaches the policy with isFullscreenDetailsView=false (GetActiveFullscreenView
+                // returns null there), so Desktop radio behaviour is unchanged - pinned so a future refactor
+                // of that call site can't quietly turn this into a Desktop feature.
+                new { Details = false, Songs = 5, Settings = Settings(true, true), Expected = false, Why = "Desktop mode" },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var c in cases)
+                    Assert.That(RadioGameSelectPolicy.ShouldYieldToSelectedGame(
+                            isFullscreenDetailsView: c.Details, selectedGameSongCount: c.Songs, settings: c.Settings),
+                        Is.EqualTo(c.Expected), $"details={c.Details} songs={c.Songs}: {c.Why}");
+            });
         }
     }
 }

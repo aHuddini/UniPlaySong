@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
+﻿using System.IO;
 using NUnit.Framework;
 using UniPlaySong;
 using UniPlaySong.DeskMediaControl;
-using UniPlaySong.Services;
 
 namespace UniPlaySong.Tests.Services
 {
@@ -32,14 +27,6 @@ namespace UniPlaySong.Tests.Services
             // font's cmap, not recalled. A wrong code does not fail loudly; it renders as a blank
             // box or some unrelated pictogram in everyone's top panel.
             Assert.AreEqual("", MediaControlIcons.Moon);
-        }
-
-        [Test]
-        public void TheButtonIsOffByDefault()
-        {
-            // The top panel is shared with themes and other extensions, so a new button is offered
-            // rather than imposed. Nobody's panel changes on upgrade.
-            Assert.IsFalse(new UniPlaySongSettings().ShowCalmDownButton);
         }
 
         [Test]
@@ -120,26 +107,6 @@ namespace UniPlaySong.Tests.Services
             var body = text.Substring(refresh);
             StringAssert.Contains("UpdateCalmDownVisual(settings?.CalmDownModeEnabled == true)", body,
                 "the periodic refresh must re-read the setting");
-        }
-
-        [Test]
-        public void TheSettingResetsWithTheGroupWhosePageItIsOn()
-        {
-            // It lives on the Media Controls page, which resets with General. A setting whose reset
-            // group disagrees with its page resets from a button the user never associated with it,
-            // and SettingsResetCoverageTests would not catch it - that only checks a setting is
-            // filed somewhere at all.
-            var map = typeof(SettingsGroups)
-                .GetField("Map", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Public)
-                ?.GetValue(null) as IReadOnlyDictionary<string, string[]>;
-
-            Assert.NotNull(map);
-            Assert.IsTrue(map["General"].Contains(nameof(UniPlaySongSettings.ShowCalmDownButton)),
-                "the Media Controls page resets with General");
-
-            foreach (var group in map.Where(g => g.Key != "General"))
-                Assert.IsFalse(group.Value.Contains(nameof(UniPlaySongSettings.ShowCalmDownButton)),
-                    $"it must not also reset with {group.Key}");
         }
     }
 }

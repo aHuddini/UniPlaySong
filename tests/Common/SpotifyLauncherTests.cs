@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 using UniPlaySong.Common;
@@ -7,82 +8,33 @@ namespace UniPlaySong.Tests.Common
     [TestFixture]
     public class SpotifyLauncherTests
     {
-        // User path exists -> returned (explicit intent wins over auto-scan).
         [Test]
-        public void ResolveSpotifyPath_UserPathExists_ReturnsUserPathOverAutoScan()
+        public void ResolveSpotifyPath_Table()
         {
-            var result = SpotifyLauncher.ResolveSpotifyPath(
-                userConfiguredPath: @"C:\User\Custom\Spotify.exe",
-                autoScanCandidates: new[] { @"C:\AppData\Spotify\Spotify.exe" },
-                fileExists: p => true); // both would exist; user path must win
-            Assert.AreEqual(@"C:\User\Custom\Spotify.exe", result);
-        }
-
-        // No user path, first auto-scan candidate exists -> returned.
-        [Test]
-        public void ResolveSpotifyPath_NoUserPath_FirstCandidateHit_ReturnsFirst()
-        {
-            var result = SpotifyLauncher.ResolveSpotifyPath(
-                userConfiguredPath: "",
-                autoScanCandidates: new[] { @"C:\AppData\Spotify\Spotify.exe", @"C:\Alias\Spotify.exe" },
-                fileExists: p => p == @"C:\AppData\Spotify\Spotify.exe");
-            Assert.AreEqual(@"C:\AppData\Spotify\Spotify.exe", result);
-        }
-
-        // First candidate misses, second exists -> returns the second (ordered fallback).
-        [Test]
-        public void ResolveSpotifyPath_FirstCandidateMiss_SecondHit_ReturnsSecond()
-        {
-            var result = SpotifyLauncher.ResolveSpotifyPath(
-                userConfiguredPath: "",
-                autoScanCandidates: new[] { @"C:\AppData\Spotify\Spotify.exe", @"C:\Alias\Spotify.exe" },
-                fileExists: p => p == @"C:\Alias\Spotify.exe");
-            Assert.AreEqual(@"C:\Alias\Spotify.exe", result);
-        }
-
-        // User path misses, auto-scan misses -> null.
-        [Test]
-        public void ResolveSpotifyPath_UserPathMiss_AllCandidatesMiss_ReturnsNull()
-        {
-            var result = SpotifyLauncher.ResolveSpotifyPath(
-                userConfiguredPath: @"C:\User\Nope.exe",
-                autoScanCandidates: new[] { @"C:\AppData\Spotify\Spotify.exe", @"C:\Alias\Spotify.exe" },
-                fileExists: p => false);
-            Assert.IsNull(result);
-        }
-
-        // Empty user path + empty candidate list -> null (no crash).
-        [Test]
-        public void ResolveSpotifyPath_EmptyUserPath_NoCandidates_ReturnsNull()
-        {
-            var result = SpotifyLauncher.ResolveSpotifyPath(
-                userConfiguredPath: "",
-                autoScanCandidates: new List<string>(),
-                fileExists: p => false);
-            Assert.IsNull(result);
-        }
-
-        // Null candidate list is tolerated (fail-safe) -> null when no user path.
-        [Test]
-        public void ResolveSpotifyPath_NullCandidates_ReturnsNull()
-        {
-            var result = SpotifyLauncher.ResolveSpotifyPath(
-                userConfiguredPath: "",
-                autoScanCandidates: null,
-                fileExists: p => false);
-            Assert.IsNull(result);
-        }
-
-        // GetAutoScanCandidates returns non-null, non-empty (the real %APPDATA% + Store-alias paths).
-        [Test]
-        public void GetAutoScanCandidates_ReturnsCandidates()
-        {
-            var candidates = SpotifyLauncher.GetAutoScanCandidates();
-            Assert.IsNotNull(candidates);
-            Assert.IsNotEmpty(candidates);
-            // Every candidate ends with Spotify.exe.
-            foreach (var c in candidates)
-                Assert.IsTrue(c.EndsWith(@"Spotify.exe"), $"Unexpected candidate: {c}");
+            const string user = @"C:\User\Custom\Spotify.exe";
+            const string appData = @"C:\AppData\Spotify\Spotify.exe";
+            const string alias = @"C:\Alias\Spotify.exe";
+            var both = new[] { appData, alias };
+            var cases = new[]
+            {
+                // Explicit intent wins over auto-scan: both would exist; the user path must win.
+                new { Name = "user path exists", User = user, Candidates = (IEnumerable<string>)new[] { appData }, Exists = (Func<string, bool>)(p => true), Expected = user },
+                new { Name = "no user path, first candidate hit", User = "", Candidates = (IEnumerable<string>)both, Exists = (Func<string, bool>)(p => p == appData), Expected = appData },
+                // Ordered fallback.
+                new { Name = "first candidate miss, second hit", User = "", Candidates = (IEnumerable<string>)both, Exists = (Func<string, bool>)(p => p == alias), Expected = alias },
+                new { Name = "user path and all candidates miss", User = @"C:\User\Nope.exe", Candidates = (IEnumerable<string>)both, Exists = (Func<string, bool>)(p => false), Expected = (string)null },
+                // No crash on an empty list.
+                new { Name = "empty user path, no candidates", User = "", Candidates = (IEnumerable<string>)new List<string>(), Exists = (Func<string, bool>)(p => false), Expected = (string)null },
+                // A null candidate list is tolerated (fail-safe).
+                new { Name = "null candidates", User = "", Candidates = (IEnumerable<string>)null, Exists = (Func<string, bool>)(p => false), Expected = (string)null },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var c in cases)
+                    Assert.AreEqual(c.Expected, SpotifyLauncher.ResolveSpotifyPath(
+                            userConfiguredPath: c.User, autoScanCandidates: c.Candidates, fileExists: c.Exists),
+                        c.Name);
+            });
         }
 
         // Launch on a definitely-invalid path returns false, never throws (fail-safe contract).

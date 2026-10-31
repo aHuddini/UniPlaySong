@@ -203,5 +203,77 @@ namespace UniPlaySong.Tests.Services
             Assert.That(SettingsResetService.HasResettableSettings(SettingsGroups.QuickStart), Is.False);
             Assert.That(SettingsResetService.HasResettableSettings(SettingsGroups.Playback), Is.True);
         }
+
+        // What a fresh install - and an upgrade, since a missing key loads its backing-field default -
+        // ships with. Each one is chosen so nobody's setup changes until they ask for it.
+        [Test]
+        public void ShippedDefaults_AreUpgradeSafe()
+        {
+            var s = new UniPlaySongSettings();
+            var cases = new[]
+            {
+                // The top panel is shared with themes and other extensions, so a new button is offered
+                // rather than imposed. Nobody's panel changes on upgrade.
+                new { Name = nameof(UniPlaySongSettings.ShowCalmDownButton), Actual = (object)s.ShowCalmDownButton, Expected = (object)false },
+                // Launching another application on startup is not something to opt someone into.
+                new { Name = nameof(UniPlaySongSettings.AutoLaunchSpotifyOnStartup), Actual = (object)s.AutoLaunchSpotifyOnStartup, Expected = (object)false },
+                // On, because the settings are otherwise four clicks deep in Add-ons -> Extensions and
+                // the button is the obvious way to reach them. It costs one sidebar entry and can be
+                // turned off.
+                new { Name = nameof(UniPlaySongSettings.ShowSettingsSidebarButton), Actual = (object)s.ShowSettingsSidebarButton, Expected = (object)true },
+                // Anything else would narrow every existing user's visualizer on upgrade.
+                new { Name = nameof(UniPlaySongSettings.VizBarCount), Actual = (object)s.VizBarCount, Expected = (object)12 },
+                // Opt-in feature: must default off so existing users see no behaviour change.
+                new { Name = nameof(UniPlaySongSettings.RadioPlaysThroughGames), Actual = (object)s.RadioPlaysThroughGames, Expected = (object)false },
+                // The fallback (null -> DefaultMusicFolderPath) depends on this default being null.
+                new { Name = nameof(UniPlaySongSettings.RadioCustomFolderPath), Actual = (object)s.RadioCustomFolderPath, Expected = (object)null },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var c in cases)
+                    Assert.That(c.Actual, Is.EqualTo(c.Expected), c.Name);
+            });
+        }
+
+        // EverySettingIsClassifiedExactlyOnce only checks that a setting is filed somewhere, not that
+        // its group matches the page it appears on. A setting whose reset group disagrees with its
+        // page resets from a button the user never associated with it - and a page move (graduating
+        // out of Experimental, say) is exactly where that happens silently. These are the ones that
+        // have moved or been added onto a page since.
+        [Test]
+        public void SettingsResetWithTheGroupWhosePageTheyAreOn()
+        {
+            var cases = new[]
+            {
+                // Media Controls page, which resets with General.
+                new { Name = nameof(UniPlaySongSettings.ShowCalmDownButton), Group = SettingsGroups.General },
+                // The Calm Down page, which resets with Live Effects.
+                new { Name = nameof(UniPlaySongSettings.CalmDownOnIdle), Group = SettingsGroups.LiveEffects },
+                new { Name = nameof(UniPlaySongSettings.CalmDownIdleTimeoutMinutes), Group = SettingsGroups.LiveEffects },
+                // Spotify auto-launch graduated out of Experimental in 1.8.7 onto General -> Miscellaneous.
+                // The toggle and its optional path are one block on one page, so they reset together;
+                // both left Advanced when they left the Experimental page.
+                new { Name = nameof(UniPlaySongSettings.AutoLaunchSpotifyOnStartup), Group = SettingsGroups.General },
+                new { Name = nameof(UniPlaySongSettings.SpotifyExePath), Group = SettingsGroups.General },
+                // Fade curves graduated the same release, onto Live Effects -> Fade Transitions.
+                new { Name = nameof(UniPlaySongSettings.NaudioFadeInCurve), Group = SettingsGroups.LiveEffects },
+                new { Name = nameof(UniPlaySongSettings.NaudioFadeOutCurve), Group = SettingsGroups.LiveEffects },
+                // General -> Miscellaneous.
+                new { Name = nameof(UniPlaySongSettings.ShowSettingsSidebarButton), Group = SettingsGroups.General },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var c in cases)
+                {
+                    Assert.That(SettingsGroups.Map[c.Group], Does.Contain(c.Name), $"{c.Name} should reset with {c.Group}");
+                    foreach (var other in SettingsGroups.Map.Where(g => g.Key != c.Group))
+                        Assert.That(other.Value, Does.Not.Contain(c.Name), $"{c.Name} must not also reset with {other.Key}");
+                }
+
+                // Calm Down on Idle's live flag has nothing for a reset to restore.
+                Assert.That(SettingsGroups.NeverReset, Does.Contain(nameof(UniPlaySongSettings.CalmDownIdleActive)),
+                    "live state has nothing for a reset to restore");
+            });
+        }
     }
 }

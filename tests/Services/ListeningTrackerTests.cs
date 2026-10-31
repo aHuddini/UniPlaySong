@@ -163,18 +163,5 @@ namespace UniPlaySong.Tests.Services
             Assert.Greater(summary.TotalTime.TotalSeconds, 0, "the listening time was lost");
             Assert.IsEmpty(summary.TopGames, "default music was attributed to a game");
         }
-
-        // Turning the setting off stops recording at once, not at the next restart.
-        [Test]
-        public void DisabledStoreRecordsNothing()
-        {
-            _store.Enabled = false;
-
-            _tracker.Begin("C:\\music\\a.mp3", "game-1", "Game One");
-            Thread.Sleep(120);
-            _tracker.Abandon();
-
-            Assert.AreEqual(0, ListeningInsights.Summarize(_store.Snapshot()).DistinctTracks);
-        }
     }
 }

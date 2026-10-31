@@ -63,23 +63,13 @@ namespace UniPlaySong.Tests.Controls
         }
 
         [Test]
-        public void PlayPauseCommand_InvokesService()
+        public void TransportCommands_InvokeService()
         {
             _vm.PlayPauseCommand.Execute(null);
-            _service.Verify(s => s.PlayPause(), Times.Once);
-        }
-
-        [Test]
-        public void NextCommand_InvokesService()
-        {
             _vm.NextCommand.Execute(null);
-            _service.Verify(s => s.Next(), Times.Once);
-        }
-
-        [Test]
-        public void PreviousCommand_InvokesService()
-        {
             _vm.PreviousCommand.Execute(null);
+            _service.Verify(s => s.PlayPause(), Times.Once);
+            _service.Verify(s => s.Next(), Times.Once);
             _service.Verify(s => s.Previous(), Times.Once);
         }
 

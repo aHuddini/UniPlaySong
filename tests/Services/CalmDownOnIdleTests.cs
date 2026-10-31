@@ -1,10 +1,7 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
-using System.Reflection;
 using NUnit.Framework;
 using UniPlaySong;
-using UniPlaySong.Services;
 
 namespace UniPlaySong.Tests.Services
 {
@@ -130,35 +127,6 @@ namespace UniPlaySong.Tests.Services
 
             StringAssert.Contains("_settings.CalmDownIdleActive != wantCalm", body,
                 "every tick compares and corrects, so the flag survives a settings save");
-        }
-
-        [Test]
-        public void TheSettingsResetWithTheGroupWhosePageTheyAreOn()
-        {
-            var liveEffects = (string)typeof(SettingsGroups)
-                .GetField("LiveEffects", BindingFlags.NonPublic | BindingFlags.Static).GetRawConstantValue();
-
-            var map = typeof(SettingsGroups)
-                .GetField("Map", BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Public)
-                ?.GetValue(null) as IReadOnlyDictionary<string, string[]>;
-            Assert.NotNull(map);
-
-            foreach (var name in new[]
-            {
-                nameof(UniPlaySongSettings.CalmDownOnIdle),
-                nameof(UniPlaySongSettings.CalmDownIdleTimeoutMinutes),
-            })
-            {
-                Assert.IsTrue(map[liveEffects].Contains(name),
-                    $"{name} is on the Calm Down page, which resets with Live Effects");
-            }
-
-            var neverReset = typeof(SettingsGroups)
-                .GetField("NeverReset", BindingFlags.NonPublic | BindingFlags.Static)
-                ?.GetValue(null) as HashSet<string>;
-            Assert.NotNull(neverReset);
-            Assert.IsTrue(neverReset.Contains(nameof(UniPlaySongSettings.CalmDownIdleActive)),
-                "live state has nothing for a reset to restore");
         }
     }
 }

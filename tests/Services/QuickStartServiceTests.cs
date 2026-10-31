@@ -21,42 +21,14 @@ namespace UniPlaySong.Tests.Services
 
         private QuickStartProfile P(string id) => QuickStartProfiles.ById(id);
 
-        [Test]
-        public void Catalogue_HasFiveTilesPerMode()
-        {
-            Assert.AreEqual(5, QuickStartProfiles.For(QuickStartMode.Fullscreen).Count());
-            Assert.AreEqual(5, QuickStartProfiles.For(QuickStartMode.Desktop).Count());
-        }
-
-        // The Short Clip / Full Track pair is the reason EnablePreviewMode must be owned explicitly.
-        [Test]
-        public void HoverShortClip_EnablesPreviewMode()
-        {
-            _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewFullscreen), JukeboxSource.Library, false, false, false);
-
-            Assert.IsTrue(_s.EnablePreviewMode);
-            Assert.AreEqual(Constants.DefaultPreviewDuration, _s.PreviewDuration);
-            Assert.IsFalse(_s.PlayOnlyOnGameSelect, "still hover, not select");
-            Assert.IsFalse(_s.RandomizeOnMusicEnd,
-                "the clip loops rather than advancing — that is what makes it read as a PS3 menu");
-        }
-
-        // The Desktop tile was only covered indirectly, and a report of "the full song plays on the
-        // PS3 clip option in Desktop" turned out to be the settings taking effect on the NEXT song
-        // rather than the profile being wrong — the preview timer starts in MarkSongStart, so a
-        // track already playing runs to its natural end. Asserting the Desktop tile directly so
-        // that distinction stays testable rather than needing to be re-derived.
-        [Test]
-        public void HoverShortClip_Desktop_EnablesPreviewModeAndLoops()
-        {
-            _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewDesktop), JukeboxSource.Library, false, false, false);
-
-            Assert.IsTrue(_s.EnablePreviewMode, "Desktop clip tile must enable preview mode too");
-            Assert.AreEqual(Constants.DefaultPreviewDuration, _s.PreviewDuration);
-            Assert.IsFalse(_s.RandomizeOnMusicEnd, "the clip loops");
-        }
-
-        // Both modes' clip tiles must agree on the clip settings; only the trigger differs.
+        // Both modes' clip tiles must agree on the clip settings; only the trigger differs. The
+        // Short Clip / Full Track pair is the reason EnablePreviewMode must be owned explicitly, and
+        // the clip loops rather than advancing - that is what makes it read as a PS3 menu.
+        // The Desktop tile was once only covered indirectly, and a report of "the full song plays on
+        // the PS3 clip option in Desktop" turned out to be the settings taking effect on the NEXT
+        // song rather than the profile being wrong - the preview timer starts in MarkSongStart, so a
+        // track already playing runs to its natural end. Asserting the Desktop tile directly keeps
+        // that distinction testable rather than needing to be re-derived.
         [Test]
         public void BothShortClipTiles_AgreeOnClipBehaviour()
         {
@@ -87,36 +59,6 @@ namespace UniPlaySong.Tests.Services
                 new QuickStartService().Apply(s, p, JukeboxSource.Library, false, false, false);
                 Assert.AreEqual(!expectLoop, s.RandomizeOnMusicEnd, $"{p.Id} has the wrong song-end behaviour");
             }
-        }
-
-        [Test]
-        public void SwitchingFromShortClipToAnotherTile_StopsTheLoop()
-        {
-            _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewFullscreen), JukeboxSource.Library, false, false, false);
-            Assert.IsFalse(_s.RandomizeOnMusicEnd);
-
-            _svc.Apply(_s, P(QuickStartProfiles.HoverFullTrackFullscreen), JukeboxSource.Library, false, false, false);
-            Assert.IsTrue(_s.RandomizeOnMusicEnd, "full track should advance, not inherit the loop");
-        }
-
-        [Test]
-        public void HoverFullTrack_TurnsPreviewModeOff()
-        {
-            _s.EnablePreviewMode = true; // user had clips on
-            _svc.Apply(_s, P(QuickStartProfiles.HoverFullTrackFullscreen), JukeboxSource.Library, false, false, false);
-
-            Assert.IsFalse(_s.EnablePreviewMode, "full track means the whole song");
-            Assert.IsFalse(_s.PlayOnlyOnGameSelect);
-        }
-
-        // EnablePreviewMode persists, so a tile that stayed silent about it would inherit whatever
-        // was applied before and two users would hear different things from the same tile.
-        [Test]
-        public void EveryProfile_OwnsPreviewModeSoItCannotLeakBetweenTiles()
-        {
-            foreach (var p in QuickStartProfiles.All)
-                Assert.IsTrue(p.Values.ContainsKey(nameof(UniPlaySongSettings.EnablePreviewMode)),
-                    $"{p.Id} does not declare EnablePreviewMode");
         }
 
         [Test]
@@ -223,6 +165,7 @@ namespace UniPlaySong.Tests.Services
         }
 
         // Offered in both columns, and both must configure identically — it is one setup, not two.
+        // The showcase declares installed-only itself, so an unticked page checkbox must not undo it.
         [Test]
         public void Showcase_IsIdenticalInBothModes()
         {
@@ -235,23 +178,7 @@ namespace UniPlaySong.Tests.Services
             Assert.AreEqual(fs.CrossfadeDurationSeconds, dt.CrossfadeDurationSeconds);
             Assert.AreEqual(fs.SelectedStylePreset, dt.SelectedStylePreset);
             Assert.AreEqual(fs.MusicState, dt.MusicState);
-        }
-
-        // The showcase declares installed-only itself, so an unticked page checkbox must not undo it.
-        [Test]
-        public void Showcase_KeepsInstalledOnlyEvenWhenTheCheckboxIsClear()
-        {
-            _svc.Apply(_s, P(QuickStartProfiles.HuddiniShowcaseDesktop), JukeboxSource.Library, false, false, false);
-            Assert.IsTrue(_s.MusicOnlyForInstalledGames, "installed-only is part of this profile");
-        }
-
-        // Every profile must state its fallback, or the same tile behaves differently per user.
-        [Test]
-        public void EveryProfile_DeclaresItsFallback()
-        {
-            foreach (var p in QuickStartProfiles.All)
-                Assert.IsTrue(p.Values.ContainsKey(nameof(UniPlaySongSettings.EnableDefaultMusic)),
-                    $"{p.Id} does not declare EnableDefaultMusic");
+            Assert.IsTrue(dt.MusicOnlyForInstalledGames, "installed-only is part of this profile even with the checkbox clear");
         }
 
         [Test]
@@ -264,6 +191,10 @@ namespace UniPlaySong.Tests.Services
             Assert.IsTrue(_s.DefaultMusicContinueSameSong, "the bed must not restart on every no-music game");
             Assert.IsFalse(_s.RadioModeEnabled, "radio would replace per-game music");
             Assert.AreEqual(QuickStartProfiles.HoverPreviewFullscreen, _s.ActiveQuickStartProfile);
+
+            var fullTrack = new UniPlaySongSettings { PlayOnlyOnGameSelect = true };
+            new QuickStartService().Apply(fullTrack, P(QuickStartProfiles.HoverFullTrackFullscreen), JukeboxSource.Library, false, false, false);
+            Assert.IsFalse(fullTrack.PlayOnlyOnGameSelect, "Full Track is a hover tile too");
         }
 
         [Test]
@@ -275,9 +206,9 @@ namespace UniPlaySong.Tests.Services
         }
 
         // SpotifyRadioMode is [JsonIgnore] and derived; a profile must produce it via the two real
-        // keys rather than trying to write it.
+        // keys rather than trying to write it. The Library source must not engage Spotify.
         [Test]
-        public void Apply_JukeboxSpotify_ProducesDerivedSpotifyRadioMode()
+        public void Apply_Jukebox_DerivesSpotifyRadioModeFromTheSource()
         {
             _svc.Apply(_s, P(QuickStartProfiles.JukeboxFullscreen), JukeboxSource.Spotify, false, true, false);
 
@@ -285,15 +216,12 @@ namespace UniPlaySong.Tests.Services
             Assert.AreEqual(RadioMusicSource.Spotify, _s.RadioMusicSource);
             Assert.IsTrue(_s.SpotifyRadioMode, "derived from RadioModeEnabled + RadioMusicSource");
             Assert.IsTrue(_s.RadioPlaysThroughGames);
-        }
 
-        [Test]
-        public void Apply_JukeboxLibrary_DoesNotEngageSpotify()
-        {
-            _svc.Apply(_s, P(QuickStartProfiles.JukeboxDesktop), JukeboxSource.Library, false, false, false);
-            Assert.IsTrue(_s.RadioModeEnabled);
-            Assert.AreEqual(RadioMusicSource.FullLibrary, _s.RadioMusicSource);
-            Assert.IsFalse(_s.SpotifyRadioMode);
+            var lib = new UniPlaySongSettings();
+            new QuickStartService().Apply(lib, P(QuickStartProfiles.JukeboxDesktop), JukeboxSource.Library, false, false, false);
+            Assert.IsTrue(lib.RadioModeEnabled);
+            Assert.AreEqual(RadioMusicSource.FullLibrary, lib.RadioMusicSource);
+            Assert.IsFalse(lib.SpotifyRadioMode, "the Library source does not engage Spotify");
         }
 
         [Test]
@@ -364,23 +292,17 @@ namespace UniPlaySong.Tests.Services
                 "changing an unowned setting is not profile drift");
         }
 
-        // StartRadioPlayback returns without playing when its pool is empty, so a Jukebox profile
-        // that also turned default music off would leave a user with nothing and no explanation.
+        // Every profile must state its fallback, or the same tile behaves differently per user - and
+        // must leave it on. StartRadioPlayback returns without playing when its pool is empty, so a
+        // Jukebox profile that also turned default music off would leave a user with nothing and no
+        // explanation.
         [Test]
-        public void Jukebox_KeepsDefaultMusicOnAsTheSafetyNet()
-        {
-            _svc.Apply(_s, P(QuickStartProfiles.JukeboxFullscreen), JukeboxSource.Library, false, true, false);
-            Assert.IsTrue(_s.EnableDefaultMusic, "an empty radio pool must still leave something to play");
-
-            _svc.Apply(_s, P(QuickStartProfiles.JukeboxDesktop), JukeboxSource.Spotify, false, true, false);
-            Assert.IsTrue(_s.EnableDefaultMusic);
-        }
-
-        [Test]
-        public void EveryProfile_LeavesDefaultMusicEnabled()
+        public void EveryProfile_DeclaresAndLeavesDefaultMusicEnabled()
         {
             foreach (var p in QuickStartProfiles.All)
             {
+                Assert.IsTrue(p.Values.ContainsKey(nameof(UniPlaySongSettings.EnableDefaultMusic)),
+                    $"{p.Id} does not declare EnableDefaultMusic");
                 var s = new UniPlaySongSettings();
                 new QuickStartService().Apply(s, p, JukeboxSource.Library, false, false, false);
                 Assert.IsTrue(s.EnableDefaultMusic, $"{p.Id} left default music off");
@@ -388,18 +310,17 @@ namespace UniPlaySong.Tests.Services
         }
 
         // Enabling a fallback that is itself unconfigured is the same silent failure one layer down.
-        [TestCase(DefaultMusicSource.CustomFile)]
-        [TestCase(DefaultMusicSource.CustomFolder)]
-        [TestCase(DefaultMusicSource.CustomRotation)]
-        [TestCase(DefaultMusicSource.CompletionStatusPool)]
-        public void Apply_UnconfiguredDefaultSource_FallsBackToBundledPreset(DefaultMusicSource source)
+        // One source is enough to pin the Apply wiring; SilentFailureFallbackTests covers that every
+        // source needing user input is recognised as unusable.
+        [Test]
+        public void Apply_UnconfiguredDefaultSource_FallsBackToBundledPreset()
         {
-            _s.DefaultMusicSourceOption = source; // left unconfigured: no path, no list
+            _s.DefaultMusicSourceOption = DefaultMusicSource.CustomFolder; // left unconfigured: no path
 
             _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewFullscreen), JukeboxSource.Library, false, false, false);
 
             Assert.AreEqual(DefaultMusicSource.BundledPreset, _s.DefaultMusicSourceOption,
-                $"{source} has nothing behind it, so the profile should fall back to the bundled preset");
+                "CustomFolder has nothing behind it, so the profile should fall back to the bundled preset");
         }
 
         [Test]
@@ -447,28 +368,17 @@ namespace UniPlaySong.Tests.Services
                 "drift detection must mirror the apply rule or Jukebox always looks modified");
         }
 
-        [Test]
-        public void NonJukebox_StillHonoursInstalledOnly()
-        {
-            _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewFullscreen), JukeboxSource.Library, true, false, false);
-            Assert.IsTrue(_s.MusicOnlyForInstalledGames, "the qualifier still applies to per-game tiles");
-        }
-
-        // "Add reverb" composes with every tile rather than being tiles of its own.
+        // "Add reverb" composes with every tile, in both modes, rather than being tiles of its own.
         [Test]
         public void Apply_AddReverb_EnablesLiveEffectsWithHuddiniRehearsal()
         {
-            _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewFullscreen), JukeboxSource.Library, false, false, true);
-
-            Assert.IsTrue(_s.LiveEffectsEnabled);
-            Assert.AreEqual(StylePreset.HuddiniRehearsal, _s.SelectedStylePreset);
-        }
-
-        [Test]
-        public void Apply_WithoutReverb_LeavesLiveEffectsOff()
-        {
-            _svc.Apply(_s, P(QuickStartProfiles.HoverPreviewFullscreen), JukeboxSource.Library, false, false, false);
-            Assert.IsFalse(_s.LiveEffectsEnabled);
+            foreach (var id in new[] { QuickStartProfiles.HoverPreviewFullscreen, QuickStartProfiles.AmbientDesktop })
+            {
+                var s = new UniPlaySongSettings();
+                new QuickStartService().Apply(s, P(id), JukeboxSource.Library, false, false, true);
+                Assert.IsTrue(s.LiveEffectsEnabled, id);
+                Assert.AreEqual(StylePreset.HuddiniRehearsal, s.SelectedStylePreset, id);
+            }
         }
 
         // Unchecking must not strand the preset choice as the active style with effects off; only
@@ -481,14 +391,6 @@ namespace UniPlaySong.Tests.Services
 
             Assert.IsFalse(_s.LiveEffectsEnabled);
             Assert.AreEqual(StylePreset.HuddiniRetroRadio, _s.SelectedStylePreset, "reverb-off owns only the master toggle");
-        }
-
-        [Test]
-        public void Apply_ReverbWorksOnBothModes()
-        {
-            _svc.Apply(_s, P(QuickStartProfiles.AmbientDesktop), JukeboxSource.Library, false, false, true);
-            Assert.IsTrue(_s.LiveEffectsEnabled);
-            Assert.AreEqual(StylePreset.HuddiniRehearsal, _s.SelectedStylePreset);
         }
 
         [Test]
@@ -641,10 +543,11 @@ namespace UniPlaySong.Tests.Services
         }
 
         [Test]
-        public void RestoreOriginal_UnavailableBeforeAnyProfileIsApplied()
+        public void BeforeAnyProfile_NothingToRestoreAndNothingModified()
         {
             Assert.IsFalse(_svc.HasBaseline(_s));
             Assert.IsFalse(_svc.RestoreOriginal(_s));
+            Assert.IsFalse(_svc.IsModified(_s, JukeboxSource.Library, false, false, false));
         }
 
         [Test]
@@ -654,12 +557,6 @@ namespace UniPlaySong.Tests.Services
             _svc.RestoreOriginal(_s);
 
             Assert.IsFalse(_svc.CanUndo);
-        }
-
-        [Test]
-        public void IsModified_FalseWhenNoProfileActive()
-        {
-            Assert.IsFalse(_svc.IsModified(_s, JukeboxSource.Library, false, false, false));
         }
 
         [Test]

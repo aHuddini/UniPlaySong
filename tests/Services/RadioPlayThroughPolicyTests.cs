@@ -32,75 +32,49 @@ namespace UniPlaySong.Tests.Services
         }
 
         [Test]
-        public void Suppresses_GameSessionSources_WhenArmed_PoolRadio()
+        public void ShouldSuppress_TruthTable()
         {
-            var s = ArmedPool();
-            Assert.IsTrue(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.GameStarting, true, true, s));
-            Assert.IsTrue(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.FocusLoss, true, true, s));
-            Assert.IsTrue(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.Minimized, true, true, s));
-            Assert.IsTrue(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.SystemTray, true, true, s));
-            Assert.IsTrue(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.Idle, true, true, s));
-            Assert.IsTrue(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.ExternalAudio, true, true, s));
-        }
+            var pool = ArmedPool();
+            var settingOff = ArmedPool();
+            settingOff.RadioPlaysThroughGames = false;
+            var radioOff = ArmedPool();
+            radioOff.RadioModeEnabled = false;
+            var spotify = ArmedSpotify();
+            Assert.IsTrue(spotify.SpotifyRadioMode, "guard: SpotifyRadioMode should derive true");
 
-        [Test]
-        public void Suppresses_WhenArmed_SpotifyRadio_EvenThoughPoolFlagIsFalse()
-        {
-            // Spotify radio clears _isInRadioMode by construction, so isInRadioMode is false here.
-            var s = ArmedSpotify();
-            Assert.IsTrue(s.SpotifyRadioMode, "guard: SpotifyRadioMode should derive true");
-            Assert.IsTrue(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.GameStarting, true, false, s));
-        }
-
-        [Test]
-        public void NeverSuppresses_ProtectedSources()
-        {
-            var s = ArmedPool();
-            Assert.IsFalse(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.Manual, true, true, s));
-            Assert.IsFalse(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.SystemLock, true, true, s));
-            Assert.IsFalse(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.Video, true, true, s));
-            Assert.IsFalse(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.ThemeOverlay, true, true, s));
-            Assert.IsFalse(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.Dashboard, true, true, s));
-            Assert.IsFalse(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.Jingle, true, true, s));
-            Assert.IsFalse(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.NsfPreview, true, true, s));
-        }
-
-        [Test]
-        public void DoesNotSuppress_WhenSettingOff()
-        {
-            var s = ArmedPool();
-            s.RadioPlaysThroughGames = false;
-            Assert.IsFalse(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.GameStarting, true, true, s));
-        }
-
-        [Test]
-        public void DoesNotSuppress_WhenRadioModeOff()
-        {
-            var s = ArmedPool();
-            s.RadioModeEnabled = false;
-            Assert.IsFalse(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.GameStarting, true, true, s));
-        }
-
-        [Test]
-        public void DoesNotSuppress_WhenNoGameSession()
-        {
-            var s = ArmedPool();
-            Assert.IsFalse(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.FocusLoss, false, true, s));
-        }
-
-        // The "radio only" guarantee: radio yielded to an installed game's own music,
-        // so _isInRadioMode is false and Spotify radio is off. Game music must still pause.
-        [Test]
-        public void DoesNotSuppress_WhenRadioYieldedToGameMusic()
-        {
-            var s = ArmedPool();
-            Assert.IsFalse(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.GameStarting, true, false, s));
-        }
-
-        [Test]
-        public void DoesNotSuppress_WhenSettingsNull()
-        {
-            Assert.IsFalse(RadioPlayThroughPolicy.ShouldSuppress(PauseSource.GameStarting, true, true, null));
+            var cases = new[]
+            {
+                // Game-session sources are suppressed when armed for pool radio.
+                new { Source = PauseSource.GameStarting, Session = true, InRadio = true, S = pool, Expected = true, Why = "pool radio armed" },
+                new { Source = PauseSource.FocusLoss, Session = true, InRadio = true, S = pool, Expected = true, Why = "pool radio armed" },
+                new { Source = PauseSource.Minimized, Session = true, InRadio = true, S = pool, Expected = true, Why = "pool radio armed" },
+                new { Source = PauseSource.SystemTray, Session = true, InRadio = true, S = pool, Expected = true, Why = "pool radio armed" },
+                new { Source = PauseSource.Idle, Session = true, InRadio = true, S = pool, Expected = true, Why = "pool radio armed" },
+                new { Source = PauseSource.ExternalAudio, Session = true, InRadio = true, S = pool, Expected = true, Why = "pool radio armed" },
+                // Spotify radio clears _isInRadioMode by construction, so isInRadioMode is false here.
+                new { Source = PauseSource.GameStarting, Session = true, InRadio = false, S = spotify, Expected = true, Why = "Spotify radio armed even though the pool flag is false" },
+                // Protected sources are never suppressed.
+                new { Source = PauseSource.Manual, Session = true, InRadio = true, S = pool, Expected = false, Why = "protected source" },
+                new { Source = PauseSource.SystemLock, Session = true, InRadio = true, S = pool, Expected = false, Why = "protected source" },
+                new { Source = PauseSource.Video, Session = true, InRadio = true, S = pool, Expected = false, Why = "protected source" },
+                new { Source = PauseSource.ThemeOverlay, Session = true, InRadio = true, S = pool, Expected = false, Why = "protected source" },
+                new { Source = PauseSource.Dashboard, Session = true, InRadio = true, S = pool, Expected = false, Why = "protected source" },
+                new { Source = PauseSource.Jingle, Session = true, InRadio = true, S = pool, Expected = false, Why = "protected source" },
+                new { Source = PauseSource.NsfPreview, Session = true, InRadio = true, S = pool, Expected = false, Why = "protected source" },
+                new { Source = PauseSource.GameStarting, Session = true, InRadio = true, S = settingOff, Expected = false, Why = "setting off" },
+                new { Source = PauseSource.GameStarting, Session = true, InRadio = true, S = radioOff, Expected = false, Why = "radio mode off" },
+                new { Source = PauseSource.FocusLoss, Session = false, InRadio = true, S = pool, Expected = false, Why = "no game session" },
+                // The "radio only" guarantee: radio yielded to an installed game's own music,
+                // so _isInRadioMode is false and Spotify radio is off. Game music must still pause.
+                new { Source = PauseSource.GameStarting, Session = true, InRadio = false, S = pool, Expected = false, Why = "radio yielded to game music" },
+                new { Source = PauseSource.GameStarting, Session = true, InRadio = true, S = (UniPlaySongSettings)null, Expected = false, Why = "settings null" },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var c in cases)
+                    Assert.That(RadioPlayThroughPolicy.ShouldSuppress(c.Source, c.Session, c.InRadio, c.S),
+                        Is.EqualTo(c.Expected), $"{c.Source} session={c.Session} inRadio={c.InRadio}: {c.Why}");
+            });
         }
     }
 }
