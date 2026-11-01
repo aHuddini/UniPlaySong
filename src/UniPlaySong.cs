@@ -5405,6 +5405,30 @@ namespace UniPlaySong
                 items.AddRange(BuildFullscreenQuickSettings());
             }
 
+            // Test hook for the idle/lock/suspend audio-device release, so it can be exercised without waiting out the
+            // idle timer. Same call the idle timer makes. Shown only with debug logging on.
+            if (_settings?.EnableDebugLogging == true)
+            {
+                items.Add(new MainMenuItem
+                {
+                    Description = "Debug: Release Audio Device Now (idle test)",
+                    Action = _ =>
+                    {
+                        // The idle timer only fires while UPS is silent (and lock/suspend pause first), so pause a playing
+                        // song before releasing - otherwise the play/pause state still says playing.
+                        if (_playbackService?.IsPlaying == true && _playbackService?.IsPaused != true)
+                            _playbackService.AddPauseSourceImmediate(Models.PauseSource.Manual);
+
+                        int released = _audioDeviceRegistry?.ReleaseAllDevices("Debug menu (idle test)") ?? 0;
+                        _fileLogger?.Info($"[Sleep] Debug menu released {released} audio device(s)");
+                        _api.Notifications.Add(new NotificationMessage(
+                            "UPS_DebugReleaseAudioDevice",
+                            $"UniPlaySong: released {released} audio device(s). Play or switch games to check that music comes back.",
+                            NotificationType.Info));
+                    }
+                });
+            }
+
             return items;
         }
 
