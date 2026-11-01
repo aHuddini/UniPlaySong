@@ -382,13 +382,6 @@ namespace UniPlaySong.DeskMediaControl
             playbackService.OnSongCountChanged += () => UpdateSkipState();
         }
 
-        public void ResubscribeToEvents(IMusicPlaybackService newPlaybackService)
-        {
-            SubscribeToEvents(newPlaybackService);
-            _metadataService?.ResubscribeToService(newPlaybackService);
-            UpdatePlaybackState();
-        }
-
         #endregion
 
         #region Lifecycle

@@ -43,14 +43,12 @@ namespace UniPlaySong.Services
 
         private void OnMusicStoppedHandler(UniPlaySongSettings _) => ClearCurrentSongInfo();
 
-        // Resubscribe to a new playback service (e.g., after Live Effects toggle).
+        // Re-attaches to a playback service and refreshes the cached song info from it.
         public void ResubscribeToService(IMusicPlaybackService newPlaybackService)
         {
             if (newPlaybackService == null) return;
 
-            // Detach from the service we are leaving. Without this the old service — which a
-            // backend swap keeps alive until its timers are stopped — carried on driving metadata
-            // extraction, so the work per song change multiplied with every swap.
+            // Detach from the service we are leaving, or it keeps driving metadata extraction.
             //
             // Deliberately NOT short-circuited when the service is unchanged: this method is also the "refresh my cached
             // info" entry point (see the CurrentSongPath read below), and callers rely on that even when re-attaching to

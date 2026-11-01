@@ -463,14 +463,6 @@ namespace UniPlaySong.DeskMediaControl
             playbackService.OnSongCountChanged += UpdateSkipVisibility;
         }
 
-        // Re-subscribe to events after playback service recreation (e.g., Live Effects toggle).
-        public void ResubscribeToEvents(IMusicPlaybackService newPlaybackService)
-        {
-            SubscribeToEvents(newPlaybackService);
-            _metadataService?.ResubscribeToService(newPlaybackService);
-            UpdateIcons();
-        }
-
         // Toggles Calm Down Mode. Routed through the same settings writer the Fullscreen quick menu
         // uses rather than mutating the settings object directly: turning Calm Down on while the
         // player is SDL2 has to swap the backend to NAudio (SDL2 has no post-mixer hook to host the

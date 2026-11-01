@@ -80,7 +80,7 @@ namespace UniPlaySong.Tests.Services
             // player mid-idle, which restarts the song — so enabling the setting settles it up front.
             var text = ReadSource("src", "UniPlaySong.cs");
 
-            StringAssert.Contains("CalmDownOnIdle ?? false", text,
+            StringAssert.Contains("s.CalmDownModeEnabled || s.CalmDownOnIdle", text,
                 "the player choice must account for idle Calm Down, not just the manual toggle");
         }
 

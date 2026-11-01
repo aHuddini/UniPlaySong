@@ -20,7 +20,7 @@ namespace UniPlaySong.Services
         // Static Random instance to avoid allocations and duplicate sequences
         private static readonly Random _random = new Random();
 
-        private readonly IMusicPlayer _musicPlayer;
+        private IMusicPlayer _musicPlayer; // replaced by ReplacePlayer on a backend swap
         private readonly GameMusicFileService _fileService;
         private readonly FileLogger _fileLogger;
         private readonly ErrorHandlerService _errorHandler;
@@ -283,9 +283,7 @@ namespace UniPlaySong.Services
             _fileLogger?.Debug("NotifyManualStart: session auto-play lock unlocked");
         }
 
-        // Optional, and null in most tests. The service is recreated whenever the backend swaps
-        // (Live Effects on or off), so the tracker is owned by the plugin and passed in rather than
-        // constructed here - otherwise the in-flight track would be lost on every swap.
+        // Optional, and null in most tests. Owned by the plugin and passed in.
         private readonly ListeningTracker _listening;
 
         public MusicPlaybackService(IMusicPlayer musicPlayer, GameMusicFileService fileService, FileLogger fileLogger = null, ErrorHandlerService errorHandler = null, ITrailerAudioService trailerAudioService = null, ListeningTracker listeningTracker = null)
@@ -297,6 +295,33 @@ namespace UniPlaySong.Services
             _trailerAudioService = trailerAudioService;
             _listening = listeningTracker;
 
+            AttachPlayer();
+
+            _crossfadeCoordinator = new CrossfadeCoordinator(this, () => _currentSettings, _fileLogger);
+
+            _previewTimer = new System.Windows.Threading.DispatcherTimer();
+            _previewTimer.Interval = TimeSpan.FromSeconds(1);
+            _previewTimer.Tick += OnPreviewTimerTick;
+        }
+
+        // The caller stops playback and disposes the old player first; pause sources, radio state, volume
+        // and subscribers all carry over because the service itself stays.
+        public void ReplacePlayer(IMusicPlayer player)
+        {
+            if (player == null) throw new ArgumentNullException(nameof(player));
+
+            Shutdown();
+            _musicPlayer.MediaEnded -= OnMediaEnded;
+            if (_musicPlayer is NAudioMusicPlayer oldNaudio)
+                oldNaudio.CrossfadePromoted -= OnCrossfadePromoted;
+            _fader?.Dispose();
+
+            _musicPlayer = player;
+            AttachPlayer();
+        }
+
+        private void AttachPlayer()
+        {
             _fader = new MusicFader(
                 _musicPlayer,
                 () => _targetVolume * _volumeMultiplier * _idleVolumeMultiplier,
@@ -308,18 +333,11 @@ namespace UniPlaySong.Services
 
             _musicPlayer.MediaEnded += OnMediaEnded;
 
-            _crossfadeCoordinator = new CrossfadeCoordinator(this, () => _currentSettings, _fileLogger);
-
-            // Subscribe to NAudio-only CrossfadePromoted event if the player is NAudio.
-            // SDL2 players don't have this event, so they safely fall through.
+            // NAudio-only event; SDL2 players don't have it.
             if (_musicPlayer is NAudioMusicPlayer naudio)
             {
                 naudio.CrossfadePromoted += OnCrossfadePromoted;
             }
-
-            _previewTimer = new System.Windows.Threading.DispatcherTimer();
-            _previewTimer.Interval = TimeSpan.FromSeconds(1);
-            _previewTimer.Tick += OnPreviewTimerTick;
         }
 
         #region Multi-Source Pause Management
@@ -1667,14 +1685,8 @@ namespace UniPlaySong.Services
             }
         }
 
-        // Releases everything that would otherwise keep this instance alive after it stops being the active service —
-        // a backend swap replaces the service wholesale (Live Effects, Visualizer and Crossfade toggles, and the GME
-        // auto-switch that fires during ordinary browsing), and the old one must not keep running.
-        //
-        // A started DispatcherTimer is held by the Dispatcher's timer list, which is a strong
-        // reference: an orphan with any of these four still ticking is never collected and keeps
-        // driving a player that was disposed during the swap. Stopping them is what actually makes
-        // the instance collectable.
+        // Stops every timer this service owns, at application exit and before ReplacePlayer swaps the backend.
+        // A started DispatcherTimer still ticking would keep driving a player that has been disposed.
         public void Shutdown()
         {
             try

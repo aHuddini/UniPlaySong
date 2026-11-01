@@ -2026,16 +2026,12 @@ namespace UniPlaySong
 
             // Calm Down Mode theme binding. The CalmDownProcessor self-reacts
             // to setting changes by reading CalmDownModeEnabled in its audio Read() — so the per-song chain doesn't need
-            // rebuilding. But if Calm Down is being turned ON while the player is currently SDL2 (no Live Effects, no Viz,
-            // no Peak Meter, no Crossfade), we must rebuild as NAudio so the processor can be hosted. Mirrors the
-            // diff-event logic in OnSettingsServiceChanged for backend swaps.
+            // rebuilding. The backend is rebuilt only when the toggle changes which one is needed (NeedsNAudio), e.g. Calm
+            // Down turned on over SDL2. Mirrors the diff-event logic in OnSettingsServiceChanged.
             if (e.PropertyName == nameof(UniPlaySongSettings.CalmDownModeEnabled))
             {
                 _fileLogger?.Debug($"OnSettingsServicePropertyChanged: CalmDownModeEnabled={_settings.CalmDownModeEnabled} (theme write)");
-                bool needsBackendSwap = !_settings.LiveEffectsEnabled
-                    && !_settings.ShowSpectrumVisualizer && !_settings.ShowPeakMeter
-                    && !_settings.EnableTrueCrossfade && !_settings.EqualizerEnabled;
-                if (needsBackendSwap)
+                if (NeedsNAudio(_settings) != _isUsingLiveEffectsPlayer)
                 {
                     _fileLogger?.Debug("OnSettingsServicePropertyChanged: CalmDownMode toggle requires backend swap, recreating player");
                     RecreateMusicPlayerForLiveEffects();
@@ -2050,10 +2046,7 @@ namespace UniPlaySong
             // The settings dialog edits the live object, so this fires as the box is ticked.
             if (e.PropertyName == nameof(UniPlaySongSettings.EqualizerEnabled))
             {
-                bool needsBackendSwap = !_settings.LiveEffectsEnabled
-                    && !_settings.ShowSpectrumVisualizer && !_settings.ShowPeakMeter && !_settings.EnableTrueCrossfade
-                    && !_settings.CalmDownModeEnabled && !_settings.CalmDownOnIdle;
-                if (needsBackendSwap)
+                if (NeedsNAudio(_settings) != _isUsingLiveEffectsPlayer)
                 {
                     _fileLogger?.Debug($"OnSettingsServicePropertyChanged: EqualizerEnabled={_settings.EqualizerEnabled} requires backend swap, recreating player");
                     RecreateMusicPlayerForLiveEffects();
@@ -2214,23 +2207,15 @@ namespace UniPlaySong
                 bool vizToggled = e.OldSettings.ShowSpectrumVisualizer != e.NewSettings.ShowSpectrumVisualizer;
                 bool peakMeterToggled = e.OldSettings.ShowPeakMeter != e.NewSettings.ShowPeakMeter;
                 bool crossfadeToggled = e.OldSettings.EnableTrueCrossfade != e.NewSettings.EnableTrueCrossfade;
-                // Calm Down forces NAudio (SDL2 has no post-mixer hook). Only trigger
-                // backend swap when the toggle would actually flip the SDL2/NAudio choice — i.e. when no other
-                // NAudio-requiring feature is already on. If Live Effects is already on, the player is already NAudio and the
-                // processor activates simply by reading CalmDownModeEnabled in its Read() — no rebuild needed.
-                // CalmDownOnIdle counts too: it needs the processor to exist BEFORE idle engages, so
-                // enabling it mid-session must swap off SDL2 (CreateMusicPlayer covers the cold start).
+                // Live Effects, Calm Down (and CalmDownOnIdle) and the equalizer need NAudio but any NAudio player hosts them
+                // (the effects chain reads LiveEffectsEnabled live), so they rebuild the backend only when they change which
+                // one is needed - toggling effects on an NAudio player applies in place without restarting the song. The
+                // theme-write path may already have swapped as the box was ticked; then nothing is left to do here.
                 bool calmDownChanged = e.OldSettings.CalmDownModeEnabled != e.NewSettings.CalmDownModeEnabled
                     || e.OldSettings.CalmDownOnIdle != e.NewSettings.CalmDownOnIdle;
-                bool calmDownForcesBackendSwap = calmDownChanged && !e.NewSettings.LiveEffectsEnabled
-                    && !e.NewSettings.ShowSpectrumVisualizer && !e.NewSettings.ShowPeakMeter
-                    && !e.NewSettings.EnableTrueCrossfade && !e.NewSettings.EqualizerEnabled;
-                // The equalizer, like Calm Down, needs NAudio but only flips the backend when nothing else already holds it.
-                bool equalizerForcesBackendSwap = e.OldSettings.EqualizerEnabled != e.NewSettings.EqualizerEnabled
-                    && !e.NewSettings.LiveEffectsEnabled && !e.NewSettings.ShowSpectrumVisualizer && !e.NewSettings.ShowPeakMeter
-                    && !e.NewSettings.EnableTrueCrossfade && !e.NewSettings.CalmDownModeEnabled && !e.NewSettings.CalmDownOnIdle;
-                bool backendSwap = liveEffectsChanged || vizToggled || peakMeterToggled || crossfadeToggled || calmDownForcesBackendSwap
-                    || equalizerForcesBackendSwap;
+                bool equalizerChanged = e.OldSettings.EqualizerEnabled != e.NewSettings.EqualizerEnabled;
+                bool backendSwap = vizToggled || peakMeterToggled || crossfadeToggled
+                    || ((liveEffectsChanged || calmDownChanged || equalizerChanged) && NeedsNAudio(e.NewSettings) != _isUsingLiveEffectsPlayer);
                 bool applyToSpotifyChanged = e.OldSettings.ApplyLiveEffectsToSpotify != e.NewSettings.ApplyLiveEffectsToSpotify;
 
                 if (backendSwap)
@@ -2245,9 +2230,9 @@ namespace UniPlaySong
                     RecreateMusicPlayerForLiveEffects();
                 }
 
-                // Re-evaluate the Spotify effects invariant whenever any of the three relevant
-                // settings changed (backend swap re-attaches, or ApplyToSpotify flips in place).
-                if (backendSwap || applyToSpotifyChanged)
+                // Re-evaluate the Spotify effects invariant whenever a relevant setting changed (a backend swap re-attaches;
+                // Live Effects or ApplyToSpotify can flip in place).
+                if (backendSwap || liveEffectsChanged || applyToSpotifyChanged)
                 {
                     EvaluateSpotifyEffectsAsync();
                 }
@@ -3821,18 +3806,11 @@ namespace UniPlaySong
                 _api, _fileService, _playbackService);
         }
 
-        // Creates the appropriate music player based on LiveEffectsEnabled setting. When live effects are
-        // enabled, uses NAudioMusicPlayer with real-time effects chain. Otherwise, uses SDL2MusicPlayer (or
-        // falls back to WPF MediaPlayer).
+        // NAudioMusicPlayer when a feature needs it (NeedsNAudio), otherwise SDL2MusicPlayer, falling back to the WPF
+        // MediaPlayer.
         private IMusicPlayer CreateMusicPlayer()
         {
-            bool useLiveEffects = _settings?.LiveEffectsEnabled ?? false;
-            // CalmDownOnIdle counts too: the processor has to already exist when idle engages,
-            // because swapping the backend at that moment would restart the song mid-idle.
-            bool useCalmDown = (_settings?.CalmDownModeEnabled ?? false) || (_settings?.CalmDownOnIdle ?? false);
-            bool needsNAudio = useLiveEffects || useCalmDown || (_settings?.ShowSpectrumVisualizer ?? false) || (_settings?.ShowPeakMeter ?? false) || (_settings?.EnableTrueCrossfade ?? false) || (_settings?.EqualizerEnabled ?? false) || _needsNAudioForFormat;
-
-            if (needsNAudio)
+            if (NeedsNAudio(_settings))
             {
                 try
                 {
@@ -3864,102 +3842,54 @@ namespace UniPlaySong
             }
         }
 
-        // Recreates the playback service with a new player when LiveEffectsEnabled changes. Saves current
-        // playback state and restarts music after switching players.
+        // True when a feature needs the NAudio pipeline: SDL2 has no post-mixer hook for effects, Calm Down, the EQ,
+        // the spectrum/peak taps or true crossfade, and can't play the GME retro formats. CalmDownOnIdle counts
+        // because the processor has to exist before idle engages - swapping then would restart the song mid-idle.
+        private bool NeedsNAudio(UniPlaySongSettings s) =>
+            _needsNAudioForFormat
+            || (s != null && (s.LiveEffectsEnabled || s.CalmDownModeEnabled || s.CalmDownOnIdle || s.ShowSpectrumVisualizer
+                              || s.ShowPeakMeter || s.EnableTrueCrossfade || s.EqualizerEnabled));
+
+        // Swaps the audio backend under the playback service, which lives for the whole session: everything that
+        // holds it (coordinator, jingles, Spotify, media controls, dashboard, menus) keeps working, and its pause
+        // sources, radio state and volume carry over.
+        private void SwapPlayer(Action afterSwap)
+        {
+            _playbackService?.Stop();
+
+            if (_currentMusicPlayer is Services.IAudioDeviceHolder oldHolder)
+                _audioDeviceRegistry?.Unregister(oldHolder); // or the registry keeps a dead holder
+            if (_currentMusicPlayer is IDisposable disposable)
+                disposable.Dispose();
+
+            _currentMusicPlayer = CreateMusicPlayer();
+            if (_currentMusicPlayer is Services.IAudioDeviceHolder newHolder)
+                _audioDeviceRegistry?.Register(newHolder); // the live player must be releasable
+
+            _playbackService.ReplacePlayer(_currentMusicPlayer);
+            _fileLogger?.Debug($"Music player swapped (using: {(_isUsingLiveEffectsPlayer ? "NAudioMusicPlayer" : "SDL2/WPF")})");
+
+            afterSwap();
+        }
+
+        // Rebuilds the player when a setting changes which backend it needs, restarting the current game's music
+        // if it was playing.
         private void RecreateMusicPlayerForLiveEffects()
         {
             try
             {
-                _fileLogger?.Debug($"Recreating music player (LiveEffectsEnabled changed to: {_settings?.LiveEffectsEnabled})");
-
-                // Save current game before stopping - we'll restart music for this game after recreation
                 var currentGame = SelectedGames?.FirstOrDefault();
                 bool wasPlaying = _playbackService?.IsPlaying == true || _playbackService?.IsLoaded == true;
+                _fileLogger?.Debug($"Recreating music player: Game={currentGame?.Name ?? "null"}, WasPlaying={wasPlaying}");
 
-                _fileLogger?.Debug($"Current state before recreation: Game={currentGame?.Name ?? "null"}, WasPlaying={wasPlaying}");
-
-                // Stop current playback
-                _playbackService?.Stop();
-
-                // Dispose old player if it implements IDisposable
-                if (_currentMusicPlayer is Services.IAudioDeviceHolder oldHolder)
-                    _audioDeviceRegistry?.Unregister(oldHolder); // or the registry keeps a dead holder
-                if (_currentMusicPlayer is IDisposable disposable)
+                SwapPlayer(() =>
                 {
-                    disposable.Dispose();
-                }
-
-                // Create new player
-                _currentMusicPlayer = CreateMusicPlayer();
-                if (_currentMusicPlayer is Services.IAudioDeviceHolder newHolder)
-                    _audioDeviceRegistry?.Register(newHolder); // the live player must be releasable
-
-                // Recreate playback service with new player
-                var oldService = _playbackService;
-                bool preserveManualStart = oldService?.UserHasManuallyStartedThisSession == true;
-                // Stop the outgoing service's timers before dropping it. A running DispatcherTimer
-                // is rooted by the Dispatcher, so an un-shut-down orphan stays alive and keeps
-                // ticking against the player disposed just above.
-                oldService?.Shutdown();
-                _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService, _listeningTracker);
-                _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
-                _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
-                _playbackService.SetUserWarningHandler(ShowOneTimeWarning);
-            _playbackService.SetWindowStateVerifier(() => ResyncWindowStatePauseSources(bidirectional: true));
-                _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
-                _playbackService.OnNeedsPlayerSwitch += HandlePlayerSwitchForFormat;
-
-                // Preserve session auto-play lock state across backend recreation so toggling
-                // Live Effects / Visualizer / Crossfade mid-session doesn't re-lock playback.
-                if (preserveManualStart)
-                {
-                    _playbackService.NotifyManualStart();
-                }
-
-                // Mark initialization complete — app is already running, skip deferred-playback gate
-                _playbackService.MarkInitializationComplete();
-
-                // No OnMusicStarted suppress handler needed — constructor already set BackgroundMusic
-                // to IntPtr.Zero which persists. Live Effects toggle only happens in Desktop mode;
-                // switching to Fullscreen restarts Playnite, triggering a fresh constructor call.
-
-                if (_settings != null)
-                {
-                    _playbackService.SetVolume(_settings.MusicVolume / Constants.VolumeDivisor);
-                }
-
-                // Reapply fullscreen volume multiplier to the new service
-                if (IsFullscreen)
-                {
-                    _playbackService.SetVolumeMultiplier(GetFullscreenVolumeMultiplier());
-                }
-
-                // Update coordinator with new playback service
-                _coordinator = new MusicPlaybackCoordinator(
-                    _playbackService,
-                    _settingsService,
-                    Logger,
-                    _fileLogger,
-                    () => IsFullscreen,
-                    () => IsDesktop,
-                    () => SelectedGames?.FirstOrDefault() ?? _playbackService?.CurrentGame
-                );
-
-                _fileLogger?.Debug($"Music player recreated successfully (using: {(_isUsingLiveEffectsPlayer ? "NAudioMusicPlayer" : "SDL2/WPF")})");
-
-                // Re-subscribe top panel and dashboard to the new playback service
-                _topPanelMediaControl?.ResubscribeToEvents(_playbackService);
-                _libraryViewModel?.ResubscribeToEvents(_playbackService);
-
-                // Re-attach picker monitor to the new playback service
-                Monitors.RandomPickerMonitor.Attach(_playbackService, _settings, _fileLogger, () => IsFullscreen);
-
-                // Restart music for the current game if music was playing before the switch
-                if (wasPlaying && currentGame != null && _coordinator.ShouldPlayMusic(currentGame))
-                {
-                    _fileLogger?.Debug($"Restarting music for game: {currentGame.Name}");
-                    _playbackService.PlayGameMusic(currentGame, _settings, forceReload: false);
-                }
+                    if (wasPlaying && currentGame != null && _coordinator.ShouldPlayMusic(currentGame))
+                    {
+                        _fileLogger?.Debug($"Restarting music for game: {currentGame.Name}");
+                        _playbackService.PlayGameMusic(currentGame, _settings, forceReload: false);
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -3967,69 +3897,23 @@ namespace UniPlaySong
             }
         }
 
-        // Recreates the player as NAudio when a GME file is encountered on SDL2.
+        // Rebuilds the player as NAudio when a GME file is encountered on SDL2, then plays that file.
         private void HandlePlayerSwitchForFormat(string filePath)
         {
             try
             {
                 _fileLogger?.Debug($"Switching to NAudio for GME file: {Path.GetFileName(filePath)}");
-
                 _needsNAudioForFormat = true;
 
-                // Carry-forward A: this disposes/recreates the player. Tear down the effects host first so any external source
-                // + Spotify mute don't outlive the old backend. (Spotify-source suppresses game music, so this collision is
-                // unlikely — but the Shutdown is idempotent and cheap.) Re-evaluate after recreation, below.
+                // Tear down the effects host first so an external source and the Spotify mute don't outlive the old
+                // backend (Shutdown is idempotent and cheap); re-evaluated against the new backend below.
                 _spotifyEffectsHost?.Shutdown();
 
-                // Stop current playback
-                _playbackService?.Stop();
-
-                // Dispose old player
-                if (_currentMusicPlayer is Services.IAudioDeviceHolder oldHolder)
-                    _audioDeviceRegistry?.Unregister(oldHolder); // see the sibling swap
-                if (_currentMusicPlayer is IDisposable disposable)
-                    disposable.Dispose();
-
-                // Create NAudio player
-                _currentMusicPlayer = CreateMusicPlayer();
-                if (_currentMusicPlayer is Services.IAudioDeviceHolder newHolder)
-                    _audioDeviceRegistry?.Register(newHolder);
-
-                // Recreate playback service
-                var oldService = _playbackService;
-                oldService?.Shutdown(); // see the sibling swap above — orphaned timers root the instance
-                _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService, _listeningTracker);
-                _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
-                _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
-                _playbackService.SetUserWarningHandler(ShowOneTimeWarning);
-            _playbackService.SetWindowStateVerifier(() => ResyncWindowStatePauseSources(bidirectional: true));
-                _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
-                _playbackService.MarkInitializationComplete();
-                _playbackService.OnNeedsPlayerSwitch += HandlePlayerSwitchForFormat;
-
-                if (_settings != null)
-                    _playbackService.SetVolume(_settings.MusicVolume / Constants.VolumeDivisor);
-
-                if (IsFullscreen)
-                    _playbackService.SetVolumeMultiplier(GetFullscreenVolumeMultiplier());
-
-                _coordinator = new MusicPlaybackCoordinator(
-                    _playbackService, _settingsService, Logger, _fileLogger,
-                    () => IsFullscreen, () => IsDesktop,
-                    () => SelectedGames?.FirstOrDefault() ?? _playbackService?.CurrentGame
-                );
-
-                _topPanelMediaControl?.ResubscribeToEvents(_playbackService);
-                _libraryViewModel?.ResubscribeToEvents(_playbackService);
-                Monitors.RandomPickerMonitor.Attach(_playbackService, _settings, _fileLogger, () => IsFullscreen);
-
-                // Now load and play the GME file on the new NAudio player
-                _playbackService.LoadAndPlayFile(filePath);
-
-                // Re-establish the effects invariant against the new backend.
-                EvaluateSpotifyEffectsAsync();
-
-                _fileLogger?.Debug("Player switched to NAudio for GME format");
+                SwapPlayer(() =>
+                {
+                    _playbackService.LoadAndPlayFile(filePath);
+                    EvaluateSpotifyEffectsAsync();
+                });
             }
             catch (Exception ex)
             {

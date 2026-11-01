@@ -61,6 +61,7 @@ namespace DashboardTestApp
         public void PlayDefaultMusicInterim(Game game, global::UniPlaySong.UniPlaySongSettings settings) { }
         public void Stop() { IsPlaying = false; }
         public void Shutdown() { IsPlaying = false; }
+        public void ReplacePlayer(IMusicPlayer player) { }
         public void Pause() { }
         public void Resume() { }
         public void PauseImmediate() { }

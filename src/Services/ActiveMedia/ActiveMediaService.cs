@@ -15,8 +15,8 @@ namespace UniPlaySong.Services.ActiveMedia
         private readonly SpotifyControlService _spotifyControl;
         private readonly ISpotifyClient _spotifyClient;
         private readonly FileLogger _fileLogger;
-        // The playback service as it is NOW: a backend swap (Live Effects toggle, chiptune switch) replaces it, and
-        // _playback above is the one from construction. Seeking reads this so it never seeks a discarded player.
+        // The playback service, read live for seeking. A backend swap replaces only the service's player, so in the
+        // plugin this is the same instance as _playback.
         private readonly Func<IMusicPlaybackService> _currentPlayback;
 
         // Spotify applies a seek ~100 ms after it's asked, and its timeline only moves when it pushes an update. Relative

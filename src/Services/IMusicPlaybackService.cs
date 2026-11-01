@@ -16,9 +16,12 @@ namespace UniPlaySong.Services
         void PlayDefaultMusicInterim(Game game, UniPlaySongSettings settings);
         void Stop();
 
-        // Stops every timer this service owns so it can be collected once it is replaced.
-        // Call on the outgoing service during a backend swap.
+        // Stops every timer this service owns. Called at application exit.
         void Shutdown();
+
+        // Swaps the audio backend under the service (Live Effects / Calm Down / EQ toggles, the chiptune
+        // switch). The service itself lives for the whole session, so everything holding it keeps working.
+        void ReplacePlayer(IMusicPlayer player);
         void Pause();
         void Resume();
         void PauseImmediate(); // Instant pause (no fade), for notification sounds
