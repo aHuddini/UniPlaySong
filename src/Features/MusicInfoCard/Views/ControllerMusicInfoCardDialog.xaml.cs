@@ -100,13 +100,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 if (string.IsNullOrEmpty(_imagePath) || !File.Exists(_imagePath))
                     return;
 
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-                bitmap.UriSource = new Uri(_imagePath, UriKind.Absolute);
-                bitmap.EndInit();
-                if (bitmap.CanFreeze) bitmap.Freeze();
+                var bitmap = MusicInfoCardHandler.LoadUnlockedBitmap(_imagePath);
 
                 GameIconImage.Source = bitmap;
                 GameIconImage.Visibility = Visibility.Visible;

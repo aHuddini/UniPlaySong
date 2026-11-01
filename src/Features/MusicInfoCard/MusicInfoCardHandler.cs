@@ -142,10 +142,20 @@ namespace UniPlaySong.Features.MusicInfoCard
         // Loads the game's BackgroundImage (preferred) or CoverImage as a BitmapSource for the dialog's blurred
         // backdrop layer. Returns null when neither exists or the file is missing/unreadable — the dialog falls back
         // to its solid-dark Background in that case.
-        //
-        // BitmapImage is created with OnLoad caching so the underlying
-        // FileStream releases immediately (Playnite can rename/replace
-        // the file later without "in use" errors).
+        // A frozen bitmap read with OnLoad caching, so the FileStream is released immediately and Playnite can rename or
+        // replace the file later without "in use" errors. Shared by the handler and both dialogs.
+        internal static BitmapImage LoadUnlockedBitmap(string path)
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+            bitmap.UriSource = new Uri(path, UriKind.Absolute);
+            bitmap.EndInit();
+            if (bitmap.CanFreeze) bitmap.Freeze();
+            return bitmap;
+        }
+
         private BitmapSource LoadBackdropBitmap(Game game)
         {
             try
@@ -165,14 +175,7 @@ namespace UniPlaySong.Features.MusicInfoCard
                 }
                 if (path == null) return null;
 
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-                bitmap.UriSource = new Uri(path, UriKind.Absolute);
-                bitmap.EndInit();
-                if (bitmap.CanFreeze) bitmap.Freeze();
-                return bitmap;
+                return LoadUnlockedBitmap(path);
             }
             catch (Exception ex)
             {

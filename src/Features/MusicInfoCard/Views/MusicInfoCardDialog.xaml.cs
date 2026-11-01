@@ -85,16 +85,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 if (string.IsNullOrEmpty(_imagePath) || !File.Exists(_imagePath))
                     return;
 
-                // BitmapImage with OnLoad caching frees the underlying
-                // FileStream immediately so Playnite can rename/move the
-                // file later without "in use" errors.
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
-                bitmap.UriSource = new Uri(_imagePath, UriKind.Absolute);
-                bitmap.EndInit();
-                if (bitmap.CanFreeze) bitmap.Freeze();
+                var bitmap = MusicInfoCardHandler.LoadUnlockedBitmap(_imagePath);
 
                 GameIconImage.Source = bitmap;
                 GameIconImage.Visibility = Visibility.Visible;
