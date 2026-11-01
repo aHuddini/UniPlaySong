@@ -39,13 +39,6 @@ namespace UniPlaySong.Models.WaveformTrim
             };
         }
 
-        // Shift both markers by a percentage of total duration
-        public void ShiftByPercent(double percent)
-        {
-            var shiftAmount = TimeSpan.FromMilliseconds(TotalDuration.TotalMilliseconds * percent / 100);
-            ShiftByTime(shiftAmount);
-        }
-
         // Shift both markers by a fixed time amount (positive = forward, negative = backward)
         public void ShiftByTime(TimeSpan amount)
         {
@@ -68,13 +61,6 @@ namespace UniPlaySong.Models.WaveformTrim
             EndTime = newEnd > TotalDuration ? TotalDuration : newEnd;
         }
 
-        // Adjust window size by moving edges symmetrically (percentage)
-        public void AdjustSizeByPercent(double percent)
-        {
-            var adjustAmount = TimeSpan.FromMilliseconds(TotalDuration.TotalMilliseconds * percent / 100);
-            AdjustSizeByTime(adjustAmount);
-        }
-
         // Adjust window size by moving edges symmetrically by a fixed time (positive = expand, negative = contract)
         public void AdjustSizeByTime(TimeSpan amount)
         {
@@ -93,13 +79,6 @@ namespace UniPlaySong.Models.WaveformTrim
             }
         }
 
-        // Adjust start marker by a percentage
-        public void AdjustStartByPercent(double percent)
-        {
-            var adjustAmount = TimeSpan.FromMilliseconds(TotalDuration.TotalMilliseconds * percent / 100);
-            AdjustStartByTime(adjustAmount);
-        }
-
         // Adjust start marker by a fixed time amount (positive = move later, negative = move earlier)
         public void AdjustStartByTime(TimeSpan amount)
         {
@@ -111,13 +90,6 @@ namespace UniPlaySong.Models.WaveformTrim
             {
                 StartTime = newStart;
             }
-        }
-
-        // Adjust end marker by a percentage
-        public void AdjustEndByPercent(double percent)
-        {
-            var adjustAmount = TimeSpan.FromMilliseconds(TotalDuration.TotalMilliseconds * percent / 100);
-            AdjustEndByTime(adjustAmount);
         }
 
         // Adjust end marker by a fixed time amount (positive = move later, negative = move earlier)
