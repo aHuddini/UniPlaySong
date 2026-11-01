@@ -178,19 +178,5 @@ namespace UniPlaySong.Services
             var path = Path.Combine(_jinglesDirectory, jingleFilename);
             return System.IO.File.Exists(path) ? path : null;
         }
-
-        // Gets the first available celebration jingle filename, or empty string if none
-        public static string GetDefaultJingleFilename()
-        {
-            var jingles = GetJingles();
-            return jingles.Count > 0 ? jingles[0].File : string.Empty;
-        }
-
-        // Gets the first available abandoned jingle filename, or empty string if none
-        public static string GetDefaultAbandonedJingleFilename()
-        {
-            var jingles = GetAbandonedJingles();
-            return jingles.Count > 0 ? jingles[0].File : string.Empty;
-        }
     }
 }
