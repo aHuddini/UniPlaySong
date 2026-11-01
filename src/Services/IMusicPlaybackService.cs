@@ -35,6 +35,7 @@ namespace UniPlaySong.Services
         void AddPauseSourceImmediate(PauseSource source);    // Instant pause (no fade), tracks source
         void RemovePauseSourceImmediate(PauseSource source);  // Instant resume (no fade), tracks source
         bool HasPauseSource(PauseSource source);              // Peek the active pause-source set without mutating it
+        void DropSourcesNowSuppressed(UniPlaySongSettings settings); // Radio turned on mid-game: drop the sources it plays through
 
         // True while a game is launching or running. Tracked independently of
         // PauseSource.GameStarting, which may be suppressed (radio play-through) or

@@ -1968,11 +1968,13 @@ namespace UniPlaySong
                             // playing alongside Spotify.
                             if (game != null) _playbackService.PlayGameMusic(game, _settings);
                             else _playbackService.Stop(); // no game context — just silence UPS
+                            _playbackService.DropSourcesNowSuppressed(_settings); // turned on mid-game (#93)
                             _spotifyControlService?.Recompute(); // engage Spotify now, not on the next poll
                         }
                         else
                         {
                             _playbackService.StartRadioPlayback(_settings);
+                            _playbackService.DropSourcesNowSuppressed(_settings); // turned on mid-game (#93)
                         }
                     }
                 }
@@ -2323,6 +2325,7 @@ namespace UniPlaySong
                                 _fileLogger?.Debug("RadioMode ON via dialog (Spotify source) — suppressing UPS music");
                                 if (game != null) _playbackService.PlayGameMusic(game, e.NewSettings);
                                 else _playbackService.Stop();
+                                _playbackService.DropSourcesNowSuppressed(e.NewSettings); // turned on mid-game (#93)
                                 _spotifyControlService?.Recompute(); // engage now, not on the next poll
                             }
                             else
@@ -2331,6 +2334,7 @@ namespace UniPlaySong
                                 // Also covers Spotify → pool: the pool starts here and the control
                                 // service's disengage pauses Spotify.
                                 _playbackService.StartRadioPlayback(e.NewSettings);
+                                _playbackService.DropSourcesNowSuppressed(e.NewSettings); // turned on mid-game (#93)
                             }
                         }
                     }

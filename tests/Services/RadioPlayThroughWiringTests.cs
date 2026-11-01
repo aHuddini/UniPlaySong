@@ -63,5 +63,30 @@ namespace UniPlaySong.Tests.Services
 
             Assert.IsFalse(service.IsPaused);
         }
+
+        // Issue #93: GameStarting was added while radio was off, then Spotify radio was turned on mid-game. The policy
+        // only filters at add time, so the stale source kept IsPaused true and Spotify control kept re-pausing Spotify.
+        // Manual is not a game-session source and must survive; with play-through off nothing is dropped at all.
+        [Test]
+        public void RadioTurnedOnMidGame_DropsOnlyTheGameSessionSourcesItPlaysThrough()
+        {
+            foreach (var playThrough in new[] { true, false })
+            {
+                var service = CreateService();
+                service.SetGameSessionActive(true);
+                service.AddPauseSource(PauseSource.GameStarting);
+                service.AddPauseSource(PauseSource.Manual);
+
+                service.DropSourcesNowSuppressed(new UniPlaySongSettings
+                {
+                    RadioPlaysThroughGames = playThrough,
+                    RadioModeEnabled = true,
+                    RadioMusicSource = RadioMusicSource.Spotify,
+                });
+
+                Assert.AreEqual(!playThrough, service.HasPauseSource(PauseSource.GameStarting), $"playThrough={playThrough}");
+                Assert.IsTrue(service.HasPauseSource(PauseSource.Manual), $"playThrough={playThrough}");
+            }
+        }
     }
 }

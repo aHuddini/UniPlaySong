@@ -365,6 +365,21 @@ namespace UniPlaySong.Services
             }
         }
 
+        // Radio turned on mid-game: drops the game-session sources it now plays through (RadioPlayThroughPolicy). The
+        // policy only filters sources as they are added, so ones raised before radio came on kept IsPaused true, and
+        // SpotifyControlService read that as a lifecycle pause and re-paused Spotify on every play (issue #93). Removed
+        // silently: radio owns the audio, so game music must not resume; the state event lets Spotify control re-evaluate.
+        public void DropSourcesNowSuppressed(UniPlaySongSettings settings)
+        {
+            bool wasPaused = _isPaused;
+            int dropped = _activePauseSources.RemoveWhere(s =>
+                RadioPlayThroughPolicy.ShouldSuppress(s, _gameSessionActive, _isInRadioMode, settings));
+            if (dropped == 0) return;
+
+            _fileLogger?.Debug($"Pause: dropped {dropped} game-session source(s) — Radio Mode now plays through");
+            if (wasPaused && !_isPaused) OnPlaybackStateChanged?.Invoke();
+        }
+
         // Atomically replaces one pause source with another without triggering resume/pause.
         // Used for FocusLoss → Manual conversion to avoid audible blip.
         public void ConvertPauseSource(PauseSource from, PauseSource to)
