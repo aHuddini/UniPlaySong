@@ -13,6 +13,24 @@ namespace UniPlaySong.Models
         // When true, replaces originals instead of preserving them
         public bool DoNotPreserveOriginals { get; set; } = false;
         public string FFmpegPath { get; set; }
+
+        // The user's normalization settings. skipAlreadyNormalized is explicit because the callers differ: the
+        // Normalize dialog and the download dialog honour the user's setting, auto-download always skips.
+        public static NormalizationSettings From(UniPlaySongSettings settings, string ffmpegPath, bool skipAlreadyNormalized)
+        {
+            return new NormalizationSettings
+            {
+                FFmpegPath = ffmpegPath,
+                TargetLoudness = settings.NormalizationTargetLoudness,
+                TruePeak = settings.NormalizationTruePeak,
+                LoudnessRange = settings.NormalizationLoudnessRange,
+                AudioCodec = settings.NormalizationCodec,
+                NormalizationSuffix = settings.NormalizationSuffix,
+                TrimSuffix = settings.TrimSuffix,
+                SkipAlreadyNormalized = skipAlreadyNormalized,
+                DoNotPreserveOriginals = settings.DoNotPreserveOriginals
+            };
+        }
     }
 
     public class LoudnormMeasurements

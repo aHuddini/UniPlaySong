@@ -257,18 +257,7 @@ namespace UniPlaySong.Handlers
                 {
                     try
                     {
-                        var normSettings = new Models.NormalizationSettings
-                        {
-                            TargetLoudness = settings.NormalizationTargetLoudness,
-                            TruePeak = settings.NormalizationTruePeak,
-                            LoudnessRange = settings.NormalizationLoudnessRange,
-                            AudioCodec = settings.NormalizationCodec,
-                            NormalizationSuffix = settings.NormalizationSuffix,
-                            TrimSuffix = settings.TrimSuffix,
-                            SkipAlreadyNormalized = settings.SkipAlreadyNormalized,
-                            DoNotPreserveOriginals = settings.DoNotPreserveOriginals,
-                            FFmpegPath = settings.FFmpegPath
-                        };
+                        var normSettings = Models.NormalizationSettings.From(settings, settings.FFmpegPath, settings.SkipAlreadyNormalized);
 
                         var progress = new Progress<Models.NormalizationProgress>(p =>
                         {

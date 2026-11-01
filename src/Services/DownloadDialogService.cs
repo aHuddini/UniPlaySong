@@ -1477,18 +1477,7 @@ namespace UniPlaySong.Services
                 () =>
                 {
                     // Build normalization settings from user preferences
-                    var normSettings = new Models.NormalizationSettings
-                    {
-                        FFmpegPath = ffmpegPath,
-                        TargetLoudness = settings.NormalizationTargetLoudness,
-                        TruePeak = settings.NormalizationTruePeak,
-                        LoudnessRange = settings.NormalizationLoudnessRange,
-                        AudioCodec = settings.NormalizationCodec,
-                        NormalizationSuffix = settings.NormalizationSuffix,
-                        TrimSuffix = settings.TrimSuffix,
-                        SkipAlreadyNormalized = settings.SkipAlreadyNormalized,
-                        DoNotPreserveOriginals = settings.DoNotPreserveOriginals
-                    };
+                    var normSettings = Models.NormalizationSettings.From(settings, ffmpegPath, settings.SkipAlreadyNormalized);
 
                     // Show progress dialog for normalization
                     var progressOptions = new Playnite.SDK.GlobalProgressOptions(

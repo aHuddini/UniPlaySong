@@ -1383,17 +1383,8 @@ namespace UniPlaySong
                         {
                             try
                             {
-                                var normSettings = new Models.NormalizationSettings
-                                {
-                                    FFmpegPath = _settings.FFmpegPath,
-                                    TargetLoudness = _settings.NormalizationTargetLoudness,
-                                    TruePeak = _settings.NormalizationTruePeak,
-                                    LoudnessRange = _settings.NormalizationLoudnessRange,
-                                    AudioCodec = _settings.NormalizationCodec,
-                                    NormalizationSuffix = _settings.NormalizationSuffix,
-                                    TrimSuffix = _settings.TrimSuffix,
-                                    DoNotPreserveOriginals = _settings.DoNotPreserveOriginals
-                                };
+                                // skipAlreadyNormalized: true is the class default these auto-download paths always used
+                                var normSettings = Models.NormalizationSettings.From(_settings, _settings.FFmpegPath, skipAlreadyNormalized: true);
                                 await _normalizationService.NormalizeFileAsync(
                                     downloadPath,
                                     normSettings,
@@ -5999,17 +5990,8 @@ namespace UniPlaySong
                         {
                             try
                             {
-                                var normSettings = new Models.NormalizationSettings
-                                {
-                                    FFmpegPath = _settings.FFmpegPath,
-                                    TargetLoudness = _settings.NormalizationTargetLoudness,
-                                    TruePeak = _settings.NormalizationTruePeak,
-                                    LoudnessRange = _settings.NormalizationLoudnessRange,
-                                    AudioCodec = _settings.NormalizationCodec,
-                                    NormalizationSuffix = _settings.NormalizationSuffix,
-                                    TrimSuffix = _settings.TrimSuffix,
-                                    DoNotPreserveOriginals = _settings.DoNotPreserveOriginals
-                                };
+                                // skipAlreadyNormalized: true is the class default these auto-download paths always used
+                                var normSettings = Models.NormalizationSettings.From(_settings, _settings.FFmpegPath, skipAlreadyNormalized: true);
                                 _normalizationService.NormalizeFileAsync(
                                     downloadPath,
                                     normSettings,
