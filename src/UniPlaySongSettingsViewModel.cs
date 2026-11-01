@@ -448,14 +448,6 @@ namespace UniPlaySong
             _jinglePreviewPlayer.Open(new Uri(filePath));
         }
 
-        // Achievement rarity badge image paths (bound by the per-rarity sound rows).
-        public string BadgeBronzePath => Services.BundledImageService.GetAchievementBadgePath("bronze");
-        public string BadgeSilverPath => Services.BundledImageService.GetAchievementBadgePath("silver");
-        public string BadgeGoldPath => Services.BundledImageService.GetAchievementBadgePath("gold");
-        public string BadgePlatinumPath => Services.BundledImageService.GetAchievementBadgePath("platinum");
-        public string BadgeHiddenPath => Services.BundledImageService.GetAchievementBadgePath("hidden");
-        public string BadgePerfectPath => Services.BundledImageService.GetAchievementBadgePath("perfect");
-
         // One row of the per-rarity table. The rows stay live under every pack, so each has to say
         // where its sound is actually coming from - which is the pack chain's answer, not just the
         // custom path the user may or may not have set.
