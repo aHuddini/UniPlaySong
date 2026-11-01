@@ -498,7 +498,7 @@ namespace UniPlaySong.Services
                     var musicFiles = Directory.GetFiles(path, "*.*", SearchOption.TopDirectoryOnly)
                         .Where(f =>
                         {
-                            if (!Constants.SupportedAudioExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                            if (!Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
                                 return false;
                             var fileNameWithoutExt = Path.GetFileNameWithoutExtension(f);
                             return fileNameWithoutExt.EndsWith(suffix, StringComparison.OrdinalIgnoreCase);

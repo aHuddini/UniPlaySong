@@ -2205,8 +2205,8 @@ namespace UniPlaySong.Services
                 if (System.IO.Directory.Exists(musicDir))
                 {
                     var audioFiles = System.IO.Directory.GetFiles(musicDir)
-                        .Where(f => Constants.SupportedAudioExtensions.Contains(
-                            System.IO.Path.GetExtension(f).ToLowerInvariant()))
+                        .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(
+                            System.IO.Path.GetExtension(f)))
                         .ToList();
 
                     foreach (var file in audioFiles)
@@ -2444,7 +2444,7 @@ namespace UniPlaySong.Services
                             foreach (var file in Directory.GetFiles(musicDir))
                             {
                                 var ext = Path.GetExtension(file).ToLowerInvariant();
-                                if (Constants.SupportedAudioExtensions.Contains(ext))
+                                if (Constants.SupportedAudioExtensionsLowercase.Contains(ext))
                                 {
                                     existingSongs.Add(Path.GetFileNameWithoutExtension(file));
                                 }
@@ -2769,7 +2769,7 @@ namespace UniPlaySong.Services
                 if (Directory.Exists(musicDir))
                 {
                     var audioFiles = Directory.GetFiles(musicDir)
-                        .Where(f => Constants.SupportedAudioExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()))
+                        .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
                         .ToList();
 
                     if (audioFiles.Count > 0)

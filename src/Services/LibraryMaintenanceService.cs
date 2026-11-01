@@ -67,7 +67,7 @@ namespace UniPlaySong.Services
                     foreach (var gameDir in gameDirs)
                     {
                         var files = Directory.GetFiles(gameDir, "*.*", SearchOption.AllDirectories)
-                            .Where(f => Constants.SupportedAudioExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()));
+                            .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)));
                         foreach (var file in files)
                         {
                             fileCount++;
@@ -285,7 +285,7 @@ namespace UniPlaySong.Services
                 {
                     var gameFolder = Path.GetFileName(gameDir);
                     var files = Directory.GetFiles(gameDir, "*.*", SearchOption.AllDirectories)
-                        .Where(f => Constants.SupportedAudioExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()));
+                        .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)));
                     foreach (var file in files)
                     {
                         allFiles.Add((file, gameFolder));
