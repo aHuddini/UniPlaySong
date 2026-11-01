@@ -1510,8 +1510,6 @@ namespace UniPlaySong
             {
                 enableDefaultMusic = value;
                 OnPropertyChanged();
-                // Notify that UseNativeMusicAsDefault enabled state may have changed
-                OnPropertyChanged(nameof(IsUseNativeMusicAsDefaultEnabled));
                 // Bundled preset picker's IsEnabled also depends on this
                 OnPropertyChanged(nameof(IsBundledPresetPickerEnabled));
             }
@@ -1863,10 +1861,6 @@ namespace UniPlaySong
             get => bundledPresetMigrated;
             set { bundledPresetMigrated = value; OnPropertyChanged(); }
         }
-
-        // Determines if "Use Playnite Native 'Default' Theme Music" checkbox should be enabled.
-        // Requires EnableDefaultMusic to be true.
-        public bool IsUseNativeMusicAsDefaultEnabled => enableDefaultMusic;
 
         // Search Cache Settings
         private bool enableSearchCache = true;
