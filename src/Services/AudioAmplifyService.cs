@@ -145,14 +145,6 @@ namespace UniPlaySong.Services
             }, token);
         }
 
-        // Headroom = distance from peak to 0dBFS
-        public float CalculateHeadroomDb(float peakDb)
-        {
-            // Headroom is the distance from peak to 0dBFS
-            // If peak is -6dB, we have 6dB of headroom
-            return -peakDb;
-        }
-
         public bool WouldClip(float peakDb, float gainDb)
         {
             // If peak + gain > 0dBFS, we'd clip

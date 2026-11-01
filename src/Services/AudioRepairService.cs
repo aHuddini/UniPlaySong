@@ -491,26 +491,5 @@ namespace UniPlaySong.Services
                     return "-c:a libmp3lame -q:a 2";
             }
         }
-
-        // Probe, then repair if needed; true if the file is now playable (was fine or got repaired).
-        public async Task<bool> CheckAndRepairIfNeededAsync(string filePath, string ffmpegPath, CancellationToken cancellationToken = default)
-        {
-            var probeResult = await ProbeFileAsync(filePath, ffmpegPath, cancellationToken);
-
-            if (!probeResult.Success)
-            {
-                Logger.Warn($"Probe failed for {Path.GetFileName(filePath)}: {probeResult.ErrorMessage}");
-                // Try repair anyway since probe failed
-                return await RepairFileAsync(filePath, ffmpegPath, cancellationToken);
-            }
-
-            if (!probeResult.HasIssues)
-            {
-                return true; // File is OK
-            }
-
-            // Issues detected, repair needed
-            return await RepairFileAsync(filePath, ffmpegPath, cancellationToken);
-        }
     }
 }
