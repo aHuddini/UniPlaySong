@@ -693,21 +693,6 @@ namespace UniPlaySong.Services
             }
         }
 
-        // Pauses default music when switching to game music (PNS-style pattern).
-        // CRITICAL: Saves position BEFORE pausing so it can be restored later.
-        private void PauseDefaultMusic(UniPlaySongSettings settings)
-        {
-            if (_isPlayingDefaultMusic &&
-                _isCurrentSongDefaultMusic &&
-                _musicPlayer?.IsLoaded == true)
-            {
-                _defaultMusicPausedOnTime = _musicPlayer.CurrentTime ?? default;
-                _fileLogger?.Info($"Pausing default music at position {_defaultMusicPausedOnTime.TotalSeconds:F2}s: {Path.GetFileName(_currentSongPath)}");
-                _isPlayingDefaultMusic = false;
-                AddPauseSource(PauseSource.DefaultMusicPreservation);
-            }
-        }
-
         // Resumes default music from saved position when switching back from game music (PNS-style pattern).
         // defaultMusicPath can be either native or custom, checked by path equality.
         private void ResumeDefaultMusic(string defaultMusicPath, UniPlaySongSettings settings)
@@ -2261,16 +2246,6 @@ namespace UniPlaySong.Services
         public void ClearLastDefaultMusicPath()
         {
             _lastDefaultMusicPath = null;
-        }
-
-        public void SetFadeInDuration(double seconds)
-        {
-            _fadeInDuration = Math.Max(0.05, Math.Min(2.0, seconds));
-        }
-
-        public void SetFadeOutDuration(double seconds)
-        {
-            _fadeOutDuration = Math.Max(0.05, Math.Min(2.0, seconds));
         }
 
         public void LoadAndPlayFile(string filePath)
