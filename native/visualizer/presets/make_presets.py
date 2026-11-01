@@ -615,89 +615,6 @@ EXPERIMENTS = {
     "Fountain Calm Core (fast lock)": fountain_lessons(0.035, 0.28, calm_core=True),
 }
 
-# ---- Fountain "Tunable" (test variant, not shipped) ----------------------------------------------------------------
-# The spec look with 07/08's beat: every dot follows the live level (no birth lag - 07's beads did), stretch grows with
-# a dot's distance from the line so the core stays round while the tips streak, kicks drive the stretch through the
-# smoothed kick envelope, a slight outward fling of the tips on a kick, and a calm scene light. Every knob is an
-# @TOKEN@ with a default in TUNABLE, written as a .tune sidecar: the test build fills them live (F6/F7, [ ]).
-TUNABLE = [
-    # label, token, default, step, min, max
-    ("Follow the live level (1 = like 07, 0 = the game's birth lag)", "LIVE", 1.0, 0.1, 0.0, 1.0),
-    ("Stretch strength", "STRETCH_GAIN", 1.4, 0.2, 0.0, 6.0),
-    ("Stretch max (x)", "STRETCH_MAX", 4.0, 0.5, 0.0, 9.0),
-    ("Stretch tips-only (higher = only the outermost dots)", "STRETCH_TIP", 1.0, 0.25, 0.0, 4.0),
-    ("Kick relax time (s)", "KICK_DECAY", 0.12, 0.02, 0.02, 0.6),
-    ("Tip fling on a kick", "FLING", 0.3, 0.1, 0.0, 2.0),
-    ("Core density (higher = more dots hug the line)", "CORE", 1.0, 0.1, 0.4, 3.0),
-    ("Core hold (1 = the core ignores kicks)", "CORE_HOLD", 0.85, 0.05, 0.0, 1.0),
-    ("Core size (how far from the line counts as core)", "CORE_SIZE", 0.35, 0.05, 0.05, 1.0),
-    ("Core smoothing (s)", "CORE_SLOW", 1.0, 0.1, 0.1, 4.0),
-    ("Reach (column widths)", "REACH", 18.0, 1.0, 4.0, 30.0),
-    ("Life spread (longest life = sqrt(1 + this) s)", "LIFE_SPREAD", 24.0, 2.0, 0.0, 60.0),
-    ("Dot brightness", "BRIGHT", 6.0, 0.5, 1.0, 15.0),
-    ("Exposure", "EXPOSURE", 0.6, 0.05, 0.2, 1.5),
-    ("Defocus (0 = sharp dots, 1 = the game's bokeh)", "DEFOCUS", 1.0, 0.05, 0.0, 1.0),
-    ("Bloom, wide", "BLOOM_WIDE", 1.3, 0.1, 0.0, 3.0),
-    ("Scene glow pulse", "GLOW_PULSE", 0.13, 0.03, 0.0, 1.0),
-    ("Level ease in (s)", "EASE_IN", 0.10, 0.01, 0.01, 0.5),
-    ("Level ease out (s)", "EASE_OUT", 0.30, 0.02, 0.04, 1.2),
-]
-
-
-def fountain_tunable():
-    w = FOUNTAIN_WARP
-    for old, new in _LESSONS_PAIRS + _CALM_PAIRS:
-        assert w.count(old) == 1, old[:60]
-        w = w.replace(old, new)
-    warp_tokens = [
-        ("        float dl = (b * env + abs(live - born) * CurveBd(na) / (life * 60.0)) * abs(k) * 2.8;\n",
-         "        float dl = (b * env + abs(live - born) * CurveBd(na) / (life * 60.0)) * pow(abs(k) * 2.0, @STRETCH_TIP@) * @STRETCH_GAIN@;\n"),
-        ("float stretch = 1.0 + 4.0 * saturate(dl * 1.6);", "float stretch = 1.0 + @STRETCH_MAX@ * saturate(dl * 1.6);"),
-        (f"        float z = level * k * {2 * FOUNTAIN_REACH} * (1.0 + 0.6 * saturate(env * 3.0) * k * k * 4.0);\n",
-         "        float z = level * k * 2.0 * @REACH@ * (1.0 + @FLING@ * saturate(env * 3.0) * k * k * 4.0);\n"),
-        ("        float b = CurveB(na);\n", "        float b = lerp(CurveB(na), 1.0, @LIVE@);\n"),
-        ("float k = (1.0 - 2.0 * u.x) * (u.y - 0.5);",
-         "float k = (1.0 - 2.0 * u.x) * (u.y - 0.5); k = sign(k) * pow(abs(k) * 2.0, @CORE@) * 0.5;\n"
-         "        // Core hold: dots near the line follow the column's slow level, so the glowing core keeps its shape\n"
-         "        // through a kick and the outer dots carry it.\n"
-         "        level = lerp(level, slowL, @CORE_HOLD@ * (1.0 - smoothstep(0.0, @CORE_SIZE@, abs(k) * 2.0)));"),
-        (f"      float env = tex2D(sampler_pc_main, (float2(g, {FOUNTAIN_HIST + 2}.0) + 0.5) * texsize.zw).y / 3.0;\n",
-         f"      float3 kickRow = tex2D(sampler_pc_main, (float2(g, {FOUNTAIN_HIST + 2}.0) + 0.5) * texsize.zw).xyz;\n"
-         "      float env = kickRow.y / 3.0;\n"
-         "      float slowL = kickRow.z;\n"),
-        ("      float2 was = tex2D(sampler_pc_main, (float2(gx, r) + 0.5) * texsize.zw).xy;\n",
-         "      float3 was = tex2D(sampler_pc_main, (float2(gx, r) + 0.5) * texsize.zw).xyz;\n"),
-        ("sqrt(1.0 + 24.0 * h.x)", "sqrt(1.0 + @LIFE_SPREAD@ * h.x)"),
-        ("      o = float3(live, max(saturate(rate * 3.0), was.y * exp(-1.0 / (fr * 0.12))), 0.0);\n",
-         "      // z: the column's slow level, for the core hold\n"
-         "      o = float3(live, max(saturate(rate * 3.0), was.y * exp(-1.0 / (fr * @KICK_DECAY@))),\n"
-         "                 lerp(was.z, live, 1.0 - exp(-1.0 / (fr * @CORE_SLOW@))));\n"),
-        ("CurveA(na) * 6.0;", "CurveA(na) * @BRIGHT@;"),
-        ("ret = ACES(acc * 0.6);", "ret = ACES(acc * @EXPOSURE@);"),
-        (f"* {FOUNTAIN_REACH} + 2.0)", "* @REACH@ * 1.6 + 6.0)"),
-    ]
-    for old, new in warp_tokens:
-        assert w.count(old) == 1, old[:60]
-        w = w.replace(old, new)
-    c = STYLES["Fountain"]["comp"]
-    for old, new in [("(0.06 + 0.4 * saturate(level * 2.5))", "(0.06 + @GLOW_PULSE@ * saturate(level * 2.5))"),
-                     ("GetBlur2(uv) * 0.6 + c * 0.25, 1.0);", "GetBlur2(uv) * 0.6 + c * 0.25, @DEFOCUS@);"),
-                     ("GetBlur3(uv) * 1.3", "GetBlur3(uv) * @BLOOM_WIDE@")]:
-        assert c.count(old) == 1, old
-        c = c.replace(old, new)
-
-    def engine(n):
-        e = fountain_engine(n)
-        old = "ea=1-exp(-dt/0.10); er=1-exp(-dt/0.30);"
-        assert e.count(old) == 1
-        return e.replace(old, "ea=1-exp(-dt/@EASE_IN@); er=1-exp(-dt/@EASE_OUT@);")
-    return dict(STYLES["Fountain"], engine=engine, comp=c,
-                warp=shader("warp_", TRIPLE_HELPERS, wing(HALF, gap=0.11, end=0.46) + w))
-
-
-EXPERIMENTS["Fountain Tunable"] = fountain_tunable()
-TUNE_FILES = {"Fountain Tunable": TUNABLE}
-
 def write(name, s):
     n = s["n"]
     text = (HEADER + ANALYSIS_WAVE + s.get("shapes", "")
@@ -719,7 +636,3 @@ if __name__ == "__main__":
         write(name, s)
     for name, s in EXPERIMENTS.items():
         write(name, s)
-    for name, params in TUNE_FILES.items():
-        with open(os.path.join(OUT, f"UPS - {name}.tune"), "w", newline="\r\n") as f:
-            for label, token, default, step, lo, hi in params:
-                f.write(f"{label}|{token}|{default}|{step}|{lo}|{hi}\n")
