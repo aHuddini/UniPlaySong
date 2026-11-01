@@ -103,6 +103,7 @@ namespace UniPlaySong.Handlers
                 Logger.DebugIf(LogPrefix,"Showing desktop dialog");
                 window.ShowDialog();
                 Logger.DebugIf(LogPrefix,"Desktop dialog closed");
+                RestoreGameMusic(game);
             }
             catch (Exception ex)
             {
@@ -111,6 +112,16 @@ namespace UniPlaySong.Handlers
                     $"Error opening amplify dialog: {ex.Message}",
                     "Amplify Error");
             }
+        }
+
+        // Music was stopped when the dialog opened (and again by Cancel/Cleanup), so closing it - cancelled or applied -
+        // left the game silent. Same as NsfTrackManagerHandler: play the game's music again on the way out, unless a
+        // successful apply already restarted it.
+        private void RestoreGameMusic(Game game)
+        {
+            if (game == null || _playbackService == null || _playbackService.IsPlaying) return;
+            try { _playbackService.PlayGameMusic(game, _settingsProvider?.Invoke(), forceReload: true); }
+            catch (Exception ex) { Logger.Error(ex, "Error restoring music after the amplify dialog"); }
         }
 
         // Show controller-friendly amplify dialog
@@ -177,6 +188,7 @@ namespace UniPlaySong.Handlers
                 Logger.DebugIf(LogPrefix,"Showing controller dialog");
                 window.ShowDialog();
                 Logger.DebugIf(LogPrefix,"Controller dialog closed");
+                RestoreGameMusic(game);
             }
             catch (Exception ex)
             {
