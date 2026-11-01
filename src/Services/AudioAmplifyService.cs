@@ -23,20 +23,6 @@ namespace UniPlaySong.Services
         // Target number of samples for waveform display
         private const int TargetWaveformSamples = 1000;
 
-        // Creates the appropriate audio reader for waveform generation.
-        // OGG uses OggFileReader (NVorbis); all others use AudioFileReader.
-        // Returns (WaveStream for Length/WaveFormat, ISampleProvider for float Read).
-        private static (WaveStream stream, ISampleProvider samples) CreateWaveformReader(string filePath)
-        {
-            if (Path.GetExtension(filePath).Equals(".ogg", StringComparison.OrdinalIgnoreCase))
-            {
-                var ogg = new OggFileReader(filePath);
-                return (ogg, ogg);
-            }
-            var afr = new AudioFileReader(filePath);
-            return (afr, afr);
-        }
-
         public AudioAmplifyService(
             ErrorHandlerService errorHandler = null,
             IMusicPlaybackService playbackService = null,
@@ -61,7 +47,7 @@ namespace UniPlaySong.Services
                         return null;
                     }
 
-                    var (stream, sampleReader) = CreateWaveformReader(audioFilePath);
+                    var (stream, sampleReader) = WaveformReader.Open(audioFilePath);
                     using (stream)
                     {
                         var totalSamples = stream.Length / (stream.WaveFormat.BitsPerSample / 8);
@@ -189,21 +175,21 @@ namespace UniPlaySong.Services
                 _playbackService?.Stop();
 
                 // Preserve original file
-                string preservedOriginalPath = await PreserveOriginalAsync(inputPath, directory, fileName, extension);
+                string preservedOriginalPath = await FFmpegHelper.PreserveOriginalAsync(_backupBasePath, inputPath, directory, fileName, extension, LogPrefix);
 
                 // Build FFmpeg command for volume adjustment
                 // Format gain with decimal point regardless of locale
                 var gainStr = gainDb.ToString("F1", CultureInfo.InvariantCulture);
 
                 // Determine codec based on extension
-                var codecArgs = GetCodecArgs(extension);
+                var codecArgs = FFmpegHelper.GetCodecArgs(extension);
 
                 // FFmpeg command: apply volume filter
                 var args = $"-y -i \"{inputPath}\" -af \"volume={gainStr}dB\" {codecArgs} \"{tempPath}\"";
 
                 Logger.DebugIf(LogPrefix,$"FFmpeg args: {args}");
 
-                var success = await RunFFmpegAsync(ffmpegPath, args, token);
+                var success = await FFmpegHelper.RunAsync(ffmpegPath, args, token, LogPrefix);
 
                 if (success && File.Exists(tempPath))
                 {
@@ -265,135 +251,6 @@ namespace UniPlaySong.Services
                 Logger.Error(ex, $"Error applying amplify to: {inputPath}");
                 return false;
             }
-        }
-
-        // Preserve original file to PreservedOriginals folder
-        private async Task<string> PreserveOriginalAsync(string inputPath, string directory, string fileName, string extension)
-        {
-            Logger.DebugIf(LogPrefix,$"PreserveOriginalAsync - preserving: {fileName}{extension}");
-            return await Task.Run(() =>
-            {
-                try
-                {
-                    // Determine preserved originals directory
-                    string preservedOriginalsDir;
-                    if (!string.IsNullOrEmpty(_backupBasePath))
-                    {
-                        preservedOriginalsDir = Path.Combine(_backupBasePath, Constants.PreservedOriginalsFolderName);
-                    }
-                    else
-                    {
-                        var parentDir = Directory.GetParent(directory)?.FullName ?? directory;
-                        preservedOriginalsDir = Path.Combine(parentDir, Constants.PreservedOriginalsFolderName);
-                    }
-
-                    // Preserve relative structure (game folder name)
-                    var gameFolderName = Path.GetFileName(directory);
-                    var gamePreservedDir = Path.Combine(preservedOriginalsDir, gameFolderName);
-                    Directory.CreateDirectory(gamePreservedDir);
-
-                    var preservedPath = Path.Combine(gamePreservedDir, $"{fileName}{extension}");
-
-                    // Copy original to preserved folder (don't move yet - FFmpeg needs to read it)
-                    if (!File.Exists(preservedPath))
-                    {
-                        File.Copy(inputPath, preservedPath, false);
-                        Logger.DebugIf(LogPrefix,$"Preserved original to: {preservedPath}");
-                    }
-
-                    return preservedPath;
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex, "Error preserving original file");
-                    return null;
-                }
-            });
-        }
-
-        private string GetCodecArgs(string extension)
-        {
-            var ext = extension.ToLowerInvariant();
-            switch (ext)
-            {
-                case ".mp3":
-                    return "-c:a libmp3lame -q:a 0"; // High quality MP3
-                case ".flac":
-                    return "-c:a flac"; // Lossless FLAC
-                case ".wav":
-                    return "-c:a pcm_s16le"; // Uncompressed WAV
-                case ".ogg":
-                    return "-c:a libvorbis -q:a 6"; // Good quality OGG
-                case ".m4a":
-                case ".aac":
-                    return "-c:a aac -b:a 256k"; // High quality AAC
-                default:
-                    return "-c:a copy"; // Try to copy codec
-            }
-        }
-
-        private async Task<bool> RunFFmpegAsync(string ffmpegPath, string args, CancellationToken token)
-        {
-            Logger.DebugIf(LogPrefix,$"RunFFmpegAsync starting - ffmpegPath: {ffmpegPath}");
-            return await Task.Run(() =>
-            {
-                try
-                {
-                    var processInfo = new ProcessStartInfo
-                    {
-                        FileName = ffmpegPath,
-                        Arguments = args,
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        CreateNoWindow = true,
-                        UseShellExecute = false
-                    };
-
-                    using (var process = Process.Start(processInfo))
-                    {
-                        if (process == null)
-                        {
-                            Logger.Error("Failed to start FFmpeg process");
-                            return false;
-                        }
-
-                        // Read output asynchronously to prevent deadlock
-                        var outputTask = process.StandardOutput.ReadToEndAsync();
-                        var errorTask = process.StandardError.ReadToEndAsync();
-
-                        // Wait for process with timeout (2 minutes)
-                        var timeout = 120000;
-                        if (!process.WaitForExit(timeout))
-                        {
-                            try { process.Kill(); } catch { }
-                            Logger.Error("FFmpeg process timed out");
-                            return false;
-                        }
-
-                        token.ThrowIfCancellationRequested();
-
-                        var stderr = errorTask.Result;
-
-                        if (process.ExitCode != 0)
-                        {
-                            Logger.Error($"FFmpeg failed with exit code {process.ExitCode}: {stderr}");
-                            return false;
-                        }
-
-                        Logger.DebugIf(LogPrefix,"FFmpeg completed successfully");
-                        return true;
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex, "Error running FFmpeg");
-                    return false;
-                }
-            }, token);
         }
 
         public bool ValidateFFmpegAvailable(string ffmpegPath)
