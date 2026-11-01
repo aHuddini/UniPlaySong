@@ -348,6 +348,14 @@ namespace UniPlaySong.Players
             EnsureTimer();
         }
 
+        // For a pause applied to the player directly (instant pause, no fade): cancels any fade and records the paused
+        // state, so a later faded Resume() restarts the player instead of only ramping the volume of a paused one.
+        public void MarkPaused()
+        {
+            CancelFade();
+            _isPaused = true;
+        }
+
         // Cancels any ongoing fade and stops the timer.
         public void CancelFade()
         {

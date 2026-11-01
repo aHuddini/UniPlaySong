@@ -440,6 +440,10 @@ namespace UniPlaySong.Services
                 {
                     _musicPlayer.Volume = 0;
                     _musicPlayer.Pause();
+                    // The fader has to know: a manual play resumes through RemovePauseSource -> _fader.Resume(), which
+                    // only restarts the player when the fader is paused. Otherwise it ramps the volume of a paused
+                    // player - silence, and after an idle/lock device release the play button does nothing.
+                    _fader?.MarkPaused();
                 }
                 OnPlaybackStateChanged?.Invoke();
             }
