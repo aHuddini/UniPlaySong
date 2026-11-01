@@ -194,6 +194,10 @@ namespace UniPlaySong.Services
                 }
                 _outputClock.Detach();
                 _mixer = null;
+                // The mixer is gone, so nothing is in it. Left true, RemoveSongFromMixer (guarded on _mixer) never clears
+                // it and Play() skips adding every later song to the rebuilt mixer: silence until restart after any
+                // teardown (device error, idle, lock, suspend). Resume() already re-adds; this covers the next Load().
+                _isInMixer = false;
                 _outputMixer = null;
                 _calmDownProcessor = null;
                 _volumeProvider = null;
