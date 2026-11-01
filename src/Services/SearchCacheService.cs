@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 using Playnite.SDK;
+using UniPlaySong.Common;
 using UniPlaySong.Models;
 
 namespace UniPlaySong.Services
@@ -405,17 +406,8 @@ namespace UniPlaySong.Services
                     Directory.CreateDirectory(directory);
                 }
                 
-                // Write to temp file first (atomic write)
-                var tempPath = _cacheFilePath + ".tmp";
                 var json = JsonConvert.SerializeObject(_cache, Formatting.Indented);
-                File.WriteAllText(tempPath, json);
-                
-                // Move temp file to actual cache file
-                if (File.Exists(_cacheFilePath))
-                {
-                    File.Delete(_cacheFilePath);
-                }
-                File.Move(tempPath, _cacheFilePath);
+                AtomicFile.WriteAllText(_cacheFilePath, json);
             }
             catch (Exception ex)
             {

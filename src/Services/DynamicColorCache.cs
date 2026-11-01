@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows.Media;
 using Newtonsoft.Json;
+using UniPlaySong.Common;
 
 namespace UniPlaySong.Services
 {
@@ -89,12 +90,7 @@ namespace UniPlaySong.Services
                 if (!Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
 
-                var tempPath = _cacheFilePath + ".tmp";
-                File.WriteAllText(tempPath, json);
-
-                if (File.Exists(_cacheFilePath))
-                    File.Delete(_cacheFilePath);
-                File.Move(tempPath, _cacheFilePath);
+                AtomicFile.WriteAllText(_cacheFilePath, json);
             }
             catch
             {

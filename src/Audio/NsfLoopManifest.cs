@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
+using UniPlaySong.Common;
 
 namespace UniPlaySong.Audio
 {
@@ -57,11 +58,7 @@ namespace UniPlaySong.Audio
             }
 
             var json = JsonConvert.SerializeObject(overrides, Formatting.Indented);
-            var tempPath = manifestPath + ".tmp";
-
-            File.WriteAllText(tempPath, json);
-            if (File.Exists(manifestPath)) File.Delete(manifestPath);
-            File.Move(tempPath, manifestPath);
+            AtomicFile.WriteAllText(manifestPath, json);
         }
     }
 }
