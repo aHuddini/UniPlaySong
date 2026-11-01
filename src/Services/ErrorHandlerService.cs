@@ -92,22 +92,6 @@ namespace UniPlaySong.Services
             
             return "An unexpected error occurred. Please check the logs for details.";
         }
-
-        // fileOnly skips the Playnite logger and writes only to the file logger.
-        public void LogInfo(string message, bool fileOnly = false)
-        {
-            if (!fileOnly)
-                _logger.Debug(message);
-            _fileLogger?.Info(message);
-        }
-
-        // fileOnly skips the Playnite logger and writes only to the file logger.
-        public void LogWarning(string message, bool fileOnly = false)
-        {
-            if (!fileOnly)
-                _logger.Warn(message);
-            _fileLogger?.Warn(message);
-        }
     }
 }
 
