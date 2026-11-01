@@ -1655,14 +1655,6 @@ namespace UniPlaySong
 
         #region Music Playback
 
-        // Determines if music should play for the currently selected game. Delegates to the coordinator for
-        // all playback decisions.
-        private bool ShouldPlayMusic()
-        {
-            var game = SelectedGames?.FirstOrDefault();
-            return _coordinator.ShouldPlayMusic(game);
-        }
-
         // Extracts dominant colors from a game's artwork for the Dynamic visualizer themes. V1 (Game Art): v6 simple
         // histogram, user-configurable slider params. Alt Algo: v7 advanced algorithm (center-weighted + bucket merging
         // + diversity bonus). Vibrant Vibes: v7 + vivid mode with hardcoded aggressive params.
