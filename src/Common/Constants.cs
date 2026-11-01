@@ -30,8 +30,6 @@ namespace UniPlaySong.Common
         #region Volume
 
         public const double DefaultTargetVolume = 0.5;
-        public const double MinVolume = 0.0;
-        public const double MaxVolume = 1.0;
 
         public const double VolumeDivisor = 100.0; // percentage (0-100) to decimal (0.0-1.0)
 
