@@ -66,28 +66,6 @@ namespace UniPlaySong.IconGlow
             }
         }
 
-        // Finds the parent DockPanel of the given element (needed for border injection).
-        public static DockPanel FindParentDockPanel(DependencyObject child)
-        {
-            if (child == null) return null;
-
-            try
-            {
-                var parent = VisualTreeHelper.GetParent(child);
-                while (parent != null)
-                {
-                    if (parent is DockPanel dockPanel)
-                        return dockPanel;
-                    parent = VisualTreeHelper.GetParent(parent);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "[IconGlow] Error finding parent DockPanel");
-            }
-            return null;
-        }
-
         // Walks up the visual tree to find the nearest ancestor of type T.
         public static T FindAncestor<T>(DependencyObject current) where T : DependencyObject
         {
