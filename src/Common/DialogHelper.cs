@@ -170,28 +170,6 @@ namespace UniPlaySong.Common
         [DllImport("gdi32.dll")]
         private static extern bool DeleteObject(IntPtr hObject);
 
-        // Windows 11 DWM API for native backdrop effects with proper rounded corner support
-        [DllImport("dwmapi.dll")]
-        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
-
-        // DWM Window Attributes for Windows 11
-        private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
-        private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
-        private const int DWMWA_SYSTEMBACKDROP_TYPE = 38;
-
-        // Window corner preference values
-        private const int DWMWCP_DEFAULT = 0;
-        private const int DWMWCP_DONOTROUND = 1;
-        private const int DWMWCP_ROUND = 2;
-        private const int DWMWCP_ROUNDSMALL = 3;
-
-        // System backdrop type values (Windows 11 22H2+)
-        private const int DWMSBT_AUTO = 0;
-        private const int DWMSBT_DISABLE = 1;      // None
-        private const int DWMSBT_MAINWINDOW = 2;   // Mica
-        private const int DWMSBT_TRANSIENTWINDOW = 3; // Acrylic
-        private const int DWMSBT_TABBEDWINDOW = 4; // Tabbed
-
         [StructLayout(LayoutKind.Sequential)]
         private struct WindowCompositionAttributeData
         {
@@ -219,28 +197,6 @@ namespace UniPlaySong.Common
             public uint AccentFlags;
             public uint GradientColor; // Format: AABBGGRR (Alpha, Blue, Green, Red)
             public int AnimationId;
-        }
-
-        // Returns true if Windows 11 22H2+ (build 22621+) with DWMWA_SYSTEMBACKDROP_TYPE support.
-        private static bool IsWindows11WithBackdropSupport()
-        {
-            try
-            {
-                var version = Environment.OSVersion.Version;
-                return version.Major >= 10 && version.Build >= 22621;
-            }
-            catch { return false; }
-        }
-
-        // Returns true if Windows 11 (build 22000+) with DWMWA_WINDOW_CORNER_PREFERENCE support.
-        private static bool IsWindows11()
-        {
-            try
-            {
-                var version = Environment.OSVersion.Version;
-                return version.Major >= 10 && version.Build >= 22000;
-            }
-            catch { return false; }
         }
 
         // Sets a rounded rectangle region on the window at Win32 level (clips blur to rounded corners).
@@ -575,12 +531,6 @@ namespace UniPlaySong.Common
             }
         }
 
-        // Shows a dialog and returns true if confirmed (DialogResult == true).
-        public static bool ShowDialogAndGetResult(Window window)
-        {
-            return window?.ShowDialog() == true;
-        }
-
         // Shows a controller-friendly message dialog with XInput support (A/Enter to close).
         public static void ShowControllerMessage(IPlayniteAPI playniteApi, string message, string title, bool isError = false)
         {
@@ -912,53 +862,6 @@ namespace UniPlaySong.Common
                 Logger.Debug(ex, "Error showing controller confirmation, falling back to standard dialog");
                 // Fallback to standard Playnite dialog
                 return playniteApi.Dialogs.ShowMessage(message, title, MessageBoxButton.YesNo) == MessageBoxResult.Yes;
-            }
-        }
-
-        // Shows a non-blocking Playnite notification (auto-dismisses, no XInput issues).
-        public static void ShowNotification(
-            IPlayniteAPI playniteApi,
-            string id,
-            string message,
-            NotificationType type = NotificationType.Info,
-            Action onClick = null)
-        {
-            if (playniteApi == null) return;
-
-            try
-            {
-                var notification = new NotificationMessage(id, message, type, onClick);
-                playniteApi.Notifications.Add(notification);
-            }
-            catch (Exception ex)
-            {
-                Logger.Debug(ex, $"Error showing notification: {message}");
-            }
-        }
-
-        // Shows a success notification (Info type).
-        public static void ShowSuccessNotification(IPlayniteAPI playniteApi, string id, string message)
-        {
-            ShowNotification(playniteApi, id, message, NotificationType.Info);
-        }
-
-        // Shows an error notification (Error type).
-        public static void ShowErrorNotification(IPlayniteAPI playniteApi, string id, string message)
-        {
-            ShowNotification(playniteApi, id, message, NotificationType.Error);
-        }
-
-        public static void RemoveNotification(IPlayniteAPI playniteApi, string id)
-        {
-            if (playniteApi == null || string.IsNullOrEmpty(id)) return;
-
-            try
-            {
-                playniteApi.Notifications.Remove(id);
-            }
-            catch (Exception ex)
-            {
-                Logger.Debug(ex, $"Error removing notification: {id}");
             }
         }
 
