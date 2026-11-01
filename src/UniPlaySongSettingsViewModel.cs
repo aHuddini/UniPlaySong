@@ -184,7 +184,6 @@ namespace UniPlaySong
             set { if (Settings != null) Settings.RadioPlaysThroughGames = value; OnPropertyChanged(); }
         }
 
-        private bool _quickStartAddReverb;
         // Composes with every profile in both modes, so a checkbox rather than more tiles. Turns on
         // live effects with the HuddiniRehearsal preset — note this forces the NAudio backend.
         // Reads from the live settings rather than a plain field, like the other page checkboxes, so
