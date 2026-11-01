@@ -826,9 +826,7 @@ namespace UniPlaySong.Views
         {
             try
             {
-                var tempDir = System.IO.Path.Combine(
-                    _playniteApi.Paths.ConfigurationPath,
-                    "ExtraMetadata", "UniPlaySong", "temp");
+                var tempDir = System.IO.Path.Combine(Constants.ExtensionDataPath(_playniteApi.Paths.ConfigurationPath), Constants.TempFolderName);
                 
                 if (!System.IO.Directory.Exists(tempDir))
                 {

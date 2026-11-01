@@ -101,6 +101,11 @@ namespace UniPlaySong.Common
         public const string GamesFolderName = "Games";
         public const string VisualAnalysisFolderName = "VisualAnalysis"; // the Jukebox Fountain's song analyses: in each game's music folder, and beside Games for other music
         public const string TempFolderName = "Temp";
+
+        // <Config>\ExtraMetadata\UniPlaySong, the extension's data folder. configPath is Playnite's ConfigurationPath -
+        // portable installs keep it elsewhere, so never a hard-coded %AppData%.
+        public static string ExtensionDataPath(string configPath) =>
+            System.IO.Path.Combine(configPath, ExtraMetadataFolderName, ExtensionFolderName);
         public const string DefaultMusicFolderName = "DefaultMusic";
         public const string TrailerAudioCacheFolderName = "TrailerAudioCache";
 

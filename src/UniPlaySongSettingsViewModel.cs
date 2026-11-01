@@ -1165,11 +1165,7 @@ namespace UniPlaySong
                 () =>
                 {
                     // Use the same path as normalization/trim services: ConfigurationPath + ExtraMetadata + UniPlaySong + PreservedOriginals
-                    var preservedOriginalsPath = Path.Combine(
-                        PlayniteApi.Paths.ConfigurationPath,
-                        Constants.ExtraMetadataFolderName,
-                        Constants.ExtensionFolderName,
-                        Constants.PreservedOriginalsFolderName);
+                    var preservedOriginalsPath = Path.Combine(Constants.ExtensionDataPath(PlayniteApi.Paths.ConfigurationPath), Constants.PreservedOriginalsFolderName);
 
                     if (!Directory.Exists(preservedOriginalsPath))
                     {
@@ -3078,11 +3074,7 @@ namespace UniPlaySong
         {
             try
             {
-                var gamesPath = Path.Combine(
-                    PlayniteApi.Paths.ConfigurationPath,
-                    Constants.ExtraMetadataFolderName,
-                    Constants.ExtensionFolderName,
-                    Constants.GamesFolderName);
+                var gamesPath = Path.Combine(Constants.ExtensionDataPath(PlayniteApi.Paths.ConfigurationPath), Constants.GamesFolderName);
 
                 if (!Directory.Exists(gamesPath))
                 {

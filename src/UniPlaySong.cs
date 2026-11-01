@@ -3327,7 +3327,7 @@ namespace UniPlaySong
 
         private void InitializeServices()
         {
-            var basePath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
+            var basePath = Constants.ExtensionDataPath(_api.Paths.ConfigurationPath);
             var gamesPath = Path.Combine(basePath, Constants.GamesFolderName);
             _gamesPath = gamesPath;
             var tempPath = Path.Combine(basePath, Constants.TempFolderName);
@@ -3502,8 +3502,7 @@ namespace UniPlaySong
             // NowPlayingPublisher: exposes live now-playing data on UniPlaySongSettings for theme
             // binding via {PluginSettings}. Runs in BOTH Desktop and Fullscreen (theme exposure is
             // the point). Uses its own SongMetadataService (the metadata cache is static/shared).
-            var nowPlayingArtDir = System.IO.Path.Combine(
-                _api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
+            var nowPlayingArtDir = Constants.ExtensionDataPath(_api.Paths.ConfigurationPath);
             var nowPlayingArtWriter = new Services.NowPlayingArtWriter(nowPlayingArtDir, _fileLogger);
             // Clears the art files earlier versions could not delete (tens of thousands on some machines),
             // then anything stale in the art folder. A low-priority background thread: it must never hold
@@ -3603,7 +3602,7 @@ namespace UniPlaySong
             }
 
             // Initialize search cache service
-            var extensionDataPath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
+            var extensionDataPath = Constants.ExtensionDataPath(_api.Paths.ConfigurationPath);
             _cacheService = new SearchCacheService(
                 extensionDataPath,
                 enabled: _settings?.EnableSearchCache ?? true,
@@ -6397,7 +6396,7 @@ namespace UniPlaySong
                 // Delete temp folder
                 try
                 {
-                    var basePath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
+                    var basePath = Constants.ExtensionDataPath(_api.Paths.ConfigurationPath);
                     var tempPath = Path.Combine(basePath, Constants.TempFolderName);
                     if (Directory.Exists(tempPath))
                     {

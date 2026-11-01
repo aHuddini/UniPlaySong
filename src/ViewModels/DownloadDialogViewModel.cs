@@ -774,9 +774,7 @@ namespace UniPlaySong.ViewModels
             // rather than Windows %TEMP%. Windows Defender real-time scanning of %TEMP% has been
             // observed to interrupt yt-dlp's intermediate .part files, causing silent download
             // failures on some user systems. The Roaming path is less aggressively scanned.
-            var tempDir = System.IO.Path.Combine(
-                _playniteApi.Paths.ConfigurationPath,
-                "ExtraMetadata", "UniPlaySong", "temp");
+            var tempDir = System.IO.Path.Combine(Constants.ExtensionDataPath(_playniteApi.Paths.ConfigurationPath), Constants.TempFolderName);
             System.IO.Directory.CreateDirectory(tempDir);
 
             // Create hash from song ID and source to ensure unique temporary filenames

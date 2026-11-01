@@ -525,9 +525,7 @@ namespace UniPlaySong.ViewModels
 
                 // Roaming AppData location — same as SimpleControllerDialog (Fullscreen).
                 // Avoids Windows Defender interference with %TEMP% during yt-dlp downloads.
-                var tempDir = Path.Combine(
-                    _playniteApi.Paths.ConfigurationPath,
-                    "ExtraMetadata", "UniPlaySong", "temp");
+                var tempDir = Path.Combine(Constants.ExtensionDataPath(_playniteApi.Paths.ConfigurationPath), Constants.TempFolderName);
                 Directory.CreateDirectory(tempDir);
                 _previewFilePath = Path.Combine(tempDir, $"{_extractedVideoId}_preview.mp3");
 

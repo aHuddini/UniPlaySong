@@ -362,7 +362,7 @@ namespace UniPlaySong.Handlers
             try
             {
                 var preservedOriginalsDir = Path.Combine(
-                    Path.Combine(_playniteApi.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName),
+                    Constants.ExtensionDataPath(_playniteApi.Paths.ConfigurationPath),
                     Constants.PreservedOriginalsFolderName);
 
                 if (!Directory.Exists(preservedOriginalsDir))

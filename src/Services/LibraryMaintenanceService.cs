@@ -48,9 +48,9 @@ namespace UniPlaySong.Services
         {
             try
             {
-                var basePath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
+                var basePath = Constants.ExtensionDataPath(_api.Paths.ConfigurationPath);
                 var gamesPath = Path.Combine(basePath, Constants.GamesFolderName);
-                var preservedPath = Path.Combine(basePath, "PreservedOriginals");
+                var preservedPath = Path.Combine(basePath, Constants.PreservedOriginalsFolderName);
 
                 int gameCount = 0;
                 int fileCount = 0;
@@ -104,9 +104,9 @@ namespace UniPlaySong.Services
                 // Stop any playing music first
                 _playbackService()?.Stop();
 
-                var basePath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
+                var basePath = Constants.ExtensionDataPath(_api.Paths.ConfigurationPath);
                 var gamesPath = Path.Combine(basePath, Constants.GamesFolderName);
-                var preservedPath = Path.Combine(basePath, "PreservedOriginals");
+                var preservedPath = Path.Combine(basePath, Constants.PreservedOriginalsFolderName);
 
                 int deletedFiles = 0;
                 int deletedFolders = 0;
@@ -272,7 +272,7 @@ namespace UniPlaySong.Services
 
             try
             {
-                var basePath = Path.Combine(_api.Paths.ConfigurationPath, Constants.ExtraMetadataFolderName, Constants.ExtensionFolderName);
+                var basePath = Constants.ExtensionDataPath(_api.Paths.ConfigurationPath);
                 var gamesPath = Path.Combine(basePath, Constants.GamesFolderName);
 
                 if (!Directory.Exists(gamesPath))
