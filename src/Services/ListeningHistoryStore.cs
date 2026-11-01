@@ -142,24 +142,30 @@ namespace UniPlaySong.Services
         }
 
         // Writes only when something changed, so a quiet session costs no disk IO at all.
+        //
+        // _writeLock spans the whole flush (always taken before _lock): otherwise a flush finding nothing dirty
+        // returns while a background flush that already cleared the flag is still writing, so the file isn't on
+        // disk yet when the caller expects it.
         public void Flush()
         {
-            string json;
-
-            lock (_lock)
+            lock (_writeLock)
             {
-                if (!_dirty)
+                string json;
+
+                lock (_lock)
                 {
-                    return;
+                    if (!_dirty)
+                    {
+                        return;
+                    }
+
+                    // Serialized inside _lock, written outside it, so Record never waits on disk IO.
+                    json = JsonConvert.SerializeObject(_data, Formatting.Indented);
+                    _dirty = false;
                 }
 
-                // Serialized inside the lock, written outside it. DynamicColorCache.Save does the
-                // same, and it is the better-written of the two existing side-file writers.
-                json = JsonConvert.SerializeObject(_data, Formatting.Indented);
-                _dirty = false;
+                WriteAtomic(json);
             }
-
-            WriteAtomic(json);
         }
 
         // A copy of the records, for anything that wants to ask a question of them.
@@ -198,25 +204,30 @@ namespace UniPlaySong.Services
 
         // Deletes everything, in memory and on disk. Irreversible by design - the confirmation
         // belongs to the caller.
+        //
+        // Under _writeLock, so a background flush that serialized the old data can't write it back after the delete.
         public void Clear()
         {
-            lock (_lock)
+            lock (_writeLock)
             {
-                _data = new ListeningHistoryData();
-                _dirty = false;
-            }
-
-            try
-            {
-                if (File.Exists(_filePath))
+                lock (_lock)
                 {
-                    File.Delete(_filePath);
+                    _data = new ListeningHistoryData();
+                    _dirty = false;
                 }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "[Listening] Could not delete the history file");
-                _fileLogger?.Error("[Listening] Could not delete the history file", ex);
+
+                try
+                {
+                    if (File.Exists(_filePath))
+                    {
+                        File.Delete(_filePath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, "[Listening] Could not delete the history file");
+                    _fileLogger?.Error("[Listening] Could not delete the history file", ex);
+                }
             }
         }
 
