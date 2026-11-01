@@ -23,20 +23,5 @@ namespace UniPlaySong.Models.WaveformTrim
         // Whether the waveform data is valid and ready for display
         public bool IsValid => Samples != null && Samples.Length > 0 && Duration.TotalSeconds > 0;
 
-        // Get the time position for a given sample index
-        public TimeSpan GetTimeAtIndex(int index)
-        {
-            if (Samples == null || Samples.Length == 0) return TimeSpan.Zero;
-            var fraction = (double)index / Samples.Length;
-            return TimeSpan.FromMilliseconds(Duration.TotalMilliseconds * fraction);
-        }
-
-        // Get the sample index for a given time position
-        public int GetIndexAtTime(TimeSpan time)
-        {
-            if (Samples == null || Samples.Length == 0 || Duration.TotalMilliseconds <= 0) return 0;
-            var fraction = time.TotalMilliseconds / Duration.TotalMilliseconds;
-            return (int)Math.Round(fraction * (Samples.Length - 1));
-        }
     }
 }
