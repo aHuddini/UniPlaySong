@@ -2718,33 +2718,7 @@ namespace UniPlaySong
                 {
                     effectChainPreset = value;
                     OnPropertyChanged();
-                    OnPropertyChanged(nameof(EffectChainOrderDisplay));
                     ClearStylePresetIfActive();
-                }
-            }
-        }
-
-        // Gets a display-friendly string representing the current effect chain order.
-        public string EffectChainOrderDisplay
-        {
-            get
-            {
-                switch (effectChainPreset)
-                {
-                    case EffectChainPreset.Standard:
-                        return "High-Pass → Low-Pass → Reverb";
-                    case EffectChainPreset.ReverbFirst:
-                        return "Reverb → High-Pass → Low-Pass";
-                    case EffectChainPreset.LowPassFirst:
-                        return "Low-Pass → High-Pass → Reverb";
-                    case EffectChainPreset.LowPassThenReverb:
-                        return "Low-Pass → Reverb → High-Pass";
-                    case EffectChainPreset.HighPassThenReverb:
-                        return "High-Pass → Reverb → Low-Pass";
-                    case EffectChainPreset.ReverbThenLowPass:
-                        return "Reverb → Low-Pass → High-Pass";
-                    default:
-                        return "High-Pass → Low-Pass → Reverb";
                 }
             }
         }
