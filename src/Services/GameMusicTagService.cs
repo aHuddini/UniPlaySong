@@ -183,27 +183,6 @@ namespace UniPlaySong.Services
             return result;
         }
 
-        public void UpdateTagsForGames(IEnumerable<Game> games)
-        {
-            if (games == null) return;
-
-            try
-            {
-                int updated = 0;
-                foreach (var game in games)
-                {
-                    if (UpdateGameMusicTag(game))
-                    {
-                        updated++;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Error updating tags for games: {ex.Message}");
-            }
-        }
-
         // Removes all UniPlaySong music tags from all games (for cleanup/reset)
         public void RemoveAllMusicTags()
         {
