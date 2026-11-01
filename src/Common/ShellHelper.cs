@@ -43,5 +43,24 @@ namespace UniPlaySong.Common
                 Logger.Error(ex, $"ShellHelper.OpenFolderInExplorer failed for path: {path}");
             }
         }
+
+        // Opens a URL in the default browser. False (logged, never thrown into the caller) if the shell couldn't open it.
+        public static bool OpenUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return false;
+
+            try
+            {
+                using (Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true }))
+                {
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, $"ShellHelper.OpenUrl failed for: {url}");
+                return false;
+            }
+        }
     }
 }

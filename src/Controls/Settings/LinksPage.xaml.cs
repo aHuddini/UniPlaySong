@@ -24,20 +24,6 @@ namespace UniPlaySong.Controls.Settings
             if (!string.IsNullOrWhiteSpace(url)) Open(url);
         }
 
-        private static void Open(string url)
-        {
-            try
-            {
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url)
-                {
-                    UseShellExecute = true
-                });
-            }
-            catch
-            {
-                // Silent: if the OS cannot open a browser we would rather do nothing than throw
-                // into the settings host.
-            }
-        }
+        private static void Open(string url) => Common.ShellHelper.OpenUrl(url);
     }
 }
