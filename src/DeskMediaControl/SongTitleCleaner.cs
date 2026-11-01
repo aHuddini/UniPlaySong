@@ -118,19 +118,6 @@ namespace UniPlaySong.DeskMediaControl
             }
         }
 
-        public static string CleanTitle(string filePath)
-        {
-            ParseFilename(filePath, out string title, out string artist);
-            return title;
-        }
-
-        // Returns null when the filename has no artist/game portion.
-        public static string ExtractArtistFromFilename(string filePath)
-        {
-            ParseFilename(filePath, out _, out string artist);
-            return artist;
-        }
-
         // m:ss or h:mm:ss; empty for a zero or negative duration.
         public static string FormatDuration(TimeSpan duration)
         {
