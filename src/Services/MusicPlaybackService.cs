@@ -898,6 +898,7 @@ namespace UniPlaySong.Services
                 // SpotifyControlService picks up SpotifyRadioMode via its own triggers (client events + timer), and Spotify
                 // (the user's open app) keeps playing; UPS's only job here is to not play a competing game track.
                 _fileLogger?.Debug($"SpotifyRadioMode: suppressing game music for {game.Name} — Spotify is the source");
+                RememberTrackBeforeRadio(settings);
                 _currentGameId = game.Id.ToString();
                 _currentGame = game;
                 if (_isInRadioMode) { _isInRadioMode = false; _lastRadioSongPath = null; }
@@ -2169,6 +2170,7 @@ namespace UniPlaySong.Services
             while (nextSong == _lastRadioSongPath && pool.Count > 1 && attempts < 10);
 
             _fileLogger?.Info($"RadioMode: starting — {System.IO.Path.GetFileName(nextSong)} (source: {settings.RadioMusicSource})");
+            RememberTrackBeforeRadio(settings);
             _previousSongPath = _currentSongPath;
 
             // Smooth transition: if music is currently playing, fade out then fade in the new song
@@ -2217,6 +2219,17 @@ namespace UniPlaySong.Services
             }
 
             return true;
+        }
+
+        // The game track radio interrupted, so turning radio off returns to it instead of making a fresh pick
+        // (which shuffles under RandomizeOnEverySelect). Its position is banked too, for ResumeGameMusicPosition.
+        private string _trackBeforeRadio;
+
+        private void RememberTrackBeforeRadio(UniPlaySongSettings settings)
+        {
+            if (_isInRadioMode || _isPlayingDefaultMusic || string.IsNullOrEmpty(_currentSongPath)) return;
+            _trackBeforeRadio = _currentSongPath;
+            RememberOutgoingSongPosition(_currentSongPath, settings, wasDefaultOnEntry: false);
         }
 
         public void StopRadioMode()
@@ -2337,6 +2350,14 @@ namespace UniPlaySong.Services
             if (!string.IsNullOrWhiteSpace(_currentSongPath) && songs.Contains(_currentSongPath))
             {
                 return _currentSongPath;
+            }
+
+            // Coming back from radio: the track it interrupted, once. Any other game just drops it.
+            if (_trackBeforeRadio != null)
+            {
+                var interrupted = _trackBeforeRadio;
+                _trackBeforeRadio = null;
+                if (songs.Contains(interrupted)) return interrupted;
             }
 
             // Check for primary song (only for game music, not default music)
