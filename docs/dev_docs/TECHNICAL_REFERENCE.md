@@ -1242,10 +1242,9 @@ Clamps the target to `[0, length − 1 s]` — a seek onto the last samples just
 ### `ActiveMediaService` — `CanSeek`, `SeekTo(percent)`, `SeekBy(seconds)`
 
 - **Source:** Spotify when `SpotifyControlService.IsSpotifyActive`, otherwise UPS music.
-- **Current playback, not the original.** The service is constructed with UPS's playback service, and a backend swap
-  (Live Effects toggle, chiptune switch) replaces that service. Seeks go through an optional
-  `Func<IMusicPlaybackService>` passed at construction, so they reach the player of the moment. Only seeking reads it;
-  the rest of the service still holds the original (the open "backend swap" item).
+- **Current playback.** Seeks go through an optional `Func<IMusicPlaybackService>` passed at construction. A backend
+  swap (Live Effects toggle, chiptune switch) keeps the one playback service and replaces only its player
+  (`MusicPlaybackService.ReplacePlayer`), so the `Func` and the reference held at construction are the same object.
 - **Spotify:** `SeekTo` scales Spotify's SMTC duration; `SeekBy` starts from its position. Spotify applies a seek
   ~100 ms after the request and its timeline only moves when it pushes an update, so relative seeks within 1.5 s of
   the last one build on that **target** (plus elapsed time if playing) instead of the reported position, which would

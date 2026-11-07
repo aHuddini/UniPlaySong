@@ -4,6 +4,30 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.9.1] - 2026-11-07
+
+### Fixed
+
+- Fixed Spotify being re-paused mid-game after Radio Mode was turned on: `RadioPlayThroughPolicy` filtered only new pause sources, so `DropSourcesNowSuppressed` now drops existing game-session ones at the switch (refs #93)
+- Fixed a Live Effects toggle or the chiptune switch leaving Jingle, Dashboard, Spotify control, the taskbar and menu handlers on a discarded `MusicPlaybackService`; one service now lives for the session and `ReplacePlayer` swaps its player
+- Fixed turning Radio Mode off playing a different song instead of the game track radio interrupted
+- Fixed Play doing nothing after an instant pause: `MusicFader` never marked itself paused, so a faded resume skipped `player.Resume`
+- Fixed NAudio staying silent after its output layer was torn down for a device release: teardown left `_isInMixer` set, so the next song was never re-added to the mixer
+- Fixed listening-history `Flush` and `Clear` racing, which could write cleared history back; both now hold `_writeLock` for their whole body
+- Fixed music staying silent after the Amplify or Trim dialog closed without playing anything
+
+### Changed
+
+- Changed Live Effects toggles in Fullscreen to apply in place, as in Desktop: the player is rebuilt only when the backend type changes, so the song keeps playing
+- Changed `UniPlaySong.cs` from 6,586 to 5,126 lines by moving out the game menu, library auto-download, external-audio and idle polling, and Spotify auto-launch; presets moved to `UniPlaySongSettings.Presets.cs`
+- Changed duplicated helpers into shared ones: FFmpeg runs, codec args and backups, waveform readers, atomic file saves, the extension data path, URL opening, info-card bitmaps and `NormalizationSettings.From`
+- Changed comments: about 1,200 lines of version history and `///` blocks trimmed to the reasoning that guards real traps
+- Changed the test suite from 560 to 458 tests by merging near-duplicates into table-driven tests and dropping ones that restated trivial code
+
+### Removed
+
+- Removed 24 unused classes, members and files, including `AmplifyPreviewPlayer`, unbound settings commands, controller label helpers and never-called coordinator accessors; parked search-hint, bulk-download and localization code was kept
+
 ## [1.9.0] - 2026-10-26
 
 ### Added

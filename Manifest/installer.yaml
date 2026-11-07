@@ -2,10 +2,18 @@
 Packages:
   - Version: 1.9.1
     RequiredApiVersion: 6.16.0
-    ReleaseDate: 2026-10-31
+    ReleaseDate: 2026-11-07
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.1/UniPlaySong-1_9_1.pext'
     Changelog:
-      - '[Improved] Placeholder: 1.9.1 refactor update, entries land here as work does.'
+      - '[Fix] Turning on Radio Mode mid-game no longer re-pauses Spotify when radio plays through games (issue #93).'
+      - '[Fix] Sometimes Toggling Live Effects or opening a chiptune game would break jingles, the Dashboard, Spotify controls or the taskbar buttons.'
+      - '[Fix] Fullscreen: Turning Radio Mode off resumes the original game song it interrupted, instead of a different one.'
+      - '[Fix] Play works again after music was paused instantly (for example by the instant external-audio pause).'
+      - '[Fix] Music resumes properly after you close the Amplify or Trim dialog.'
+      - '[Fix] Clearing your listening history should now stick better.'
+      - '[Improved] Live Effects changes in Fullscreen apply without restarting the song, as in Desktop.'
+      - '[Improved] Refactored the codebase for maintainability. Please report any issues if existing features are bugged.'
+      - '[Known Issue] If music stays silent after the PC wakes from sleep, restart Playnite and please send a log.'
   - Version: 1.9.0
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-10-26

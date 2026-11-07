@@ -20,20 +20,20 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.9.0
-
-### Added
-- Seek within songs: click or drag a theme's music timeline, or tilt the controller's right stick. Works with Spotify too.
-- For themes: a Now-Playing player with a live spectrum on its seek bar, coloured from the album art (needs Live Effects on).
-- For themes: recent tracks for game music and Spotify, album-art colours for backdrops, skip buttons and a turntable cover you turn to seek ([guide](docs/dev_docs/Theme%20Support/THEME_INTEGRATION_GUIDE.md)).
-- For themes: a music visualizer page. The Jukebox Fountain takes its colours from the game's art and learns each song's beat, sections and bass line (needs Live Effects on).
+## What's New - v1.9.1
 
 ### Fixed
-- Themes no longer show stale song info (like a Spotify title over game music) after you save settings.
-- Music timelines show "0:00" at the start of a song instead of going blank.
+- Turning on Radio Mode mid-game no longer re-pauses Spotify when radio plays through games ([#93](https://github.com/aHuddini/UniPlaySong/issues/93)).
+- Toggling Live Effects or opening a chiptune game no longer breaks jingles, the Dashboard, Spotify controls or the taskbar buttons.
+- Turning Radio Mode off goes back to the game song it interrupted.
+- Play works again after an instant pause; music comes back after closing Amplify or Trim; clearing listening history sticks.
+
+### Improved
+- Live Effects changes in Fullscreen apply without restarting the song.
+- Big internal cleanup for maintainability. Nothing changes in how UPS works.
 
 ### Previous Version
-- **v1.8.10**: Added a 15/10-band Equalizer; Now Playing cover art no longer piles up on disk; PSF songs loop; failed downloads say why.
+- **v1.9.0**: Seek within songs (timeline or right stick, Spotify too); for themes, a music visualizer page, a Now-Playing player with a live spectrum, recent tracks and album-art colours.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 

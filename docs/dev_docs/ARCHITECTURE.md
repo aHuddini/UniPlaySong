@@ -33,13 +33,13 @@ neighbourhood, then let the compiler and search tell you the rest.
 | `Features/` | 6 + 2 XAML | Self-contained features (e.g. `MusicInfoCard/`) with their own Views/ViewModels. |
 | `IconGlow/` | ~6 files | Sidebar and list hover glow effects. |
 | `ViewModels/` | ~5 files | MVVM view models for the larger dialogs. |
-| `Monitors/` | ~4 files | External-state watchers, including the video detector. |
+| `Monitors/` | ~6 files | External-state watchers: the video detector, external audio (`ExternalAudioMonitor`), idle/AFK (`IdleMonitor`), the Random Game Picker. |
 | `Players/` | ~3 files | `MusicFader` and playback-timing helpers. |
-| `Menus/` | ~2 files | Game and main-menu item construction. |
+| `Menus/` | ~3 files | Game and main-menu item construction; `GameMenuBuilder` builds the game right-click menu. |
 | `Localization/` | 1 XAML | `en_US.xaml` string resources (extraction still pending). |
 | `DefaultMusic/`, `Jingles/`, `Images/` | assets | Bundled audio and image assets, no code. |
 
-**Entry point:** `src/UniPlaySong.cs` — the `GenericPlugin` subclass. At ~6,600 lines it is the
+**Entry point:** `src/UniPlaySong.cs` — the `GenericPlugin` subclass. At ~5,100 lines it is the
 largest single file in the project; its `#region` blocks act as de-facto module boundaries.
 
 **Root files:** `UniPlaySong.sln`, `extension.yaml` (manifest — generated, do not hand-edit),
@@ -72,6 +72,13 @@ The main plugin file has been refactored for maintainability. Large code blocks 
 
 Public methods in `UniPlaySong.cs` now delegate to these handlers, keeping the main file focused on initialization, event handling, and coordination.
 
+Later moves out of the plugin follow the same shape: built once, given their dependencies, reading settings live through a `Func` (a settings save replaces the whole settings object):
+- `Menus/GameMenuBuilder`: the game right-click menu (`GetGameMenuItems` forwards to it)
+- `Services/AutoDownloadService`: auto-download and auto-tag on library update and on install
+- `Monitors/ExternalAudioMonitor` and `Monitors/IdleMonitor`: the external-audio and idle/AFK polls
+- `Services/Spotify/SpotifyAutoLauncher`: "Launch Spotify on startup"
+- `UniPlaySongSettings.Presets.cs`: the reverb, style and icon-glow preset tables (a partial class)
+
 ### 2. Music Playback Coordinator (`MusicPlaybackCoordinator`)
 
 **Central decision-making component** that:
@@ -100,6 +107,8 @@ Public methods in `UniPlaySong.cs` now delegate to these handlers, keeping the m
 - Manages default music fallback
 - Tracks playback state (current game, current song, pause state)
 - Implements preview mode (restart songs after duration)
+
+**One instance per session.** A backend swap (Live Effects toggle, chiptune switch) keeps the service and calls `ReplacePlayer`, which stops playback, moves the `MediaEnded`/`CrossfadePromoted` hooks and rebuilds the fader. Pause sources, radio state and the idle multiplier survive, and every consumer that holds the service keeps working.
 
 **Key Features:**
 - **Primary Song Support**: Plays designated primary song first, then randomizes
@@ -432,7 +441,7 @@ private bool TryDpadNavigation()
 }
 ```
 
-### 11. Game Menu System (`UniPlaySong.cs:GetGameMenuItems`)
+### 11. Game Menu System (`Menus/GameMenuBuilder`)
 
 **Mode-specific menu organization** that adapts to Playnite's display mode:
 
