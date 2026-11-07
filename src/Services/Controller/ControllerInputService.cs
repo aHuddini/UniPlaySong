@@ -146,66 +146,6 @@ namespace UniPlaySong.Services.Controller
             }
         }
 
-        // Action label for UI hints.
-        public static string GetActionDescription(ControllerAction action)
-        {
-            switch (action)
-            {
-                case ControllerAction.Confirm:
-                    return "Confirm";
-                case ControllerAction.Cancel:
-                    return "Cancel";
-                case ControllerAction.Preview:
-                    return "Preview";
-                case ControllerAction.MultiSelect:
-                    return "Select All";
-                case ControllerAction.PageUp:
-                    return "Page Up";
-                case ControllerAction.PageDown:
-                    return "Page Down";
-                case ControllerAction.JumpToTop:
-                    return "Jump to Top";
-                case ControllerAction.JumpToBottom:
-                    return "Jump to Bottom";
-                case ControllerAction.Search:
-                    return "Search";
-                case ControllerAction.ShowOSK:
-                    return "Keyboard";
-                default:
-                    return "Unknown";
-            }
-        }
-
-        // Button name (A, B, X, Y, ...) for UI hints.
-        public static string GetButtonName(ControllerAction action)
-        {
-            switch (action)
-            {
-                case ControllerAction.Confirm:
-                    return "A";
-                case ControllerAction.Cancel:
-                    return "B";
-                case ControllerAction.Preview:
-                    return "Y";
-                case ControllerAction.MultiSelect:
-                    return "X";
-                case ControllerAction.PageUp:
-                    return "LB";
-                case ControllerAction.PageDown:
-                    return "RB";
-                case ControllerAction.JumpToTop:
-                    return "LT";
-                case ControllerAction.JumpToBottom:
-                    return "RT";
-                case ControllerAction.Search:
-                    return "F1";
-                case ControllerAction.ShowOSK:
-                    return "F3";
-                default:
-                    return "?";
-            }
-        }
-
         public void Dispose()
         {
             try
