@@ -34,14 +34,6 @@ namespace UniPlaySong.Services
         // selection.
         void HandleForceDefaultMusicOverrideLoaded();
 
-        bool IsFirstSelect();
-        
-        bool IsLoginSkipActive();
-        
-        void ResetFirstSelect();
-        
-        void SetLoginSkipActive(bool active);
-        
         // Resets skip state when switching to fullscreen mode
         void ResetSkipStateForModeSwitch();
 

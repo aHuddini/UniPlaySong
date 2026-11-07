@@ -706,16 +706,8 @@ namespace UniPlaySong.Services
             _playbackService?.PlayGameMusic(game, _settings, true);
         }
 
-        public bool IsFirstSelect() => _firstSelect;
-
-        public bool IsLoginSkipActive() => _loginSkipActive;
-        
-        public void ResetFirstSelect() => _firstSelect = false;
-
         public void SetFirstSelect(bool value) => _firstSelect = value;
 
-        public void SetLoginSkipActive(bool active) => _loginSkipActive = active;
-        
         // Resets skip state for SkipFirstSelectionAfterModeSwitch when switching to fullscreen
         public void ResetSkipStateForModeSwitch()
         {
