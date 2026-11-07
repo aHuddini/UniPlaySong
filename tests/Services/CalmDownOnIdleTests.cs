@@ -50,7 +50,7 @@ namespace UniPlaySong.Tests.Services
         {
             // The rule this feature depends on. If the poll ever assigns CalmDownModeEnabled, a user
             // who switched Calm Down on manually gets it switched off the moment they touch the mouse.
-            var text = ReadSource("src", "UniPlaySong.cs");
+            var text = ReadSource("src", "Monitors", "IdleMonitor.cs");
 
             var poll = text.IndexOf("private void OnIdlePollTick(");
             Assert.Greater(poll, -1, "the shared idle poll should exist");
@@ -121,7 +121,7 @@ namespace UniPlaySong.Tests.Services
             // Because the flag is [JsonIgnore], a settings save clones it away. Setting it only on
             // the idle transition would leave an unrelated save mid-idle quietly lifting Calm Down
             // until the next input.
-            var text = ReadSource("src", "UniPlaySong.cs");
+            var text = ReadSource("src", "Monitors", "IdleMonitor.cs");
             var poll = text.IndexOf("private void OnIdlePollTick(");
             var body = text.Substring(poll, text.IndexOf("private void StartIdleVolumeFade(") - poll);
 

@@ -33,7 +33,6 @@ namespace UniPlaySong
     public class UniPlaySong : GenericPlugin, INotifyPropertyChanged
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
-        private static readonly int _selfPid = System.Diagnostics.Process.GetCurrentProcess().Id;
         private readonly IPlayniteAPI _api;
         private readonly FileLogger _fileLogger;
         
@@ -154,41 +153,8 @@ namespace UniPlaySong
         private dynamic _fullscreenSettingsObj;
         private INotifyPropertyChanged _fullscreenSettingsNotifier; // kept for unsubscribe on dispose
 
-        // External audio detection (polls Windows audio sessions to pause when other apps play audio).
-        // Uses System.Timers.Timer (ThreadPool) to keep COM interop off the UI thread.
-        private System.Timers.Timer _externalAudioPollTimer;
-        private int _externalAudioPollRunning; // Re-entrancy guard (0=idle, 1=running)
-        private volatile bool _externalAudioDetected;
-        private int _externalAudioDebounceCount;
-        private int _externalAudioSilenceCount;
-        private volatile bool _externalAudioPausedInstantly; // Tracks whether current pause used instant mode (ensures resume matches)
-        private HashSet<string> _externalAudioExcludedPids = new HashSet<string>(); // Cached excluded process names (lowercase)
-        // Same set + "spotify" — used while UPS conducts Spotify so its own audio can't self-trigger the pause.
-        private HashSet<string> _externalAudioExcludedPidsWithSpotify = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "spotify" };
-        private string _externalAudioExcludedAppsRaw = ""; // Tracks setting value to know when to rebuild cache
-        private bool IsExternalAudioInstantMode => _settings?.ExternalAudioInstantPause == true || (_settings?.ExternalAudioDebounceSeconds ?? 3) == 0;
-        private double ExternalAudioPollIntervalMs => IsExternalAudioInstantMode ? 500.0 : 1000.0;
-        private int ExternalAudioDebounceThreshold => (_settings?.ExternalAudioDebounceSeconds ?? 3) == 0
-            ? 1 : Math.Max(1, (int)Math.Ceiling((_settings?.ExternalAudioDebounceSeconds ?? 3) * 1000.0 / ExternalAudioPollIntervalMs));
-
-        // Idle/AFK detection (polls keyboard/mouse activity to pause after inactivity)
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
-
-        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-        private struct LASTINPUTINFO
-        {
-            public uint cbSize;
-            public uint dwTime;
-        }
-
-        private System.Windows.Threading.DispatcherTimer _idlePollTimer;
-        private bool _idleDetected;
-
-        // Dynamic Volume on Idle — gradual volume fade when inactive
-        private bool _idleVolumeLowered;
-        private System.Windows.Threading.DispatcherTimer _idleVolumeFadeTimer;
-        private double _idleVolumeFadeCurrent = 1.0;
+        private Monitors.ExternalAudioMonitor _externalAudioMonitor;
+        private Monitors.IdleMonitor _idleMonitor;
 
         // Task switcher detection — checks foreground window class to distinguish alt-tab overlay from real focus loss
         [System.Runtime.InteropServices.DllImport("user32.dll")]
@@ -961,16 +927,9 @@ namespace UniPlaySong
             // The window handle and the main window's own Activated hook are attached by
             // AttachWindowStateHandlers, below, which retries until a window exists.
 
-            _externalAudioPollTimer = new System.Timers.Timer(1500);
-            _externalAudioPollTimer.Elapsed += OnExternalAudioPollTick;
-            _externalAudioPollTimer.AutoReset = true;
-            if (_settings?.PauseOnExternalAudio == true)
-                _externalAudioPollTimer.Start();
-            _idlePollTimer = new System.Windows.Threading.DispatcherTimer(
-                System.Windows.Threading.DispatcherPriority.Background);
-            _idlePollTimer.Interval = TimeSpan.FromSeconds(10);
-            _idlePollTimer.Tick += OnIdlePollTick;
-            _idlePollTimer.Start();
+            _externalAudioMonitor = new Monitors.ExternalAudioMonitor(() => _settings, _playbackService, _fileLogger, () => IsDesktop);
+            _idleMonitor = new Monitors.IdleMonitor(() => _settings, _playbackService, _fileLogger,
+                RewarmJinglePlayerIfEnabled, () => _isUsingLiveEffectsPlayer);
             Monitors.RandomPickerMonitor.Attach(_playbackService, _settings, _fileLogger, () => IsFullscreen);
 
             // Media key control (experimental)
@@ -1216,11 +1175,10 @@ namespace UniPlaySong
             Microsoft.Win32.SystemEvents.SessionSwitch -= OnSessionSwitch;
             Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
             _sleepCoordinator?.Stop();
-            _externalAudioPollTimer?.Stop();
-            _externalAudioPollTimer?.Dispose();
-            _externalAudioPollTimer = null;
-            _idlePollTimer?.Stop();
-            _idlePollTimer = null;
+            _externalAudioMonitor?.Dispose();
+            _externalAudioMonitor = null;
+            _idleMonitor?.Stop();
+            _idleMonitor = null;
             _focusVerifyTimer?.Stop();
             _focusVerifyTimer = null;
             Monitors.RandomPickerMonitor.Detach();
@@ -1901,10 +1859,7 @@ namespace UniPlaySong
             // Start/stop external audio poll timer based on setting
             if (e.OldSettings?.PauseOnExternalAudio != e.NewSettings?.PauseOnExternalAudio)
             {
-                if (e.NewSettings?.PauseOnExternalAudio == true)
-                    _externalAudioPollTimer?.Start();
-                else
-                    _externalAudioPollTimer?.Stop();
+                _externalAudioMonitor?.SetEnabled(e.NewSettings?.PauseOnExternalAudio == true);
             }
 
             // Recreate DownloadManager if download settings changed (so YouTubeDownloader gets new settings)
@@ -2444,16 +2399,7 @@ namespace UniPlaySong
                 Application.Current?.Dispatcher?.Invoke(() =>
                 {
                     // Clear idle state — user is back at the PC
-                    if (_idleDetected)
-                    {
-                        _idleDetected = false;
-                        _playbackService?.RemovePauseSource(Models.PauseSource.Idle);
-                    }
-                    if (_idleVolumeLowered)
-                    {
-                        _idleVolumeLowered = false;
-                        RestoreIdleVolume();
-                    }
+                    _idleMonitor?.ClearIdleState();
 
                     // Always remove — HashSet.Remove is a no-op if not present. Removing SystemLock drives fader.Resume() →
                     // player.Resume(), which rebuilds the device released on lock and seeks back to the saved position (see
@@ -2542,327 +2488,6 @@ namespace UniPlaySong
                     EvaluateSpotifyEffectsAsync();
                 }));
             }
-        }
-
-
-        // Polls Windows audio sessions to detect external audio playback.
-        // Pauses UPS after sustained external audio (~3s), resumes after sustained silence (~3s).
-        private void OnExternalAudioPollTick(object sender, EventArgs e)
-        {
-            // Re-entrancy guard — skip if previous tick is still running (COM can be slow)
-            if (Interlocked.CompareExchange(ref _externalAudioPollRunning, 1, 0) != 0)
-                return;
-
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            try
-            {
-                // Adjust poll rate dynamically (0.5s in instant mode, 1.0s otherwise)
-                var targetMs = ExternalAudioPollIntervalMs;
-                if (Math.Abs(_externalAudioPollTimer.Interval - targetMs) > 1.0)
-                    _externalAudioPollTimer.Interval = targetMs;
-
-                if (_settings?.PauseOnExternalAudio != true)
-                {
-                    if (_externalAudioDetected)
-                    {
-                        _externalAudioDetected = false;
-                        _externalAudioDebounceCount = 0;
-                        _externalAudioSilenceCount = 0;
-                        var wasInstant = _externalAudioPausedInstantly;
-                        _externalAudioPausedInstantly = false;
-                        DispatchPauseAction(() =>
-                        {
-                            if (wasInstant)
-                                _playbackService?.RemovePauseSourceImmediate(Models.PauseSource.ExternalAudio);
-                            else
-                                _playbackService?.RemovePauseSource(Models.PauseSource.ExternalAudio);
-                        });
-                    }
-                    return;
-                }
-
-                // Rebuild excluded apps cache if setting changed
-                var excludedRaw = _settings?.ExternalAudioExcludedApps ?? "";
-                if (excludedRaw != _externalAudioExcludedAppsRaw)
-                {
-                    _externalAudioExcludedAppsRaw = excludedRaw;
-                    _externalAudioExcludedPids = new HashSet<string>(
-                        excludedRaw.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                            .Select(s => s.Trim().ToLowerInvariant())
-                            .Where(s => s.Length > 0),
-                        StringComparer.OrdinalIgnoreCase);
-                    _externalAudioExcludedPidsWithSpotify = new HashSet<string>(
-                        _externalAudioExcludedPids, StringComparer.OrdinalIgnoreCase) { "spotify" };
-                }
-
-                // When UPS is conducting Spotify as the audible music, exclude Spotify's own session from DETECTION (instead of
-                // skipping all detections, which also ignored real external audio like a browser and never paused Spotify
-                // radio). Spotify's session can never trip, so no pause-oscillation; other apps detect normally and the
-                // standard pause path pauses Spotify via the lifecycle machinery.
-                bool spotifyIsAudible = _settings?.SpotifyActive == true
-                    && (_playbackService?.IsPlayingDefaultMusic == true || _settings?.SpotifyRadioMode == true);
-                var exclusions = spotifyIsAudible && _externalAudioExcludedPidsWithSpotify != null
-                    ? _externalAudioExcludedPidsWithSpotify
-                    : _externalAudioExcludedPids;
-
-                float peakThreshold = IsExternalAudioInstantMode ? 0.005f : 0.01f;
-                bool audioFound = Common.AudioSessionDetector.IsExternalAudioPlaying(
-                    _selfPid, peakThreshold, exclusions, out var externalAudioSource);
-
-                if (audioFound)
-                {
-                    _externalAudioSilenceCount = 0;
-                    _externalAudioDebounceCount++;
-
-                    if (!_externalAudioDetected && _externalAudioDebounceCount >= ExternalAudioDebounceThreshold)
-                    {
-                        // Spotify-as-active-music is handled at DETECTION (its session is in the
-                        // exclusion set while spotifyIsAudible), so a detection here is real
-                        // external audio and pauses normally — including pausing Spotify radio.
-
-                        // Don't treat a launched game's own audio as "external." When a game session is active, the audio we're hearing
-                        // is almost certainly the game itself. Adding ExternalAudio on top creates a stuck state via
-                        // KeepPausedAfterExternalAudio when the game audio oscillates (common with windowed games that produce
-                        // intermittent silence).
-                        if (_playbackService?.IsGameSessionActive == true)
-                        {
-                            _externalAudioDetected = true;
-                            _externalAudioPausedInstantly = false;
-                            _fileLogger?.Debug($"External audio detected (source: {externalAudioSource ?? "unknown"}), but a game is currently launching/running — skipping ExternalAudio pause source (game audio is expected, not a real external source)");
-                            return;
-                        }
-
-                        _externalAudioDetected = true;
-                        _externalAudioPausedInstantly = _settings?.ExternalAudioInstantPause == true;
-                        var useInstant = _externalAudioPausedInstantly;
-                        _fileLogger?.Debug($"External audio detected (source: {externalAudioSource ?? "unknown"}), pausing{(useInstant ? " (instant)" : "")}");
-                        DispatchPauseAction(() =>
-                        {
-                            if (useInstant)
-                                _playbackService?.AddPauseSourceImmediate(Models.PauseSource.ExternalAudio);
-                            else
-                                _playbackService?.AddPauseSource(Models.PauseSource.ExternalAudio);
-                        });
-                    }
-                }
-                else
-                {
-                    _externalAudioDebounceCount = 0;
-                    _externalAudioSilenceCount++;
-
-                    if (_externalAudioDetected && _externalAudioSilenceCount >= ExternalAudioDebounceThreshold)
-                    {
-                        _externalAudioDetected = false;
-                        var wasInstant = _externalAudioPausedInstantly;
-                        _externalAudioPausedInstantly = false;
-
-                        // Desktop-only: honor "keep paused after external audio" — when on, UPS stays paused until the user manually
-                        // resumes (media keys, top panel toggle). In Fullscreen, we always auto-resume regardless of this setting since
-                        // there's no persistent on-screen unpause control in Fullscreen. Note: manual resume paths
-                        // (TopPanelMediaControl, MusicLibrary) explicitly call RemovePauseSource(ExternalAudio) as part of their play
-                        // action, so resume still works — just not automatically.
-                        bool stayPaused = IsDesktop && _settings?.KeepPausedAfterExternalAudio == true;
-                        if (stayPaused)
-                        {
-                            _fileLogger?.Debug("External audio stopped, staying paused (KeepPausedAfterExternalAudio)");
-                            return;
-                        }
-
-                        _fileLogger?.Debug($"External audio stopped, resuming{(wasInstant ? " (instant)" : "")}");
-                        DispatchPauseAction(() =>
-                        {
-                            if (wasInstant)
-                                _playbackService?.RemovePauseSourceImmediate(Models.PauseSource.ExternalAudio);
-                            else
-                                _playbackService?.RemovePauseSource(Models.PauseSource.ExternalAudio);
-                        });
-                    }
-                }
-            }
-            catch (System.Runtime.InteropServices.COMException comEx)
-            {
-                // COM threading issue — WASAPI may require STA on some systems
-                _fileLogger?.Debug($"External audio poll COM error: {comEx.Message} (HRESULT: 0x{comEx.HResult:X8})");
-            }
-            catch (Exception ex)
-            {
-                _fileLogger?.Debug($"External audio poll error: {ex.GetType().Name}: {ex.Message}");
-            }
-            finally
-            {
-                sw.Stop();
-                // Only flag genuinely abnormal ticks. This poll runs 1–2×/sec forever, and routine
-                // work here regularly takes 50–200ms. 250ms flags real stalls without the per-tick noise.
-                if (sw.ElapsedMilliseconds > 250)
-                    _fileLogger?.Debug(() => $"[Perf] ExternalAudioPoll: {sw.ElapsedMilliseconds}ms (slow tick)");
-                Interlocked.Exchange(ref _externalAudioPollRunning, 0);
-            }
-        }
-
-        // Dispatches a pause source action to the UI thread (non-blocking)
-        private void DispatchPauseAction(Action action)
-        {
-            Application.Current?.Dispatcher?.BeginInvoke(action);
-        }
-
-        // Polls keyboard/mouse inactivity for idle-based features (pause and/or volume lowering).
-        // Uses Win32 GetLastInputInfo — does not detect gamepad input.
-        private void OnIdlePollTick(object sender, EventArgs e)
-        {
-            bool pauseEnabled = _settings?.PauseOnIdle == true;
-            bool volumeEnabled = _settings?.LowerVolumeOnIdle == true;
-            bool calmDownEnabled = _settings?.CalmDownOnIdle == true;
-
-            // Fast exit: no idle feature enabled
-            if (!pauseEnabled && !volumeEnabled && !calmDownEnabled)
-            {
-                if (_idleDetected)
-                {
-                    _idleDetected = false;
-                    _playbackService?.RemovePauseSource(Models.PauseSource.Idle);
-                }
-                if (_idleVolumeLowered)
-                {
-                    _idleVolumeLowered = false;
-                    RestoreIdleVolume();
-                }
-                if (_settings != null && _settings.CalmDownIdleActive)
-                {
-                    _settings.CalmDownIdleActive = false;
-                }
-                return;
-            }
-
-            try
-            {
-                var info = new LASTINPUTINFO { cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(LASTINPUTINFO)) };
-                if (!GetLastInputInfo(ref info))
-                    return;
-
-                uint idleMs = (uint)Environment.TickCount - info.dwTime;
-
-                // Pause on Idle
-                if (pauseEnabled)
-                {
-                    uint thresholdMs = (uint)(_settings.IdleTimeoutMinutes * 60 * 1000);
-                    if (idleMs >= thresholdMs)
-                    {
-                        if (!_idleDetected)
-                        {
-                            _idleDetected = true;
-                            _fileLogger?.Debug($"Idle detected ({_settings.IdleTimeoutMinutes}min), pausing");
-                            _playbackService?.AddPauseSource(Models.PauseSource.Idle);
-                        }
-                    }
-                    else if (_idleDetected)
-                    {
-                        _idleDetected = false;
-                        _fileLogger?.Debug("Input detected, resuming from idle");
-                        _playbackService?.RemovePauseSource(Models.PauseSource.Idle);
-                        RewarmJinglePlayerIfEnabled(); // re-open jingle device if idle-teardown released it
-                    }
-                }
-                else if (_idleDetected)
-                {
-                    _idleDetected = false;
-                    _playbackService?.RemovePauseSource(Models.PauseSource.Idle);
-                }
-
-                // Dynamic Volume on Idle
-                if (volumeEnabled)
-                {
-                    uint volumeThresholdMs = (uint)(_settings.IdleVolumeTimeoutMinutes * 60 * 1000);
-                    if (idleMs >= volumeThresholdMs)
-                    {
-                        if (!_idleVolumeLowered)
-                        {
-                            _idleVolumeLowered = true;
-                            _fileLogger?.Debug($"Idle volume: lowering to 25% ({_settings.IdleVolumeTimeoutMinutes}min)");
-                            StartIdleVolumeFade(0.25);
-                        }
-                    }
-                    else if (_idleVolumeLowered)
-                    {
-                        _idleVolumeLowered = false;
-                        _fileLogger?.Debug("Input detected, restoring volume");
-                        RestoreIdleVolume();
-                    }
-                }
-                else if (_idleVolumeLowered)
-                {
-                    _idleVolumeLowered = false;
-                    RestoreIdleVolume();
-                }
-
-                // Calm Down on Idle
-                //
-                // Sets the runtime-only CalmDownIdleActive rather than CalmDownModeEnabled, so the
-                // user's own toggle is left alone and idle cannot switch off a Calm Down they turned
-                // on themselves. CalmDownProcessor ORs the two and ramps on the audio thread, which
-                // is why there is no fade timer here to match the volume feature's.
-                //
-                // Re-asserted every tick rather than only on the transition: a settings save clones
-                // through JSON and drops this [JsonIgnore] flag, so without the re-assert an
-                // unrelated save during an idle stretch would quietly lift Calm Down until the next
-                // input. The write is guarded so it only fires when the value actually differs.
-                if (_settings != null)
-                {
-                    bool wantCalm = calmDownEnabled
-                        && idleMs >= (uint)(_settings.CalmDownIdleTimeoutMinutes * 60 * 1000);
-
-                    if (_settings.CalmDownIdleActive != wantCalm)
-                    {
-                        _settings.CalmDownIdleActive = wantCalm;
-                        _fileLogger?.Debug(wantCalm
-                            ? $"Idle Calm Down: engaging ({_settings.CalmDownIdleTimeoutMinutes}min)"
-                            : "Input detected, releasing idle Calm Down");
-
-                        // The flag alone does nothing on SDL2 — CalmDownProcessor only exists in the
-                        // NAudio pipeline. Both routes into that pipeline are covered (startup via
-                        // CreateMusicPlayer, mid-session via the backend swap), so this should not
-                        // fire; say so loudly if it ever does, because the symptom is silence and
-                        // nothing else in the log would explain it.
-                        if (wantCalm && !_isUsingLiveEffectsPlayer)
-                        {
-                            _fileLogger?.Warn("Idle Calm Down engaged but the active player cannot host the effect "
-                                + "(SDL2). Restart Playnite, or toggle any Live Effects setting, to rebuild on NAudio.");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _fileLogger?.Debug($"Idle poll error: {ex.Message}");
-            }
-        }
-
-        private void StartIdleVolumeFade(double target)
-        {
-            if (_idleVolumeFadeTimer == null)
-            {
-                _idleVolumeFadeTimer = new System.Windows.Threading.DispatcherTimer(
-                    System.Windows.Threading.DispatcherPriority.Background);
-                _idleVolumeFadeTimer.Interval = TimeSpan.FromMilliseconds(50);
-                _idleVolumeFadeTimer.Tick += OnIdleVolumeFadeTick;
-            }
-            _idleVolumeFadeTimer.Start();
-        }
-
-        private void OnIdleVolumeFadeTick(object sender, EventArgs e)
-        {
-            // Step ~0.015 per 50ms tick = 1.0→0.25 in ~50 ticks = ~2.5 seconds
-            _idleVolumeFadeCurrent = Math.Max(0.25, _idleVolumeFadeCurrent - 0.015);
-            _playbackService?.SetIdleVolumeMultiplier(_idleVolumeFadeCurrent);
-
-            if (_idleVolumeFadeCurrent <= 0.25)
-                _idleVolumeFadeTimer.Stop();
-        }
-
-        private void RestoreIdleVolume()
-        {
-            _idleVolumeFadeTimer?.Stop();
-            _idleVolumeFadeCurrent = 1.0;
-            _playbackService?.SetIdleVolumeMultiplier(1.0);
         }
 
         #region Media Key Handlers
