@@ -1970,14 +1970,7 @@ namespace UniPlaySong.Services
                     return;
                 }
 
-                string nextSong;
-                int attempts = 0;
-                do
-                {
-                    nextSong = pool[_random.Next(pool.Count)];
-                    attempts++;
-                }
-                while (nextSong == _currentSongPath && attempts < 10);
+                string nextSong = PickRandomOther(pool, _currentSongPath);
 
                 _fileLogger?.Info($"SkipToNextSong (default pool): '{Path.GetFileName(_currentSongPath)}' → '{Path.GetFileName(nextSong)}'");
                 _previousSongPath = _currentSongPath;
@@ -2028,14 +2021,7 @@ namespace UniPlaySong.Services
             }
 
             // Select random song, avoiding current song
-            string nextGameSong;
-            int gameAttempts = 0;
-            do
-            {
-                nextGameSong = songs[_random.Next(songs.Count)];
-                gameAttempts++;
-            }
-            while (nextGameSong == _currentSongPath && gameAttempts < 10);
+            string nextGameSong = PickRandomOther(songs, _currentSongPath);
 
             _fileLogger?.Info($"SkipToNextSong: Skipping from '{Path.GetFileName(_currentSongPath)}' to '{Path.GetFileName(nextGameSong)}'");
 
@@ -2214,14 +2200,7 @@ namespace UniPlaySong.Services
                 return false;
             }
 
-            string nextSong;
-            int attempts = 0;
-            do
-            {
-                nextSong = pool[_random.Next(pool.Count)];
-                attempts++;
-            }
-            while (nextSong == _lastRadioSongPath && pool.Count > 1 && attempts < 10);
+            string nextSong = PickRandomOther(pool, _lastRadioSongPath);
 
             _fileLogger?.Info($"RadioMode: starting — {System.IO.Path.GetFileName(nextSong)} (source: {settings.RadioMusicSource})");
             RememberTrackBeforeRadio(settings);
@@ -2460,14 +2439,7 @@ namespace UniPlaySong.Services
                 if (shouldRandomize)
                 {
                     // Select random song, avoiding immediate repeat (max 10 attempts to prevent infinite loops)
-                    string selected;
-                    int attempts = 0;
-                    do
-                    {
-                        selected = songs[_random.Next(songs.Count)];
-                        attempts++;
-                    }
-                    while (selected == _previousSongPath && songs.Count > 1 && attempts < 10);
+                    string selected = PickRandomOther(songs, _previousSongPath);
 
                     _previousSongPath = selected;
                     _fileLogger?.Debug($"Randomized song selection: {Path.GetFileName(selected)}");
@@ -2648,7 +2620,7 @@ namespace UniPlaySong.Services
                     var pool = _radioSongPoolProvider(_currentSettings.RadioMusicSource, _currentSettings);
                     if (pool != null && pool.Count > 0)
                     {
-                        return PickDifferentFromCurrent(pool);
+                        return PickRandomOther(pool, _currentSongPath);
                     }
                 }
 
@@ -2659,7 +2631,7 @@ namespace UniPlaySong.Services
                     var pool = _defaultSongPoolProvider(_currentSettings.DefaultMusicSourceOption, _currentSettings);
                     if (pool != null && pool.Count > 1)
                     {
-                        return PickDifferentFromCurrent(pool);
+                        return PickRandomOther(pool, _currentSongPath);
                     }
                 }
 
@@ -2668,7 +2640,7 @@ namespace UniPlaySong.Services
                     var songs = _fileService.GetAvailableSongs(_currentGame);
                     if (songs != null && songs.Count > 1)
                     {
-                        return PickDifferentFromCurrent(songs);
+                        return PickRandomOther(songs, _currentSongPath);
                     }
                 }
 
@@ -2682,9 +2654,12 @@ namespace UniPlaySong.Services
             }
         }
 
-        // Picks a random song from the pool that's different from _currentSongPath.
-        // Falls back to any song in the pool if all candidates coincide after 10 attempts.
-        private string PickDifferentFromCurrent(System.Collections.Generic.IList<string> pool)
+        private string PickRandomOther(IList<string> pool, string avoid) => PickRandomOther(pool, avoid, _random);
+
+        // A random song from the pool other than `avoid` (the current, previous or last radio song), so a pick never
+        // repeats what just played. Gives up after 10 draws and keeps the last one; a one-song pool returns that song,
+        // an empty one null. Every random pick in this class goes through here.
+        internal static string PickRandomOther(IList<string> pool, string avoid, Random random)
         {
             if (pool == null || pool.Count == 0) return null;
             if (pool.Count == 1) return pool[0];
@@ -2692,8 +2667,8 @@ namespace UniPlaySong.Services
             string candidate = null;
             for (int attempts = 0; attempts < 10; attempts++)
             {
-                candidate = pool[_random.Next(pool.Count)];
-                if (candidate != _currentSongPath) return candidate;
+                candidate = pool[random.Next(pool.Count)];
+                if (candidate != avoid) return candidate;
             }
             return candidate;
         }
@@ -2830,13 +2805,7 @@ namespace UniPlaySong.Services
                         if (songs.Count > 1)
                         {
                             // Select random song (avoiding immediate repeat, max 10 attempts)
-                            int attempts = 0;
-                            do
-                            {
-                                nextSong = songs[_random.Next(songs.Count)];
-                                attempts++;
-                            }
-                            while (nextSong == _currentSongPath && songs.Count > 1 && attempts < 10);
+                            nextSong = PickRandomOther(songs, _currentSongPath);
 
                             _fileLogger?.Debug($"Preview: randomizing to {Path.GetFileName(nextSong)}");
                         }
@@ -2993,14 +2962,7 @@ namespace UniPlaySong.Services
                         var pool = _defaultSongPoolProvider(_currentSettings.DefaultMusicSourceOption, _currentSettings);
                         if (pool.Count > 1)
                         {
-                            string nextPoolSong;
-                            int poolAttempts = 0;
-                            do
-                            {
-                                nextPoolSong = pool[_random.Next(pool.Count)];
-                                poolAttempts++;
-                            }
-                            while (nextPoolSong == _currentSongPath && poolAttempts < 10);
+                            string nextPoolSong = PickRandomOther(pool, _currentSongPath);
 
                             _previousSongPath = _currentSongPath;
                             _lastDefaultMusicPath = nextPoolSong;
@@ -3041,14 +3003,7 @@ namespace UniPlaySong.Services
                             if (songs.Count > 1)
                             {
                                 // Select random song (avoiding immediate repeat, max 10 attempts)
-                                string nextSong;
-                                int attempts = 0;
-                                do
-                                {
-                                    nextSong = songs[_random.Next(songs.Count)];
-                                    attempts++;
-                                }
-                                while (nextSong == _currentSongPath && songs.Count > 1 && attempts < 10);
+                                string nextSong = PickRandomOther(songs, _currentSongPath);
 
                                 _previousSongPath = _currentSongPath;
                                 LoadAndPlayFile(nextSong);
