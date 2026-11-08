@@ -1494,6 +1494,7 @@ namespace UniPlaySong
         private List<Guid> gamePropFilterGenreIds = new List<Guid>();
         private List<Guid> gamePropFilterSourceIds = new List<Guid>();
         private DefaultMusicSource defaultMusicSourceOption = DefaultMusicSource.BundledPreset;
+        private double trailerAudioDelaySeconds = 0;
         private string selectedBundledPreset = "tunetank-dark-ambient-soundscape-music.mp3"; // Filename of selected bundled preset
         private bool bundledPresetMigrated = false; // One-time migration flag for the bundled preset feature
         private bool randomizeBundledTrackOnStartup = false; // Pick a random bundled preset once at Playnite startup
@@ -1777,6 +1778,14 @@ namespace UniPlaySong
                 useNativeMusicAsDefault = (value == DefaultMusicSource.NativeTheme);
 #pragma warning restore CS0618
             }
+        }
+
+        // Seconds the trailer-audio source waits before it starts, so it lines up with themes that start the trailer
+        // video a moment after selection (ANIKI REMAKE: about 2-5 s). 0-10, in half seconds.
+        public double TrailerAudioDelaySeconds
+        {
+            get => trailerAudioDelaySeconds;
+            set { trailerAudioDelaySeconds = Math.Max(0, Math.Min(10, Math.Round(value * 2) / 2)); OnPropertyChanged(); }
         }
 
         // Filename of the selected bundled preset (e.g. "tunetank-dark-space-ambient.mp3")

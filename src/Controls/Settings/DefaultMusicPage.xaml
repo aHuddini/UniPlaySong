@@ -239,6 +239,16 @@
                 <StackPanel Margin="24,2,0,0">
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,4"
                                Text="FFmpeg &amp; EML trailers required. For games where you have no music, pulls the audio out of the ExtraMetadataLoader video trailer and plays that. The first play per game may be delayed. Microtrailers will keep UPS silent."/>
+                    <StackPanel Orientation="Horizontal" Margin="0,2,0,2">
+                        <TextBlock Text="Start delay" Style="{StaticResource UpsLabel}" Margin="0,0,12,0"/>
+                        <Slider Minimum="0" Maximum="10" Width="220" VerticalAlignment="Center"
+                                Value="{Binding Settings.TrailerAudioDelaySeconds}"
+                                TickFrequency="0.5" IsSnapToTickEnabled="True"/>
+                        <TextBlock Style="{StaticResource UpsValue}" Margin="12,0,0,0"
+                                   Text="{Binding Settings.TrailerAudioDelaySeconds, StringFormat='{}{0:0.0} s'}"/>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,6"
+                               Text="Waits this long before the trailer audio starts, so it lines up with themes that show the trailer a few seconds after you pick a game (ANIKI REMAKE needs about 2-5 s). 0 starts it right away."/>
                     <Border Style="{StaticResource UpsCardWarn}">
                         <TextBlock Style="{StaticResource UpsBody}" Margin="0"
                                    Text="Note: In ExtraMetadataLoader's own settings, turn on &quot;Play videos initially without sound&quot; to ensure normal UPS functionality."/>

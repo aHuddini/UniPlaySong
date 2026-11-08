@@ -737,11 +737,56 @@ namespace UniPlaySong.Services
                     return;
                 }
 
-                _musicPlayer.Play(_defaultMusicPausedOnTime);
-                _fader.FadeIn();
+                var startFrom = _defaultMusicPausedOnTime;
+                StartDefaultMusicAfterTrailerDelay(defaultMusicPath, settings, () =>
+                {
+                    _musicPlayer.Play(startFrom);
+                    _fader.FadeIn();
+                });
                 RemovePauseSource(PauseSource.DefaultMusicPreservation);
                 OnMusicStarted?.Invoke(settings);
             }
+        }
+
+        // "Audio ripped from the game's trailer" can wait TrailerAudioDelaySeconds before it starts, so it lines up with
+        // themes that start the trailer video a moment after selection. Every other source, and a delay of 0, runs
+        // startsNow (or start) at once. A newer play decision (another game, a stop) cancels the wait, the same
+        // generation check StartWithFadeIn's deferred start uses.
+        private void StartDefaultMusicAfterTrailerDelay(string path, UniPlaySongSettings settings, Action start, Action startsNow = null)
+        {
+            var s = _currentSettings ?? settings;
+            double delay = s?.DefaultMusicSourceOption == DefaultMusicSource.DeferToTrailerAudio ? s.TrailerAudioDelaySeconds : 0;
+            var dispatcher = Application.Current?.Dispatcher;
+            if (delay <= 0 || dispatcher == null)
+            {
+                (startsNow ?? start)();
+                return;
+            }
+
+            int generation = System.Threading.Volatile.Read(ref _playbackGeneration);
+            var player = _musicPlayer;
+            _fileLogger?.Debug($"Trailer audio starts in {delay:0.0}s: {Path.GetFileName(path)}");
+            var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(delay) };
+            timer.Tick += (o, e) =>
+            {
+                timer.Stop();
+                if (System.Threading.Volatile.Read(ref _playbackGeneration) != generation
+                    || !ReferenceEquals(_musicPlayer, player)
+                    || !string.Equals(_currentSongPath, path, StringComparison.OrdinalIgnoreCase))
+                {
+                    _fileLogger?.Debug($"Trailer audio delay superseded: {Path.GetFileName(path)}");
+                    return;
+                }
+                start();
+                // Paused while waiting (a video, focus loss...): start in step, then hold it the way an instant pause
+                // does, so the pause's own release resumes it.
+                if (_isPaused)
+                {
+                    _musicPlayer.Pause();
+                    _fader?.MarkPaused();
+                }
+            };
+            timer.Start();
         }
 
         // True only for the duration of a PlayDefaultMusicInterim call. Routes PlayGameMusic into
@@ -1534,7 +1579,12 @@ namespace UniPlaySong.Services
                                     var defaultStart = (_currentSettings ?? settings)?.ResumeDefaultMusicPosition == false
                                         ? TimeSpan.Zero
                                         : _defaultMusicPausedOnTime;
-                                    _musicPlayer.Play(defaultStart);
+                                    StartDefaultMusicAfterTrailerDelay(songToPlay, settings, () =>
+                                    {
+                                        _musicPlayer.Volume = 0;
+                                        _musicPlayer.Play(defaultStart);
+                                        _fader.FadeIn();
+                                    }, startsNow: () => _musicPlayer.Play(defaultStart));
                                     _fileLogger?.Debug($"Playing default music at position {defaultStart.TotalSeconds:F2}s");
                                     OnMusicStarted?.Invoke(settings);
                                 }

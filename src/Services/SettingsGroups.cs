@@ -110,6 +110,7 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.SpotifySkipOnGap),
                     nameof(UniPlaySongSettings.StopAfterSongEnds),
                     nameof(UniPlaySongSettings.SuppressPlayniteBackgroundMusic),
+                    nameof(UniPlaySongSettings.TrailerAudioDelaySeconds),
                     nameof(UniPlaySongSettings.UseNativeMusicAsDefault),
                 },
                 [Pauses] = new string[]
