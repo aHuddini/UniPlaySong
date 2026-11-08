@@ -19,17 +19,24 @@
         <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
 
             <TextBlock Text="Media Controls" Style="{StaticResource UpsPageTitle}"/>
-            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Playback controls and Now-Playing readout UniPlaySong adds to Playnite."/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Playback controls UniPlaySong adds to Playnite."/>
                 <CheckBox Style="{StaticResource UpsToggle}" Content="Show Media Controls on Panel (Desktop)"
-                          IsChecked="{Binding Settings.ShowDesktopMediaControls}"
-                          Command="{Binding SetRestartRequired}"
-                          CommandParameter="{Binding RelativeSource={RelativeSource Self}}"/>
-                <TextBlock Style="{StaticResource UpsHint}">
-                    <Run Text="Displays the play/pause and skip buttons on Playnite's Top Panel."/>
-                    <Run Text="Requires a Playnite restart to take effect."
-                         Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
-                </TextBlock>
-    
+                          IsChecked="{Binding Settings.ShowDesktopMediaControls}"/>
+                <TextBlock Style="{StaticResource UpsHint}"
+                           Text="Adds UniPlaySong's buttons to Playnite's Top Panel. Pick which ones below. Takes effect straight away."/>
+
+                <CheckBox Style="{StaticResource UpsToggleChild}" Content="Play/Pause button"
+                          IsChecked="{Binding Settings.ShowPlayPauseButton}"
+                          IsEnabled="{Binding Settings.ShowDesktopMediaControls}"/>
+                <CheckBox Style="{StaticResource UpsToggleChild}" Content="Skip button"
+                          IsChecked="{Binding Settings.ShowSkipButton}"
+                          IsEnabled="{Binding Settings.ShowDesktopMediaControls}"/>
+                <CheckBox Style="{StaticResource UpsToggleChild}" Content="Calm Down button"
+                          IsChecked="{Binding Settings.ShowCalmDownButton}"
+                          IsEnabled="{Binding Settings.ShowDesktopMediaControls}"/>
+                <TextBlock Style="{StaticResource UpsHintIndented}"
+                           Text="A moon button that turns Calm Down Mode on and off."/>
+
                 <CheckBox Style="{StaticResource UpsToggle}" Content="Show Media Controls in Windows Taskbar's Thumbnail Preview."
                           IsChecked="{Binding Settings.ShowTaskbarMediaControls}"
                           Command="{Binding SetRestartRequired}"
@@ -40,81 +47,40 @@
                          Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
                 </TextBlock>
 
-                <CheckBox Style="{StaticResource UpsToggle}" Content="Show Calm Down button on Panel (Desktop)"
-                          IsChecked="{Binding Settings.ShowCalmDownButton}"/>
+                <CheckBox Style="{StaticResource UpsToggle}" Content="Auto-hide controls that can't be used"
+                          IsChecked="{Binding Settings.AutoHideMediaControls}"/>
                 <TextBlock Style="{StaticResource UpsHint}"
-                           Text="Adds a moon button to the Top Panel that turns Calm Down Mode on and off. Takes effect straight away."/>
-    
-
-            <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Now Playing Ticker" Style="{StaticResource UpsSectionTitle}"/>
-            </Border>
-                <CheckBox Style="{StaticResource UpsToggle}" Content="Show Now Playing on Panel (Desktop)"
-                          IsChecked="{Binding Settings.ShowNowPlayingInTopPanel}"
-                          Command="{Binding SetRestartRequired}"
-                          CommandParameter="{Binding RelativeSource={RelativeSource Self}}"/>
-                <TextBlock Style="{StaticResource UpsHint}">
-                    <Run Text="Displays the current song title, artist, and duration on Playnite's Top Panel."/>
-                    <Run Text="Requires a Playnite restart to take effect."
-                         Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
-                </TextBlock>
-    
-                <CheckBox Style="{StaticResource UpsToggleChild}" Content="Hide Now Playing for default music"
-                          IsChecked="{Binding Settings.HideNowPlayingForDefaultMusic}"
-                          IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
-                          />
-                <TextBlock Text="When enabled, the Now Playing panel is hidden when a game has no downloaded music and default/fallback music is playing"
-                           Style="{StaticResource UpsHintIndented}"/>
-    
-                <CheckBox Style="{StaticResource UpsToggleChild}" Content="Show [Default] indicator in Now Playing"
-                          IsChecked="{Binding Settings.ShowDefaultMusicIndicator}"
-                          IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
-                          />
-                <TextBlock Text="When enabled, shows [Default] prefix in the Now Playing ticker when default/fallback music is playing"
-                           Style="{StaticResource UpsHintIndented}"/>
-    
-
-            <!-- A card, not a bar: the one block here that is output rather than input, so it
-                 earns being set apart. No description - the thing itself is the explanation.
-
-                 The Loaded/Unloaded handlers live on the card because they drove the Border that
-                 used to wrap this; the preview stops updating without them. -->
-            <Border Style="{StaticResource UpsCard}"
-                    Loaded="NowPlayingPreview_OnLoaded" Unloaded="NowPlayingPreview_OnUnloaded">
-                <StackPanel>
-                    <TextBlock Text="Preview" Style="{StaticResource UpsCardTitle}"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                        <TextBlock Text="Current Song: " Style="{StaticResource UpsParamLabel}"
-                                   VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding CurrentSongDisplay}" FontSize="11" FontWeight="Normal"
-                                   Foreground="{StaticResource UpsTextMuted}" FontStyle="Italic"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                        <Grid Width="64" Height="64" Margin="0,0,10,0">
-                            <Border Background="#22000000" CornerRadius="3"/>
-                            <TextBlock Style="{StaticResource UpsLabel}" Text="&#x266A;" FontSize="28" HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" Opacity="0.5"
-                                       Visibility="{Binding PreviewHasNoArt, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            <Image Source="{Binding PreviewNowPlayingArtPath}" Stretch="UniformToFill"
-                                   Visibility="{Binding PreviewHasArt, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                        </Grid>
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding PreviewNowPlayingTitle}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" MaxWidth="280"/>
-                            <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding PreviewNowPlayingArtist}" Opacity="0.75" TextTrimming="CharacterEllipsis" MaxWidth="280"/>
-                            <!-- Spotify-only metadata; each row collapses when empty (game music leaves these blank). -->
-                            <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding PreviewNowPlayingAlbum}" FontSize="11" Opacity="0.6" TextTrimming="CharacterEllipsis" MaxWidth="280"
-                                       Visibility="{Binding PreviewHasAlbum, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding PreviewNowPlayingGenre}" FontSize="11" Opacity="0.6" TextTrimming="CharacterEllipsis" MaxWidth="280"
-                                       Visibility="{Binding PreviewHasGenre, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            <TextBlock Style="{StaticResource UpsLabel}" Text="{Binding PreviewNowPlayingDuration}" FontSize="11" Opacity="0.6"
-                                       Visibility="{Binding PreviewHasDuration, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                        </StackPanel>
-                    </StackPanel>
+                           Text="Saves Top Panel space. While no music is loaded, the items picked below are hidden; Skip also hides when there is only one song. Paused music keeps its controls."/>
+                <StackPanel IsEnabled="{Binding Settings.AutoHideMediaControls}">
+                    <TextBlock Style="{StaticResource UpsHintIndented}" Margin="24,4,0,0" FontWeight="SemiBold"
+                               Text="What to hide"/>
+                    <!-- Three even columns, so the six items sit in two tidy rows at the child indent. Sub-option
+                         (violet) switches with normal-weight labels: they only matter while auto-hide is on. -->
+                    <UniformGrid Columns="3" Margin="24,0,0,14">
+                        <CheckBox Style="{StaticResource UpsToggleChildFlush}" Content="Play/Pause"
+                                  FontWeight="Normal" Margin="0,4,12,0"
+                                  IsChecked="{Binding Settings.AutoHidePlayPause}"/>
+                        <CheckBox Style="{StaticResource UpsToggleChildFlush}" Content="Skip (and with one song)"
+                                  FontWeight="Normal" Margin="0,4,12,0"
+                                  IsChecked="{Binding Settings.AutoHideSkip}"/>
+                        <CheckBox Style="{StaticResource UpsToggleChildFlush}" Content="Calm Down"
+                                  FontWeight="Normal" Margin="0,4,12,0"
+                                  IsChecked="{Binding Settings.AutoHideCalmDown}"/>
+                        <CheckBox Style="{StaticResource UpsToggleChildFlush}" Content="Spectrum"
+                                  FontWeight="Normal" Margin="0,4,12,0"
+                                  IsChecked="{Binding Settings.AutoHideSpectrum}"/>
+                        <CheckBox Style="{StaticResource UpsToggleChildFlush}" Content="Peak meter"
+                                  FontWeight="Normal" Margin="0,4,12,0"
+                                  IsChecked="{Binding Settings.AutoHidePeakMeter}"/>
+                        <CheckBox Style="{StaticResource UpsToggleChildFlush}" Content="Progress bar"
+                                  FontWeight="Normal" Margin="0,4,12,0"
+                                  IsChecked="{Binding Settings.AutoHideProgress}"/>
+                    </UniformGrid>
+                    <CheckBox Style="{StaticResource UpsToggleChild}" Content="Also hide while only default music plays"
+                              IsChecked="{Binding Settings.AutoHideForDefaultMusic}"/>
+                    <TextBlock Style="{StaticResource UpsHintIndented}"
+                               Text="Treats default music (a game with no songs of its own) the same as no music."/>
                 </StackPanel>
-            </Border>
-    
 
         </StackPanel>
     </ScrollViewer>

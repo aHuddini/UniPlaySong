@@ -58,42 +58,31 @@ namespace UniPlaySong.DeskMediaControl
             var settings = _getSettings?.Invoke();
             var progressPosition = settings?.ProgressBarPosition ?? ProgressBarPosition.AfterSkipButton;
 
-            if (settings?.ShowDesktopMediaControls != false)
-            {
-                yield return _playPauseItem;
-                yield return _skipItem;
-            }
+            // Every item is always yielded and shown or hidden through Visible. Playnite builds the panel from what this
+            // returns at startup, so an item yielded conditionally could not be turned on again without a restart;
+            // toggling Visible on an item that is always returned works live. ApplyVisibility (one rule, Decide) sets
+            // them here and on every refresh.
+            ApplyVisibility(settings, _getPlaybackService?.Invoke());
 
-            // Always yielded, shown via Visible. Playnite builds the panel from what this returns at
-            // startup, so an item yielded conditionally could not be turned on again without a
-            // restart - the same constraint the sidebar items have. Toggling Visible on an item that
-            // is always returned works live, which is how the visualizer and peak meter do it.
+            yield return _playPauseItem;
+            yield return _skipItem;
             if (_calmDownItem != null)
-            {
-                _calmDownItem.Visible = settings?.ShowCalmDownButton == true;
                 yield return _calmDownItem;
-            }
 
             // Progress bar — position depends on setting (BelowNowPlaying is embedded, not a separate item)
             if (_progressItem != null && progressPosition == ProgressBarPosition.AfterSkipButton)
                 yield return _progressItem;
 
             if (_spectrumItem != null)
-            {
-                _spectrumItem.Visible = settings?.ShowSpectrumVisualizer == true;
                 yield return _spectrumItem;
-            }
 
             if (_peakMeterItem != null)
-            {
-                _peakMeterItem.Visible = settings?.ShowPeakMeter == true;
                 yield return _peakMeterItem;
-            }
 
             if (_progressItem != null && progressPosition == ProgressBarPosition.AfterVisualizer)
                 yield return _progressItem;
 
-            if (settings?.ShowNowPlayingInTopPanel == true && _nowPlayingItem != null)
+            if (_nowPlayingItem != null)
                 yield return _nowPlayingItem;
 
             if (_progressItem != null && progressPosition == ProgressBarPosition.AfterNowPlaying)
@@ -602,7 +591,9 @@ namespace UniPlaySong.DeskMediaControl
 
         private void UpdateSkipVisibility()
         {
-            UpdateSkipState(_getPlaybackService?.Invoke());
+            var playbackService = _getPlaybackService?.Invoke();
+            UpdateSkipState(playbackService);
+            ApplyVisibility(_getSettings?.Invoke(), playbackService);
         }
 
         private void UpdateSkipState(IMusicPlaybackService playbackService)
@@ -653,40 +644,71 @@ namespace UniPlaySong.DeskMediaControl
                     // Fullscreen menu, so the button reflects the setting rather than trusting its
                     // own last click.
                     if (_calmDownItem != null)
-                    {
-                        _calmDownItem.Visible = settings?.ShowCalmDownButton == true;
                         UpdateCalmDownVisual(settings?.CalmDownModeEnabled == true);
-                    }
-                    bool vizEnabled = settings?.ShowSpectrumVisualizer == true;
-                    if (_spectrumItem != null)
-                        _spectrumItem.Visible = vizEnabled;
-                    _spectrumVisualizer?.SetActive(iconPlaying && vizEnabled);
 
-                    bool peakEnabled = settings?.ShowPeakMeter == true;
-                    if (_peakMeterItem != null)
-                        _peakMeterItem.Visible = peakEnabled;
-                    _peakMeter?.SetActive(iconPlaying && peakEnabled);
-
-                    // Progress bar active state
+                    var shown = ApplyVisibility(settings, playbackService);
+                    _spectrumVisualizer?.SetActive(iconPlaying && shown.Spectrum);
+                    _peakMeter?.SetActive(iconPlaying && shown.PeakMeter);
                     _progressBar?.SetActive(isPlaying);
-                    if (_progressItem != null)
-                        _progressItem.Visible = settings?.ShowProgressBar == true;
-
-                    // Hide Now Playing panel when default music is playing (no game-specific music)
-                    // Exception: pool-based defaults show song info (radio mode)
-                    if (_nowPlayingItem != null && settings?.ShowNowPlayingInTopPanel == true)
-                    {
-                        bool hideForDefault = settings.HideNowPlayingForDefaultMusic &&
-                                              playbackService?.IsPlayingDefaultMusic == true &&
-                                              playbackService?.IsPlayingPoolBasedDefault != true;
-                        _nowPlayingItem.Visible = !hideForDefault;
-                    }
                 }
                 catch (Exception ex)
                 {
                     _log?.Invoke($"Error updating top panel icons: {ex.Message}");
                 }
             });
+        }
+
+        // Which top-panel items show. Decide is the whole rule; ApplyVisibility feeds it the live state and sets each
+        // item's Visible.
+        internal sealed class PanelVisibility
+        {
+            public bool PlayPause, Skip, CalmDown, Spectrum, PeakMeter, Progress, NowPlaying;
+        }
+
+        // musicLoaded: a song is loaded (playing or paused) or Spotify is the active source. Auto-hide only reacts to
+        // nothing loaded, never to a pause, so Play stays reachable to resume. hideNowPlayingForDefault keeps Now
+        // Playing's own rule (hidden while non-pool default music plays, when that option is on). defaultMusicPlaying
+        // counts as idle too when AutoHideForDefaultMusic is on.
+        internal static PanelVisibility Decide(UniPlaySongSettings s, bool musicLoaded, bool canSkip, bool hideNowPlayingForDefault,
+                                               bool defaultMusicPlaying = false)
+        {
+            if (s == null) return new PanelVisibility();
+            // idle: auto-hide applies right now. Each item is only collapsed if the user picked it (AutoHide*).
+            bool idle = s.AutoHideMediaControls
+                && (!musicLoaded || (s.AutoHideForDefaultMusic && defaultMusicPlaying));
+            bool controls = s.ShowDesktopMediaControls;
+            return new PanelVisibility
+            {
+                PlayPause = controls && s.ShowPlayPauseButton && !(idle && s.AutoHidePlayPause),
+                Skip = controls && s.ShowSkipButton
+                    && !(s.AutoHideSkip && (idle || (s.AutoHideMediaControls && !canSkip))),
+                CalmDown = controls && s.ShowCalmDownButton && !(idle && s.AutoHideCalmDown),
+                Spectrum = s.ShowSpectrumVisualizer && !(idle && s.AutoHideSpectrum),
+                PeakMeter = s.ShowPeakMeter && !(idle && s.AutoHidePeakMeter),
+                Progress = s.ShowProgressBar && !(idle && s.AutoHideProgress),
+                NowPlaying = s.ShowNowPlayingInTopPanel && !hideNowPlayingForDefault,
+            };
+        }
+
+        private PanelVisibility ApplyVisibility(UniPlaySongSettings settings, IMusicPlaybackService playbackService)
+        {
+            var spotify = _getSpotifyService?.Invoke();
+            bool musicLoaded = playbackService?.IsLoaded == true || playbackService?.IsPlaying == true
+                || (spotify != null && spotify.IsSpotifyActive);
+            bool hideForDefault = settings?.HideNowPlayingForDefaultMusic == true
+                && playbackService?.IsPlayingDefaultMusic == true
+                && playbackService?.IsPlayingPoolBasedDefault != true;
+
+            bool defaultMusicPlaying = playbackService?.IsPlayingDefaultMusic == true;
+            var v = Decide(settings, musicLoaded, _canSkip, hideForDefault, defaultMusicPlaying);
+            if (_playPauseItem != null) _playPauseItem.Visible = v.PlayPause;
+            if (_skipItem != null) _skipItem.Visible = v.Skip;
+            if (_calmDownItem != null) _calmDownItem.Visible = v.CalmDown;
+            if (_spectrumItem != null) _spectrumItem.Visible = v.Spectrum;
+            if (_peakMeterItem != null) _peakMeterItem.Visible = v.PeakMeter;
+            if (_progressItem != null) _progressItem.Visible = v.Progress;
+            if (_nowPlayingItem != null) _nowPlayingItem.Visible = v.NowPlaying;
+            return v;
         }
 
         // Keep old method name for backwards compatibility

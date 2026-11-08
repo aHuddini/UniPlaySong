@@ -99,8 +99,8 @@ namespace UniPlaySong
             {
                 RefreshRarityRows();
             }
-            // Note: ShowNowPlayingInTopPanel and ShowDesktopMediaControls use SetRestartRequired command
-            // which sets IsRestartRequired on the Playnite settings window for safe restart handling
+            // The top-panel toggles apply live (TopPanelMediaControlViewModel.ApplyVisibility); only the taskbar
+            // controls still use SetRestartRequired.
         }
 
         // Command that sets IsRestartRequired on the Playnite settings window. This triggers Playnite's

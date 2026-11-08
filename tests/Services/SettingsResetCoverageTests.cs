@@ -215,6 +215,9 @@ namespace UniPlaySong.Tests.Services
                 // The top panel is shared with themes and other extensions, so a new button is offered
                 // rather than imposed. Nobody's panel changes on upgrade.
                 new { Name = nameof(UniPlaySongSettings.ShowCalmDownButton), Actual = (object)s.ShowCalmDownButton, Expected = (object)false },
+                // Auto-hide is new in 1.9.2, so upgraders have no saved value and would get this default:
+                // off, or everyone's top-panel buttons would start vanishing on upgrade.
+                new { Name = nameof(UniPlaySongSettings.AutoHideMediaControls), Actual = (object)s.AutoHideMediaControls, Expected = (object)false },
                 // Launching another application on startup is not something to opt someone into.
                 new { Name = nameof(UniPlaySongSettings.AutoLaunchSpotifyOnStartup), Actual = (object)s.AutoLaunchSpotifyOnStartup, Expected = (object)false },
                 // On, because the settings are otherwise four clicks deep in Add-ons -> Extensions and

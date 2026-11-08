@@ -431,6 +431,16 @@ namespace UniPlaySong
         private bool showSpectrumVisualizer = true;
         private bool showPeakMeter = false;
         private bool showCalmDownButton = false; // moon button on the Desktop top panel
+        private bool showPlayPauseButton = true;
+        private bool showSkipButton = true;
+        private bool autoHideMediaControls = false;
+        private bool autoHideForDefaultMusic = true;
+        private bool autoHidePlayPause = false;
+        private bool autoHideSkip = true;
+        private bool autoHideCalmDown = false;
+        private bool autoHideSpectrum = true;
+        private bool autoHidePeakMeter = true;
+        private bool autoHideProgress = true;
         private bool autoDeleteMusicOnGameRemoval = true;
 
         // NAudio fade curve experimentation
@@ -1221,6 +1231,71 @@ namespace UniPlaySong
         {
             get => showCalmDownButton;
             set { showCalmDownButton = value; OnPropertyChanged(); }
+        }
+
+        // Per-button choice under ShowDesktopMediaControls (issue #50).
+        public bool ShowPlayPauseButton
+        {
+            get => showPlayPauseButton;
+            set { showPlayPauseButton = value; OnPropertyChanged(); }
+        }
+
+        public bool ShowSkipButton
+        {
+            get => showSkipButton;
+            set { showSkipButton = value; OnPropertyChanged(); }
+        }
+
+        // Collapses the Desktop top-panel items that can't do anything: all of them while no music is loaded, and
+        // Skip while there is only one song (issue #50).
+        public bool AutoHideMediaControls
+        {
+            get => autoHideMediaControls;
+            set { autoHideMediaControls = value; OnPropertyChanged(); }
+        }
+
+        // Which items auto-hide collapses. Play/Pause and Calm Down stay by default: they still do something with no music.
+        public bool AutoHidePlayPause
+        {
+            get => autoHidePlayPause;
+            set { autoHidePlayPause = value; OnPropertyChanged(); }
+        }
+
+        public bool AutoHideSkip
+        {
+            get => autoHideSkip;
+            set { autoHideSkip = value; OnPropertyChanged(); }
+        }
+
+        public bool AutoHideCalmDown
+        {
+            get => autoHideCalmDown;
+            set { autoHideCalmDown = value; OnPropertyChanged(); }
+        }
+
+        public bool AutoHideSpectrum
+        {
+            get => autoHideSpectrum;
+            set { autoHideSpectrum = value; OnPropertyChanged(); }
+        }
+
+        public bool AutoHidePeakMeter
+        {
+            get => autoHidePeakMeter;
+            set { autoHidePeakMeter = value; OnPropertyChanged(); }
+        }
+
+        public bool AutoHideProgress
+        {
+            get => autoHideProgress;
+            set { autoHideProgress = value; OnPropertyChanged(); }
+        }
+
+        // With AutoHideMediaControls: default music (a game with no songs of its own) counts as no music too.
+        public bool AutoHideForDefaultMusic
+        {
+            get => autoHideForDefaultMusic;
+            set { autoHideForDefaultMusic = value; OnPropertyChanged(); }
         }
 
         // NAudio fade-in curve shape (only applies when Live Effects or Visualizer enabled)

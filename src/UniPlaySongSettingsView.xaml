@@ -215,6 +215,9 @@
                 <TabItem Header="Media Controls">
                     <settings:MediaControlsPage/>
                 </TabItem>
+                <TabItem Header="Now Playing">
+                    <settings:NowPlayingPage/>
+                </TabItem>
                 <TabItem Header="Tagging">
                     <settings:TaggingPage/>
                 </TabItem>

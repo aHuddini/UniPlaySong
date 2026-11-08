@@ -44,8 +44,10 @@ namespace UniPlaySong.Tests.Services
             Assert.Greater(method, -1);
 
             var body = text.Substring(method, text.IndexOf("public TopPanelMediaControlViewModel(") - method);
-            StringAssert.Contains("_calmDownItem.Visible = settings?.ShowCalmDownButton == true", body,
-                "visibility must come from the setting on each refresh");
+            StringAssert.Contains("ApplyVisibility(", body,
+                "visibility must come from the setting on each refresh (the shared rule, TopPanelVisibilityTests)");
+            StringAssert.Contains("yield return _calmDownItem;", body, "the item is always yielded");
+            StringAssert.DoesNotContain("ShowCalmDownButton", body, "yielding must not depend on the setting");
         }
 
         [Test]
