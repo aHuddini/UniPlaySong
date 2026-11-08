@@ -1322,6 +1322,8 @@ namespace UniPlaySong.Services
                 await viewModel.DownloadAsync();
             }, () => viewModel.IsValidUrl && !viewModel.IsDownloading);
 
+            viewModel.OnFilesDownloaded = AutoNormalizeDownloadedFiles;
+
             // Handle cancel command
             viewModel.CancelCommand = new Common.RelayCommand(() =>
             {

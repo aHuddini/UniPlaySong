@@ -5,7 +5,7 @@ Packages:
     ReleaseDate: 2026-11-07
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.2/UniPlaySong-1_9_2.pext'
     Changelog:
-      - '[Improved] Placeholder: 1.9.2 update, entries land here as work does.'
+      - '[Fix] Download from URL now auto-normalizes the song when "Auto-normalize after download" is on, like other downloads.'
   - Version: 1.9.1
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-11-07

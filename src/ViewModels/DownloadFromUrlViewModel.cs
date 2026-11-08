@@ -162,6 +162,9 @@ namespace UniPlaySong.ViewModels
 
         public Action<bool> OnDownloadComplete { get; set; }
 
+        // Post-processing for the saved file (auto-normalize); runs before the new song is played
+        public Action<System.Collections.Generic.List<string>> OnFilesDownloaded { get; set; }
+
         public DownloadFromUrlViewModel(
             IPlayniteAPI playniteApi,
             IDownloadManager downloadManager,
@@ -729,6 +732,8 @@ namespace UniPlaySong.ViewModels
                         });
 #pragma warning restore CS4014
                     }
+
+                    OnFilesDownloaded?.Invoke(new System.Collections.Generic.List<string> { filePath });
 
                     // Invalidate song cache since we added a new file
                     _fileService.InvalidateCacheForGame(_game);
