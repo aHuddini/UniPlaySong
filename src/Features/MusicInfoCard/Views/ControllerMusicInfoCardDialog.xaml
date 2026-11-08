@@ -13,6 +13,11 @@
                 <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="DeepPurple" SecondaryColor="Lime" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <!-- Glass tile rim: bright along the top, fading toward the bottom, like light catching a pane. -->
+            <LinearGradientBrush x:Key="GlassEdge" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#40FFFFFF" Offset="0"/>
+                <GradientStop Color="#0AFFFFFF" Offset="1"/>
+            </LinearGradientBrush>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -22,33 +27,33 @@
          only background pixels seen come from this Border. -->
     <Border x:Name="OuterCardBorder"
             Background="#1C0F22"
-            BorderBrush="#3D3D3D"
-            BorderThickness="1"
+            BorderThickness="0"
             CornerRadius="14"
             Margin="0">
         <Grid ClipToBounds="True">
             <Image x:Name="BlurredBackdrop"
+                   RenderOptions.BitmapScalingMode="HighQuality"
                    Stretch="UniformToFill"
                    StretchDirection="Both"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"
                    IsHitTestVisible="False"
-                   Opacity="0.45">
-                <Image.Effect>
-                    <BlurEffect Radius="50" KernelType="Gaussian" RenderingBias="Performance"/>
-                </Image.Effect>
-                <!-- See Desktop dialog XAML for the BitmapCache rationale.
-                     Without this, BlurEffect re-runs Gaussian convolution
-                     on every repaint — causing scroll + fade lag. -->
-                <Image.CacheMode>
-                    <BitmapCache EnableClearType="False"
-                                 SnapsToDevicePixels="True"/>
-                </Image.CacheMode>
+                   Opacity="1">
             </Image>
 
             <!-- Dark veil ~80% black (was 60% / 0x99). Same readability
                  upgrade as the Desktop dialog. -->
-            <Border Background="#CC000000" IsHitTestVisible="False"/>
+            <Border Background="#BF000000" IsHitTestVisible="False"/>
+            <!-- Subtle vignette: the backdrop darkens a little toward the edges and corners, for depth and
+                 readability at the rim. Clear in the middle, at most ~25% darker at the corners. -->
+            <Border IsHitTestVisible="False">
+                <Border.Background>
+                    <RadialGradientBrush RadiusX="0.75" RadiusY="0.75">
+                        <GradientStop Color="#00000000" Offset="0.55"/>
+                        <GradientStop Color="#40000000" Offset="1"/>
+                    </RadialGradientBrush>
+                </Border.Background>
+            </Border>
 
             <Border x:Name="CardTintLayer"
                     Background="Transparent"
@@ -154,11 +159,19 @@
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled"
                               Margin="0,4,0,12">
-                    <StackPanel x:Name="StatsPanel" Opacity="0">
+                    <ScrollViewer.Resources>
+                        <!-- Thinner than the Material Design default (10 px). -->
+                        <Style TargetType="ScrollBar" BasedOn="{StaticResource {x:Type ScrollBar}}">
+                            <Setter Property="Width" Value="10"/>
+                            <Setter Property="MinWidth" Value="10"/>
+                        </Style>
+                    </ScrollViewer.Resources>
+                    <StackPanel x:Name="StatsPanel" Opacity="0.01">
                         <!-- Headline -->
-                        <Border Background="#A02A2A2A"
-                                BorderBrush="#3A3A3A"
-                                BorderThickness="0,1,0,0"
+                        <Border Tag="Glass"
+                                Background="#17FFFFFF"
+                                BorderBrush="{StaticResource GlassEdge}"
+                                BorderThickness="1"
                                 CornerRadius="10"
                                 Padding="22,16"
                                 Margin="0,0,0,14">
@@ -227,9 +240,10 @@
 
                         <!-- Playlist info -->
                         <Border x:Name="PlaylistPanel"
-                                Background="#A02A2A2A"
-                                BorderBrush="#3A3A3A"
-                                BorderThickness="0,1,0,0"
+                                Tag="Glass"
+                                Background="#17FFFFFF"
+                                BorderBrush="{StaticResource GlassEdge}"
+                                BorderThickness="1"
                                 CornerRadius="10"
                                 Padding="22,14"
                                 Margin="0,0,0,12"
@@ -248,9 +262,10 @@
                         </Border>
 
                         <!-- Longest / shortest -->
-                        <Border Background="#A02A2A2A"
-                                BorderBrush="#3A3A3A"
-                                BorderThickness="0,1,0,0"
+                        <Border Tag="Glass"
+                                Background="#17FFFFFF"
+                                BorderBrush="{StaticResource GlassEdge}"
+                                BorderThickness="1"
                                 CornerRadius="10"
                                 Padding="22,14"
                                 Margin="0,0,0,12">
@@ -278,29 +293,11 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- Bitrate -->
-                        <Border x:Name="BitratePanel"
-                                Background="#A02A2A2A"
-                                BorderBrush="#3A3A3A"
-                                BorderThickness="0,1,0,0"
-                                CornerRadius="10"
-                                Padding="22,14"
-                                Margin="0,0,0,12"
-                                Visibility="Collapsed">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="Average Bitrate" FontSize="16" Foreground="#888888"/>
-                                <TextBlock Grid.Column="1" x:Name="BitrateText" Text="—" FontSize="16" Foreground="#FFFFFF" FontWeight="SemiBold"/>
-                            </Grid>
-                        </Border>
-
                         <!-- Format breakdown -->
-                        <Border Background="#A02A2A2A"
-                                BorderBrush="#3A3A3A"
-                                BorderThickness="0,1,0,0"
+                        <Border Tag="Glass"
+                                Background="#17FFFFFF"
+                                BorderBrush="{StaticResource GlassEdge}"
+                                BorderThickness="1"
                                 CornerRadius="10"
                                 Padding="22,14"
                                 Margin="0,0,0,12">
@@ -343,9 +340,10 @@
 
                         <!-- Song list -->
                         <Border x:Name="SongListPanel"
-                                Background="#A02A2A2A"
-                                BorderBrush="#3A3A3A"
-                                BorderThickness="0,1,0,0"
+                                Tag="Glass"
+                                Background="#17FFFFFF"
+                                BorderBrush="{StaticResource GlassEdge}"
+                                BorderThickness="1"
                                 CornerRadius="10"
                                 Padding="22,14"
                                 Margin="0,0,0,12"
@@ -369,14 +367,17 @@
                                 <ItemsControl x:Name="SongList">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Background="#80222222"
+                                            <!-- D-pad highlights a row, A plays it (code-behind sets the highlight). -->
+                                            <Border Background="#0FFFFFFF"
                                                     CornerRadius="6"
                                                     Padding="14,10"
-                                                    Margin="0,3">
+                                                    Margin="0,3"
+                                                    Tag="{Binding FilePath}">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto"/>
                                                         <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
                                                         <ColumnDefinition Width="Auto"/>
                                                         <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
@@ -400,13 +401,20 @@
                                                                VerticalAlignment="Center"/>
 
                                                     <TextBlock Grid.Column="2"
+                                                               Text="{Binding BitrateText}"
+                                                               Foreground="#888888"
+                                                               FontSize="14"
+                                                               Margin="12,0,0,0"
+                                                               VerticalAlignment="Center"/>
+
+                                                    <TextBlock Grid.Column="3"
                                                                Text="{Binding SizeText}"
                                                                Foreground="#888888"
                                                                FontSize="14"
                                                                Margin="10,0,0,0"
                                                                VerticalAlignment="Center"/>
 
-                                                    <TextBlock Grid.Column="3"
+                                                    <TextBlock Grid.Column="4"
                                                                Text="{Binding DurationText}"
                                                                Foreground="#03DAC5"
                                                                FontSize="15"
@@ -434,7 +442,7 @@
 
                 <!-- Footer hint -->
                 <TextBlock Grid.Row="3"
-                           Text="🎮 Press B or Back to close"
+                           Text="🎮 D-pad: pick a song   A: play   Right stick: scroll   B: close"
                            FontSize="14"
                            Foreground="#888888"
                            HorizontalAlignment="Center"

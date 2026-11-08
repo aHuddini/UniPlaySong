@@ -5,7 +5,9 @@ Packages:
     ReleaseDate: 2026-11-07
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.2/UniPlaySong-1_9_2.pext'
     Changelog:
+      - '[New Feature] Music Info Card: click a song to play it. In Fullscreen, pick one with the D-pad and press A; the right stick scrolls the card.'
       - '[Fix] Download from URL now auto-normalizes the song when "Auto-normalize after download" is on, like other downloads.'
+      - '[Improved] Music Info Card opens faster, fades in smoothly, and has a frosted-glass look with each song''s bitrate shown.'
   - Version: 1.9.1
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-11-07

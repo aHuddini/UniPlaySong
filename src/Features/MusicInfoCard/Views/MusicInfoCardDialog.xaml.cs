@@ -35,6 +35,8 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         private CancellationTokenSource _cts;
         private Game _game;
         private IMusicStatsProvider _statsProvider;
+        private Action<string> _playSong; // set by the handler; clicking a song row plays that file
+        private BitmapSource _frost; // the glass tiles' extra-blurred backdrop (GlassTiles)
         private string _imagePath;
         private IconColorExtractor _colorExtractor;
 
@@ -54,9 +56,13 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             IMusicStatsProvider statsProvider,
             string imagePath,
             IconColorExtractor colorExtractor,
-            BitmapSource backdropSnapshot)
+            BitmapSource backdropSnapshot,
+            Action<string> playSong = null,
+            BitmapSource frost = null)
         {
             _game = game;
+            _playSong = playSong;
+            _frost = frost;
             _statsProvider = statsProvider;
             _imagePath = imagePath;
             _colorExtractor = colorExtractor;
@@ -135,6 +141,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         private async void OnDialogLoaded(object sender, RoutedEventArgs e)
         {
             Loaded -= OnDialogLoaded;
+            GlassTiles.Attach(BlurredBackdrop, StatsPanel, StatsScroll, _frost);
             await LoadStatsAsync().ConfigureAwait(false);
         }
 
@@ -219,12 +226,6 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 ShortestDurationText.Text = FormatDuration(stats.ShortestTrack.Value.Duration);
             }
 
-            if (stats.AverageBitrateKbps.HasValue)
-            {
-                BitrateText.Text = $"{stats.AverageBitrateKbps.Value} kbps";
-                BitratePanel.Visibility = Visibility.Visible;
-            }
-
             // Format breakdown rendered as a small list bound to anonymous
             // row objects. Sorted descending by count so the most-common
             // format shows first.
@@ -253,8 +254,6 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
 
             RenderSongList(stats);
 
-            // Fade in once all child panels have been populated. Without
-            // this, users see the entire body pop in at once — jarring.
             FadeInStatsPanel();
         }
 
@@ -285,6 +284,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             var rows = stats.Songs.Select(s => new
             {
                 Title = s.Title,
+                FilePath = s.FilePath,
                 // Format chip — extension w/o the dot, uppercase. Playlist
                 // rows get a "TRACK" tag so the visual distinguishes them
                 // from standalone files of the same format.
@@ -293,6 +293,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                     : (s.Extension ?? string.Empty).TrimStart('.').ToUpperInvariant(),
                 ChipBackground = s.IsPlaylistTrack ? PlaylistChipBrush : standardBrush,
                 SizeText = FormatSize(s.FileSizeBytes),
+                BitrateText = s.BitrateKbps > 0 ? $"{s.BitrateKbps} kbps" : string.Empty,
                 DurationText = s.Duration > TimeSpan.Zero
                     ? FormatDuration(s.Duration)
                     : string.Empty
@@ -303,19 +304,28 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             SongListPanel.Visibility = Visibility.Visible;
         }
 
-        // Smooth fade-in for the entire stats panel after population — 250ms is fast enough to feel snappy but long
-        // enough to register visually so users know fresh content arrived. Driven by Opacity since StatsPanel starts at
-        // 0 in XAML.
+        // Fades the populated stats in. StatsPanel sits at Opacity 0.01, not 0: WPF skips drawing fully transparent
+        // content, so from 0 the fade's first frame had to draw every row at once. At 0.01 the rows are drawn,
+        // invisibly, as soon as they are filled in, and the fade starts two frames later. (Smooth only because the
+        // card's window is opaque; see MusicInfoCardHandler.Show.)
         private void FadeInStatsPanel()
         {
-            var anim = new DoubleAnimation
+            int frames = 0;
+            EventHandler onFrame = null;
+            onFrame = (s, e) =>
             {
-                From = 0,
-                To = 1,
-                Duration = TimeSpan.FromMilliseconds(250),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                if (++frames < 2) return;
+                CompositionTarget.Rendering -= onFrame;
+                var anim = new DoubleAnimation
+                {
+                    From = 0.01,
+                    To = 1,
+                    Duration = TimeSpan.FromMilliseconds(250),
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                };
+                StatsPanel.BeginAnimation(OpacityProperty, anim);
             };
-            StatsPanel.BeginAnimation(OpacityProperty, anim);
+            CompositionTarget.Rendering += onFrame;
         }
 
         // h:mm:ss for ≥1h, mm:ss otherwise. Matches the rest of UPS's
@@ -335,6 +345,15 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
             if (bytes < 1024L * 1024 * 1024) return $"{bytes / (1024.0 * 1024):F1} MB";
             return $"{bytes / (1024.0 * 1024 * 1024):F2} GB";
+        }
+
+        private void SongRow_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.Tag is string path)
+            {
+                _playSong?.Invoke(path);
+                e.Handled = true;
+            }
         }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)

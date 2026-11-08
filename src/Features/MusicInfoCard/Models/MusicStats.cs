@@ -61,13 +61,6 @@ namespace UniPlaySong.Features.MusicInfoCard.Models
         // already filters to supported extensions.
         public long TotalSizeBytes { get; set; }
 
-        // ===== Quality =====
-
-        // Average bitrate across all TagLib-readable files (chiptune files
-        // don't report bitrate in a TagLib-compatible way and are excluded
-        // from this average). Null when no files contributed a bitrate.
-        public int? AverageBitrateKbps { get; set; }
-
         // ===== Format breakdown =====
 
         // Map of file extension (".mp3", ".hes", etc., lowercase with the leading dot) → count of files with that
@@ -86,6 +79,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Models
     // source (M3U sidecar) didn't declare it.
     public sealed class SongEntry
     {
+        // The file on disk (for an HES playlist track, the .hes holding it). What clicking the row plays.
+        public string FilePath { get; set; }
+
         // Human-readable title — TagLib tag, M3U track name, or filename
         // fallback (Path.GetFileNameWithoutExtension). Never null.
         public string Title { get; set; }
@@ -103,6 +99,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Models
         // its tracks (each track lives inside one file). View can dedupe by file path if it wants to show "physical
         // bytes" instead.
         public long FileSizeBytes { get; set; }
+
+        // Audio bitrate in kbps as TagLib reports it; 0 when unknown (chiptune and PSF files have none).
+        public int BitrateKbps { get; set; }
 
         // True when this entry is one track inside a multi-track HES
         // playlist file. The view shows a small "track N" chip on these

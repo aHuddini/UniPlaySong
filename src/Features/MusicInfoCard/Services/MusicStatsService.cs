@@ -54,8 +54,6 @@ namespace UniPlaySong.Features.MusicInfoCard.Services
 
             stats.FileCount = files.Count;
 
-            long bitrateSum = 0;
-            int bitrateCount = 0;
             (string Title, TimeSpan Duration)? longest = null;
             (string Title, TimeSpan Duration)? shortest = null;
 
@@ -83,7 +81,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Services
                     }
                     else
                     {
-                        ProcessStandardAudioFile(filePath, stats, ref bitrateSum, ref bitrateCount, ref longest, ref shortest);
+                        ProcessStandardAudioFile(filePath, stats, ref longest, ref shortest);
                     }
                 }
                 catch (OperationCanceledException)
@@ -96,9 +94,6 @@ namespace UniPlaySong.Features.MusicInfoCard.Services
                     Logger.Debug($"MusicStatsService: failed to read {Path.GetFileName(filePath)}: {ex.Message}");
                 }
             }
-
-            if (bitrateCount > 0)
-                stats.AverageBitrateKbps = (int)(bitrateSum / bitrateCount);
 
             stats.LongestTrack = longest;
             stats.ShortestTrack = shortest;
@@ -117,8 +112,6 @@ namespace UniPlaySong.Features.MusicInfoCard.Services
         private void ProcessStandardAudioFile(
             string filePath,
             MusicStats stats,
-            ref long bitrateSum,
-            ref int bitrateCount,
             ref (string Title, TimeSpan Duration)? longest,
             ref (string Title, TimeSpan Duration)? shortest)
         {
@@ -131,12 +124,6 @@ namespace UniPlaySong.Features.MusicInfoCard.Services
                 int bitrate = tagFile.Properties?.AudioBitrate ?? 0;
 
                 stats.TotalDuration += duration;
-
-                if (bitrate > 0)
-                {
-                    bitrateSum += bitrate;
-                    bitrateCount++;
-                }
 
                 // Use the TagLib title if present, otherwise the filename
                 // without extension. Game-folder files frequently lack
@@ -151,8 +138,10 @@ namespace UniPlaySong.Features.MusicInfoCard.Services
                 {
                     Title = title,
                     Extension = ext,
+                    FilePath = filePath,
                     Duration = duration,
                     FileSizeBytes = fileSize,
+                    BitrateKbps = bitrate,
                     IsPlaylistTrack = false
                 });
             }
@@ -203,6 +192,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Services
                         {
                             Title = trackTitle,
                             Extension = ext,
+                            FilePath = filePath,
                             Duration = duration,
                             FileSizeBytes = fileSize,
                             IsPlaylistTrack = true
@@ -226,6 +216,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Services
                 {
                     Title = title,
                     Extension = ext,
+                    FilePath = filePath,
                     Duration = duration,
                     FileSizeBytes = fileSize,
                     IsPlaylistTrack = false
@@ -248,6 +239,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Services
                 {
                     Title = title,
                     Extension = ext,
+                    FilePath = filePath,
                     Duration = duration,
                     FileSizeBytes = fileSize,
                     IsPlaylistTrack = false

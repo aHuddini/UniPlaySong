@@ -34,6 +34,24 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         private CancellationTokenSource _cts;
         private Game _game;
         private IMusicStatsProvider _statsProvider;
+        private Action<string> _playSong; // set by the handler; A on a highlighted song row plays that file
+        private BitmapSource _frost; // the glass tiles' extra-blurred backdrop (GlassTiles)
+
+        // Right stick scrolls the card: vertical tilt, -1..1 (down positive); null on a Playnite without analog input.
+        private Func<double> _stickY;
+        private System.Windows.Threading.DispatcherTimer _stickPoll; // slow idle check for a tilt
+        private bool _stickScrolling;      // frame-synced scrolling hooked while the stick is tilted
+        private TimeSpan _lastFrameTime;
+        private double _stickVelocity;     // px/s, eased toward the stick so reading noise doesn't jolt
+        private const double StickDeadzone = 0.25;
+        private const double StickPixelsPerSecond = 1400; // at full tilt
+
+        // Song-row highlight for the controller. -1 = none (the stats above the list are in view).
+        private int _selectedRow = -1;
+        private DateTime _lastDpadNavigationTime;
+        private const int DpadDebounceMs = 150; // a D-pad press arrives twice: controller event + arrow key
+        private static readonly SolidColorBrush RowBrush = CreateFrozenBrush(Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF));
+        private static readonly SolidColorBrush SelectedRowBrush = CreateFrozenBrush(Color.FromArgb(0x38, 0xFF, 0xFF, 0xFF));
         private string _imagePath;
         private IconColorExtractor _colorExtractor;
         private SolidColorBrush _accentBrush;
@@ -48,6 +66,8 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 // when stats overflow the visible area.
                 StatsScroll.Focus();
                 Keyboard.Focus(StatsScroll);
+                GlassTiles.Attach(BlurredBackdrop, StatsPanel, StatsScroll, _frost);
+                StartStickScroll();
 
                 if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
                 {
@@ -58,6 +78,8 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
 
             Unloaded += (s, e) =>
             {
+                _stickPoll?.Stop();
+                StopStickFrames();
                 try { _cts?.Cancel(); } catch { /* best effort */ }
                 if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
                 {
@@ -74,9 +96,15 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             IMusicStatsProvider statsProvider,
             string imagePath,
             IconColorExtractor colorExtractor,
-            BitmapSource backdropSnapshot)
+            BitmapSource backdropSnapshot,
+            Action<string> playSong = null,
+            BitmapSource frost = null,
+            Func<double> stickY = null)
         {
             _game = game;
+            _playSong = playSong;
+            _frost = frost;
+            _stickY = stickY;
             _statsProvider = statsProvider;
             _imagePath = imagePath;
             _colorExtractor = colorExtractor;
@@ -211,12 +239,6 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 ShortestDurationText.Text = FormatDuration(stats.ShortestTrack.Value.Duration);
             }
 
-            if (stats.AverageBitrateKbps.HasValue)
-            {
-                BitrateText.Text = $"{stats.AverageBitrateKbps.Value} kbps";
-                BitratePanel.Visibility = Visibility.Visible;
-            }
-
             var totalFiles = stats.FileCount;
             var rows = stats.FormatBreakdown
                 .OrderByDescending(kv => kv.Value)
@@ -252,9 +274,11 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         private static readonly SolidColorBrush DefaultStandardChipBrush =
             CreateFrozenBrush(0x7E, 0x57, 0xC2);
 
-        private static SolidColorBrush CreateFrozenBrush(byte r, byte g, byte b)
+        private static SolidColorBrush CreateFrozenBrush(byte r, byte g, byte b) => CreateFrozenBrush(Color.FromRgb(r, g, b));
+
+        private static SolidColorBrush CreateFrozenBrush(Color color)
         {
-            var brush = new SolidColorBrush(Color.FromRgb(r, g, b));
+            var brush = new SolidColorBrush(color);
             brush.Freeze();
             return brush;
         }
@@ -271,11 +295,13 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             var rows = stats.Songs.Select(s => new
             {
                 Title = s.Title,
+                FilePath = s.FilePath,
                 ChipText = s.IsPlaylistTrack
                     ? "TRACK"
                     : (s.Extension ?? string.Empty).TrimStart('.').ToUpperInvariant(),
                 ChipBackground = s.IsPlaylistTrack ? PlaylistChipBrush : standardBrush,
                 SizeText = FormatSize(s.FileSizeBytes),
+                BitrateText = s.BitrateKbps > 0 ? $"{s.BitrateKbps} kbps" : string.Empty,
                 DurationText = s.Duration > TimeSpan.Zero
                     ? FormatDuration(s.Duration)
                     : string.Empty
@@ -286,19 +312,28 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             SongListPanel.Visibility = Visibility.Visible;
         }
 
-        // Smooth fade-in for the body panel. Slightly slower than Desktop
-        // (300ms) since the larger Fullscreen content benefits from a
-        // touch more breathing room visually.
+        // Fades the populated stats in. StatsPanel sits at Opacity 0.01, not 0: WPF skips drawing fully transparent
+        // content, so from 0 the fade's first frame had to draw every row at once. At 0.01 the rows are drawn,
+        // invisibly, as soon as they are filled in, and the fade starts two frames later. (Smooth only because the
+        // card's window is opaque; see MusicInfoCardHandler.Show.)
         private void FadeInStatsPanel()
         {
-            var anim = new DoubleAnimation
+            int frames = 0;
+            EventHandler onFrame = null;
+            onFrame = (s, e) =>
             {
-                From = 0,
-                To = 1,
-                Duration = TimeSpan.FromMilliseconds(300),
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                if (++frames < 2) return;
+                CompositionTarget.Rendering -= onFrame;
+                var anim = new DoubleAnimation
+                {
+                    From = 0.01,
+                    To = 1,
+                    Duration = TimeSpan.FromMilliseconds(300),
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                };
+                StatsPanel.BeginAnimation(OpacityProperty, anim);
             };
-            StatsPanel.BeginAnimation(OpacityProperty, anim);
+            CompositionTarget.Rendering += onFrame;
         }
 
         public void OnControllerButtonPressed(ControllerInput button)
@@ -308,6 +343,15 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             if (button == ControllerInput.B || button == ControllerInput.Back)
             {
                 Dispatcher.BeginInvoke(new Action(CloseDialog));
+            }
+            else if (button == ControllerInput.DPadUp || button == ControllerInput.DPadDown)
+            {
+                var step = button == ControllerInput.DPadDown ? 1 : -1;
+                Dispatcher.BeginInvoke(new Action(() => MoveSelection(step)));
+            }
+            else if (button == ControllerInput.A)
+            {
+                Dispatcher.BeginInvoke(new Action(PlaySelected));
             }
         }
 
@@ -325,6 +369,117 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 CloseDialog();
                 e.Handled = true;
             }
+            else if (e.Key == Key.Up || e.Key == Key.Down)
+            {
+                MoveSelection(e.Key == Key.Down ? 1 : -1);
+                e.Handled = true; // the rows drive scrolling now, not the ScrollViewer's own arrow handling
+            }
+            else if (e.Key == Key.Enter)
+            {
+                PlaySelected();
+                e.Handled = true;
+            }
+        }
+
+        // Moves the song-row highlight. Up from the first row clears it and returns to the top, so the stats above
+        // the list stay reachable; the highlighted row is scrolled into view.
+        private void MoveSelection(int step)
+        {
+            var now = DateTime.Now;
+            if ((now - _lastDpadNavigationTime).TotalMilliseconds < DpadDebounceMs) return;
+            _lastDpadNavigationTime = now;
+
+            var count = SongList.Items.Count;
+            if (count == 0) return;
+
+            var next = Math.Max(-1, Math.Min(count - 1, _selectedRow + step));
+            if (next == _selectedRow) return;
+
+            SetRowHighlight(_selectedRow, false);
+            _selectedRow = next;
+            if (_selectedRow < 0)
+            {
+                StatsScroll.ScrollToTop();
+                return;
+            }
+            var row = SetRowHighlight(_selectedRow, true);
+            row?.BringIntoView();
+        }
+
+        private void PlaySelected()
+        {
+            if (_selectedRow < 0) return;
+            var row = RowBorder(_selectedRow);
+            if (row?.Tag is string path) _playSong?.Invoke(path);
+        }
+
+        private Border SetRowHighlight(int index, bool on)
+        {
+            var row = RowBorder(index);
+            if (row != null) row.Background = on ? SelectedRowBrush : RowBrush;
+            return row;
+        }
+
+        // The row template's root Border for an item (null while not generated).
+        private Border RowBorder(int index)
+        {
+            if (index < 0) return null;
+            var container = SongList.ItemContainerGenerator.ContainerFromIndex(index) as DependencyObject;
+            return container != null && VisualTreeHelper.GetChildrenCount(container) > 0
+                ? VisualTreeHelper.GetChild(container, 0) as Border
+                : null;
+        }
+
+        // Right-stick scrolling. A slow check (50 ms) waits for a tilt; while tilted, scrolling runs on WPF's frame
+        // clock (CompositionTarget.Rendering) so it moves once per drawn frame - a free-running timer stepped unevenly
+        // against the frames and read as stutter. Squared response: a light tilt creeps, a full tilt flies.
+        private void StartStickScroll()
+        {
+            if (_stickY == null) return;
+            _stickPoll = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+            _stickPoll.Tick += (s, e) =>
+            {
+                if (!_stickScrolling && Math.Abs(_stickY()) >= StickDeadzone) StartStickFrames();
+            };
+            _stickPoll.Start();
+        }
+
+        private void StartStickFrames()
+        {
+            _stickScrolling = true;
+            _lastFrameTime = TimeSpan.Zero;
+            _stickVelocity = 0;
+            CompositionTarget.Rendering += OnStickFrame;
+        }
+
+        private void StopStickFrames()
+        {
+            if (!_stickScrolling) return;
+            _stickScrolling = false;
+            CompositionTarget.Rendering -= OnStickFrame;
+        }
+
+        private void OnStickFrame(object sender, EventArgs e)
+        {
+            // RenderingTime repeats when WPF raises the event twice for one frame; only move on a new frame.
+            var frameTime = (e as RenderingEventArgs)?.RenderingTime ?? TimeSpan.Zero;
+            if (frameTime == _lastFrameTime) return;
+            double dt = _lastFrameTime == TimeSpan.Zero ? 1.0 / 60 : Math.Min(0.1, (frameTime - _lastFrameTime).TotalSeconds);
+            _lastFrameTime = frameTime;
+
+            double y = _stickY();
+            double a = Math.Abs(y);
+            double target = 0;
+            if (a >= StickDeadzone)
+            {
+                double t = (a - StickDeadzone) / (1 - StickDeadzone);
+                target = Math.Sign(y) * t * t * StickPixelsPerSecond;
+            }
+            _stickVelocity += (target - _stickVelocity) * Math.Min(1, dt * 12);
+
+            // Back at rest and coasted to a stop: hand back to the idle check.
+            if (target == 0 && Math.Abs(_stickVelocity) < 5) { StopStickFrames(); return; }
+            StatsScroll.ScrollToVerticalOffset(StatsScroll.VerticalOffset + _stickVelocity * dt);
         }
 
         private void CloseDialog()
