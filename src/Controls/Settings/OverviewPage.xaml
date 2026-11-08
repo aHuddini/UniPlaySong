@@ -38,16 +38,16 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: turning on Radio Mode mid-game no longer re-pauses Spotify.
+                        Added: click a song in the Music Info Card to play it (D-pad and A in Fullscreen).
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: toggling Live Effects no longer breaks jingles, the Dashboard or Spotify controls.
+                        Added: choose which Top Panel buttons show, and auto-hide the ones that can't be used.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: turning Radio Mode off returns to the game song it interrupted.
+                        Added: a trailer audio Start delay for themes that start the video late.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Improved: Live Effects changes in Fullscreen no longer restart the song.
+                        Improved: the Music Info Card opens faster and has a frosted-glass look.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:

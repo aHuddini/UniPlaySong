@@ -4,6 +4,31 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.9.2] - 2026-11-07
+
+### Added
+
+- Added click-to-play to the Music Info Card: Desktop rows are clickable, and in Fullscreen the D-pad highlights a row and A plays it, through the new `MusicPlaybackService.PlaySong`, which switches games like a selection when needed
+- Added right-stick scrolling to the Fullscreen Music Info Card, run on `CompositionTarget.Rendering` with eased speed so it moves once per drawn frame
+- Added per-button choice for the Desktop top panel (Play/Pause, Skip, Calm Down) and an auto-hide option with per-item picks and an "also for default music" switch (refs #50)
+- Added a trailer-audio Start delay (`TrailerAudioDelaySeconds`, 0-10 s) so the trailer audio source lines up with themes that start the video late, such as ANIKI REMAKE (refs #84)
+- Added a General -> Now Playing settings page for the ticker options and the live preview card
+- Added each song's bitrate to the Music Info Card's song list, replacing the Average Bitrate block
+
+### Changed
+
+- Changed the Music Info Card backdrop to a pre-blurred, saturated bitmap cached per file, and its window from layered to opaque with Windows 11 rounded corners, so the card opens faster and its stats fade in smoothly
+- Changed the Music Info Card tiles to frosted glass: `GlassTiles` paints each with a further-blurred copy of the backdrop aligned behind it, plus a top-lit rim; added a subtle vignette and a thinner scrollbar
+- Changed top-panel visibility to one rule, `TopPanelMediaControlViewModel.Decide`, with every item always registered, so top-panel toggles apply without a restart
+- Changed Fullscreen settings access: Playnite's private settings are read in `PlayniteFullscreenSettings`, and once-per-session notices live in `OneTimeWarnings`
+- Changed controller routing to `ControllerEventRouter.Route`, which owns the login-screen bypass and the confirm bridge for UPS buttons in themes
+- Changed seven random-song loops in `MusicPlaybackService` to one `PickRandomOther` helper
+- Changed `UniPlaySong.cs` from 5,126 to 4,919 lines
+
+### Fixed
+
+- Fixed Download from URL skipping "Auto-normalize after download": the URL dialog now runs the same post-download hook as the search dialog, before the new song plays
+
 ## [1.9.1] - 2026-11-07
 
 ### Fixed

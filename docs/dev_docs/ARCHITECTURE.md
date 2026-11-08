@@ -39,7 +39,7 @@ neighbourhood, then let the compiler and search tell you the rest.
 | `Localization/` | 1 XAML | `en_US.xaml` string resources (extraction still pending). |
 | `DefaultMusic/`, `Jingles/`, `Images/` | assets | Bundled audio and image assets, no code. |
 
-**Entry point:** `src/UniPlaySong.cs` — the `GenericPlugin` subclass. At ~5,100 lines it is the
+**Entry point:** `src/UniPlaySong.cs` — the `GenericPlugin` subclass. At ~4,900 lines it is the
 largest single file in the project; its `#region` blocks act as de-facto module boundaries.
 
 **Root files:** `UniPlaySong.sln`, `extension.yaml` (manifest — generated, do not hand-edit),
@@ -78,6 +78,11 @@ Later moves out of the plugin follow the same shape: built once, given their dep
 - `Monitors/ExternalAudioMonitor` and `Monitors/IdleMonitor`: the external-audio and idle/AFK polls
 - `Services/Spotify/SpotifyAutoLauncher`: "Launch Spotify on startup"
 - `UniPlaySongSettings.Presets.cs`: the reverb, style and icon-glow preset tables (a partial class)
+- `Services/PlayniteFullscreenSettings`: Playnite's private Fullscreen settings (Background Volume, Swap
+  Confirm/Cancel) through reflection, and a change event. No UPS logic; the volume rule stays in the plugin
+- `Common/OneTimeWarnings`: once-per-session notifications, withdrawn when their condition clears
+- `ControllerEventRouter.Route`: where every controller press goes (login bypass, embedded theme buttons,
+  the UPS dialog stack); the plugin's SDK overrides are one-liners
 
 ### 2. Music Playback Coordinator (`MusicPlaybackCoordinator`)
 
@@ -276,7 +281,10 @@ Handles precise waveform-based trim operations:
 - `Next` (`\uEC6E`): Skip/next icon
 - Additional icons for future features (Stop, Previous, Shuffle, Volume)
 
-**TopPanelMediaControlViewModel.cs**: ViewModel managing the top panel buttons:
+**TopPanelMediaControlViewModel.cs**: ViewModel managing the top panel buttons. Every item is always
+registered with Playnite and shown or hidden through `Visible`, decided by one pure rule, `Decide`
+(per-button settings, auto-hide when nothing is loaded or Skip has one song, the Now Playing default-music
+rule), so toggles apply live:
 - **Play/Pause Button**: Always visible, toggles playback state
   - Shows pause icon (⏸) when music is playing (click to pause)
   - Shows play icon (▶) when music is paused/stopped (click to play)
@@ -686,7 +694,7 @@ page it appears on will be cleared by a button the user never associated with it
 | **About** | Overview (What's New, Troubleshooting), Credits, Links, Donate |
 | **Quick Start** | Profiles, Equalizer (EQ) |
 | **Setup** | Tools, Downloads, Automations |
-| **General** | Media Controls, Tagging, Performance, Miscellaneous |
+| **General** | Media Controls, Now Playing, Tagging, Performance, Miscellaneous |
 | **Playback** | Startup, Music Mode, Default Music, Randomization, Trigger Methods, Global Override |
 | **Pauses** | Common Events, External Audio |
 | **Live Effects** | Volume, Fade Transitions, Live Effects, Equalizer (EQ), Calm Down, Visualizers |
@@ -707,8 +715,9 @@ Notes worth knowing before moving anything:
 - **`StaticResource` and `ControlTemplate` faults are runtime, not build, errors.** A green build
   proves nothing about a page. Settings pages can be rendered headlessly to check —
   `Assembly.LoadFrom` the built DLL, `CreateInstance` the page type, then Measure/Arrange (and
-  `RenderTargetBitmap` for a PNG). Pages render with no DataContext, so binding-driven content is
-  empty, but resource and template faults surface immediately.
+  `RenderTargetBitmap` for a PNG). Set the page's DataContext to an object whose `Settings` is a
+  `UniPlaySongSettings` to see real on/off states; ViewModel-only bindings stay empty. Render one page
+  per process.
 
 ## Related Documentation
 

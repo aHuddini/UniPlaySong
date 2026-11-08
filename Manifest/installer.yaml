@@ -10,7 +10,7 @@ Packages:
       - '[New Feature] Top Panel (Desktop): pick which buttons show, and optionally auto-hide the ones that can''t be used, like when no music is loaded (issue #50).'
       - '[Fix] Download from URL now auto-normalizes the song when "Auto-normalize after download" is on, like other downloads.'
       - '[Improved] Music Info Card opens faster, fades in smoothly, and has a frosted-glass look with each song''s bitrate shown.'
-      - '[Improved] Settings: Now Playing has its own page under General, and Top Panel toggles no longer need a restart.'
+      - '[Improved] Settings: Now Playing has its own page under General settings, and Top Panel toggles no longer need a restart.'
   - Version: 1.9.1
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-11-07

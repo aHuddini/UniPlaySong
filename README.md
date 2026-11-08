@@ -20,20 +20,22 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.9.1
+## What's New - v1.9.2
+
+### New
+- Music Info Card: click a song to play it. In Fullscreen, pick one with the D-pad and press A; the right stick scrolls the card.
+- Top Panel (Desktop): choose which buttons show, and auto-hide the ones that can't be used ([#50](https://github.com/aHuddini/UniPlaySong/issues/50)).
+- Trailer audio Start delay, so it lines up with themes like ANIKI REMAKE ([#84](https://github.com/aHuddini/UniPlaySong/issues/84)).
 
 ### Fixed
-- Turning on Radio Mode mid-game no longer re-pauses Spotify when radio plays through games ([#93](https://github.com/aHuddini/UniPlaySong/issues/93)).
-- Toggling Live Effects or opening a chiptune game no longer breaks jingles, the Dashboard, Spotify controls or the taskbar buttons.
-- Turning Radio Mode off goes back to the game song it interrupted.
-- Play works again after an instant pause; music comes back after closing Amplify or Trim; clearing listening history sticks.
+- Download from URL now auto-normalizes the song when that option is on.
 
 ### Improved
-- Live Effects changes in Fullscreen apply without restarting the song.
-- Big internal cleanup for maintainability. Nothing changes in how UPS works.
+- Music Info Card opens faster, fades in smoothly, has a frosted-glass look and shows each song's bitrate.
+- Now Playing has its own settings page, and Top Panel toggles apply without a restart.
 
 ### Previous Version
-- **v1.9.0**: Seek within songs (timeline or right stick, Spotify too); for themes, a music visualizer page, a Now-Playing player with a live spectrum, recent tracks and album-art colours.
+- **v1.9.1**: Radio Mode no longer re-pauses Spotify mid-game; Live Effects and chiptune switches no longer break jingles or controls; a big internal cleanup.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
