@@ -37,8 +37,6 @@ namespace UniPlaySong
         private readonly FileLogger _fileLogger;
         
         // Xbox controller monitoring for login bypass
-        // _isControllerLoginMonitoring flag — set true when login screen active, checked by SDK controller override
-        private bool _isControllerLoginMonitoring = false;
         
         // Assembly resolution handler for Material Design and other dependencies
         static UniPlaySong()
@@ -357,7 +355,8 @@ namespace UniPlaySong
             }
 
             InitializeServices();
-            _controllerEventRouter = new Services.Controller.ControllerEventRouter(_fileLogger);
+            _controllerEventRouter = new Services.Controller.ControllerEventRouter(
+                _fileLogger, GetFullscreenConfirmButton, () => _coordinator?.HandleLoginDismiss());
 
             InitializeMenuHandlers();
 
@@ -1230,7 +1229,6 @@ namespace UniPlaySong
                 Application.Current.Properties.Remove("UniPlaySongPlugin");
             }
 
-            _isControllerLoginMonitoring = false;
             _fullscreenSettings?.Unsubscribe();
 
             _dynamicColorCache?.Save();
@@ -1241,48 +1239,6 @@ namespace UniPlaySong
             _listeningStore?.Flush();
 
             _fileLogger?.Debug("Application stopped");
-        }
-
-        private void RouteControllerInput(OnControllerButtonStateChangedArgs args)
-        {
-            if (args == null) return;
-
-            // No per-press logging here — this is a hot path (fires on every button press AND
-            // release, Desktop + Fullscreen). Dialog register/unregister is logged in the router.
-
-            // Login bypass — check before routing to active dialog
-            if (_isControllerLoginMonitoring && args.State == ControllerInputState.Pressed
-                && (args.Button == ControllerInput.A || args.Button == ControllerInput.Start))
-            {
-                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                {
-                    _coordinator?.HandleLoginDismiss();
-                }));
-                _isControllerLoginMonitoring = false;
-                return;
-            }
-
-            if (args.State == ControllerInputState.Pressed)
-            {
-                // Embedded media-controller buttons: Playnite only auto-clicks its own internal ButtonEx on the confirm press,
-                // so our plugin Buttons need this bridge. Only when no UPS modal owns input (a dialog's own A/B handling takes
-                // precedence) and the confirm button (A, or B if Swap Confirm/Cancel is on) is pressed. If a focused
-                // confirm-target button handles it, don't also route to the modal stack.
-                if (_controllerEventRouter?.HasActiveReceiver != true
-                    && args.Button == GetFullscreenConfirmButton())
-                {
-                    bool handled = false;
-                    Application.Current?.Dispatcher?.Invoke(() =>
-                    {
-                        handled = Controls.GamepadConfirm.ConfirmFocused();
-                    });
-                    if (handled) return;
-                }
-
-                _controllerEventRouter?.HandleButtonPressed(args.Button);
-            }
-            else if (args.State == ControllerInputState.Released)
-                _controllerEventRouter?.HandleButtonReleased(args.Button);
         }
 
         // The controller button that means "confirm" in Fullscreen — A normally, B when the user
@@ -1315,15 +1271,12 @@ namespace UniPlaySong
             }
         }
 
+        // Where each press goes (login bypass, embedded theme buttons, UPS dialogs) is ControllerEventRouter's call.
         public override void OnControllerButtonStateChanged(OnControllerButtonStateChangedArgs args)
-        {
-            RouteControllerInput(args);
-        }
+            => _controllerEventRouter?.Route(args);
 
         public override void OnDesktopControllerButtonStateChanged(OnControllerButtonStateChangedArgs args)
-        {
-            RouteControllerInput(args);
-        }
+            => _controllerEventRouter?.Route(args);
 
         #endregion
 
@@ -3295,7 +3248,7 @@ namespace UniPlaySong
                     _fileLogger?.Debug("Login input handler attached");
                     
                     // SDK controller events handle login bypass via OnControllerButtonStateChanged
-                    _isControllerLoginMonitoring = true;
+                    _controllerEventRouter?.ArmLoginBypass();
                     _fileLogger?.Debug("Starting Xbox controller login monitoring");
                 }
             }
@@ -4952,13 +4905,6 @@ namespace UniPlaySong
                 return (0, 0, false);
             }
         }
-
-        #endregion
-
-        #region Xbox Controller Login Bypass Support
-        // Login bypass is handled by OnControllerButtonStateChanged SDK override.
-        // _isControllerLoginMonitoring flag is set true when login screen is active,
-        // checked by the override, and cleared after login dismiss.
 
         #endregion
 
