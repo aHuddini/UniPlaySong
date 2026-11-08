@@ -2225,6 +2225,20 @@ namespace UniPlaySong.Services
             return true;
         }
 
+        // A song picked by name (the Music Info Card's song list). SelectSongToPlay plays it once, ahead of every
+        // other rule; PlayGameMusic does the rest, so a pick for another game switches games like a selection would.
+        private string _requestedSong;
+
+        public void PlaySong(Game game, string songPath)
+        {
+            if (game == null || string.IsNullOrEmpty(songPath)) return;
+            _fileLogger?.Info($"PlaySong: '{Path.GetFileName(songPath)}' for {game.Name}");
+            _requestedSong = songPath;
+            RemovePauseSource(Models.PauseSource.Manual); // an explicit pick, like Skip
+            PlayGameMusic(game, _currentSettings, forceReload: true);
+            _requestedSong = null; // unused (e.g. radio kept playing): never leak into a later selection
+        }
+
         // The game track radio interrupted, so turning radio off returns to it instead of making a fresh pick
         // (which shuffles under RandomizeOnEverySelect). Its position is banked too, for ResumeGameMusicPosition.
         private string _trackBeforeRadio;
@@ -2337,6 +2351,13 @@ namespace UniPlaySong.Services
         private string SelectSongToPlay(Game game, List<string> songs, bool isNewGame, bool forceRandomize = false)
         {
             if (songs.Count == 0) return null;
+
+            if (_requestedSong != null)
+            {
+                var requested = _requestedSong;
+                _requestedSong = null;
+                if (songs.Contains(requested)) return requested;
+            }
 
             // PNS PATTERN: Check if current song is still valid (same directory or same default music).
             // Allows default music to continue playing when switching between games with no music.

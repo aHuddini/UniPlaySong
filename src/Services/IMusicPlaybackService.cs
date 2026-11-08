@@ -10,6 +10,7 @@ namespace UniPlaySong.Services
         void PlayGameMusic(Game game);
         void PlayGameMusic(Game game, UniPlaySongSettings settings);
         void PlayGameMusic(Game game, UniPlaySongSettings settings, bool forceReload);
+        void PlaySong(Game game, string songPath); // this game's song, now (Music Info Card); later selections play as normal
 
         // Plays the default music for the current selection as if the game had no songs of its
         // own. Used by the hover settle wait to bridge a game-to-game switch through the ambient.
