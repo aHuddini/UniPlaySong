@@ -65,7 +65,7 @@ namespace UniPlaySong.Tests.Services
                 BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(warn, "the user-facing warning is the fix for this, not a volume override");
 
-            var latch = typeof(UniPlaySong).GetField("_shownWarnings",
+            var latch = typeof(global::UniPlaySong.Common.OneTimeWarnings).GetField("_shownWarnings",
                 BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(latch,
                 "the multiplier is recomputed on every game select and volume change, so the " +
@@ -171,8 +171,8 @@ namespace UniPlaySong.Tests.Services
             // window that Playnite has not necessarily assigned yet, a miss froze the multiplier at
             // its startup value for the session: raising Playnite's slider then changed nothing and
             // the music stayed silent, indistinguishable from UniPlaySong forcing it back to 0.
-            var subscribe = typeof(UniPlaySong).GetMethod("SubscribeToFullscreenVolumeChanges",
-                BindingFlags.NonPublic | BindingFlags.Instance);
+            var subscribe = typeof(global::UniPlaySong.Services.PlayniteFullscreenSettings).GetMethod("Subscribe",
+                BindingFlags.Public | BindingFlags.Instance);
             Assert.NotNull(subscribe);
 
             var parameters = subscribe.GetParameters();

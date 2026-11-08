@@ -148,10 +148,10 @@ namespace UniPlaySong
         private DynamicColorCache _dynamicColorCache;
         private string _gamesPath;
 
-        // Fullscreen volume integration - respects Playnite's Background Music Volume slider
-        private double _playniteFullscreenVolume = 1.0;
-        private dynamic _fullscreenSettingsObj;
-        private INotifyPropertyChanged _fullscreenSettingsNotifier; // kept for unsubscribe on dispose
+        // Playnite's own Fullscreen settings (Background Volume, Swap Confirm/Cancel), read via reflection.
+        private Services.PlayniteFullscreenSettings _fullscreenSettings;
+        private double _playniteFullscreenVolume = 1.0; // cached Background Volume, what the multiplier is built from
+        private OneTimeWarnings _warnings;
 
         private Monitors.ExternalAudioMonitor _externalAudioMonitor;
         private Monitors.IdleMonitor _idleMonitor;
@@ -739,7 +739,7 @@ namespace UniPlaySong
 
                 // Self-guarded: retries until it lands, then no-ops. Losing this subscription freezes
                 // the Playnite volume UniPlaySong scales by at its startup value for the session.
-                SubscribeToFullscreenVolumeChanges(window);
+                _fullscreenSettings?.Subscribe(window);
                 if (firstAttach)
                 {
                     _fileLogger?.Debug($"[StartupVerify] Window available after {_startupWindowVerifyTicks} tick(s) — " +
@@ -886,8 +886,8 @@ namespace UniPlaySong
                 // Initialize fullscreen volume integration (PlayniteSound-proven pattern). The
                 // subscription is attempted here and retried by the startup verify loop — it needs a
                 // window that may not exist yet, and losing it silences the whole session.
-                InitializeFullscreenSettingsRef();
-                SubscribeToFullscreenVolumeChanges(Application.Current?.MainWindow);
+                InitializeFullscreenSettings();
+                _fullscreenSettings.Subscribe(Application.Current?.MainWindow);
                 _playbackService?.SetVolumeMultiplier(GetFullscreenVolumeMultiplier());
 
                 // Pause FFT processing — desktop visualizer is not visible in fullscreen.
@@ -903,7 +903,7 @@ namespace UniPlaySong
                 //
                 // The handle is still taken, so the change-watch below can report a value going to 0
                 // from wherever it happens.
-                InitializeFullscreenSettingsRef();
+                InitializeFullscreenSettings();
             }
 
             // Playnite's Background Volume is reported from GetFullscreenVolumeMultiplier, which only
@@ -1134,7 +1134,7 @@ namespace UniPlaySong
             // startup. Same value means nothing touched it between sessions. Different means the file
             // was written while Playnite was closed - or a second Playnite process saved its own
             // older copy of fullscreenConfig.json over it on exit, which needs no plugin at all.
-            _fileLogger?.Lifecycle($"Shutdown: Playnite BackgroundVolume = {GetPlayniteFullscreenVolume():F2}");
+            _fileLogger?.Lifecycle($"Shutdown: Playnite BackgroundVolume = {(_fullscreenSettings?.BackgroundVolume ?? 1.0):F2}");
 
             _playbackService?.Stop();
             _api.UriHandler.RemoveSource("uniplaysong");
@@ -1168,11 +1168,7 @@ namespace UniPlaySong
                 _windowStateHandlerTarget.IsVisibleChanged -= OnWindowVisibilityChanged;
                 _windowStateHandlerTarget = null;
             }
-            if (_fullscreenSettingsNotifier != null)
-            {
-                _fullscreenSettingsNotifier.PropertyChanged -= OnFullscreenSettingsChanged;
-                _fullscreenSettingsNotifier = null;
-            }
+            _fullscreenSettings?.Unsubscribe();
             Microsoft.Win32.SystemEvents.SessionSwitch -= OnSessionSwitch;
             Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
             _sleepCoordinator?.Stop();
@@ -1235,7 +1231,7 @@ namespace UniPlaySong
             }
 
             _isControllerLoginMonitoring = false;
-            UnsubscribeFromFullscreenVolumeChanges();
+            _fullscreenSettings?.Unsubscribe();
 
             _dynamicColorCache?.Save();
 
@@ -1290,23 +1286,10 @@ namespace UniPlaySong
         }
 
         // The controller button that means "confirm" in Fullscreen — A normally, B when the user
-        // enables Swap Confirm/Cancel. Read from Playnite's fullscreen settings via the cached
-        // reflection handle; defaults to A on any failure. Matches GameControllerGesture.ConfirmationBinding.
-        private ControllerInput GetFullscreenConfirmButton()
-        {
-            try
-            {
-                if (_fullscreenSettingsObj != null)
-                {
-                    var prop = _fullscreenSettingsObj.GetType()
-                        .GetProperty("SwapConfirmCancelButtons");
-                    if (prop?.GetValue(_fullscreenSettingsObj) is bool swap && swap)
-                        return ControllerInput.B;
-                }
-            }
-            catch { }
-            return ControllerInput.A;
-        }
+        // enables Swap Confirm/Cancel (read from Playnite's fullscreen settings); A on any failure.
+        // Matches GameControllerGesture.ConfirmationBinding.
+        private ControllerInput GetFullscreenConfirmButton() =>
+            _fullscreenSettings?.SwapsConfirmCancel == true ? ControllerInput.B : ControllerInput.A;
 
         // "Play Only on Game Select" — fires on every Fullscreen List ↔ Details toggle. Event-driven (SDK 6.16.0+),
         // replaces the previous 200ms polling DispatcherTimer. Playnite invokes this synchronously from the
@@ -2685,6 +2668,10 @@ namespace UniPlaySong
 
         private void InitializeServices()
         {
+            _warnings = new OneTimeWarnings(_api, _fileLogger);
+            _fullscreenSettings = new Services.PlayniteFullscreenSettings(_api, _fileLogger);
+            _fullscreenSettings.BackgroundVolumeChanged += OnPlayniteBackgroundVolumeChanged;
+
             var basePath = Constants.ExtensionDataPath(_api.Paths.ConfigurationPath);
             var gamesPath = Path.Combine(basePath, Constants.GamesFolderName);
             _gamesPath = gamesPath;
@@ -2726,7 +2713,7 @@ namespace UniPlaySong
             _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService, _listeningTracker);
             _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
             _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
-            _playbackService.SetUserWarningHandler(ShowOneTimeWarning);
+            _playbackService.SetUserWarningHandler(_warnings.Show);
             _playbackService.SetWindowStateVerifier(() => ResyncWindowStatePauseSources(bidirectional: true));
             _playbackService.SetRadioSongPoolProvider(GetRadioSongPool);
             _playbackService.OnNeedsPlayerSwitch += HandlePlayerSwitchForFormat;
@@ -3415,33 +3402,6 @@ namespace UniPlaySong
             return multiplier;
         }
 
-        private readonly HashSet<string> _shownWarnings = new HashSet<string>(StringComparer.Ordinal);
-
-        // Surfaces a warning to the user once per session, keyed by id.
-        //
-        // Once per session, deliberately: every caller sits on a path that re-runs on each game
-        // select, so notifying every time would bury the notification list under duplicates of a
-        // message that only needs reading once.
-        //
-        // A notification rather than a log line alone, because the conditions these describe are
-        // undiagnosable from the interface - the settings all read normally and audio simply does
-        // not arrive - and someone in that position does not know there is a log.
-        private void ShowOneTimeWarning(string id, string message)
-        {
-            if (string.IsNullOrEmpty(id) || !_shownWarnings.Add(id)) return;
-
-            _fileLogger?.Lifecycle($"User warning [{id}]: {message.Replace(Environment.NewLine, " ")}");
-
-            try
-            {
-                _api?.Notifications?.Add(new NotificationMessage(id, message, NotificationType.Info));
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, $"Failed to surface the '{id}' notification");
-            }
-        }
-
         // Playnite's own Background Volume slider at 0 silences UniPlaySong outright. The value is
         // obeyed; this notice is how the user connects the two, since UniPlaySong's own Music Volume
         // still reads 50% and tracks still load and "play".
@@ -3452,7 +3412,7 @@ namespace UniPlaySong
         // slider is free to sit above 0 and needs to.
         private void WarnAboutZeroedPlayniteVolume()
         {
-            ShowOneTimeWarning("ups-playnite-volume-zero",
+            _warnings.Show("ups-playnite-volume-zero",
                 "Playnite's Background Volume is set to 0. Audio may not be heard." + Environment.NewLine + Environment.NewLine +
                 "Fix it in Playnite: Menu → Settings → Audio → Background Volume.");
         }
@@ -3468,145 +3428,42 @@ namespace UniPlaySong
 
             if ((_settings?.MusicVolume ?? 0) > 0)
             {
-                WithdrawWarning("ups-music-volume-zero");
+                _warnings.Withdraw("ups-music-volume-zero");
                 return;
             }
 
-            ShowOneTimeWarning("ups-music-volume-zero",
+            _warnings.Show("ups-music-volume-zero",
                 "UniPlaySong's Music Volume is set to 0. Audio may not be heard." + Environment.NewLine + Environment.NewLine +
                 "Fix it in UniPlaySong Settings → Live Effects → Volume → Music Volume.");
         }
 
-        // Reads Playnite's fullscreen BackgroundVolume setting via cached reflection reference. Returns 1.0
-        // if not in fullscreen or reflection fails (graceful degradation).
-        private double GetPlayniteFullscreenVolume()
+        // Takes the handle on Playnite's fullscreen settings and caches Background Volume (1.0 when unavailable).
+        private void InitializeFullscreenSettings()
         {
-            try
-            {
-                if (_fullscreenSettingsObj == null)
-                {
-                    return 1.0;
-                }
-
-                float bgVolume = (float)(_fullscreenSettingsObj.BackgroundVolume);
-                return Math.Max(0.0, Math.Min(1.0, bgVolume));
-            }
-            catch (Exception ex)
-            {
-                _fileLogger?.Debug($"GetPlayniteFullscreenVolume: Failed to read BackgroundVolume - {ex.Message}");
-                return 1.0;
-            }
+            _fullscreenSettings.Initialize();
+            _playniteFullscreenVolume = _fullscreenSettings.BackgroundVolume;
         }
 
-        // Initializes the cached reference to Playnite's internal fullscreen settings object. Uses the same
-        // reflection pattern proven by PlayniteSound.
-        private void InitializeFullscreenSettingsRef()
+        // Playnite's Background Volume changed: re-cache it and update the volume multiplier on the playback service.
+        private void OnPlayniteBackgroundVolumeChanged()
         {
-            try
+            double previous = _playniteFullscreenVolume;
+            _playniteFullscreenVolume = _fullscreenSettings.BackgroundVolume;
+            _fileLogger?.Debug($"OnFullscreenSettingsChanged: BackgroundVolume changed to {_playniteFullscreenVolume:F2}");
+
+            if (_playniteFullscreenVolume > 0.0)
             {
-                _fullscreenSettingsObj = _api.ApplicationSettings.Fullscreen
-                    .GetType()
-                    .GetField("settings", BindingFlags.NonPublic | BindingFlags.Instance)
-                    ?.GetValue(_api.ApplicationSettings.Fullscreen);
-
-                if (_fullscreenSettingsObj != null)
-                {
-                    _playniteFullscreenVolume = GetPlayniteFullscreenVolume();
-                    _fileLogger?.Debug($"InitializeFullscreenSettingsRef: Got fullscreen settings, BackgroundVolume={_playniteFullscreenVolume:F2}");
-                }
-                else
-                {
-                    _fileLogger?.Warn("InitializeFullscreenSettingsRef: Could not get fullscreen settings object");
-                }
+                ClearZeroVolumeWarnings();
             }
-            catch (Exception ex)
+            else if (previous > 0.0)
             {
-                _fileLogger?.Warn($"InitializeFullscreenSettingsRef: Failed - {ex.Message}");
+                // PropertyChanged is raised from the setter, so the caller is still on the stack.
+                // Whether anything sets this to 0 behind the user's back has been argued from the
+                // outside and cannot be settled that way; one trace names whoever did it.
+                _fileLogger?.Debug("BackgroundVolume was set to 0. Set by:" + Environment.NewLine + Environment.StackTrace);
             }
-        }
 
-        // Subscribes to Playnite's fullscreen settings PropertyChanged to detect BackgroundVolume changes.
-        // Uses the same pattern proven by PlayniteSound (ctx.AppSettings.Fullscreen as
-        // INotifyPropertyChanged).
-        // Without this subscription _playniteFullscreenVolume is a frozen startup snapshot: a slider
-        // raised from 0 never arrives, and the music stays silent for the rest of the session.
-        //
-        // Retried by the startup verify loop, from the window it was handed: Playnite raises
-        // OnApplicationStarted from inside OpenView(), so arriving before that window exists is
-        // ordinary. Runs in Desktop too - the value is edited there and a wrong write needs to be
-        // visible wherever it happens.
-        private void SubscribeToFullscreenVolumeChanges(Window window)
-        {
-            if (_fullscreenSettingsNotifier != null) return;
-
-            try
-            {
-                dynamic ctx = window?.DataContext;
-                if (ctx == null) return;
-
-                var fullscreenSettings = ctx.AppSettings?.Fullscreen as INotifyPropertyChanged;
-                if (fullscreenSettings != null)
-                {
-                    fullscreenSettings.PropertyChanged += OnFullscreenSettingsChanged;
-                    _fullscreenSettingsNotifier = fullscreenSettings;
-                    _fileLogger?.Debug("SubscribeToFullscreenVolumeChanges: Subscribed to fullscreen settings changes");
-                }
-                else
-                {
-                    _fileLogger?.Warn("SubscribeToFullscreenVolumeChanges: Could not cast fullscreen settings to INotifyPropertyChanged");
-                }
-            }
-            catch (Exception ex)
-            {
-                _fileLogger?.Warn($"SubscribeToFullscreenVolumeChanges: Failed - {ex.Message}");
-            }
-        }
-
-        // Unsubscribes from Playnite's fullscreen settings PropertyChanged.
-        private void UnsubscribeFromFullscreenVolumeChanges()
-        {
-            try
-            {
-                dynamic ctx = Application.Current?.MainWindow?.DataContext;
-                if (ctx == null)
-                    return;
-
-                var fullscreenSettings = ctx.AppSettings?.Fullscreen as INotifyPropertyChanged;
-                if (fullscreenSettings != null)
-                {
-                    fullscreenSettings.PropertyChanged -= OnFullscreenSettingsChanged;
-                }
-            }
-            catch (Exception ex)
-            {
-                _fileLogger?.Debug($"UnsubscribeFromFullscreenVolumeChanges: {ex.Message}");
-            }
-        }
-
-        // Handles changes to Playnite's fullscreen settings. When BackgroundVolume changes, updates the
-        // volume multiplier on the playback service.
-        private void OnFullscreenSettingsChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == "BackgroundVolume")
-            {
-                double previous = _playniteFullscreenVolume;
-                _playniteFullscreenVolume = GetPlayniteFullscreenVolume();
-                _fileLogger?.Debug($"OnFullscreenSettingsChanged: BackgroundVolume changed to {_playniteFullscreenVolume:F2}");
-
-                if (_playniteFullscreenVolume > 0.0)
-                {
-                    ClearZeroVolumeWarnings();
-                }
-                else if (previous > 0.0)
-                {
-                    // PropertyChanged is raised from the setter, so the caller is still on the stack.
-                    // Whether anything sets this to 0 behind the user's back has been argued from the
-                    // outside and cannot be settled that way; one trace names whoever did it.
-                    _fileLogger?.Debug("BackgroundVolume was set to 0. Set by:" + Environment.NewLine + Environment.StackTrace);
-                }
-
-                _playbackService?.SetVolumeMultiplier(IsFullscreen ? GetFullscreenVolumeMultiplier() : 1.0);
-            }
+            _playbackService?.SetVolumeMultiplier(IsFullscreen ? GetFullscreenVolumeMultiplier() : 1.0);
         }
 
         // Withdraws the "your Background volume is 0" notices once it no longer is.
@@ -3616,17 +3473,7 @@ namespace UniPlaySong
         // genuine zero is still announced.
         private void ClearZeroVolumeWarnings()
         {
-            WithdrawWarning("ups-playnite-volume-zero");
-        }
-
-        // Takes a one-time warning back, and re-arms its latch so the same condition returning is
-        // announced again rather than silently.
-        private void WithdrawWarning(string id)
-        {
-            if (!_shownWarnings.Remove(id)) return;
-
-            try { _api?.Notifications?.Remove(id); } catch { }
-            _fileLogger?.Debug($"Withdrew the '{id}' notification - the condition it described no longer holds");
+            _warnings.Withdraw("ups-playnite-volume-zero");
         }
 
         // Pauses or resumes FFT spectrum processing globally. Audio passthrough is unaffected. Uses GlobalPaused so new
