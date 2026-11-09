@@ -1215,6 +1215,16 @@ namespace UniPlaySong.Services
 
                 // Notify MusicPlaybackService that the promoted song is now current.
                 CrossfadePromoted?.Invoke(this, EventArgs.Empty);
+
+                // A song shorter than the overlap (a chiptune jingle) already ended as the secondary, unwatched, and the
+                // mixer dropped it. Its EOF will never fire again, so end it now or playback sits silent until a skip.
+                if (_songEndDetector?.HasEnded == true)
+                {
+                    _fileLogger?.Debug($"[{LogPrefix}] Promoted song already ended during the crossfade — advancing.");
+                    _isInMixer = false;
+                    _isPlaying = false;
+                    MediaEnded?.Invoke(this, EventArgs.Empty);
+                }
             }
             catch (Exception ex)
             {
@@ -1320,6 +1330,7 @@ namespace UniPlaySong.Services
             private readonly ISampleProvider _source;
             private bool _ended;
             public event Action SongEnded;
+            public bool HasEnded => _ended;
             public WaveFormat WaveFormat => _source.WaveFormat;
 
             public SongEndDetectorSampleProvider(ISampleProvider source)
