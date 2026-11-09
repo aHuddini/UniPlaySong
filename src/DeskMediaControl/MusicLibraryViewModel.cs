@@ -595,6 +595,7 @@ namespace UniPlaySong.DeskMediaControl
                     playbackService.RemovePauseSource(PauseSource.Idle);
                     playbackService.RemovePauseSource(PauseSource.ExternalAudio);
                     playbackService.RemovePauseSource(PauseSource.SystemLock);
+                    playbackService.RemovePauseSource(PauseSource.Suspended); // a missed wake event must not strand it
                     playbackService.RemovePauseSource(PauseSource.Manual);
                 }
                 else if (playbackService.IsPlaying || playbackService.IsLoaded)

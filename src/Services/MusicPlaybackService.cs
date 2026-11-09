@@ -158,7 +158,7 @@ namespace UniPlaySong.Services
             PauseSource.FocusLoss, PauseSource.Minimized, PauseSource.SystemTray,
             PauseSource.Manual, PauseSource.ExternalAudio, PauseSource.Idle,
             PauseSource.Video, PauseSource.ThemeOverlay, PauseSource.Dashboard,
-            PauseSource.SystemLock,
+            PauseSource.SystemLock, PauseSource.Suspended,
         };
 
         // Window-state subset (used by HasWindowStatePauseSources()).

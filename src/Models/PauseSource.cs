@@ -19,6 +19,7 @@ namespace UniPlaySong.Models
         Idle,                       // No keyboard/mouse input for configured duration (PauseOnIdle setting)
         Jingle,                     // Celebration jingle is playing — pause main music, fade back in on completion
         Dashboard,                  // Dashboard player is active — pause main music while dashboard plays independently
-        NsfPreview                  // NSF Track Manager dialog preview is playing
+        NsfPreview,                 // NSF Track Manager dialog preview is playing
+        Suspended                   // The PC is asleep; removed on wake. Separate from SystemLock, so waking while still locked stays paused
     }
 }

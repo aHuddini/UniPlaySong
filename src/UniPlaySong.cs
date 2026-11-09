@@ -2399,13 +2399,13 @@ namespace UniPlaySong
                 // so it rebuilds cleanly on resume when the device comes back.
                 _spotifyEffectsHost?.Shutdown();
 
-                // Then mark playback paused via the same SystemLock source the lock path uses, so that on resume
-                // RemovePauseSource(SystemLock) drives the identical self-healing resume-at-position (the player already saved
-                // its position during device release). AddPauseSource sets the pause flag synchronously, so it survives even if
-                // the UI thread doesn't finish the fade before the machine freezes.
+                // Then mark playback paused with its own Suspended source, so that on wake RemovePauseSource(Suspended)
+                // drives the self-healing resume-at-position (the player already saved its position during device release),
+                // while a lock taken before the sleep (SystemLock) keeps it paused until unlock. AddPauseSource sets the
+                // pause flag synchronously, so it survives even if the UI thread doesn't finish the fade before the freeze.
                 Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                 {
-                    _playbackService?.AddPauseSource(Models.PauseSource.SystemLock);
+                    _playbackService?.AddPauseSource(Models.PauseSource.Suspended);
                     _dashboardPlaybackService?.PauseForSystem();
                 }));
             }
@@ -2414,11 +2414,14 @@ namespace UniPlaySong
                 Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                 {
                     _fileLogger?.Debug("[Sleep] Resume — reopening device + resuming at saved position");
-                    // Removing SystemLock drives fader.Resume() → player.Resume(), which rebuilds the
-                    // released device and seeks back to where the track was (see NAudioMusicPlayer.Resume).
-                    _playbackService?.RemovePauseSource(Models.PauseSource.Idle);
-                    _playbackService?.RemovePauseSource(Models.PauseSource.SystemLock);
-                    _dashboardPlaybackService?.ResumeFromSystem();
+                    // Removing Suspended drives fader.Resume() → player.Resume(), which rebuilds the released
+                    // device and seeks back to where the track was (see NAudioMusicPlayer.Resume) - unless the
+                    // session is still locked, in which case SystemLock holds it until unlock. Idle is cleared
+                    // through IdleMonitor, which owns it, so it can pause again on the next idle stretch.
+                    _idleMonitor?.ClearIdleState();
+                    _playbackService?.RemovePauseSource(Models.PauseSource.Suspended);
+                    if (_playbackService?.HasPauseSource(Models.PauseSource.SystemLock) != true)
+                        _dashboardPlaybackService?.ResumeFromSystem();
                     RewarmJinglePlayerIfEnabled();
                     // Rebuild effected Spotify output if it was active before suspend (Shutdown ran
                     // on suspend); the host re-captures + re-attaches to the fresh device.
