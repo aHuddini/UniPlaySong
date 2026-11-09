@@ -16,17 +16,29 @@ namespace UniPlaySong.Tests.Services
             return File.ReadAllText(path);
         }
 
-        // After any teardown (device error, idle, lock, suspend) a stale _isInMixer = true made Play() skip adding
-        // every later song to the rebuilt mixer - silence until Playnite restarted.
+        // After any teardown (device error, idle, lock, suspend) a stale "in the mixer" flag made Play() skip adding
+        // every later song to the rebuilt mixer - silence until Playnite restarted. Deriving it from the live mixer
+        // makes that state impossible; a stored bool would bring the bug back.
         [Test]
-        public void TearingDownTheLayerClearsIsInMixer()
+        public void InMixerIsDerivedFromTheLiveMixer()
         {
             var text = ReadSource("src", "Services", "NAudioMusicPlayer.cs");
 
-            var start = text.IndexOf("private void TearDownPersistentLayer()");
+            StringAssert.Contains("IsInMixer => _mixerHoldingSong != null && _mixerHoldingSong == _mixer;", text);
+            StringAssert.DoesNotContain("bool _isInMixer", text);
+        }
+
+        // Play() after an idle/lock/suspend release used to return silently with no device, leaving the fader's
+        // fade-in polling forever.
+        [Test]
+        public void PlayReopensAReleasedDevice()
+        {
+            var text = ReadSource("src", "Services", "NAudioMusicPlayer.cs");
+
+            var start = text.IndexOf("public void Play()");
             Assert.Greater(start, -1);
-            var body = text.Substring(start, text.IndexOf("_persistentLayerInitialized = false;", start) - start);
-            StringAssert.Contains("_isInMixer = false;", body);
+            var body = text.Substring(start, text.IndexOf("AddSongToMixer();", start) - start);
+            StringAssert.Contains("EnsurePersistentLayer();", body);
         }
     }
 }

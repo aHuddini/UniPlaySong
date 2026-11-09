@@ -79,7 +79,10 @@ namespace UniPlaySong.Services
         private CalmDownProcessor _externalCalmDown;
         private SmoothVolumeSampleProvider _externalVolume;
 
-        private bool _isInMixer;
+        // The mixer the current song's input was added to. "In the mixer" is derived from it, so a teardown or a rebuilt
+        // mixer can never leave a stale "yes" behind (which once made every later song silent until restart).
+        private MixingSampleProvider _mixerHoldingSong;
+        private bool IsInMixer => _mixerHoldingSong != null && _mixerHoldingSong == _mixer;
 
         // Preloaded file reader — built during fade-out so Load() doesn't pay for it. Guarded because PreLoad
         // runs on a worker thread (building the reader is ~57ms of file I/O, too slow for the UI thread
@@ -194,10 +197,6 @@ namespace UniPlaySong.Services
                 }
                 _outputClock.Detach();
                 _mixer = null;
-                // The mixer is gone, so nothing is in it. Left true, RemoveSongFromMixer (guarded on _mixer) never clears
-                // it and Play() skips adding every later song to the rebuilt mixer: silence until restart after any
-                // teardown (device error, idle, lock, suspend). Resume() already re-adds; this covers the next Load().
-                _isInMixer = false;
                 _outputMixer = null;
                 _calmDownProcessor = null;
                 _volumeProvider = null;
@@ -383,20 +382,14 @@ namespace UniPlaySong.Services
         {
             try
             {
-                if (_mixerInput == null || _mixer == null) return;
+                if (_isDisposed || _mixerInput == null) return;
+                EnsurePersistentLayer(); // reopens the device after an idle/lock/suspend release
 
                 // If the audio has reached the end, seek back to the beginning (for looping)
                 if (_audioFile != null && _audioFile.CurrentTime >= _audioFile.TotalTime - TimeSpan.FromMilliseconds(100))
-                {
                     _audioFile.CurrentTime = TimeSpan.Zero;
-                    _songEndDetector?.Reset();
-                }
 
-                if (!_isInMixer)
-                {
-                    _mixer.AddMixerInput(_mixerInput);
-                    _isInMixer = true;
-                }
+                AddSongToMixer();
 
                 _isPlaying = true;
                 _logicallyPaused = false;
@@ -427,7 +420,7 @@ namespace UniPlaySong.Services
 
         // Emulated readers can only restart; a crossfade has two songs to keep in step; an ended song is on its way out.
         public bool CanSeek => _audioFile != null && !IsEmulatedReader(_audioFile) && !IsCrossfading
-                               && (_isInMixer || _logicallyPaused);
+                               && (IsInMixer || _logicallyPaused);
 
         // Safe while the song is in the mixer: the readers lock their position against the audio thread's reads
         // (AudioFileReader internally, OggFileReader with its own lock). A paused song resumes from _pausedPosition,
@@ -462,7 +455,7 @@ namespace UniPlaySong.Services
             if (inFlightTarget.HasValue)
             {
                 _pausedPosition = inFlightTarget.Value;
-                _fileLogger?.Debug($"[NAudio] Pause() — logical pause (seek in flight), pos={_pausedPosition} (from seek target), isInMixer={_isInMixer}, isActive={IsActive}");
+                _fileLogger?.Debug($"[NAudio] Pause() — logical pause (seek in flight), pos={_pausedPosition} (from seek target), isInMixer={IsInMixer}, isActive={IsActive}");
             }
             else
             {
@@ -470,7 +463,7 @@ namespace UniPlaySong.Services
                 var totalTime = _audioFile?.TotalTime ?? TimeSpan.Zero;
                 var remaining = totalTime - _pausedPosition;
                 bool atOrPastEof = _audioFile != null && remaining <= TimeSpan.FromMilliseconds(500);
-                _fileLogger?.Debug($"[NAudio] Pause() — logical pause, pos={_pausedPosition}, total={totalTime}, remaining={remaining.TotalMilliseconds:F0}ms, atOrPastEof={atOrPastEof}, isInMixer={_isInMixer}, isActive={IsActive}, vol={_volumeProvider?.Volume:F4}, isRamping={_volumeProvider?.IsRamping}");
+                _fileLogger?.Debug($"[NAudio] Pause() — logical pause, pos={_pausedPosition}, total={totalTime}, remaining={remaining.TotalMilliseconds:F0}ms, atOrPastEof={atOrPastEof}, isInMixer={IsInMixer}, isActive={IsActive}, vol={_volumeProvider?.Volume:F4}, isRamping={_volumeProvider?.IsRamping}");
             }
 
             // For GME: detach the mixer input so the audio thread stops calling gme_play(). Without this, the emulator
@@ -514,21 +507,15 @@ namespace UniPlaySong.Services
             // resume). Resumes at position.
             if (!_persistentLayerInitialized && _audioFile != null)
             {
-                _isInMixer = false; // the old mixer is gone; the input is not in the new one yet
                 EnsurePersistentLayer();
-                if (_mixerInput != null && _mixer != null)
-                {
-                    _songEndDetector?.Reset();
-                    _mixer.AddMixerInput(_mixerInput);
-                    _isInMixer = true;
-                    _fileLogger?.Debug("[NAudio] Resume() — rebuilt persistent layer after device release (issue #81)");
-                }
+                AddSongToMixer();
+                _fileLogger?.Debug("[NAudio] Resume() — rebuilt persistent layer after device release (issue #81)");
             }
 
             var totalTimeBefore = _audioFile?.TotalTime ?? TimeSpan.Zero;
             var remainingBefore = totalTimeBefore - _pausedPosition;
             bool atOrPastEof = _audioFile != null && remainingBefore <= TimeSpan.FromMilliseconds(500);
-            _fileLogger?.Debug($"[NAudio] Resume() — seeking to {_pausedPosition}, total={totalTimeBefore}, remaining={remainingBefore.TotalMilliseconds:F0}ms, atOrPastEof={atOrPastEof}, vol={_volumeProvider?.Volume:F4}, isRamping={_volumeProvider?.IsRamping}, isInMixer={_isInMixer}");
+            _fileLogger?.Debug($"[NAudio] Resume() — seeking to {_pausedPosition}, total={totalTimeBefore}, remaining={remainingBefore.TotalMilliseconds:F0}ms, atOrPastEof={atOrPastEof}, vol={_volumeProvider?.Volume:F4}, isRamping={_volumeProvider?.IsRamping}, isInMixer={IsInMixer}");
 
             if (_audioFile == null)
             {
@@ -543,13 +530,8 @@ namespace UniPlaySong.Services
             {
                 _audioFile.CurrentTime = _pausedPosition;
 
-                if (!_isInMixer && _mixerInput != null && _mixer != null)
-                {
-                    _songEndDetector?.Reset();
-                    _mixer.AddMixerInput(_mixerInput);
-                    _isInMixer = true;
+                if (AddSongToMixer())
                     _fileLogger?.Debug("[NAudio] Resume() — re-added to mixer after EOF during pause");
-                }
 
                 // If crossfading and secondary is GME, it was detached in Pause — re-attach.
                 if (IsCrossfading && IsEmulatedReader(_secondaryAudioFile) && _secondaryMixerInput != null && _mixer != null)
@@ -561,7 +543,7 @@ namespace UniPlaySong.Services
                     }
                 }
 
-                _fileLogger?.Debug($"[NAudio] Resume() — after seek: actualPos={_audioFile.CurrentTime}, isInMixer={_isInMixer}");
+                _fileLogger?.Debug($"[NAudio] Resume() — after seek: actualPos={_audioFile.CurrentTime}, isInMixer={IsInMixer}");
                 _logicallyPaused = false;
                 _isPlaying = true;
                 onReady?.Invoke();
@@ -601,12 +583,7 @@ namespace UniPlaySong.Services
             var drift = Math.Abs((currentEmuPosition - targetPosition).TotalMilliseconds);
             if (drift < 100)
             {
-                if (!_isInMixer && _mixerInput != null && _mixer != null)
-                {
-                    _songEndDetector?.Reset();
-                    _mixer.AddMixerInput(_mixerInput);
-                    _isInMixer = true;
-                }
+                AddSongToMixer();
                 _logicallyPaused = false;
                 _isPlaying = true;
                 _fileLogger?.Debug($"[NAudio] Resume() — GME fast path: emu already at {currentEmuPosition} (target {targetPosition}, drift {drift:F0}ms), skipping seek");
@@ -683,12 +660,7 @@ namespace UniPlaySong.Services
 
                     try
                     {
-                        if (_mixerInput != null && _mixer != null && !_isInMixer)
-                        {
-                            _songEndDetector?.Reset();
-                            _mixer.AddMixerInput(_mixerInput);
-                            _isInMixer = true;
-                        }
+                        AddSongToMixer();
 
                         // If crossfading and secondary is GME, it was detached in Pause — re-attach.
                         if (IsCrossfading && IsEmulatedReader(_secondaryAudioFile) && _secondaryMixerInput != null && _mixer != null)
@@ -700,7 +672,7 @@ namespace UniPlaySong.Services
                             }
                         }
 
-                        _fileLogger?.Debug($"[NAudio] Resume() — GME background seek done in {seekSw.ElapsedMilliseconds}ms, actualPos={_audioFile?.CurrentTime}, isInMixer={_isInMixer}");
+                        _fileLogger?.Debug($"[NAudio] Resume() — GME background seek done in {seekSw.ElapsedMilliseconds}ms, actualPos={_audioFile?.CurrentTime}, isInMixer={IsInMixer}");
                     }
                     catch (Exception ex)
                     {
@@ -1088,10 +1060,21 @@ namespace UniPlaySong.Services
             }
         }
 
+        // Adds the current song to the live mixer unless it is already there; false when nothing was added. Rewinds the
+        // end detector, so a song re-added after its EOF can end again instead of being dropped silently.
+        private bool AddSongToMixer()
+        {
+            if (IsInMixer || _mixerInput == null || _mixer == null) return false;
+            _songEndDetector?.Reset();
+            _mixer.AddMixerInput(_mixerInput);
+            _mixerHoldingSong = _mixer;
+            return true;
+        }
+
         // Guarded removal from mixer — only calls RemoveMixerInput if actually in mixer
         private void RemoveSongFromMixer()
         {
-            if (_isInMixer && _mixerInput != null && _mixer != null)
+            if (IsInMixer && _mixerInput != null)
             {
                 try
                 {
@@ -1101,12 +1084,12 @@ namespace UniPlaySong.Services
                 {
                     _fileLogger?.Debug($"[NAudio] RemoveSongFromMixer: {ex.Message}");
                 }
-                _isInMixer = false;
             }
+            _mixerHoldingSong = null;
         }
 
         // Called on the audio thread when song reaches EOF. MixingSampleProvider auto-removes the input on partial read
-        // (read < count), so _isInMixer must be set false here. MediaEnded is marshaled to the UI thread. Also clears
+        // (read < count), so the song is marked out of the mixer here. MediaEnded is marshaled to the UI thread. Also clears
         // _logicallyPaused so IsActive returns false — this lets the fader's stall detection kick in if the song
         // ended during a fade-out pause.
         //
@@ -1115,7 +1098,7 @@ namespace UniPlaySong.Services
         // to primary via Dispatcher and emit CrossfadePromoted for MusicPlaybackService to refresh its state.
         private void OnSongEnded()
         {
-            _isInMixer = false;
+            _mixerHoldingSong = null;
             _isPlaying = false;
             _logicallyPaused = false;
 
@@ -1188,8 +1171,8 @@ namespace UniPlaySong.Services
                 Source = _secondarySource;
 
                 // Secondary is already in the mixer from StartCrossfadeIntoNext —
-                // we're just relabeling ownership. Keep _isInMixer accurate.
-                _isInMixer = true;
+                // we're just relabeling ownership.
+                _mixerHoldingSong = _mixer;
                 _isPlaying = true;
 
                 // Rewire SongEndDetector for the NEW primary's EOF.
@@ -1221,7 +1204,7 @@ namespace UniPlaySong.Services
                 if (_songEndDetector?.HasEnded == true)
                 {
                     _fileLogger?.Debug($"[{LogPrefix}] Promoted song already ended during the crossfade — advancing.");
-                    _isInMixer = false;
+                    _mixerHoldingSong = null;
                     _isPlaying = false;
                     MediaEnded?.Invoke(this, EventArgs.Empty);
                 }
