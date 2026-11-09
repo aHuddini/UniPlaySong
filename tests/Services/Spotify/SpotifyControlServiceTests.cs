@@ -462,6 +462,119 @@ namespace UniPlaySong.Tests.Services.Spotify
             Assert.IsFalse(deadlocked, "Recompute on another thread blocked while a NowPlayingChanged handler ran — the event is raised inside _recomputeLock.");
             Assert.IsTrue(otherRecomputeDone.IsSet);
         }
+
+        // ---- Manual pause hold across mode changes ----
+        // A pause the user makes (Top Panel / menu) holds Spotify while that mode lasts. Leaving the mode - Spotify radio
+        // turned off, or turned on from a default-music gap - is a fresh start, so the next mode must not inherit it.
+        // A pause an integration makes over a URI (themes, FullReel) is that integration's to end, so it does carry over.
+
+        private void SpotifyRadio(bool on)
+        {
+            _settings.RadioModeEnabled = on;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
+        }
+
+        private void InSpotifyGap(bool gap)
+        {
+            _settings.DefaultMusicSourceOption = DefaultMusicSource.Spotify;
+            _playback.SetupGet(p => p.IsPlayingDefaultMusic).Returns(gap);
+        }
+
+        [TestCase(false, TestName = "ManualHold_RadioPausedByToggle_ThenRadioOff_GapPlays")]
+        [TestCase(true, TestName = "ManualHold_RadioPausedByUri_ThenRadioOff_StaysPaused")]
+        public void ManualHold_AcrossRadioOff(bool viaUri)
+        {
+            InSpotifyGap(true);
+            SpotifyRadio(true);
+            _service.Recompute();                                   // radio engaged, Spotify playing
+            if (viaUri) _service.ManualPause(); else _service.ToggleManualPlayPause();
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+
+            SpotifyRadio(false);                                    // radio off; a no-music game is selected
+            _client.Invocations.Clear();
+            _service.Recompute();
+
+            if (viaUri)
+                _client.Verify(c => c.TryResume(), Times.Never, "an integration's pause holds until it resumes");
+            else
+                _client.Verify(c => c.TryResume(), Times.Once, "the default-music gap must start Spotify again");
+        }
+
+        [Test]
+        public void ManualHold_GapPausedByToggle_ThenRadioOn_RadioStarts()
+        {
+            InSpotifyGap(true);
+            _service.Recompute();                                   // gap: Spotify is the active music
+            _service.ToggleManualPlayPause();                       // user pauses -> hold
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+
+            SpotifyRadio(true);                                     // turning radio on means "music now"
+            _client.Invocations.Clear();
+            _service.Recompute();
+
+            _client.Verify(c => c.TryResume(), Times.Once, "radio must start on engage");
+        }
+
+        [Test]
+        public void ManualHold_GapPausedByUri_ThenRadioOn_StaysPaused()
+        {
+            InSpotifyGap(true);
+            _service.Recompute();
+            _service.ManualPause();                                 // a theme / FullReel pauses over a URI
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+
+            SpotifyRadio(true);
+            _client.Invocations.Clear();
+            _service.Recompute();
+
+            _client.Verify(c => c.TryResume(), Times.Never, "an integration's pause holds until it resumes");
+
+            _service.ManualResume();                                // the integration ends its pause
+            _client.Verify(c => c.TryResume(), Times.Once);
+        }
+
+        [Test]
+        public void ManualHold_StillHoldsWhileRadioStaysOn()
+        {
+            SpotifyRadio(true);
+            _service.Recompute();
+            _service.ToggleManualPlayPause();
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+
+            _client.Invocations.Clear();
+            _service.Recompute();
+            _service.Recompute();
+
+            _client.Verify(c => c.TryResume(), Times.Never, "the user's pause must stick while radio stays on");
+        }
+
+        [Test]
+        public void ManualHold_StillHoldsWhileGapContinues()
+        {
+            InSpotifyGap(true);
+            _service.Recompute();
+            _service.ToggleManualPlayPause();
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+
+            _client.Invocations.Clear();
+            _service.Recompute();
+
+            _client.Verify(c => c.TryResume(), Times.Never, "the user's pause must stick within the same gap");
+        }
+
+        // Playnite saves SpotifyActive despite [JsonIgnore], so a session that ended with Spotify active starts the
+        // next one with it true. The first recompute must correct it, or themes, the visualizer palette and the
+        // external-audio exclusion all act on a Spotify that isn't there.
+        [Test]
+        public void SpotifyActive_SavedTrue_CorrectedOnFirstRecompute()
+        {
+            _settings.SpotifyActive = true;
+            _client.SetupGet(c => c.IsAvailable).Returns(false);
+
+            _service.Recompute();
+
+            Assert.IsFalse(_settings.SpotifyActive);
+        }
     }
 
     // v1.5.8 unification — SpotifyRadioMode is derived: radio on AND the radio source is Spotify.
@@ -484,5 +597,6 @@ namespace UniPlaySong.Tests.Services.Spotify
                     "pool source (CustomFolder)");
             });
         }
+
     }
 }

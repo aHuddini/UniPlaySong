@@ -730,7 +730,7 @@ namespace UniPlaySong
 
         // Runtime-only: whether Spotify is the active music right now (computed by
         // SpotifyControlService). Drives UPS output suppression and the now-playing display.
-        // [JsonIgnore] so it always starts false each launch.
+        // Playnite saves it anyway (it ignores [JsonIgnore]), so SpotifyControlService rewrites it on every recompute.
         [JsonIgnore]
         public bool SpotifyActive
         {

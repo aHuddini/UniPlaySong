@@ -29,9 +29,12 @@ namespace UniPlaySong.Services.Spotify
 
         // User pressed Pause via the menu while Spotify was the active music. While this holds, UPS goes hands-off
         // (issues no play/pause commands) so the user's pause sticks instead of being instantly auto-resumed. Cleared
-        // when the user toggles back to play, or when Spotify stops being the active music (a fresh takeover should
-        // start playing again).
+        // when the user toggles back to play, when Spotify stops being the active music, or when the mode changes
+        // (radio engaging or disengaging): each of those is a fresh takeover that should start playing again.
+        // A hold set by an integration (ManualPause over a URI: themes, FullReel) survives the mode change: that
+        // integration owns its pause and ends it with ManualResume.
         private bool _manualPauseHold;
+        private bool _holdFromIntegration;
 
         // Serializes Recompute() across the event (UI thread), AvailabilityChanged
         // (threadpool, from SMTC/WinRT callbacks), and the periodic timer.
@@ -108,6 +111,11 @@ namespace UniPlaySong.Services.Spotify
             lock (_recomputeLock)
             {
                 raiseNowPlaying = RecomputeCore();
+
+                // Mirror on every recompute, not only when _isActive flips: Playnite saves SpotifyActive despite
+                // [JsonIgnore], and _isActive starts false, so a value saved true would otherwise outlive startup.
+                var s = _getSettings?.Invoke();
+                if (s != null && s.SpotifyActive != _isActive) s.SpotifyActive = _isActive;
             }
             // Raised OUTSIDE the lock. Subscribers marshal to the UI thread (some synchronously);
             // raising while _recomputeLock is held deadlocks against a UI thread that is itself
@@ -130,7 +138,6 @@ namespace UniPlaySong.Services.Spotify
                 if (radioActive != _isActive)
                 {
                     _isActive = radioActive;
-                    s.SpotifyActive = radioActive;
                     raiseNowPlaying = true;
                 }
 
@@ -144,6 +151,7 @@ namespace UniPlaySong.Services.Spotify
                 {
                     _radioWasOn = true;
                     _radioState = new SpotifyRadioState { LifecyclePausedByUps = true, UserPausedExternally = false };
+                    ReleaseUserHold();
                 }
 
                 if (radioActive)
@@ -190,6 +198,8 @@ namespace UniPlaySong.Services.Spotify
             {
                 _radioWasOn = false;
                 _radioState = default(SpotifyRadioState);
+                ReleaseUserHold();
+                _drivingSpotify = false;
                 _fileLogger?.Debug($"[Spotify] radio disengage: _isActive={_isActive}, IsPlaying={_client?.IsPlaying} — pausing Spotify");
                 // Pause Spotify whenever UPS was driving radio and Spotify is still playing — NOT gated on the internal
                 // _isActive flag, which an intervening gap-fill Recompute may have already cleared (leaving Spotify playing on
@@ -199,7 +209,6 @@ namespace UniPlaySong.Services.Spotify
                 {
                     _client?.TryPause();
                     _isActive = false;
-                    if (s != null) s.SpotifyActive = false;
                     raiseNowPlaying = true;
                 }
             }
@@ -220,7 +229,6 @@ namespace UniPlaySong.Services.Spotify
             if (active != _isActive)
             {
                 _isActive = active;
-                if (s != null) s.SpotifyActive = active;
                 raiseNowPlaying = true;
             }
 
@@ -277,6 +285,13 @@ namespace UniPlaySong.Services.Spotify
         }
 
 
+        // Mode change (radio engaging or disengaging): a pause the user made from the menu or Top Panel doesn't carry
+        // into the new mode; one an integration made does, until it resumes.
+        private void ReleaseUserHold()
+        {
+            if (!_holdFromIntegration) _manualPauseHold = false;
+        }
+
         public SpotifyNowPlaying GetNowPlaying()
             => _isActive ? (_client?.GetNowPlaying() ?? SpotifyNowPlaying.Empty) : SpotifyNowPlaying.Empty;
 
@@ -305,6 +320,7 @@ namespace UniPlaySong.Services.Spotify
                 // active music; harmless otherwise since the hold is checked alongside `active`).
                 // If it was paused we just resumed → release any hold.
                 _manualPauseHold = wasPlaying && _isActive;
+                _holdFromIntegration = false;
             }
         }
 
@@ -318,6 +334,7 @@ namespace UniPlaySong.Services.Spotify
             {
                 _client.TryPause();
                 _manualPauseHold = _isActive;
+                _holdFromIntegration = _isActive;
                 // Sync the radio machine: this is a user pause, NOT a UPS lifecycle pause — so
                 // when the hold clears, the machine doesn't think it owes anyone a resume.
                 _radioState = new SpotifyRadioState { LifecyclePausedByUps = false, UserPausedExternally = true };
@@ -331,6 +348,7 @@ namespace UniPlaySong.Services.Spotify
             lock (_recomputeLock)
             {
                 _manualPauseHold = false;
+                _holdFromIntegration = false;
                 _client.TryResume();
                 // Playing again with no pending pauses — reset the radio machine to a clean state.
                 _radioState = new SpotifyRadioState { LifecyclePausedByUps = false, UserPausedExternally = false };
