@@ -2,10 +2,11 @@
 Packages:
   - Version: 1.9.3
     RequiredApiVersion: 6.16.0
-    ReleaseDate: 2026-11-08
+    ReleaseDate: 2026-11-12
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.3/UniPlaySong-1_9_3.pext'
     Changelog:
-      - '[New Setting] External audio: "Resume after" waits for a few seconds of silence, so pauses in a video don''t bring the music back early (issue #78).'
+      - '[New Setting] External Audio Pause Delay: "Resume after" waits for a few seconds of silence, so pauses in a video don''t bring the music back early (issue #78).'
+      - '[Fix] Radio Mode: Next (theme buttons, taskbar, media keys) no longer fails when radio started with Playnite.'
       - '[Fix] Chiptunes: music no longer goes silent after a short track, like a jingle, plays during a crossfade.'
       - '[Fix] Locking and then sleeping the PC keeps music paused until unlock, and idle pause works again after waking.'
       - '[Fix] Pressing Play after the PC was idle, locked or asleep no longer stays silent.'

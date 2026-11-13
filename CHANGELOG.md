@@ -4,7 +4,7 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
-## [1.9.3] - Unreleased
+## [1.9.3] - 2026-11-12
 
 ### Added
 
@@ -16,6 +16,7 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Fixed
 
+- Fixed Next throwing a `NullReferenceException` when Radio Mode started at launch: `StartRadioPlayback` never recorded the settings, so Next (theme buttons, taskbar, media keys) failed and crossfade stayed off until a settings save
 - Fixed playback going silent until a skip when a crossfade led into a track shorter than the overlap, such as a chiptune jingle: the incoming song's end went unwatched, so promotion now advances past an already-ended song
 - Fixed music resuming behind the lock screen after locking and then sleeping: sleep now uses its own `Suspended` pause source instead of reusing `SystemLock`
 - Fixed idle pause never returning after a wake: wake removed the Idle source behind `IdleMonitor`, which now clears it itself

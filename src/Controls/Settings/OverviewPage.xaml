@@ -38,16 +38,13 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: click a song in the Music Info Card to play it (D-pad and A in Fullscreen).
+                        Added: "Resume after" for external audio, so pauses in a video don't bring the music back early.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: choose which Top Panel buttons show, and auto-hide the ones that can't be used.
+                        Fixed: Next with Radio Mode started at launch, and silence after a short chiptune track.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: a trailer audio Start delay for themes that start the video late.
-                    </TextBlock>
-                    <TextBlock Style="{StaticResource UpsBody}">
-                        Improved: the Music Info Card opens faster and has a frosted-glass look.
+                        Fixed: music stays paused when waking a locked PC, and Play works after idle, lock or sleep.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:

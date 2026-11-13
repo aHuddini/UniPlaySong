@@ -20,22 +20,20 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.9.2
+## What's New - v1.9.3
 
 ### New
-- Music Info Card: click a song to play it. In Fullscreen, pick one with the D-pad and press A; the right stick scrolls the card.
-- Top Panel (Desktop): choose which buttons show, and auto-hide the ones that can't be used ([#50](https://github.com/aHuddini/UniPlaySong/issues/50)).
-- Trailer audio Start delay, so it lines up with themes like ANIKI REMAKE ([#84](https://github.com/aHuddini/UniPlaySong/issues/84)).
+- External Audio Pause Delay: "Resume after" waits for a few seconds of silence, so pauses in a video don't bring the music back early ([#78](https://github.com/aHuddini/UniPlaySong/issues/78)).
 
 ### Fixed
-- Download from URL now auto-normalizes the song when that option is on.
-
-### Improved
-- Music Info Card opens faster, fades in smoothly, has a frosted-glass look and shows each song's bitrate.
-- Now Playing has its own settings page, and Top Panel toggles apply without a restart.
+- Radio Mode: Next (theme buttons, taskbar, media keys) no longer fails when radio started with Playnite.
+- Chiptunes: music no longer goes silent after a short track plays during a crossfade.
+- Locking and then sleeping the PC keeps music paused until unlock; idle pause works again after waking.
+- Pressing Play after the PC was idle, locked or asleep no longer stays silent.
+- Spotify: a Top Panel pause no longer sticks after turning Radio Mode on or off.
 
 ### Previous Version
-- **v1.9.1**: Radio Mode no longer re-pauses Spotify mid-game; Live Effects and chiptune switches no longer break jingles or controls; a big internal cleanup.
+- **v1.9.2**: click a song in the Music Info Card to play it, pick which Top Panel buttons show, a trailer audio Start delay, and a faster frosted-glass Music Info Card.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
