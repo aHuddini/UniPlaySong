@@ -36,8 +36,12 @@ namespace UniPlaySong.Monitors
         private string _externalAudioExcludedAppsRaw = ""; // Tracks setting value to know when to rebuild cache
         private bool IsExternalAudioInstantMode => _settings?.ExternalAudioInstantPause == true || (_settings?.ExternalAudioDebounceSeconds ?? 3) == 0;
         private double ExternalAudioPollIntervalMs => IsExternalAudioInstantMode ? 500.0 : 1000.0;
-        private int ExternalAudioDebounceThreshold => (_settings?.ExternalAudioDebounceSeconds ?? 3) == 0
-            ? 1 : Math.Max(1, (int)Math.Ceiling((_settings?.ExternalAudioDebounceSeconds ?? 3) * 1000.0 / ExternalAudioPollIntervalMs));
+        private int ExternalAudioDebounceThreshold => PollsFor(_settings?.ExternalAudioDebounceSeconds ?? 0, ExternalAudioPollIntervalMs);
+        private int ExternalAudioResumeThreshold => PollsFor(_settings?.ExternalAudioResumeDelaySeconds ?? 2, ExternalAudioPollIntervalMs);
+
+        // Consecutive polls that cover the given seconds; at least one, so 0 means "the next poll".
+        internal static int PollsFor(int seconds, double pollIntervalMs) =>
+            Math.Max(1, (int)Math.Ceiling(seconds * 1000.0 / pollIntervalMs));
 
         public ExternalAudioMonitor(Func<UniPlaySongSettings> getSettings, IMusicPlaybackService playbackService,
             FileLogger fileLogger, Func<bool> isDesktop)
@@ -70,7 +74,7 @@ namespace UniPlaySong.Monitors
         }
 
         // Polls Windows audio sessions to detect external audio playback.
-        // Pauses UPS after sustained external audio (~3s), resumes after sustained silence (~3s).
+        // Pauses UPS after the debounce of sustained external audio, resumes after the resume delay of unbroken silence.
         private void OnExternalAudioPollTick(object sender, EventArgs e)
         {
             // Re-entrancy guard — skip if previous tick is still running (COM can be slow)
@@ -174,7 +178,7 @@ namespace UniPlaySong.Monitors
                     _externalAudioDebounceCount = 0;
                     _externalAudioSilenceCount++;
 
-                    if (_externalAudioDetected && _externalAudioSilenceCount >= ExternalAudioDebounceThreshold)
+                    if (_externalAudioDetected && _externalAudioSilenceCount >= ExternalAudioResumeThreshold)
                     {
                         _externalAudioDetected = false;
                         var wasInstant = _externalAudioPausedInstantly;

@@ -50,7 +50,7 @@
 
             <StackPanel Orientation="Horizontal"
                         IsEnabled="{Binding Settings.PauseOnExternalAudio}">
-                <TextBlock Text="Debounce" Style="{StaticResource UpsLabel}" Width="86"/>
+                <TextBlock Text="Pause after" Style="{StaticResource UpsLabel}" Width="96"/>
                 <Slider Minimum="0" Maximum="10" Width="200" VerticalAlignment="Center"
                         IsSnapToTickEnabled="True" TickFrequency="1"
                         Value="{Binding Settings.ExternalAudioDebounceSeconds}"/>
@@ -67,13 +67,13 @@
                     </TextBlock.Style>
                 </TextBlock>
             </StackPanel>
-            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="86,4,0,0"
-                       Text="How long the other audio must play before UPS music pauses, and how long the silence must last before it resumes. Lower is more responsive, but can flicker pauses on brief sounds."/>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="96,4,0,0"
+                       Text="How long the other audio must play before UPS music pauses. Lower is more responsive, but brief sounds can pause the music."/>
             <!-- Only worth saying when the debounce is actually zero. -->
             <TextBlock Text="At zero, Windows notification sounds and short blips will pause the music too.">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock" BasedOn="{StaticResource UpsWarning}">
-                        <Setter Property="Margin" Value="86,2,0,0"/>
+                        <Setter Property="Margin" Value="96,2,0,0"/>
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding Settings.ExternalAudioDebounceSeconds}" Value="0">
@@ -83,6 +83,28 @@
                     </Style>
                 </TextBlock.Style>
             </TextBlock>
+
+            <StackPanel Orientation="Horizontal" Margin="0,12,0,0"
+                        IsEnabled="{Binding Settings.PauseOnExternalAudio}">
+                <TextBlock Text="Resume after" Style="{StaticResource UpsLabel}" Width="96"/>
+                <Slider Minimum="0" Maximum="15" Width="200" VerticalAlignment="Center"
+                        IsSnapToTickEnabled="True" TickFrequency="1"
+                        Value="{Binding Settings.ExternalAudioResumeDelaySeconds}"/>
+                <TextBlock Margin="12,0,0,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock" BasedOn="{StaticResource UpsValue}">
+                            <Setter Property="Text" Value="{Binding Settings.ExternalAudioResumeDelaySeconds, StringFormat='{}{0} seconds of silence'}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Settings.ExternalAudioResumeDelaySeconds}" Value="0">
+                                    <Setter Property="Text" Value="Instant"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="96,4,0,0"
+                       Text="How long the other audio must stay quiet before the music comes back. Any sound restarts the wait, so pauses in a video or a conversation don't bring the music back early."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Ignored Apps" Style="{StaticResource UpsSectionTitle}"/>

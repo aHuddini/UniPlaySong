@@ -411,6 +411,8 @@ namespace UniPlaySong
         private bool pauseOnExternalAudio = false;
         private bool keepPausedAfterExternalAudio = false;
         private int externalAudioDebounceSeconds = 0;
+        private int externalAudioResumeDelaySeconds = 2;
+        private bool externalAudioResumeDelayMigrated = false;
         private bool externalAudioInstantPause = false;
         private string externalAudioExcludedApps = "obs64, obs32, wallpaper64, wallpaper32, webwallpaper32, sunshine, sunshinesvc, signalrgb, rainmeter, yasb";
         private bool pauseOnIdle = false;
@@ -1079,11 +1081,26 @@ namespace UniPlaySong
             set { keepPausedAfterExternalAudio = value; OnPropertyChanged(); }
         }
 
-        // How many seconds external audio must persist before pausing, and silence before resuming (0-10). 0 = instant (no debounce).
+        // How many seconds external audio must persist before pausing (0-10). 0 = instant (no debounce).
         public int ExternalAudioDebounceSeconds
         {
             get => externalAudioDebounceSeconds;
             set { externalAudioDebounceSeconds = Math.Max(0, Math.Min(10, value)); OnPropertyChanged(); }
+        }
+
+        // How many seconds of unbroken silence before music resumes (0-15); any sound restarts the count, so pauses
+        // in speech don't bring the music back mid-video (issue #78).
+        public int ExternalAudioResumeDelaySeconds
+        {
+            get => externalAudioResumeDelaySeconds;
+            set { externalAudioResumeDelaySeconds = Math.Max(0, Math.Min(15, value)); OnPropertyChanged(); }
+        }
+
+        // One-time migration flag: users who had set a debounce keep it as their resume delay, which it used to be
+        public bool ExternalAudioResumeDelayMigrated
+        {
+            get => externalAudioResumeDelayMigrated;
+            set { externalAudioResumeDelayMigrated = value; OnPropertyChanged(); }
         }
 
         // When enabled, external audio pauses/resumes music instantly (no fade).

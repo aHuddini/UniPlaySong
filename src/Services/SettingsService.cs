@@ -278,12 +278,25 @@ namespace UniPlaySong.Services
                 }
             }
 
+            changed |= MigrateExternalAudioResumeDelay(settings);
+
             if (changed)
             {
                 settings.ExternalAudioExcludedApps = string.Join(", ", currentExclusions);
                 _plugin.SavePluginSettings(settings);
                 _fileLogger?.Info($"Settings migration: excluded apps are now: {settings.ExternalAudioExcludedApps}");
             }
+        }
+
+        // The debounce used to time the resume as well as the pause. A user who set one keeps it as the resume delay;
+        // the default 0 (instant) takes the new resume default instead. Runs once.
+        internal static bool MigrateExternalAudioResumeDelay(UniPlaySongSettings settings)
+        {
+            if (settings.ExternalAudioResumeDelayMigrated) return false;
+            if (settings.ExternalAudioDebounceSeconds > 0)
+                settings.ExternalAudioResumeDelaySeconds = settings.ExternalAudioDebounceSeconds;
+            settings.ExternalAudioResumeDelayMigrated = true;
+            return true;
         }
     }
 

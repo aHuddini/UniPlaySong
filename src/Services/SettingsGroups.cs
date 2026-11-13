@@ -128,6 +128,7 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.ExternalAudioDebounceSeconds),
                     nameof(UniPlaySongSettings.ExternalAudioExcludedApps),
                     nameof(UniPlaySongSettings.ExternalAudioInstantPause),
+                    nameof(UniPlaySongSettings.ExternalAudioResumeDelaySeconds),
                     nameof(UniPlaySongSettings.FocusLossIgnoreBrief),
                     nameof(UniPlaySongSettings.FocusLossStayPaused),
                     nameof(UniPlaySongSettings.IdleTimeoutMinutes),
@@ -380,6 +381,7 @@ namespace UniPlaySong.Services
             nameof(UniPlaySongSettings.ActiveMediaVolume),
             nameof(UniPlaySongSettings.ActiveQuickStartProfile),
             nameof(UniPlaySongSettings.BundledPresetMigrated),
+            nameof(UniPlaySongSettings.ExternalAudioResumeDelayMigrated),
             // Live state, not a preference: idle has Calm Down engaged right now. [JsonIgnore],
             // so it is false at every launch and there is nothing for a reset to restore.
             nameof(UniPlaySongSettings.CalmDownIdleActive),
