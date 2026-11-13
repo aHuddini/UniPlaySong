@@ -1622,7 +1622,8 @@ Polls Windows audio sessions via NAudio `CoreAudioApi` to detect when other appl
 
 **Settings** (Pauses → External Audio):
 - `PauseOnExternalAudio` (bool, default false) — master toggle
-- `ExternalAudioDebounceSeconds` (int, default 0) — 0-10 seconds, 0 = instant debounce
+- `ExternalAudioDebounceSeconds` (int, default 0) — 0-10 seconds of external audio before pausing, 0 = instant
+- `ExternalAudioResumeDelaySeconds` (int, default 2) — 0-15 seconds of unbroken silence before resuming; any sound restarts the count (issue #78). `ExternalAudioResumeDelayMigrated` copies an existing non-zero debounce into it once
 - `ExternalAudioInstantPause` (bool, default false) — bypass fade transitions
 - `ExternalAudioExcludedApps` (string, default "obs64, obs32") — comma-separated process names
 

@@ -5,7 +5,11 @@ Packages:
     ReleaseDate: 2026-11-08
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.3/UniPlaySong-1_9_3.pext'
     Changelog:
-      - '[Improved] Placeholder: 1.9.3 update, entries land here as work does.'
+      - '[New Setting] External audio: "Resume after" waits for a few seconds of silence, so pauses in a video don''t bring the music back early (issue #78).'
+      - '[Fix] Chiptunes: music no longer goes silent after a short track, like a jingle, plays during a crossfade.'
+      - '[Fix] Locking and then sleeping the PC keeps music paused until unlock, and idle pause works again after waking.'
+      - '[Fix] Pressing Play after the PC was idle, locked or asleep no longer stays silent.'
+      - '[Fix] Spotify: a Top Panel pause no longer sticks after turning Radio Mode on or off.'
   - Version: 1.9.2
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-11-07
