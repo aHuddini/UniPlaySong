@@ -39,6 +39,32 @@ namespace UniPlaySong.Tests.Services
         }
 
 
+        // Radio started at Playnite startup goes straight to StartRadioPlayback, never through PlayGameMusic, so the
+        // service had no settings: Next skipped the radio branch and threw on the default-pool branch (a theme's Next
+        // button through ActiveMediaService). Toggling radio "fixed" it only because a save refreshed the settings.
+        [Test]
+        public void RadioStartedCold_NextSkipsWithinTheRadioPool()
+        {
+            Directory.CreateDirectory(_tempDir);
+            var songs = new System.Collections.Generic.List<string>();
+            foreach (var name in new[] { "a.mp3", "b.mp3", "c.mp3" })
+            {
+                var path = Path.Combine(_tempDir, name);
+                File.WriteAllText(path, "");
+                songs.Add(path);
+            }
+            var player = new Mock<IMusicPlayer>();
+            var service = new MusicPlaybackService(player.Object, new GameMusicFileService(_tempDir));
+            service.MarkInitializationComplete();
+            service.SetRadioSongPoolProvider((source, s) => songs);
+            service.SetDefaultSongPoolProvider((source, s) => songs); // the plugin always registers both
+
+            Assert.IsTrue(service.StartRadioPlayback(new UniPlaySongSettings { RadioModeEnabled = true }));
+            Assert.DoesNotThrow(() => service.SkipToNextSong());
+
+            player.Verify(p => p.Load(It.IsAny<string>()), Times.Exactly(2), "Next picks a second radio song");
+        }
+
         // Lock and suspend are separate pauses. Win+L, then sleep, then wake while still locked: the wake must not
         // unpause music behind the lock screen - only the unlock may.
         [Test]

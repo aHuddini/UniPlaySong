@@ -2187,6 +2187,10 @@ namespace UniPlaySong.Services
                 return true;   // Spotify IS playing; UPS staying quiet is correct, not a failure.
             }
 
+            // Radio started at Playnite startup never goes through PlayGameMusic, so record the settings here too: Next,
+            // crossfade and the radio play-through guard all read them.
+            if (settings != null) _currentSettings = settings;
+
             if (_radioSongPoolProvider == null)
             {
                 _fileLogger?.Warn("RadioMode: no pool provider registered, cannot start radio");
