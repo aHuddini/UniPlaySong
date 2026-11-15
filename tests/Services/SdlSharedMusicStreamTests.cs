@@ -86,5 +86,17 @@ namespace UniPlaySong.Tests.Services
             Assert.AreEqual(2, assignments.Count,
                 "only the play and resume paths may claim the music stream — see the gate in Stop()");
         }
+
+        // Mix_OpenAudio resets SDL's music volume to full. A song reloaded after an idle/minimize device release went
+        // through Play() at 100% while the fader believed it was at 0: a loud blip on coming back (issue #102).
+        [Test]
+        public void PlayStartsAtThePlayersOwnVolume()
+        {
+            var body = Method(Source(), "public void Play(TimeSpan startFrom)");
+
+            var apply = body.IndexOf("Mix_VolumeMusic((int)(_volume * 128))");
+            Assert.Greater(apply, -1, "Play must re-apply the cached volume");
+            Assert.Less(apply, body.IndexOf("Mix_PlayMusic"), "before the stream starts, not after");
+        }
     }
 }

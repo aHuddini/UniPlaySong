@@ -380,6 +380,10 @@ namespace UniPlaySong.Services
                     throw new InvalidOperationException("No music loaded. Call Load() first.");
                 }
 
+                // Opening the device (Mix_OpenAudio) resets SDL's music volume to full, while _volume still holds what
+                // the fader set. Re-apply it, or a song reloaded after a device release starts at 100% until the
+                // fade-in's first step: a loud blip on coming back to Playnite (issue #102).
+                SDL2Mixer.Mix_VolumeMusic((int)(_volume * 128));
                 if (SDL2Mixer.Mix_PlayMusic(_music, 0) < 0)
                 {
                     throw new Exception($"Failed to play music! SDL Error: {SDL2.SDL_GetError()}");
