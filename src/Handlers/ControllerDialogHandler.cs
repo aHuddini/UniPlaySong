@@ -188,7 +188,8 @@ namespace UniPlaySong.Handlers
                     Height = 600,
                     CanResize = true,
                     ShowMaximizeButton = true,
-                    ApplyDarkBackground = true  // For fullscreen compatibility
+                    ApplyDarkBackground = true,  // For fullscreen compatibility
+                    SetOwner = true              // CenterOwner needs an owner, or the window opens off-centre
                 });
 
                 // Initialize the dialog with real download functionality
