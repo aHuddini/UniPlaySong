@@ -77,9 +77,37 @@ namespace UniPlaySong.Views
             Downloading
         }
 
+        // Theme hooks: a Fullscreen theme restyles a part by defining a style with one of these keys. The XAML holds
+        // each key's default; a theme style whose TargetType doesn't fit the part is ignored rather than crashing.
+        private static readonly (string Key, Type Target)[] ThemeStyleKeys =
+        {
+            ("UPS_DialogRootStyle", typeof(Border)),
+            ("UPS_DialogTitleStyle", typeof(TextBlock)),
+            ("UPS_DialogHintStyle", typeof(Border)),
+            ("UPS_DialogListItemStyle", typeof(ListBoxItem)),
+            ("UPS_DialogButtonStyle", typeof(Button)),
+            ("UPS_DialogChipStyle", typeof(Button)),
+            ("UPS_DialogChipActiveStyle", typeof(Button)),
+        };
+
+        private void ApplyThemeStyles()
+        {
+            var app = Application.Current;
+            if (app == null) return;
+            foreach (var (key, target) in ThemeStyleKeys)
+            {
+                if (!(app.TryFindResource(key) is Style style)) continue;
+                if (style.TargetType.IsAssignableFrom(target))
+                    Resources[key] = style;
+                else
+                    Logger.Warn($"Theme style {key} targets {style.TargetType.Name}, needs {target.Name} - ignored");
+            }
+        }
+
         public SimpleControllerDialog()
         {
             InitializeComponent();
+            ApplyThemeStyles();
             Logger.DebugIf(LogPrefix, "Controller download dialog initialized");
             
             // Focus the first item for controller navigation
@@ -251,7 +279,7 @@ namespace UniPlaySong.Views
                         var isHint = item.IsFromHint;
                         var nameColor = isHint
                             ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0xD7, 0x00)) // Gold #FFD700
-                            : System.Windows.Media.Brushes.White;
+                            : null; // the list item's text colour, so a theme's item style controls it
                         var descColor = isHint
                             ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0xFF, 0xA5, 0x00)) // Orange #FFA500
                             : null; // Use default
@@ -262,9 +290,9 @@ namespace UniPlaySong.Views
                             FontWeight = FontWeights.SemiBold,
                             FontSize = 16,
                             TextWrapping = TextWrapping.Wrap,
-                            Margin = new Thickness(0, 0, 0, 4),
-                            Foreground = nameColor
+                            Margin = new Thickness(0, 0, 0, 4)
                         };
+                        if (nameColor != null) nameBlock.Foreground = nameColor;
 
                         stackPanel.Children.Add(nameBlock);
 
@@ -1691,8 +1719,7 @@ namespace UniPlaySong.Views
         }
 
         // Visually distinguishes the active variant so the user can tell which keyword
-        // produced the current results. Uses the same Raised/Outlined style swap that
-        // MaterialDesign applies to toggle buttons elsewhere in the app.
+        // produced the current results: the active one takes UPS_DialogChipActiveStyle (a theme can replace both).
         private void UpdateVariantButtonHighlights(string activeVariant)
         {
             var buttons = new (System.Windows.Controls.Button Btn, string Tag)[]
@@ -1703,8 +1730,8 @@ namespace UniPlaySong.Views
                 (VariantThemeButton, "theme"),
             };
 
-            var raised = (System.Windows.Style)FindResource("MaterialDesignRaisedButton");
-            var outlined = (System.Windows.Style)FindResource("MaterialDesignOutlinedButton");
+            var raised = (System.Windows.Style)FindResource("UPS_DialogChipActiveStyle");
+            var outlined = (System.Windows.Style)FindResource("UPS_DialogChipStyle");
 
             foreach (var (btn, tag) in buttons)
             {

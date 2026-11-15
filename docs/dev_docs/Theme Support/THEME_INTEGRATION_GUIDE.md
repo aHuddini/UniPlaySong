@@ -26,6 +26,7 @@ How to wire your Playnite Fullscreen theme into UniPlaySong's music playback.
 | A turntable-style cover the user turns to seek | `UPS_SeekDisc` overlay element (v1.9.0+) |
 | The Now-Playing popup with a live, art-coloured spectrum on its seek bar | `UPS_MusicPlayerControlVisual` element (v1.9.0+) — see [Music player with a spectrum](#music-player-with-a-spectrum--ups_musicplayercontrolvisual-v190) |
 | An animated, music-reactive visualizer with real transparency, for a page or your music player | `UPS_MusicVisualControl` element (v1.9.0+) — see [Music visualizer](#music-visualizer--ups_musicvisualcontrol-v190) |
+| Restyle UPS's Fullscreen Download Music dialog to match your theme | `UPS_Dialog*` styles in your theme's resources (v1.9.4+) — see [Style the Download Music dialog](#6-style-the-download-music-dialog--ups_dialog-styles-v194) |
 
 ---
 
@@ -1111,6 +1112,66 @@ Have your own music player? Put the same spectrum strip above **your** seek bar 
 
 ---
 
+## 6. Style the Download Music dialog — `UPS_Dialog*` styles (v1.9.4+)
+
+UPS's controller Download Music dialog has its own look by default. To match your theme, define a style for any part
+you want to change; UPS keeps the layout and the controller handling, and uses your style for that part. Parts you
+don't style keep UPS's look, and parts added in later versions get new keys, so your styles keep working.
+
+| Key | `TargetType` | Part |
+| --- | --- | --- |
+| `UPS_DialogRootStyle` | `Border` | The whole dialog: background, padding |
+| `UPS_DialogTitleStyle` | `TextBlock` | "Download Music" title |
+| `UPS_DialogHintStyle` | `Border` | Controller hint box. Its text inherits `TextElement.Foreground` from this style |
+| `UPS_DialogListItemStyle` | `ListBoxItem` | Each result row, including selected and focused states and the template if you want one |
+| `UPS_DialogButtonStyle` | `Button` | Back / Cancel and Select / Download |
+| `UPS_DialogChipStyle` | `Button` | The "Try:" search-term buttons |
+| `UPS_DialogChipActiveStyle` | `Button` | The "Try:" button whose results are showing |
+
+- Put the styles in `Constants.xaml` or any dictionary your theme merges at the application level. UPS reads them once,
+  when the dialog opens.
+- Your style replaces UPS's for that part completely (UPS's is not a base you build on), so set everything you need,
+  and define the chip and active-chip styles as a pair.
+- Result names and descriptions take the row's `Foreground`, so set it in the selected state too. Hint results keep
+  their gold colour.
+- A style whose `TargetType` doesn't fit its part is ignored (and logged), never a crash.
+
+```xml
+<Style x:Key="UPS_DialogRootStyle" TargetType="Border">
+    <Setter Property="Background" Value="#FF1A1D24" />
+    <Setter Property="Padding" Value="24" />
+</Style>
+
+<Style x:Key="UPS_DialogListItemStyle" TargetType="ListBoxItem">
+    <Setter Property="Foreground" Value="White" />
+    <Setter Property="Background" Value="#FF2A2E37" />
+    <Setter Property="Margin" Value="0,0,0,8" />
+    <Setter Property="Padding" Value="16,12" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Template">
+        <Setter.Value>
+            <ControlTemplate TargetType="ListBoxItem">
+                <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" CornerRadius="4">
+                    <ContentPresenter />
+                </Border>
+            </ControlTemplate>
+        </Setter.Value>
+    </Setter>
+    <Style.Triggers>
+        <Trigger Property="IsSelected" Value="True">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Foreground" Value="Black" />
+        </Trigger>
+    </Style.Triggers>
+</Style>
+
+<Style x:Key="UPS_DialogButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}" />
+```
+
+The last line hands the dialog's buttons to your theme's own button style. Put that one after your `Button` style is
+defined (e.g. at the end of `DefaultControls/Button.xaml`), because `StaticResource` only finds styles loaded before it.
+
+---
 ## Compatibility with PlayniteSound
 
 If your theme already uses PlayniteSound's `Sounds_MusicControl`, add UPS support alongside it. Both elements use the same `Tag` property pattern, so triggers can be identical:

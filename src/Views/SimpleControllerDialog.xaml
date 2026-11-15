@@ -13,9 +13,35 @@
                 <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="DeepPurple" SecondaryColor="Lime" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
             </ResourceDictionary.MergedDictionaries>
-            
-            <!-- Controller-Optimized Styles -->
-            <Style x:Key="ControllerListBoxItemStyle" TargetType="ListBoxItem" BasedOn="{StaticResource MaterialDesignListBoxItem}">
+
+            <!-- Theme hooks: each UPS_Dialog* style below is the default look of one part. A Fullscreen theme that
+                 defines a style with the same key (and a matching TargetType) replaces it - see ApplyThemeStyles().
+                 Every part references its style with DynamicResource so the swap applies. -->
+
+            <Style x:Key="UPS_DialogRootStyle" TargetType="Border">
+                <Setter Property="Padding" Value="16"/>
+            </Style>
+
+            <Style x:Key="UPS_DialogTitleStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="24"/>
+                <Setter Property="FontWeight" Value="Bold"/>
+                <Setter Property="Margin" Value="0,0,0,16"/>
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="Foreground" Value="#2196F3"/>
+            </Style>
+
+            <!-- TextElement.Foreground is inherited by the hint text inside the box. -->
+            <Style x:Key="UPS_DialogHintStyle" TargetType="Border">
+                <Setter Property="Background" Value="#E3F2FD"/>
+                <Setter Property="BorderBrush" Value="#2196F3"/>
+                <Setter Property="BorderThickness" Value="2"/>
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Padding" Value="16,8"/>
+                <Setter Property="Margin" Value="0,0,0,16"/>
+                <Setter Property="TextElement.Foreground" Value="#1976D2"/>
+            </Style>
+
+            <Style x:Key="UPS_DialogListItemStyle" TargetType="ListBoxItem" BasedOn="{StaticResource MaterialDesignListBoxItem}">
                 <Setter Property="MinHeight" Value="80"/>
                 <Setter Property="Margin" Value="4"/>
                 <Setter Property="Padding" Value="16,12"/>
@@ -38,18 +64,34 @@
                     </Trigger>
                 </Style.Triggers>
             </Style>
-            
-            <Style x:Key="ControllerButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+
+            <Style x:Key="UPS_DialogButtonStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
                 <Setter Property="Height" Value="50"/>
                 <Setter Property="MinWidth" Value="140"/>
                 <Setter Property="Margin" Value="8"/>
                 <Setter Property="FontSize" Value="16"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
             </Style>
+
+            <!-- "Try:" search-term buttons; the active one swaps to UPS_DialogChipActiveStyle. -->
+            <Style x:Key="UPS_DialogChipStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignOutlinedButton}">
+                <Setter Property="MinWidth" Value="70"/>
+                <Setter Property="Height" Value="36"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Margin" Value="0,0,4,0"/>
+            </Style>
+
+            <Style x:Key="UPS_DialogChipActiveStyle" TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+                <Setter Property="MinWidth" Value="70"/>
+                <Setter Property="Height" Value="36"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Margin" Value="0,0,4,0"/>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
-    
-    <Grid Margin="16">
+
+    <Border Style="{DynamicResource UPS_DialogRootStyle}">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>  <!-- Title -->
             <RowDefinition Height="Auto"/>  <!-- Controller Hint -->
@@ -58,32 +100,20 @@
         </Grid.RowDefinitions>
 
         <!-- Title -->
-        <TextBlock Grid.Row="0" 
+        <TextBlock Grid.Row="0"
                    Name="DialogTitle"
-                   Text="🎮 Download Music" 
-                   FontSize="24" 
-                   FontWeight="Bold" 
-                   Margin="0,0,0,16" 
-                   HorizontalAlignment="Center"
-                   Foreground="#2196F3"/>
+                   Text="🎮 Download Music"
+                   Style="{DynamicResource UPS_DialogTitleStyle}"/>
 
         <!-- Controller Hint -->
-        <Border Grid.Row="1" 
-                Background="#E3F2FD" 
-                BorderBrush="#2196F3" 
-                BorderThickness="2" 
-                CornerRadius="8" 
-                Padding="16,8"
-                Margin="0,0,0,16">
+        <Border Grid.Row="1" Style="{DynamicResource UPS_DialogHintStyle}">
             <StackPanel>
-                <TextBlock FontSize="14" 
+                <TextBlock FontSize="14"
                            FontWeight="SemiBold"
-                           Foreground="#1976D2"
                            Text="🎮 Xbox Controller Support Active:"
                            TextAlignment="Center"
                            Margin="0,0,0,4"/>
-                <TextBlock FontSize="12" 
-                           Foreground="#1976D2"
+                <TextBlock FontSize="12"
                            TextAlignment="Center"
                            TextWrapping="Wrap">
                     <Run Text="🎮 A: Select/Download • B: Back/Cancel • X/Y: Preview • D-Pad Up/Down: Navigate list"/>
@@ -93,7 +123,7 @@
                     <Run Text="⌨️ Keyboard: Arrow keys, Enter, Escape, F1 for preview"/>
                 </TextBlock>
                 <TextBlock Name="InputFeedback"
-                           FontSize="12" 
+                           FontSize="12"
                            Foreground="#FF9800"
                            TextAlignment="Center"
                            Margin="0,4,0,0"
@@ -107,7 +137,7 @@
         <!-- This prevents double-navigation when D-pad is pressed (XInput + WPF both handling it) -->
         <ListBox Grid.Row="2"
                  Name="ResultsListBox"
-                 ItemContainerStyle="{StaticResource ControllerListBoxItemStyle}"
+                 ItemContainerStyle="{DynamicResource UPS_DialogListItemStyle}"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                  Margin="0,0,0,16"
@@ -141,32 +171,25 @@
                         Content="OST"
                         Click="VariantButton_Click"
                         Tag="OST"
-                        Style="{StaticResource MaterialDesignOutlinedButton}"
-                        MinWidth="70" Height="36" FontSize="12"
-                        Margin="0,0,4,0"
+                        Style="{DynamicResource UPS_DialogChipStyle}"
                         ToolTip="Search for '{Game} OST'"/>
                 <Button Name="VariantSoundtrackButton"
                         Content="Soundtrack"
                         Click="VariantButton_Click"
                         Tag="soundtrack"
-                        Style="{StaticResource MaterialDesignOutlinedButton}"
-                        MinWidth="92" Height="36" FontSize="12"
-                        Margin="0,0,4,0"
+                        Style="{DynamicResource UPS_DialogChipStyle}"
                         ToolTip="Search for '{Game} soundtrack'"/>
                 <Button Name="VariantMusicButton"
                         Content="Music"
                         Click="VariantButton_Click"
                         Tag="music"
-                        Style="{StaticResource MaterialDesignOutlinedButton}"
-                        MinWidth="70" Height="36" FontSize="12"
-                        Margin="0,0,4,0"
+                        Style="{DynamicResource UPS_DialogChipStyle}"
                         ToolTip="Search for '{Game} music'"/>
                 <Button Name="VariantThemeButton"
                         Content="Theme"
                         Click="VariantButton_Click"
                         Tag="theme"
-                        Style="{StaticResource MaterialDesignOutlinedButton}"
-                        MinWidth="70" Height="36" FontSize="12"
+                        Style="{DynamicResource UPS_DialogChipStyle}"
                         ToolTip="Search for '{Game} theme'"/>
             </StackPanel>
 
@@ -176,13 +199,14 @@
                         HorizontalAlignment="Right">
                 <Button Name="CancelButton"
                         Content="Back / Cancel"
-                        Style="{StaticResource ControllerButtonStyle}"
+                        Style="{DynamicResource UPS_DialogButtonStyle}"
                         Click="CancelButton_Click"/>
                 <Button Name="ConfirmButton"
                         Content="Select / Download"
-                        Style="{StaticResource ControllerButtonStyle}"
+                        Style="{DynamicResource UPS_DialogButtonStyle}"
                         Click="ConfirmButton_Click"/>
             </StackPanel>
         </Grid>
     </Grid>
+    </Border>
 </UserControl>
