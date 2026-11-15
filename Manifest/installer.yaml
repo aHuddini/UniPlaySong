@@ -5,7 +5,9 @@ Packages:
     ReleaseDate: 2026-11-15
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.4/UniPlaySong-1_9_4.pext'
     Changelog:
-      - '[Placeholder] 1.9.4 in development.'
+      - '[New Feature] Theme authors can restyle the Fullscreen Download Music dialog to match their theme (see the theme integration guide).'
+      - '[Fix] No more loud burst of music when coming back to Playnite after minimizing it or leaving it idle (issue #102).'
+      - '[Fix] The Fullscreen Download Music dialog now opens centred.'
   - Version: 1.9.3
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-11-12

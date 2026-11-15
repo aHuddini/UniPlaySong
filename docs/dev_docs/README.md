@@ -33,7 +33,7 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](Theme%
 
 | Doc | Covers |
 |---|---|
-| [THEME_INTEGRATION_GUIDE.md](Theme%20Support/THEME_INTEGRATION_GUIDE.md) | The theme-developer contract: `UPS_MusicControl`, `{PluginSettings}` bindings, theme-shipped audio, external control URIs, unified media controls, now-playing data, seeking (seekable timelines, `UPS_SeekDisc`, seek URIs). Kept current — the canonical theme reference. |
+| [THEME_INTEGRATION_GUIDE.md](Theme%20Support/THEME_INTEGRATION_GUIDE.md) | The theme-developer contract: `UPS_MusicControl`, `{PluginSettings}` bindings, theme-shipped audio, external control URIs, unified media controls, now-playing data, seeking (seekable timelines, `UPS_SeekDisc`, seek URIs), Download Music dialog styles (`UPS_Dialog*`). Kept current — the canonical theme reference. |
 | [ACHIEVEMENT_SOUND_INTEGRATION.md](features/ACHIEVEMENT_SOUND_INTEGRATION.md) | The achievement/trophy unlock sound contract, rarity URIs, per-rarity resolution, and the v1.8.4 query API for extensions that want to play the sound themselves. |
 | [VISUALIZER_DYNAMIC_COLOR_ALGORITHM.md](features/VISUALIZER_DYNAMIC_COLOR_ALGORITHM.md) | Album-art colour extraction, brightness/saturation tuning, caching. |
 | [PERF_OPTIMIZATION_PLAN.md](roadmaps/PERF_OPTIMIZATION_PLAN.md) | Backlog for the `PerfOptimization` branch — ranked optimization, refactor and test-coverage work, with the measurements behind each item and a list of things already checked and found fine. |

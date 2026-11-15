@@ -4,6 +4,17 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.9.4] - Unreleased
+
+### Added
+
+- Added theme style hooks to the Fullscreen Download Music dialog: a theme restyles a part by defining `UPS_DialogRootStyle`, `TitleStyle`, `HintStyle`, `ListItemStyle`, `ButtonStyle`, `ChipStyle` or `ChipActiveStyle`; unstyled parts keep the default look
+
+### Fixed
+
+- Fixed a loud burst when returning to Playnite after a minimize, tray hide or idle device release: reopening the SDL2 device resets its music volume to full, so `Play()` now re-applies the player's volume first (refs #102)
+- Fixed the controller Download Music dialog opening off-centre in Fullscreen: it asked for `CenterOwner` without setting an owner
+
 ## [1.9.3] - 2026-11-12
 
 ### Added
