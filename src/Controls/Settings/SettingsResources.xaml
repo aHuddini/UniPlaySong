@@ -451,22 +451,12 @@
         <Setter Property="Padding" Value="14,12"/>
         <Setter Property="Margin" Value="0,0,0,12"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
-        <!-- The shadow below costs ClearType. An Effect renders its whole subtree to an
-             intermediate surface, and WPF turns ClearType off in those - so every label inside
-             a card was falling back to grayscale antialiasing and reading soft next to the same
-             text outside one. The hint puts it back for the subtree; layout rounding keeps the
-             borders and dividers on whole pixels while we are here. -->
-        <Setter Property="RenderOptions.ClearTypeHint" Value="Enabled"/>
         <Setter Property="UseLayoutRounding" Value="True"/>
-        <!-- Neutral and shallow. This is separation, not the bloom the toggles were told to drop:
-             a card is one of three or four on a page rather than one of fifteen, the colour is
-             black rather than a hue, and it signals depth rather than state. -->
-        <Setter Property="Effect">
-            <Setter.Value>
-                <DropShadowEffect Color="#000000" BlurRadius="9" ShadowDepth="2"
-                                  Direction="270" Opacity="0.38"/>
-            </Setter.Value>
-        </Setter>
+        <!-- No DropShadowEffect, deliberately (same call as the rail and UpsUnit). An Effect renders
+             the card and everything in it to an offscreen bitmap: the glass fill is translucent, so
+             ClearTypeHint can't restore ClearType there, and a card landing between pixels at 125% or
+             150% scaling gets resampled. Every label and link in a card read soft on Windows 10 while
+             shadowless boxes beside it stayed sharp. The bevel border does the separating. -->
     </Style>
 
     <!-- Reference / capability -->
