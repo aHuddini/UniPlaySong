@@ -4,12 +4,13 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:UniPlaySong"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
              mc:Ignorable="d"
              d:DesignHeight="500" d:DesignWidth="600">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+                <ups:SharedResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
     <!-- Opaque slate palette, deliberately NOT translucent white.
          The page previously used #14FFFFFF / #1FFFFFFF / #26FFFFFF — white at 7-14%

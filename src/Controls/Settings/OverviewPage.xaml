@@ -11,7 +11,7 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+                <ups:SharedResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>

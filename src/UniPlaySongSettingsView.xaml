@@ -12,7 +12,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <!-- for NullToVisibilityConverter, used to hide the Reset button on groups that
                      own no resettable settings -->
-                <ResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+                <settings:SharedResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
         <!-- Palette lifted from the Quick Start tab rather than invented alongside it. That tab is
