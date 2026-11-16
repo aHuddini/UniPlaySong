@@ -3462,32 +3462,23 @@ namespace UniPlaySong
             //
             // Assigned through the Settings PROPERTY so the setter moves the PropertyChanged
             // subscription off the stale object, as CancelEdit already does.
-            // [Perf] lines (debug logging only) time each step of opening settings, for the slow-open report.
-            var perf = SettingsOpenTiming.Start("BeginEdit");
 
             var live = plugin.GetSettingsService()?.Current;
             if (live != null && !ReferenceEquals(settings, live))
             {
                 Settings = live;
             }
-            perf.Step("adopt live settings");
 
             // Called when settings view is opened
             ScanLibraryStats();
-            perf.Step("ScanLibraryStats (start)");
             // Cheap and synchronous - the store is already aggregated, so unlike the library scan
             // above there is nothing to defer.
             LoadListeningStats();
-            perf.Step("LoadListeningStats");
             UpdateCacheStats();
-            perf.Step("UpdateCacheStats");
             UpdateHintsDatabaseStatus();
             RefreshMigrationStatus();
-            perf.Step("RefreshMigrationStatus (start)");
             UpdateToolValidation();
-            perf.Step("UpdateToolValidation");
             RefreshActiveThemeStatus();
-            perf.Step("RefreshActiveThemeStatus");
             // Reset any stale "Created: …" or "Copy failed: …" message from the prior open
             ActiveThemeCopyResultMessage = null;
             ActiveThemeCopyResultIsError = false;
