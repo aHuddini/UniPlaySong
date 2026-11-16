@@ -5,15 +5,15 @@ Packages:
     ReleaseDate: 2026-11-15
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.4/UniPlaySong-1_9_4.pext'
     Changelog:
-      - '[New Feature] Theme authors can restyle the Fullscreen Download Music dialog to match their theme (see the theme integration guide).'
-      - '[New Setting] Play default music in (Playback -> Startup): pick Desktop, Fullscreen or both for default music, separately from game music.'
+      - '[New Feature] Theme authors can restyle the Fullscreen Download Music dialog to match their theme (see the theme integration guide on Github).'
+      - '[New Setting] Music Startup State now affects Default Music -- Play default music in (Playback -> Startup): pick Desktop, Fullscreen or both for default music, separately from game music.'
       - '[Fix] No more loud burst of music when coming back to Playnite after minimizing it or leaving it idle (issue #102).'
       - '[Fix] The Fullscreen Download Music dialog now opens centred.'
       - '[Fix] Default music and Radio Mode no longer play in a mode where music is set not to play (e.g. Fullscreen only).'
       - '[Fix] Saving settings with game music off no longer stops the default music.'
       - '[Fix] Settings text no longer looks blurry on Windows 10.'
       - '[Improved] Settings open slightly faster.'
-      - '[Improved] Settings backup: exports no longer carry this PC''s file paths, and the Markdown snapshot lists every setting.'
+      - '[Improved] Settings backup: Exporting a Markdown snapshot lists every setting.'
   - Version: 1.9.3
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-11-12

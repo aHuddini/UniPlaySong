@@ -38,13 +38,13 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: "Resume after" for external audio, so pauses in a video don't bring the music back early.
+                        Added: "Play default music in", separate from game music, and theme styling for the Download Music dialog.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: Next with Radio Mode started at launch, and silence after a short chiptune track.
+                        Fixed: a loud burst when returning to Playnite, and default music or Radio playing where music is set off.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: music stays paused when waking a locked PC, and Play works after idle, lock or sleep.
+                        Improved: settings open faster and look sharp on Windows 10.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:

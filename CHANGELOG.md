@@ -4,17 +4,19 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
-## [1.9.4] - Unreleased
+## [1.9.4] - 2026-11-15
 
 ### Added
 
 - Added theme style hooks to the Fullscreen Download Music dialog: a theme restyles a part by defining `UPS_DialogRootStyle`, `TitleStyle`, `HintStyle`, `ListItemStyle`, `ButtonStyle`, `ChipStyle` or `ChipActiveStyle`; unstyled parts keep the default look
 - Added "Play default music in" (`DefaultMusicState`, Playback → Startup), separate from "Play game music in"; it starts as a copy of the old setting, and where game music doesn't play every game gets the default music
+- Added `scripts/render_settings_page.ps1`, which renders a settings page to PNG headlessly for checking UI changes
 
 ### Changed
 
 - Changed settings pages to share one parsed copy of `SettingsResources.xaml` (`SharedResourceDictionary`) instead of parsing it 42 times per open, and moved the library-stats and migration-status scans off the UI thread
 - Changed the settings Markdown snapshot to list every setting by settings group, generated from `SettingsGroups.Map`, replacing hand-written sections that stopped at 1.5
+- Changed the About pages to build when first shown (`LazyTab`), and renamed the trailer-audio source to "Audio from game trailer (ExtraMetadataLoader)"
 
 ### Fixed
 

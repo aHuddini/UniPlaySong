@@ -20,20 +20,23 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.9.3
+## What's New - v1.9.4
 
 ### New
-- External Audio Pause Delay: "Resume after" waits for a few seconds of silence, so pauses in a video don't bring the music back early ([#78](https://github.com/aHuddini/UniPlaySong/issues/78)).
+- Play default music in (Playback -> Startup): choose where default music plays, separately from game music.
+- Theme authors can restyle the Fullscreen Download Music dialog to match their theme (see the theme integration guide).
 
 ### Fixed
-- Radio Mode: Next (theme buttons, taskbar, media keys) no longer fails when radio started with Playnite.
-- Chiptunes: music no longer goes silent after a short track plays during a crossfade.
-- Locking and then sleeping the PC keeps music paused until unlock; idle pause works again after waking.
-- Pressing Play after the PC was idle, locked or asleep no longer stays silent.
-- Spotify: a Top Panel pause no longer sticks after turning Radio Mode on or off.
+- No more loud burst of music when coming back to Playnite after minimizing it or leaving it idle ([#102](https://github.com/aHuddini/UniPlaySong/issues/102)).
+- Default music and Radio Mode no longer play in a mode where music is set not to play (e.g. Fullscreen only).
+- Saving settings with game music off no longer stops the default music.
+- Settings text no longer looks blurry on Windows 10, and the Fullscreen Download Music dialog opens centred.
+
+### Improved
+- Settings open faster, and the Markdown settings snapshot lists every setting.
 
 ### Previous Version
-- **v1.9.2**: click a song in the Music Info Card to play it, pick which Top Panel buttons show, a trailer audio Start delay, and a faster frosted-glass Music Info Card.
+- **v1.9.3**: a Resume after delay for External Audio pauses, plus fixes for Radio Mode Next, chiptune silence after short tracks, and Play after idle, lock or sleep.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
