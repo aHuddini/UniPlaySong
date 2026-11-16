@@ -9,11 +9,22 @@ All notable changes to UniPlaySong will be documented in this file.
 ### Added
 
 - Added theme style hooks to the Fullscreen Download Music dialog: a theme restyles a part by defining `UPS_DialogRootStyle`, `TitleStyle`, `HintStyle`, `ListItemStyle`, `ButtonStyle`, `ChipStyle` or `ChipActiveStyle`; unstyled parts keep the default look
+- Added "Play default music in" (`DefaultMusicState`, Playback → Startup), separate from "Play game music in"; it starts as a copy of the old setting, and where game music doesn't play every game gets the default music
+
+### Changed
+
+- Changed settings pages to share one parsed copy of `SettingsResources.xaml` (`SharedResourceDictionary`) instead of parsing it 42 times per open, and moved the library-stats and migration-status scans off the UI thread
+- Changed the settings Markdown snapshot to list every setting by settings group, generated from `SettingsGroups.Map`, replacing hand-written sections that stopped at 1.5
 
 ### Fixed
 
 - Fixed a loud burst when returning to Playnite after a minimize, tray hide or idle device release: reopening the SDL2 device resets its music volume to full, so `Play()` now re-applies the player's volume first (refs #102)
 - Fixed the controller Download Music dialog opening off-centre in Fullscreen: it asked for `CenterOwner` without setting an owner
+- Fixed default music playing in Desktop with game music off and "Play music in" set to Fullscreen only: that route skipped the mode check and the Desktop auto-play lock
+- Fixed Radio Mode starting in a mode where all music is off, at startup or from a toggle: `StartRadioPlayback` now requires game or default music to be allowed there
+- Fixed saving settings with game music off stopping the default music: the save handler stopped playback whenever `EnableMusic` was off
+- Fixed blurry text in settings cards on Windows 10: the `UpsCard` drop shadow rendered each card to a resampled bitmap without ClearType
+- Fixed settings export carrying this PC's file paths (radio folder, sound files, Spotify) and Playnite library IDs; importing an export older than a one-time migration now runs it
 
 ## [1.9.3] - 2026-11-12
 
