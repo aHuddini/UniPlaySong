@@ -231,7 +231,7 @@
                 </StackPanel>
 
                 <!-- Trailer audio (graduated from Experimental in v1.5.8) -->
-                <RadioButton Content="Audio ripped from the game's trailer"
+                <RadioButton Content="Audio from game trailer (ExtraMetadataLoader)"
                              Style="{StaticResource UpsRadio}"
                              GroupName="DefaultMusicSource"
                              IsEnabled="{Binding IsTrailerAudioEnabled}"
@@ -248,7 +248,7 @@
                                    Text="{Binding Settings.TrailerAudioDelaySeconds, StringFormat='{}{0:0.0} s'}"/>
                     </StackPanel>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,6"
-                               Text="Waits this long before the trailer audio starts, so it lines up with themes that show the trailer a few seconds after you pick a game (ANIKI REMAKE needs about 2-5 s). 0 starts it right away."/>
+                               Text="Waits this long before the trailer audio starts, so it lines up with themes that show the trailer a few seconds after you pick a game (ANIKI REMAKE needs about 2-5 s)."/>
                     <Border Style="{StaticResource UpsCardWarn}">
                         <TextBlock Style="{StaticResource UpsBody}" Margin="0"
                                    Text="Note: In ExtraMetadataLoader's own settings, turn on &quot;Play videos initially without sound&quot; to ensure normal UPS functionality."/>

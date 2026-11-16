@@ -748,7 +748,7 @@ namespace UniPlaySong.Services
             }
         }
 
-        // "Audio ripped from the game's trailer" can wait TrailerAudioDelaySeconds before it starts, so it lines up with
+        // "Audio from game trailer (ExtraMetadataLoader)" can wait TrailerAudioDelaySeconds before it starts, so it lines up with
         // themes that start the trailer video a moment after selection. Every other source, and a delay of 0, runs
         // startsNow (or start) at once. A newer play decision (another game, a stop) cancels the wait, the same
         // generation check StartWithFadeIn's deferred start uses.
