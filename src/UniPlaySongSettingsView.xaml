@@ -169,18 +169,10 @@
 
         <TabItem Header="About">
             <TabControl Style="{StaticResource NavStrip}">
-                <TabItem Header="Overview">
-                    <settings:OverviewPage/>
-                </TabItem>
-                <TabItem Header="Credits">
-                    <settings:CreditsPage/>
-                </TabItem>
-                <TabItem Header="Links">
-                    <settings:LinksPage/>
-                </TabItem>
-                <TabItem Header="Donate">
-                    <settings:DonatePage/>
-                </TabItem>
+                <TabItem Header="Overview" settings:LazyTab.Page="{x:Type settings:OverviewPage}"/>
+                <TabItem Header="Credits" settings:LazyTab.Page="{x:Type settings:CreditsPage}"/>
+                <TabItem Header="Links" settings:LazyTab.Page="{x:Type settings:LinksPage}"/>
+                <TabItem Header="Donate" settings:LazyTab.Page="{x:Type settings:DonatePage}"/>
             </TabControl>
         </TabItem>
 

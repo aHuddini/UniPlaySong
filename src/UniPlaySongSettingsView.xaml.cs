@@ -16,7 +16,7 @@ namespace UniPlaySong
             // which is when layout and the first render of the visible page are done.
             var perf = SettingsOpenTiming.Start("view");
             InitializeComponent();
-            perf.Step("construct (all pages)");
+            perf.Step("construct (About pages build when first shown)");
 
             RoutedEventHandler onLoaded = null;
             onLoaded = (s, e) =>
