@@ -1943,15 +1943,30 @@ namespace UniPlaySong
                 return;
             }
 
-            var summary = migrationService.GetMigrationSummary();
-
-            MigrationPlayniteSoundStatus = summary.PlayniteSoundGameCount > 0
-                ? $"{summary.PlayniteSoundGameCount} games, {summary.PlayniteSoundFileCount} files"
-                : "No music found";
-
-            MigrationUniPlaySongStatus = summary.UniPlaySongGameCount > 0
-                ? $"{summary.UniPlaySongGameCount} games, {summary.UniPlaySongFileCount} files"
-                : "No music found";
+            // Off the UI thread: the summary walks both music libraries, and this runs on every settings open.
+            // (Its game-name lookups are Playnite's ConcurrentDictionary-backed Games.Get, safe from a worker.)
+            Task.Run(() =>
+            {
+                try
+                {
+                    var summary = migrationService.GetMigrationSummary();
+                    string playniteSound = summary.PlayniteSoundGameCount > 0
+                        ? $"{summary.PlayniteSoundGameCount} games, {summary.PlayniteSoundFileCount} files"
+                        : "No music found";
+                    string uniPlaySong = summary.UniPlaySongGameCount > 0
+                        ? $"{summary.UniPlaySongGameCount} games, {summary.UniPlaySongFileCount} files"
+                        : "No music found";
+                    OnUiThread(() =>
+                    {
+                        MigrationPlayniteSoundStatus = playniteSound;
+                        MigrationUniPlaySongStatus = uniPlaySong;
+                    });
+                }
+                catch (Exception ex)
+                {
+                    global::UniPlaySong.Common.GatedLogger.Get().Error(ex, "Error reading migration status");
+                }
+            });
         }
 
         public ICommand MigrateFromPlayniteSoundCommand => new Common.RelayCommand<object>((a) =>
@@ -3070,13 +3085,65 @@ namespace UniPlaySong
             PlayniteApi.Dialogs.ShowMessage("Listening history cleared.", "UniPlaySong");
         });
 
+        // Runs on settings open. Both phases run off the UI thread: the folder walk lists every game folder and
+        // sizes every song, which held the settings window for seconds on a large library or a cold disk.
+        // Results land through the dispatcher; the Playnite database is only read on the UI thread.
         private void ScanLibraryStats()
         {
+            _audioScanCts?.Cancel();
+            _audioScanCts = new CancellationTokenSource();
+            var ct = _audioScanCts.Token;
+
+            string gamesPath;
+            int totalGames;
             try
             {
-                var gamesPath = Path.Combine(Constants.ExtensionDataPath(PlayniteApi.Paths.ConfigurationPath), Constants.GamesFolderName);
+                gamesPath = Path.Combine(Constants.ExtensionDataPath(PlayniteApi.Paths.ConfigurationPath), Constants.GamesFolderName);
+                totalGames = PlayniteApi.Database.Games?.Count ?? 0;
+            }
+            catch (Exception ex)
+            {
+                SetLibraryStatsError(ex);
+                return;
+            }
 
-                if (!Directory.Exists(gamesPath))
+            Task.Run(() =>
+            {
+                try
+                {
+                    ScanLibraryFolders(gamesPath, totalGames, ct);
+                }
+                catch (Exception ex)
+                {
+                    OnUiThread(() => SetLibraryStatsError(ex));
+                }
+            });
+        }
+
+        private static void OnUiThread(Action action) => Application.Current?.Dispatcher?.BeginInvoke(action);
+
+        private void SetLibraryStatsError(Exception ex)
+        {
+            StatsGamesWithMusic = "Error";
+            StatsTotalSongs = "Error";
+            StatsTotalSize = "Error";
+            StatsAvgSongsPerGame = "Error";
+            StatsFormatBreakdown = "Error scanning library";
+            StatsTopGames = "";
+            StatsTotalPlaytime = "Error";
+            StatsAvgSongLength = "Error";
+            StatsId3Coverage = "Error";
+            StatsReducibleSpace = "Error";
+            StatsBitrateDistribution = "Error scanning library";
+            global::UniPlaySong.Common.GatedLogger.Get().Error(ex, "Error scanning library stats");
+        }
+
+        // Phase 1 (worker thread): counts, sizes and formats from the file system alone.
+        private void ScanLibraryFolders(string gamesPath, int totalGames, CancellationToken ct)
+        {
+            if (!Directory.Exists(gamesPath))
+            {
+                OnUiThread(() =>
                 {
                     StatsGamesWithMusic = "0";
                     StatsTotalSongs = "0";
@@ -3089,209 +3156,192 @@ namespace UniPlaySong
                     StatsId3Coverage = "N/A";
                     StatsReducibleSpace = "N/A";
                     StatsBitrateDistribution = "No music library found";
-                    return;
-                }
-
-                int gamesWithMusic = 0;
-                int totalSongs = 0;
-                long totalBytes = 0;
-                var formatCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                var gameSongCounts = new Dictionary<string, int>(); // dirName (GUID) → song count
-                var allFilePaths = new List<string>();
-
-                foreach (var gameDir in Directory.GetDirectories(gamesPath))
-                {
-                    var files = Directory.GetFiles(gameDir)
-                        .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
-                        .ToList();
-
-                    if (files.Count == 0) continue;
-
-                    gamesWithMusic++;
-                    totalSongs += files.Count;
-                    gameSongCounts[Path.GetFileName(gameDir)] = files.Count;
-
-                    foreach (var file in files)
-                    {
-                        try
-                        {
-                            allFilePaths.Add(file);
-                            totalBytes += new FileInfo(file).Length;
-                            var ext = Path.GetExtension(file).ToUpperInvariant().TrimStart('.');
-                            if (formatCounts.ContainsKey(ext))
-                                formatCounts[ext]++;
-                            else
-                                formatCounts[ext] = 1;
-                        }
-                        catch { }
-                    }
-                }
-
-                int totalGames = PlayniteApi.Database.Games?.Count ?? 0;
-                double pct = totalGames > 0 ? 100.0 * gamesWithMusic / totalGames : 0;
-
-                // Primary metrics
-                StatsGamesWithMusic = $"{gamesWithMusic} / {totalGames} ({pct:F0}%)";
-                StatsTotalSongs = totalSongs.ToString("N0");
-
-                if (totalBytes >= 1073741824)
-                    StatsTotalSize = $"{totalBytes / 1073741824.0:F1} GB";
-                else
-                    StatsTotalSize = $"{totalBytes / 1048576.0:F1} MB";
-
-                double avgSongs = gamesWithMusic > 0 ? (double)totalSongs / gamesWithMusic : 0;
-                StatsAvgSongsPerGame = $"~{avgSongs:F1}";
-
-                // Format distribution (all formats)
-                var allFormats = formatCounts
-                    .OrderByDescending(kv => kv.Value)
-                    .Select(kv => $"{kv.Key}: {kv.Value}");
-                StatsFormatBreakdown = string.Join("   |   ", allFormats);
-
-                // Top 5 games by song count (resolve GUID to game name)
-                var topGameEntries = gameSongCounts
-                    .OrderByDescending(kv => kv.Value)
-                    .Take(5)
-                    .Select(kv =>
-                    {
-                        string name = kv.Key;
-                        if (Guid.TryParse(kv.Key, out Guid gameId))
-                        {
-                            var game = PlayniteApi.Database.Games?.FirstOrDefault(g => g.Id == gameId);
-                            if (game != null) name = game.Name;
-                        }
-                        // Truncate long names
-                        if (name.Length > 30) name = name.Substring(0, 27) + "...";
-                        return $"{name} ({kv.Value})";
-                    });
-                StatsTopGames = string.Join("   |   ", topGameEntries);
-
-                // Phase 2: Background TagLib# scan for audio-level metrics
-                ScanAudioMetricsBackground(allFilePaths);
+                });
+                return;
             }
-            catch (Exception ex)
+
+            int gamesWithMusic = 0;
+            int totalSongs = 0;
+            long totalBytes = 0;
+            var formatCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var gameSongCounts = new Dictionary<string, int>(); // dirName (GUID) → song count
+            var allFilePaths = new List<string>();
+
+            foreach (var gameDir in Directory.GetDirectories(gamesPath))
             {
-                StatsGamesWithMusic = "Error";
-                StatsTotalSongs = "Error";
-                StatsTotalSize = "Error";
-                StatsAvgSongsPerGame = "Error";
-                StatsFormatBreakdown = "Error scanning library";
-                StatsTopGames = "";
-                StatsTotalPlaytime = "Error";
-                StatsAvgSongLength = "Error";
-                StatsId3Coverage = "Error";
-                StatsReducibleSpace = "Error";
-                StatsBitrateDistribution = "Error scanning library";
-                global::UniPlaySong.Common.GatedLogger.Get().Error(ex, "Error scanning library stats");
+                if (ct.IsCancellationRequested) return;
+                var files = Directory.GetFiles(gameDir)
+                    .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
+                    .ToList();
+
+                if (files.Count == 0) continue;
+
+                gamesWithMusic++;
+                totalSongs += files.Count;
+                gameSongCounts[Path.GetFileName(gameDir)] = files.Count;
+
+                foreach (var file in files)
+                {
+                    try
+                    {
+                        allFilePaths.Add(file);
+                        totalBytes += new FileInfo(file).Length;
+                        var ext = Path.GetExtension(file).ToUpperInvariant().TrimStart('.');
+                        if (formatCounts.ContainsKey(ext))
+                            formatCounts[ext]++;
+                        else
+                            formatCounts[ext] = 1;
+                    }
+                    catch { }
+                }
             }
+
+            if (ct.IsCancellationRequested) return;
+
+            double pct = totalGames > 0 ? 100.0 * gamesWithMusic / totalGames : 0;
+            string gamesWithMusicText = $"{gamesWithMusic} / {totalGames} ({pct:F0}%)";
+            string totalSize = totalBytes >= 1073741824
+                ? $"{totalBytes / 1073741824.0:F1} GB"
+                : $"{totalBytes / 1048576.0:F1} MB";
+            double avgSongs = gamesWithMusic > 0 ? (double)totalSongs / gamesWithMusic : 0;
+
+            // Format distribution (all formats)
+            string formatBreakdown = string.Join("   |   ", formatCounts
+                .OrderByDescending(kv => kv.Value)
+                .Select(kv => $"{kv.Key}: {kv.Value}"));
+
+            var topGames = gameSongCounts.OrderByDescending(kv => kv.Value).Take(5).ToList();
+
+            OnUiThread(() =>
+            {
+                StatsGamesWithMusic = gamesWithMusicText;
+                StatsTotalSongs = totalSongs.ToString("N0");
+                StatsTotalSize = totalSize;
+                StatsAvgSongsPerGame = $"~{avgSongs:F1}";
+                StatsFormatBreakdown = formatBreakdown;
+                StatsTopGames = FormatTopGames(topGames);
+            });
+
+            // Phase 2: TagLib# scan for audio-level metrics, on this same worker thread
+            ScanAudioMetrics(allFilePaths, ct);
         }
 
-        // Phase 2: Background TagLib# scan for audio-level metrics (bitrate, duration, ID3 tags)
-        private void ScanAudioMetricsBackground(List<string> filePaths)
+        // Top games by song count, folder GUID resolved to the game's name. UI thread: reads the Playnite database.
+        private string FormatTopGames(List<KeyValuePair<string, int>> topGames)
         {
-            _audioScanCts?.Cancel();
-            _audioScanCts = new CancellationTokenSource();
-            var ct = _audioScanCts.Token;
-
-            Task.Run(() =>
+            return string.Join("   |   ", topGames.Select(kv =>
             {
-                try
+                string name = kv.Key;
+                if (Guid.TryParse(kv.Key, out Guid gameId))
                 {
-                    var totalDuration = TimeSpan.Zero;
-                    int filesWithId3 = 0;
-                    int totalFiles = filePaths.Count;
-                    long reducibleBytes = 0;
-                    int reducibleCount = 0;
+                    var game = PlayniteApi.Database.Games?.FirstOrDefault(g => g.Id == gameId);
+                    if (game != null) name = game.Name;
+                }
+                // Truncate long names
+                if (name.Length > 30) name = name.Substring(0, 27) + "...";
+                return $"{name} ({kv.Value})";
+            }));
+        }
 
-                    var bitrateCounts = new Dictionary<int, int>(); // exact kbps → count
+        // Phase 2 (worker thread): TagLib# scan for audio-level metrics (bitrate, duration, ID3 tags)
+        private void ScanAudioMetrics(List<string> filePaths, CancellationToken ct)
+        {
+            try
+            {
+                var totalDuration = TimeSpan.Zero;
+                int filesWithId3 = 0;
+                int totalFiles = filePaths.Count;
+                long reducibleBytes = 0;
+                int reducibleCount = 0;
 
-                    foreach (var path in filePaths)
+                var bitrateCounts = new Dictionary<int, int>(); // exact kbps → count
+
+                foreach (var path in filePaths)
+                {
+                    if (ct.IsCancellationRequested) return;
+
+                    try
                     {
-                        if (ct.IsCancellationRequested) return;
-
-                        try
+                        using (var file = TagLib.File.Create(path))
                         {
-                            using (var file = TagLib.File.Create(path))
+                            var duration = file.Properties?.Duration ?? TimeSpan.Zero;
+                            totalDuration += duration;
+
+                            int bitrate = file.Properties?.AudioBitrate ?? 0;
+
+                            if (bitrate > 0)
                             {
-                                var duration = file.Properties?.Duration ?? TimeSpan.Zero;
-                                totalDuration += duration;
+                                if (bitrateCounts.ContainsKey(bitrate))
+                                    bitrateCounts[bitrate]++;
+                                else
+                                    bitrateCounts[bitrate] = 1;
+                            }
 
-                                int bitrate = file.Properties?.AudioBitrate ?? 0;
+                            // ID3 tag presence — has at least title or artist
+                            bool hasTitle = !string.IsNullOrWhiteSpace(file.Tag?.Title);
+                            bool hasArtist = file.Tag?.Performers != null
+                                             && file.Tag.Performers.Length > 0
+                                             && !string.IsNullOrWhiteSpace(file.Tag.Performers[0]);
+                            if (hasTitle || hasArtist)
+                                filesWithId3++;
 
-                                if (bitrate > 0)
+                            // Reducible space: files above 128kbps
+                            if (bitrate > 128 && duration.TotalSeconds > 0)
+                            {
+                                long actualSize = new FileInfo(path).Length;
+                                long estimatedAt128 = (long)(128000.0 * duration.TotalSeconds / 8.0);
+                                long savings = actualSize - estimatedAt128;
+                                if (savings > 0)
                                 {
-                                    if (bitrateCounts.ContainsKey(bitrate))
-                                        bitrateCounts[bitrate]++;
-                                    else
-                                        bitrateCounts[bitrate] = 1;
-                                }
-
-                                // ID3 tag presence — has at least title or artist
-                                bool hasTitle = !string.IsNullOrWhiteSpace(file.Tag?.Title);
-                                bool hasArtist = file.Tag?.Performers != null
-                                                 && file.Tag.Performers.Length > 0
-                                                 && !string.IsNullOrWhiteSpace(file.Tag.Performers[0]);
-                                if (hasTitle || hasArtist)
-                                    filesWithId3++;
-
-                                // Reducible space: files above 128kbps
-                                if (bitrate > 128 && duration.TotalSeconds > 0)
-                                {
-                                    long actualSize = new FileInfo(path).Length;
-                                    long estimatedAt128 = (long)(128000.0 * duration.TotalSeconds / 8.0);
-                                    long savings = actualSize - estimatedAt128;
-                                    if (savings > 0)
-                                    {
-                                        reducibleBytes += savings;
-                                        reducibleCount++;
-                                    }
+                                    reducibleBytes += savings;
+                                    reducibleCount++;
                                 }
                             }
                         }
-                        catch
-                        {
-                            // Corrupt or unreadable file — skip
-                        }
                     }
-
-                    if (ct.IsCancellationRequested) return;
-
-                    // Format results
-                    string playtime = FormatLargePlaytime(totalDuration);
-                    string avgLength = totalFiles > 0
-                        ? DeskMediaControl.SongTitleCleaner.FormatDuration(
-                              TimeSpan.FromSeconds(totalDuration.TotalSeconds / totalFiles))
-                        : "0:00";
-                    string id3Coverage = totalFiles > 0
-                        ? $"{filesWithId3} / {totalFiles} ({100.0 * filesWithId3 / totalFiles:F0}%)"
-                        : "N/A";
-                    string reducible = reducibleCount > 0
-                        ? $"{reducibleCount} songs above 128 kbps  |  ~{FormatBytes(reducibleBytes)} recoverable if downsampled to 128 kbps"
-                        : "All songs are 128 kbps or below";
-                    string bitrateDist = FormatBitrateBuckets(bitrateCounts);
-
-                    // Marshal to UI thread
-                    Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                    catch
                     {
-                        StatsTotalPlaytime = playtime;
-                        StatsAvgSongLength = avgLength;
-                        StatsId3Coverage = id3Coverage;
-                        StatsReducibleSpace = reducible;
-                        StatsBitrateDistribution = bitrateDist;
-                    }));
+                        // Corrupt or unreadable file — skip
+                    }
                 }
-                catch
+
+                if (ct.IsCancellationRequested) return;
+
+                // Format results
+                string playtime = FormatLargePlaytime(totalDuration);
+                string avgLength = totalFiles > 0
+                    ? DeskMediaControl.SongTitleCleaner.FormatDuration(
+                          TimeSpan.FromSeconds(totalDuration.TotalSeconds / totalFiles))
+                    : "0:00";
+                string id3Coverage = totalFiles > 0
+                    ? $"{filesWithId3} / {totalFiles} ({100.0 * filesWithId3 / totalFiles:F0}%)"
+                    : "N/A";
+                string reducible = reducibleCount > 0
+                    ? $"{reducibleCount} songs above 128 kbps  |  ~{FormatBytes(reducibleBytes)} recoverable if downsampled to 128 kbps"
+                    : "All songs are 128 kbps or below";
+                string bitrateDist = FormatBitrateBuckets(bitrateCounts);
+
+                // Marshal to UI thread
+                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                 {
-                    Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
-                    {
-                        StatsTotalPlaytime = "Scan failed";
-                        StatsAvgSongLength = "Scan failed";
-                        StatsId3Coverage = "Scan failed";
-                        StatsReducibleSpace = "Scan failed";
-                        StatsBitrateDistribution = "Scan failed";
-                    }));
-                }
-            });
+                    StatsTotalPlaytime = playtime;
+                    StatsAvgSongLength = avgLength;
+                    StatsId3Coverage = id3Coverage;
+                    StatsReducibleSpace = reducible;
+                    StatsBitrateDistribution = bitrateDist;
+                }));
+            }
+            catch
+            {
+                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                {
+                    StatsTotalPlaytime = "Scan failed";
+                    StatsAvgSongLength = "Scan failed";
+                    StatsId3Coverage = "Scan failed";
+                    StatsReducibleSpace = "Scan failed";
+                    StatsBitrateDistribution = "Scan failed";
+                }));
+            }
         }
 
         // Moved to Common.DurationFormatter once the dashboard needed the same figure. Kept as a
@@ -3412,22 +3462,32 @@ namespace UniPlaySong
             //
             // Assigned through the Settings PROPERTY so the setter moves the PropertyChanged
             // subscription off the stale object, as CancelEdit already does.
+            // [Perf] lines (debug logging only) time each step of opening settings, for the slow-open report.
+            var perf = SettingsOpenTiming.Start("BeginEdit");
+
             var live = plugin.GetSettingsService()?.Current;
             if (live != null && !ReferenceEquals(settings, live))
             {
                 Settings = live;
             }
+            perf.Step("adopt live settings");
 
             // Called when settings view is opened
             ScanLibraryStats();
+            perf.Step("ScanLibraryStats (start)");
             // Cheap and synchronous - the store is already aggregated, so unlike the library scan
             // above there is nothing to defer.
             LoadListeningStats();
+            perf.Step("LoadListeningStats");
             UpdateCacheStats();
+            perf.Step("UpdateCacheStats");
             UpdateHintsDatabaseStatus();
             RefreshMigrationStatus();
+            perf.Step("RefreshMigrationStatus (start)");
             UpdateToolValidation();
+            perf.Step("UpdateToolValidation");
             RefreshActiveThemeStatus();
+            perf.Step("RefreshActiveThemeStatus");
             // Reset any stale "Created: …" or "Copy failed: …" message from the prior open
             ActiveThemeCopyResultMessage = null;
             ActiveThemeCopyResultIsError = false;
