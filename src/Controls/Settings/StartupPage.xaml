@@ -27,7 +27,7 @@
                        Text="Settings that determine when music first plays, and whether it starts on its own."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Where Game Music Plays (Music Mode)" Style="{StaticResource UpsSectionTitle}"/>
+                <TextBlock ups:TrackedCaps.Text="Where Music Plays (Music Mode)" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
             <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
