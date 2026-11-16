@@ -26,12 +26,50 @@ namespace UniPlaySong.Services
         // these fields are preserved (the import is a "merge in non-machine-specific values").
         private static readonly string[] MachineSpecificFields = new[]
         {
-            "YtDlpPath",
-            "FFmpegPath",
-            "DefaultMusicPath",
-            "DefaultMusicFolderPath",
-            "CustomCookiesFilePath",
-            "CustomRotationGameIds",
+            // Tool and file paths on this PC
+            nameof(UniPlaySongSettings.YtDlpPath),
+            nameof(UniPlaySongSettings.FFmpegPath),
+            nameof(UniPlaySongSettings.SpotifyExePath),
+            nameof(UniPlaySongSettings.DefaultMusicPath),
+            nameof(UniPlaySongSettings.DefaultMusicFolderPath),
+            nameof(UniPlaySongSettings.BackupCustomMusicPath),
+            nameof(UniPlaySongSettings.RadioCustomFolderPath),
+            nameof(UniPlaySongSettings.CustomCookiesFilePath),
+            nameof(UniPlaySongSettings.CustomHintsDatabasePath),
+            nameof(UniPlaySongSettings.AchievementSoundPath),
+            nameof(UniPlaySongSettings.CommonAchievementSoundPath),
+            nameof(UniPlaySongSettings.UncommonAchievementSoundPath),
+            nameof(UniPlaySongSettings.RareAchievementSoundPath),
+            nameof(UniPlaySongSettings.UltraRareAchievementSoundPath),
+            nameof(UniPlaySongSettings.HiddenAchievementSoundPath),
+            nameof(UniPlaySongSettings.CapstoneAchievementSoundPath),
+            nameof(UniPlaySongSettings.CelebrationSoundPath),
+            nameof(UniPlaySongSettings.AbandonedSoundPath),
+            nameof(UniPlaySongSettings.ControlUpDetectSoundPath),
+            // IDs from this Playnite library: another library's games, statuses, genres etc. have different IDs
+            nameof(UniPlaySongSettings.CustomRotationGameIds),
+            nameof(UniPlaySongSettings.NostalgiaStatusIds),
+            nameof(UniPlaySongSettings.DefaultMusicStatusPoolIds),
+            nameof(UniPlaySongSettings.GamePropFilterGenreIds),
+            nameof(UniPlaySongSettings.GamePropFilterPlatformIds),
+            nameof(UniPlaySongSettings.GamePropFilterSourceIds),
+        };
+
+        // One-time migrations keyed by their flag. An export made before a migration existed lacks the flag, so on
+        // import the migration runs again on the imported values (e.g. a 1.9.3 "Play music in: Fullscreen only"
+        // export also sets default music to Fullscreen only, as a fresh 1.9.4 install of it would).
+        private static readonly (string Flag, Action<UniPlaySongSettings> Rerun)[] ImportMigrations =
+        {
+            (nameof(UniPlaySongSettings.ExternalAudioResumeDelayMigrated), s =>
+            {
+                s.ExternalAudioResumeDelayMigrated = false;
+                SettingsService.MigrateExternalAudioResumeDelay(s);
+            }),
+            (nameof(UniPlaySongSettings.DefaultMusicStateMigrated), s =>
+            {
+                s.DefaultMusicStateMigrated = false;
+                SettingsService.MigrateDefaultMusicState(s);
+            }),
         };
 
         // Settings whose value should be redacted in Markdown snapshots (shown as "*****"). The field name itself is
@@ -111,6 +149,11 @@ namespace UniPlaySong.Services
             var merged = JsonConvert.DeserializeObject<UniPlaySongSettings>(JsonConvert.SerializeObject(currentSettings));
             JsonConvert.PopulateObject(jObj.ToString(), merged);
 
+            foreach (var (flag, rerun) in ImportMigrations)
+            {
+                if (!jObj.ContainsKey(flag)) rerun(merged);
+            }
+
             return merged;
         }
 
@@ -170,61 +213,6 @@ namespace UniPlaySong.Services
             sb.AppendLine($"- Music folder: `{SanitizePath(musicFolderPath)}`");
             sb.AppendLine();
 
-            // --- Music Playback ---
-            sb.AppendLine("## Music Playback");
-            AppendSettingRow(sb, "Music State", settings.MusicState);
-            AppendSettingRow(sb, "Enable Music", settings.EnableMusic);
-            AppendSettingRow(sb, "Enable Default Music", settings.EnableDefaultMusic);
-            AppendSettingRow(sb, "Default Music Source", settings.DefaultMusicSourceOption);
-            AppendSettingRow(sb, "Selected Bundled Preset", settings.SelectedBundledPreset);
-            AppendSettingRow(sb, "Radio Mode Enabled", settings.RadioModeEnabled);
-            AppendSettingRow(sb, "Play Only On Game Select", settings.PlayOnlyOnGameSelect);
-            AppendSettingRow(sb, "Music Only For Installed Games", settings.MusicOnlyForInstalledGames);
-            AppendSettingRow(sb, "Randomize On Music End", settings.RandomizeOnMusicEnd);
-            sb.AppendLine();
-
-            // --- Volume & Fade ---
-            sb.AppendLine("## Volume & Fade");
-            AppendSettingRow(sb, "Music Volume", $"{settings.MusicVolume}%");
-            AppendSettingRow(sb, "Fullscreen Volume Boost", $"{settings.FullscreenVolumeBoostPercent}%");
-            AppendSettingRow(sb, "Fade In Duration", $"{settings.FadeInDuration:F2}s");
-            AppendSettingRow(sb, "Fade Out Duration", $"{settings.FadeOutDuration:F2}s");
-            AppendSettingRow(sb, "Fade In Curve (NAudio)", settings.NaudioFadeInCurve);
-            AppendSettingRow(sb, "Fade Out Curve (NAudio)", settings.NaudioFadeOutCurve);
-            AppendSettingRow(sb, "Fade Out Before Song End", settings.FadeOutBeforeSongEnd);
-            AppendSettingRow(sb, "Enable True Crossfade", settings.EnableTrueCrossfade);
-            sb.AppendLine();
-
-            // --- Pauses ---
-            sb.AppendLine("## Pauses");
-            AppendSettingRow(sb, "Pause On Focus Loss", settings.PauseOnFocusLoss);
-            AppendSettingRow(sb, "Stay Paused On Focus Restore", settings.FocusLossStayPaused);
-            AppendSettingRow(sb, "Ignore Brief Focus Loss", settings.FocusLossIgnoreBrief);
-            AppendSettingRow(sb, "Pause On Minimize", settings.PauseOnMinimize);
-            AppendSettingRow(sb, "Pause When In System Tray", settings.PauseWhenInSystemTray);
-            AppendSettingRow(sb, "Pause On External Audio", settings.PauseOnExternalAudio);
-            AppendSettingRow(sb, "Keep Paused After External Audio", settings.KeepPausedAfterExternalAudio);
-            AppendSettingRow(sb, "Pause On Idle", settings.PauseOnIdle);
-            AppendSettingRow(sb, "Idle Timeout Minutes", settings.IdleTimeoutMinutes);
-            AppendSettingRow(sb, "Pause On Trailer", settings.PauseOnTrailer);
-            sb.AppendLine();
-
-            // --- Live Effects ---
-            sb.AppendLine("## Live Effects");
-            AppendSettingRow(sb, "Live Effects Enabled", settings.LiveEffectsEnabled);
-            AppendSettingRow(sb, "Show Spectrum Visualizer", settings.ShowSpectrumVisualizer);
-            AppendSettingRow(sb, "Selected Reverb Preset", settings.SelectedReverbPreset);
-            sb.AppendLine();
-
-            // --- Integrations ---
-            sb.AppendLine("## Integrations (v1.5.0)");
-            // Optional rows go through reflection so the section degrades gracefully if a property isn't present.
-            AppendSettingRow(sb, "Listening History", settings.EnableListeningHistory ? "On" : "Off");
-            AppendOptionalSettingRow(sb, settings, "EnableDiscordRichPresence", "Discord Rich Presence");
-            AppendOptionalSettingRow(sb, settings, "EnableLastfmScrobbling", "Last.fm Scrobbling");
-            AppendOptionalSettingRow(sb, settings, "LastfmUsername", "Last.fm Username");
-            sb.AppendLine();
-
             // --- Tool Paths ---
             sb.AppendLine("## Tool Paths (this machine)");
             sb.AppendLine($"- yt-dlp: `{SanitizePath(settings.YtDlpPath)}` {ValidatePath(settings.YtDlpPath)}");
@@ -256,6 +244,27 @@ namespace UniPlaySong.Services
             }
             sb.AppendLine();
 
+            // --- Every setting, by settings group ---
+            // Generated from SettingsGroups.Map, which SettingsResetCoverageTests keeps complete, so a new setting
+            // appears here without this file being edited. (The hand-written sections this replaces had stopped at 1.5.)
+            sb.AppendLine("## All settings");
+            sb.AppendLine();
+            foreach (var group in RailOrder)
+            {
+                if (!SettingsGroups.Map.TryGetValue(group, out var names) || names.Length == 0) continue;
+                sb.AppendLine($"### {group}");
+                foreach (var name in names.OrderBy(n => n, StringComparer.Ordinal))
+                {
+                    var prop = typeof(UniPlaySongSettings).GetProperty(name);
+                    if (prop == null) continue;
+                    object value = prop.GetValue(settings);
+                    if (SensitiveFields.Contains(name)) value = "*****";
+                    else if (value is string path && MachineSpecificFields.Contains(name)) value = SanitizePath(path);
+                    AppendSettingRow(sb, Humanize(name), value);
+                }
+                sb.AppendLine();
+            }
+
             sb.AppendLine("---");
             sb.AppendLine();
             sb.AppendLine("_Generated by UniPlaySong. This is a one-way snapshot — not re-importable. " +
@@ -273,18 +282,17 @@ namespace UniPlaySong.Services
             sb.AppendLine($"- {label}: `{rendered}`");
         }
 
-        // Reflection-based row appender for settings that may or may not exist.
-        private static void AppendOptionalSettingRow(StringBuilder sb, UniPlaySongSettings settings, string propertyName, string displayLabel)
+        // The settings window's left rail, top to bottom.
+        private static readonly string[] RailOrder =
         {
-            var prop = typeof(UniPlaySongSettings).GetProperty(propertyName);
-            if (prop == null) return; // Property doesn't exist yet (or was removed); skip silently
-            var value = prop.GetValue(settings);
-            if (SensitiveFields.Contains(propertyName))
-            {
-                value = "*****";
-            }
-            sb.AppendLine($"- {displayLabel}: `{RenderValue(value)}`");
-        }
+            SettingsGroups.About, SettingsGroups.QuickStart, SettingsGroups.Setup, SettingsGroups.General,
+            SettingsGroups.Playback, SettingsGroups.Pauses, SettingsGroups.LiveEffects, SettingsGroups.Gamification,
+            SettingsGroups.Library, SettingsGroups.Advanced,
+        };
+
+        // "PauseOnFocusLoss" -> "Pause On Focus Loss", "FFmpegPath" -> "FFmpeg Path", "PS5ThemeCompatMode" -> "PS5 Theme Compat Mode".
+        internal static string Humanize(string name) =>
+            System.Text.RegularExpressions.Regex.Replace(name, @"(?<=[a-z0-9])(?=[A-Z])", " ");
 
         private static string RenderValue(object value)
         {
