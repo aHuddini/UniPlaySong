@@ -100,6 +100,7 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.GamePropFilterSourceIds),
                     nameof(UniPlaySongSettings.MusicOnlyForInstalledGames),
                     nameof(UniPlaySongSettings.MusicState),
+                    nameof(UniPlaySongSettings.DefaultMusicState),
                     nameof(UniPlaySongSettings.NostalgiaMode),
                     nameof(UniPlaySongSettings.NostalgiaStatusIds),
                     nameof(UniPlaySongSettings.PlayOnlyOnGameSelect),
@@ -382,6 +383,7 @@ namespace UniPlaySong.Services
             nameof(UniPlaySongSettings.ActiveQuickStartProfile),
             nameof(UniPlaySongSettings.BundledPresetMigrated),
             nameof(UniPlaySongSettings.ExternalAudioResumeDelayMigrated),
+            nameof(UniPlaySongSettings.DefaultMusicStateMigrated),
             // Live state, not a preference: idle has Calm Down engaged right now. [JsonIgnore],
             // so it is false at every launch and there is nothing for a reset to restore.
             nameof(UniPlaySongSettings.CalmDownIdleActive),

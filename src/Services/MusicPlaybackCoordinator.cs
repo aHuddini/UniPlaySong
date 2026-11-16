@@ -129,9 +129,7 @@ namespace UniPlaySong.Services
             // Session auto-play lock (Desktop). When AutoPlayOnFirstLaunchDesktop is OFF and we're in Desktop mode,
             // suppress auto-play until the user has manually pressed Play at least once this session. After that the flag
             // stays true (sticky-on) — manual Pause does NOT re-lock.
-            if (_isDesktop()
-                && !_settings.AutoPlayOnFirstLaunchDesktop
-                && !_playbackService.UserHasManuallyStartedThisSession)
+            if (DesktopAutoPlayLocked())
             {
                 _fileLogger?.Debug("ShouldPlayMusic: Returning false - Desktop auto-play lock active (no manual start yet this session)");
                 return false;
@@ -141,6 +139,15 @@ namespace UniPlaySong.Services
             return true;
         }
         
+        // Desktop with "Play automatically on first launch" off: nothing starts on its own until the user has pressed
+        // Play once this session.
+        private bool DesktopAutoPlayLocked()
+        {
+            return _isDesktop()
+                && _settings?.AutoPlayOnFirstLaunchDesktop == false
+                && _playbackService?.UserHasManuallyStartedThisSession != true;
+        }
+
         // Handles game selection: coordinates skip logic and initiates playback if appropriate
         public void HandleGameSelected(Game game, bool isFullscreen)
         {
@@ -172,7 +179,7 @@ namespace UniPlaySong.Services
                 // switches, tab changes and overlay clears, so a null selection is NOT a "user wants no music" signal. If
                 // default music is currently playing AND EnableDefaultMusic is on, treat null as a no-op. The next
                 // OnGameSelected with a real game (or a settings change) will route through PlayGameMusic normally.
-                if (_playbackService?.IsPlayingDefaultMusic == true && _settings?.EnableDefaultMusic == true)
+                if (_playbackService?.IsPlayingDefaultMusic == true && _settings?.AllowsDefaultMusicInMode(isFullscreen) == true)
                 {
                     _fileLogger?.Debug("HandleGameSelected: No game but default music playing — preserving (skip fade-out)");
                     _firstSelect = false;
@@ -187,15 +194,22 @@ namespace UniPlaySong.Services
                 return;
             }
 
-            // EnableMusic=off + game present: route through PlayGameMusic so its EnableMusic-off + EnableDefaultMusic-on
-            // fallback can fire and the default ambient persists for the new game instead of fading. PlayGameMusic decides:
-            // default music if EnableDefaultMusic=on, silence if both Game and Default are off.
-            if (_settings?.EnableMusic != true)
+            // Game music off, or not allowed in this mode: only default music can play, under its own "where it plays"
+            // setting. Routed through PlayGameMusic (which skips the game's songs) so the default ambient persists for the
+            // new game instead of fading. The selection skips below are deliberately bypassed for the same reason; the
+            // Desktop auto-play lock is not - it is the user's "nothing plays until I press Play".
+            if (_settings?.AllowsGameMusicInMode(isFullscreen) != true)
             {
-                _fileLogger?.Debug($"HandleGameSelected: EnableMusic=off, routing through PlayGameMusic for default-music fallback (Game: {game.Name})");
                 _currentGame = game;
-                _playbackService?.PlayGameMusic(game, _settings, false);
                 _firstSelect = false;
+                if (_settings?.AllowsDefaultMusicInMode(isFullscreen) != true || DesktopAutoPlayLocked())
+                {
+                    _fileLogger?.Debug($"HandleGameSelected: game music off here and default music not allowed or auto-play locked - stopping (Game: {game.Name})");
+                    _playbackService?.Stop();
+                    return;
+                }
+                _fileLogger?.Debug($"HandleGameSelected: game music off here, playing default music (Game: {game.Name})");
+                _playbackService?.PlayGameMusic(game, _settings, false);
                 return;
             }
             
@@ -270,7 +284,7 @@ namespace UniPlaySong.Services
                 // Already on the ambient (or default music disabled): nothing to bridge.
                 if (HoverSettlePolicy.ShouldBridgeToDefault(
                         _playbackService?.IsPlayingDefaultMusic == true,
-                        _settings?.EnableDefaultMusic == true))
+                        _settings?.AllowsDefaultMusicInMode(isFullscreen) == true))
                 {
                     _fileLogger?.Debug($"HandleGameSelected: bridging to default music while settling on {game.Name}");
                     _playbackService?.PlayDefaultMusicInterim(game, _settings);

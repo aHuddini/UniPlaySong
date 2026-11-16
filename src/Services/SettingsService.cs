@@ -279,6 +279,7 @@ namespace UniPlaySong.Services
             }
 
             changed |= MigrateExternalAudioResumeDelay(settings);
+            changed |= MigrateDefaultMusicState(settings);
 
             if (changed)
             {
@@ -296,6 +297,17 @@ namespace UniPlaySong.Services
             if (settings.ExternalAudioDebounceSeconds > 0)
                 settings.ExternalAudioResumeDelaySeconds = settings.ExternalAudioDebounceSeconds;
             settings.ExternalAudioResumeDelayMigrated = true;
+            return true;
+        }
+
+        // Default music got its own "where it plays" setting; before, it followed MusicState (with game music on) or
+        // played in both modes (with game music off). Starting it as a copy of MusicState keeps the first and gives the
+        // second what "Play music in" promised. Runs once.
+        internal static bool MigrateDefaultMusicState(UniPlaySongSettings settings)
+        {
+            if (settings.DefaultMusicStateMigrated) return false;
+            settings.DefaultMusicState = settings.MusicState;
+            settings.DefaultMusicStateMigrated = true;
             return true;
         }
     }

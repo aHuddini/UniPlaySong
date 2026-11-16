@@ -798,6 +798,24 @@ namespace UniPlaySong.Services
         // back to the default music, so a scroll rides the ambient instead of the abandoned track.
         // Runs the full PlayGameMusic pipeline with the song list treated as empty, which is the
         // same proven fall-through the theme override uses.
+        // Playnite's current mode, read through the plugin instance. False (Desktop) when it can't be read, as in tests.
+        private bool IsFullscreenMode()
+        {
+            try
+            {
+                if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
+                {
+                    var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
+                    return plugin?.PlayniteApi?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
+                }
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"PlayGameMusic: mode check failed: {ex.Message}");
+            }
+            return false;
+        }
+
         public void PlayDefaultMusicInterim(Game game, UniPlaySongSettings settings)
         {
             _forceDefaultInterim = true;
@@ -818,7 +836,7 @@ namespace UniPlaySong.Services
                 // Default music is session-persistent — a null-game call must not wipe it. The coordinator's
                 // HandleGameSelected guard is the primary defense; this is the safety net for callers that bypass the
                 // coordinator (settings handlers, theme overlay recovery paths, etc.).
-                if (_isPlayingDefaultMusic && settings?.EnableDefaultMusic == true)
+                if (_isPlayingDefaultMusic && settings?.AllowsDefaultMusicInMode(IsFullscreenMode()) == true)
                 {
                     _fileLogger?.Debug("PlayGameMusic(null): default music playing — preserving (skip fade-out)");
                     _deferredGame = null;
@@ -1048,23 +1066,10 @@ namespace UniPlaySong.Services
                 // music in Desktop, even when the flag is legitimately true. This is independent of the override's lifecycle
                 // correctness; keep it permanently. Mode is resolved the same way as the PlayOnlyOnGameSelect block
                 // below.
+                bool isFullscreenMode = IsFullscreenMode();
                 if (songs.Count > 0 && settings?.ForceDefaultMusicOverride == true)
                 {
-                    bool isFullscreen = false;
-                    try
-                    {
-                        if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
-                        {
-                            var plugin = Application.Current.Properties["UniPlaySongPlugin"] as UniPlaySong;
-                            isFullscreen = plugin?.PlayniteApi?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _fileLogger?.Debug($"PlayGameMusic: ForceDefaultMusicOverride mode check failed: {ex.Message}");
-                    }
-
-                    if (isFullscreen)
+                    if (isFullscreenMode)
                     {
                         _fileLogger?.Debug($"PlayGameMusic: ForceDefaultMusicOverride active — clearing {songs.Count} game songs to play default music");
                         songs.Clear();
@@ -1149,19 +1154,21 @@ namespace UniPlaySong.Services
                     }
                 }
 
-                // EnableMusic=off + EnableDefaultMusic=on: skip game music so the default-
-                // music fallback below can fire. Without this, a game with its own music folder swallows the EnableDefaultMusic
-                // toggle entirely — the EnableMusic check stops playback before bundled/native/pool sources can add their fallback.
-                if (songs.Count > 0 && settings?.EnableMusic == false && settings?.EnableDefaultMusic == true)
+                // Game and default music each have their own "where it plays" setting. Game music off, or not allowed in
+                // this mode, while default music is: skip game music so the default-music fallback below can fire. Without
+                // this, a game with its own music folder swallows default music entirely.
+                bool gameMusicAllowed = settings == null || settings.AllowsGameMusicInMode(isFullscreenMode);
+                bool defaultMusicAllowed = settings?.AllowsDefaultMusicInMode(isFullscreenMode) == true;
+                if (songs.Count > 0 && !gameMusicAllowed && defaultMusicAllowed)
                 {
-                    _fileLogger?.Info($"PlayGameMusic: {game.Name} — EnableMusic=off, falling through to default music");
+                    _fileLogger?.Info($"PlayGameMusic: {game.Name} — game music off in this mode, falling through to default music");
                     songs.Clear();
                 }
 
-                // Default music fallback when no game music found.
+                // Default music fallback when no game music found, only where default music is allowed in this mode.
                 // Six sources driven by DefaultMusicSourceOption.
                 // UseNativeMusicAsDefault kept in sync for backward compatibility.
-                if (songs.Count == 0 && settings?.EnableDefaultMusic == true)
+                if (songs.Count == 0 && defaultMusicAllowed)
                 {
                     // A source the user never finished configuring produces nothing, and default
                     // music is the last thing standing between an empty radio pool and total
@@ -1361,11 +1368,10 @@ namespace UniPlaySong.Services
                 bool hasDefaultMusic = settings?.EnableDefaultMusic == true && 
                     (songs.Any(s => IsDefaultMusicPath(s, settings)));
                 
-                // EnableMusic check: Only apply to game music, not default music (default music is a fallback)
-                // Default music should work even if EnableMusic is false
-                if (settings != null && !settings.EnableMusic && !hasDefaultMusic)
+                // Game music off (or not allowed in this mode) and no default music to play instead: stop.
+                if (settings != null && !gameMusicAllowed && !hasDefaultMusic)
                 {
-                    _fileLogger?.Info($"EnableMusic is false and no default music - stopping playback");
+                    _fileLogger?.Info($"Game music off in this mode and no default music - stopping playback");
                     _currentGameId = gameId;
                     _currentGame = null;
                     FadeOutAndStop();
@@ -1373,9 +1379,9 @@ namespace UniPlaySong.Services
                     return;
                 }
                 
-                if (settings != null && !settings.EnableMusic && hasDefaultMusic)
+                if (settings != null && !gameMusicAllowed && hasDefaultMusic)
                 {
-                    _fileLogger?.Info($"EnableMusic is false but default music is available - allowing default music to play");
+                    _fileLogger?.Info($"Game music off in this mode but default music is available - allowing default music to play");
                 }
                 
                 // Calculate isNewGame BEFORE updating _currentGameId (critical - compare with PREVIOUS game ID)
@@ -2185,6 +2191,15 @@ namespace UniPlaySong.Services
             {
                 _fileLogger?.Debug("StartRadioPlayback: source is Spotify — not starting a UPS pool.");
                 return true;   // Spotify IS playing; UPS staying quiet is correct, not a failure.
+            }
+
+            // Radio draws from pools rather than being game or default music, so it plays only where one of those is on
+            // and allowed in this mode. Every way radio starts (startup, toggles, PlayGameMusic, auto-advance) comes
+            // through here; PlayGameMusic's fallback for false is mode-gated the same way, so this means silence.
+            if (settings != null && !settings.AllowsAnyMusicInMode(IsFullscreenMode()))
+            {
+                _fileLogger?.Debug("StartRadioPlayback: neither game nor default music is allowed in this mode — not starting.");
+                return false;
             }
 
             // Radio started at Playnite startup never goes through PlayGameMusic, so record the settings here too: Next,

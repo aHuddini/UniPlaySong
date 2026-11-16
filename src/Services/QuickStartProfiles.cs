@@ -146,6 +146,7 @@ namespace UniPlaySong.Services
         {
             // Plays in both modes — the showcase is not mode-specific.
             { nameof(UniPlaySongSettings.MusicState), AudioState.Always },
+            { nameof(UniPlaySongSettings.DefaultMusicState), AudioState.Always },
             { nameof(UniPlaySongSettings.EnableMusic), true },
 
             { nameof(UniPlaySongSettings.MusicVolume), 90 },

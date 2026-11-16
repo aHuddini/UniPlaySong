@@ -1730,6 +1730,7 @@ namespace UniPlaySong
 
             bool musicSettingsChanged = e.OldSettings != null && e.NewSettings != null &&
                 (e.OldSettings.MusicState != e.NewSettings.MusicState ||
+                 e.OldSettings.DefaultMusicState != e.NewSettings.DefaultMusicState ||
                  e.OldSettings.EnableMusic != e.NewSettings.EnableMusic);
 
             // Nothing to restart if the track survived the silent spell - SetVolume below simply makes it
@@ -1748,21 +1749,16 @@ namespace UniPlaySong
                 var game = ResolveContextGame();
                 if (game != null && _coordinator != null)
                 {
-                    // Route through PlayGameMusic so the default-music fallback can fire
-                    // when EnableMusic=off + EnableDefaultMusic=on. PlayGameMusic handles
-                    // all matrix cases internally:
-                    //   EnableMusic=on  → game music (or default if no game music)
-                    //   EnableMusic=off + EnableDefaultMusic=on  → default music
-                    //   EnableMusic=off + EnableDefaultMusic=off → stop
-                    // Calling Stop() directly here would silence ambient when only Game
-                    // Music was disabled. ShouldPlayMusic specifically gates game music;
-                    // default music has independent gating inside PlayGameMusic.
-                    _fileLogger?.Debug($"OnSettingsServiceChanged: MusicState/EnableMusic changed - replaying for {game.Name} (State: {e.NewSettings.MusicState}, Enable: {e.NewSettings.EnableMusic}, ShouldPlay: {_coordinator.ShouldPlayMusic(game)})");
+                    // Route through PlayGameMusic, which applies both "where it plays" settings for this mode:
+                    //   game music allowed here    → game music (or default if the game has none and default is allowed)
+                    //   game music not allowed here → default music if allowed here, else stop
+                    // Calling Stop() directly here would silence the ambient when only game music was turned off.
+                    _fileLogger?.Debug($"OnSettingsServiceChanged: music mode settings changed - replaying for {game.Name} (Game: {e.NewSettings.MusicState}, Default: {e.NewSettings.DefaultMusicState}, Enable: {e.NewSettings.EnableMusic})");
                     _playbackService?.PlayGameMusic(game, e.NewSettings, true);
                 }
-                else if (e.NewSettings?.EnableMusic == false || e.NewSettings?.MusicState == AudioState.Never)
+                else if (e.NewSettings?.AllowsAnyMusicInMode(IsFullscreen) == false)
                 {
-                    // No game selected but music disabled - stop any default music
+                    // No game selected and no music allowed in this mode - stop any default music
                     _fileLogger?.Debug("OnSettingsServiceChanged: Music disabled - stopping all playback");
                     _playbackService?.Stop();
                 }
@@ -2081,34 +2077,13 @@ namespace UniPlaySong
             // SettingsService will automatically notify all subscribers via SettingsChanged event
             _settingsService.LoadSettings();
 
-            // Immediately check if music should be stopped based on new settings
-            // This handles the case where MusicState was changed to Never or a mode-specific setting
+            // Stop at once when no music at all is allowed in this mode any more. Only then: game music being off here
+            // leaves default music free to play, and stopping on that alone silenced the default ambient on every save.
             var currentSettings = _settingsService.Current;
-            if (currentSettings != null && _coordinator != null)
+            if (currentSettings != null && _coordinator != null && !currentSettings.AllowsAnyMusicInMode(IsFullscreen))
             {
-                var game = SelectedGames?.FirstOrDefault();
-                bool shouldStop = false;
-
-                // Check if music should be completely disabled
-                if (!currentSettings.EnableMusic || currentSettings.MusicState == AudioState.Never)
-                {
-                    shouldStop = true;
-                }
-                // Check mode-specific settings
-                else if (IsDesktop && currentSettings.MusicState == AudioState.Fullscreen)
-                {
-                    shouldStop = true;
-                }
-                else if (IsFullscreen && currentSettings.MusicState == AudioState.Desktop)
-                {
-                    shouldStop = true;
-                }
-
-                if (shouldStop)
-                {
-                    _fileLogger?.Debug($"OnSettingsSaved: Stopping music immediately (State: {currentSettings.MusicState}, Mode: {(IsFullscreen ? "Fullscreen" : "Desktop")})");
-                    _playbackService?.Stop();
-                }
+                _fileLogger?.Debug($"OnSettingsSaved: Stopping music immediately (Game: {currentSettings.MusicState}, Default: {currentSettings.DefaultMusicState}, Mode: {(IsFullscreen ? "Fullscreen" : "Desktop")})");
+                _playbackService?.Stop();
             }
         }
 

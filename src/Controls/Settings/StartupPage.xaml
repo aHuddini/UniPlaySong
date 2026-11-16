@@ -27,11 +27,11 @@
                        Text="Settings that determine when music first plays, and whether it starts on its own."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
-                <TextBlock ups:TrackedCaps.Text="Where Music Plays (Mode State)" Style="{StaticResource UpsSectionTitle}"/>
+                <TextBlock ups:TrackedCaps.Text="Where Game Music Plays (Music Mode)" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
 
-            <StackPanel Orientation="Horizontal" Margin="0,4,0,14">
-                <TextBlock Text="Play music in" Style="{StaticResource UpsLabel}" Width="140"/>
+            <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
+                <TextBlock Text="Play game music in" Style="{StaticResource UpsLabel}" Width="160" VerticalAlignment="Center"/>
                 <ComboBox Style="{StaticResource UpsComboBox}" Width="220"
                           SelectedIndex="{Binding Settings.MusicState, Converter={StaticResource AudioStateConverter}}">
                     <ComboBoxItem Content="Never"/>
@@ -40,6 +40,21 @@
                     <ComboBoxItem Content="Desktop + Fullscreen"/>
                 </ComboBox>
             </StackPanel>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                <TextBlock Text="Play default music in" Style="{StaticResource UpsLabel}" Width="160" VerticalAlignment="Center"/>
+                <ComboBox Style="{StaticResource UpsComboBox}" Width="220"
+                          SelectedIndex="{Binding Settings.DefaultMusicState, Converter={StaticResource AudioStateConverter}}">
+                    <ComboBoxItem Content="Never"/>
+                    <ComboBoxItem Content="Desktop only"/>
+                    <ComboBoxItem Content="Fullscreen only"/>
+                    <ComboBoxItem Content="Desktop + Fullscreen"/>
+                </ComboBox>
+            </StackPanel>
+            <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,2" TextWrapping="Wrap"
+                       Text="Default music fills in for games without their own songs. Where game music doesn't play, every game gets the default music instead."/>
+            <TextBlock Style="{StaticResource UpsHint}" Margin="0,0,0,14" TextWrapping="Wrap"
+                       Text="Radio Mode plays wherever game music or default music does."/>
 
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Automatic Playback" Style="{StaticResource UpsSectionTitle}"/>

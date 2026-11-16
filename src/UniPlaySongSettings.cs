@@ -345,6 +345,8 @@ namespace UniPlaySong
 
         private bool enableMusic = true;
         private AudioState musicState = AudioState.Always;
+        private AudioState defaultMusicState = AudioState.Always;
+        private bool defaultMusicStateMigrated = false;
         private bool autoPlayOnFirstLaunchDesktop = true;
         private bool skipFirstSelectionAfterModeSwitch = false;
         // OFF, matching the Theme Support page ("Default: Off"). It is a compatibility workaround for
@@ -524,11 +526,37 @@ namespace UniPlaySong
         // skips, login skip, the Desktop auto-play lock - is about how a library SELECTION arrived
         // and means nothing to a modal dialog the user opened deliberately, so the picker asks only
         // this. Reported as the picker playing music with Where Music Plays set to another mode.
-        public bool AllowsMusicInMode(bool isFullscreen)
+        public bool AllowsMusicInMode(bool isFullscreen) => Allows(MusicState, isFullscreen);
+
+        // When default music plays (Never, Desktop, Fullscreen, Always), independent of game music's MusicState
+        public AudioState DefaultMusicState
+        {
+            get => defaultMusicState;
+            set { defaultMusicState = value; OnPropertyChanged(); }
+        }
+
+        // One-time migration flag: DefaultMusicState starts as a copy of MusicState, which default music followed before
+        public bool DefaultMusicStateMigrated
+        {
+            get => defaultMusicStateMigrated;
+            set { defaultMusicStateMigrated = value; OnPropertyChanged(); }
+        }
+
+        // Default music is on AND DefaultMusicState permits it in the mode we are in.
+        public bool AllowsDefaultMusicInMode(bool isFullscreen) => EnableDefaultMusic && Allows(DefaultMusicState, isFullscreen);
+
+        // Game music is on AND MusicState permits it in the mode we are in.
+        public bool AllowsGameMusicInMode(bool isFullscreen) => EnableMusic && AllowsMusicInMode(isFullscreen);
+
+        // Game or default music is on and allowed in this mode. Radio follows this too: it draws from pools rather than
+        // being game or default music itself, so it never plays in a mode where all music is off.
+        public bool AllowsAnyMusicInMode(bool isFullscreen) => AllowsGameMusicInMode(isFullscreen) || AllowsDefaultMusicInMode(isFullscreen);
+
+        private static bool Allows(AudioState state, bool isFullscreen)
         {
             return isFullscreen
-                ? (MusicState == AudioState.Fullscreen || MusicState == AudioState.Always)
-                : (MusicState == AudioState.Desktop || MusicState == AudioState.Always);
+                ? (state == AudioState.Fullscreen || state == AudioState.Always)
+                : (state == AudioState.Desktop || state == AudioState.Always);
         }
 
         // Auto-play music on first launch in desktop mode

@@ -1401,18 +1401,18 @@ If a theme's `{PluginSettings}` binding doesn't work:
 
 `MusicPlaybackService.PlayGameMusic` is the canonical entry point for all playback decisions. After v1.4.6's settings-routing fixes, every settings-change handler routes through `PlayGameMusic` (rather than calling `Stop()` directly), letting it decide what should play based on the full settings state:
 
-| `EnableMusic` | `EnableDefaultMusic` | Game has music? | Result |
+| Game music allowed here | Default music allowed here | Game has music? | Result |
 |---|---|---|---|
 | ✓ | ✓ | yes | Game music plays |
 | ✓ | ✓ | no  | Default music (Bundled / Native / Pool / CustomFile) plays |
 | ✓ | ✗ | yes | Game music plays |
 | ✓ | ✗ | no  | Silence (no fallback configured) |
-| ✗ | ✓ | yes | **Default music plays** (game songs cleared in pre-default block, line ~745) |
+| ✗ | ✓ | yes | **Default music plays** (game songs cleared in the pre-default block) |
 | ✗ | ✓ | no  | Default music plays |
 | ✗ | ✗ | yes | Silence |
 | ✗ | ✗ | no  | Silence |
 
-**Critical line**: `MusicPlaybackService.cs:744` — the pre-default-fallback `songs.Clear()` block. Without this, a game with its own music folder would swallow `EnableMusic=off` (the EnableMusic check at line ~850 sees `songs` non-empty + `hasDefaultMusic=false` → stops). The clear lets the default-source switch (Bundled / Native / Pool / CustomFile) populate `songs` with the right fallback.
+"Allowed here" (1.9.4+): game music is `AllowsGameMusicInMode` (`EnableMusic` + `MusicState`), default music is `AllowsDefaultMusicInMode` (`EnableDefaultMusic` + `DefaultMusicState`), each for the current Desktop/Fullscreen mode. Radio follows `AllowsAnyMusicInMode` (either one), checked in `StartRadioPlayback`.
 
 **`UniPlaySongSettings.AllowsMusicInMode(bool)` is the single mode-state rule.** `ShouldPlayMusic`
 and `RandomPickerMonitor` both read it, so "Where Music Plays" cannot come to mean different things
@@ -1421,9 +1421,9 @@ mode-state half is shared: the rest of `ShouldPlayMusic` (first-select skip, log
 auto-play lock) describes how a library *selection* arrived and does not apply to a modal dialog the
 user opened deliberately.
 
-**Don't call `Stop()` directly from settings or game-selection handlers** — always go through `PlayGameMusic`. `Stop()` is for "no playback should be happening at all" (e.g., MusicState=Never, theme overlay active, `EnableMusic + EnableDefaultMusic` both off with no game music). The handler doesn't know that combination of facts; only `PlayGameMusic` does.
+**Don't call `Stop()` directly from settings or game-selection handlers** — always go through `PlayGameMusic`. `Stop()` is for "no playback should be happening at all" (e.g., no music allowed in this mode - `AllowsAnyMusicInMode` false - or theme overlay active). The handler doesn't know that combination of facts; only `PlayGameMusic` does.
 
-**Same rule applies to `HandleGameSelected`**: don't branch on `EnableMusic` to decide whether to play. The `EnableMusic=off` case should still call `PlayGameMusic(game, ...)` so the default-music fallback can fire — game music being off doesn't mean no audio should play. Only the `game == null` case justifies a direct fade-out path.
+**Same rule applies to `HandleGameSelected`**: game music off or not allowed in this mode still calls `PlayGameMusic(game, ...)` (when default music is allowed and the Desktop auto-play lock is open) so the default-music fallback can fire — game music being off doesn't mean no audio should play. Only the `game == null` case justifies a direct fade-out path.
 
 #### Overlay-Blocked Game Stash (v1.4.6+)
 
