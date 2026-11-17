@@ -87,8 +87,9 @@ jobs:
       - name: Test
         run: dotnet test tests/UniPlaySong.Tests.csproj -c Release --no-build
 
+      # Windows PowerShell 5.1, as local builds use: pwsh's Compress-Archive writes different zip entries.
       - name: Package
-        shell: pwsh
+        shell: powershell
         run: ./scripts/package_extension.ps1
 
       - name: Name the beta package
@@ -109,9 +110,11 @@ jobs:
               printf '%s\n' "$NOTES"
             else
               prev="$(git describe --tags --abbrev=0 HEAD 2>/dev/null || true)"
+              # Only user-facing commits; ci/test/docs/chore titles mean nothing to a tester.
+              changes="$(git log --no-merges --format='- %s' ${prev:+$prev..}HEAD | grep -E '^- (fix|feat|perf)' || true)"
               echo "## Changes since ${prev:-the start}"
               echo
-              git log --no-merges --format='- %s' ${prev:+$prev..}HEAD
+              echo "${changes:-- No user-facing changes since the last release.}"
             fi
             echo
             echo "## Install"
