@@ -44,29 +44,18 @@ namespace UniPlaySong.Tests.Services
                 new { Name = "unknown total time", On = true, Path = Song, Pos = Thirty, Total = (TimeSpan?)null, Expected = true },
                 new { Name = "null song path", On = true, Path = (string)null, Pos = Thirty, Total = (TimeSpan?)FourMinutes, Expected = false },
                 new { Name = "empty song path", On = true, Path = "", Pos = Thirty, Total = (TimeSpan?)FourMinutes, Expected = false },
+                // NAudio's Play(TimeSpan) seeks synchronously on the calling thread and a GME seek takes hundreds of ms
+                // to seconds, so chiptune always starts from the beginning.
+                new { Name = "chiptune", On = true, Path = Chiptune, Pos = Thirty, Total = (TimeSpan?)FourMinutes, Expected = false },
+                // A PSF only honours a seek to zero (reaching a position means re-running the driver), so resuming would be a lie.
+                new { Name = "psf", On = true, Path = @"C:\music\GameA\103 Run Straight.psf", Pos = Thirty, Total = (TimeSpan?)FourMinutes, Expected = false },
+                new { Name = "minipsf", On = true, Path = @"C:\music\GameA\ff7-101.minipsf", Pos = Thirty, Total = (TimeSpan?)FourMinutes, Expected = false },
             };
             Assert.Multiple(() =>
             {
                 foreach (var c in cases)
                     Assert.AreEqual(c.Expected, GameMusicResumePolicy.ShouldRemember(c.On, c.Path, c.Pos, c.Total), c.Name);
             });
-        }
-
-        [Test]
-        public void ShouldRemember_Chiptune_DoesNot()
-        {
-            // NAudio's Play(TimeSpan) seeks synchronously on the calling thread and a GME seek
-            // takes hundreds of ms to seconds, so chiptune must always start from the beginning.
-            Assert.IsFalse(GameMusicResumePolicy.ShouldRemember(true, Chiptune, Thirty, FourMinutes));
-        }
-
-        [Test]
-        public void ShouldRemember_Psf_DoesNot()
-        {
-            // A PSF has no position to seek to at all - reaching one means re-running the driver
-            // from zero - so PsfReader only honours a seek to zero and resuming would be a lie.
-            Assert.IsFalse(GameMusicResumePolicy.ShouldRemember(true, @"C:\music\GameA\103 Run Straight.psf", Thirty, FourMinutes));
-            Assert.IsFalse(GameMusicResumePolicy.ShouldRemember(true, @"C:\music\GameA\ff7-101.minipsf", Thirty, FourMinutes));
         }
 
         // --- ResumeFrom ---
@@ -77,7 +66,8 @@ namespace UniPlaySong.Tests.Services
             var cases = new[]
             {
                 new { Name = "same track", On = true, Path = Song, Mark = MarkAt(Song, Thirty), Expected = Thirty },
-                // Randomization can hand back a different track next visit. Dropping song A's
+                // Marks are keyed by SONG so Switch Mode shuffle and resume compose (per-game marks pinned one track and
+                // stopped shuffle). Randomization can hand back a different track next visit. Dropping song A's
                 // position into song B is worse than starting from the beginning. The store is keyed
                 // by path so a mismatch should be unreachable, but ResumeFrom still refuses it - a
                 // lookup bug must not transplant one track's position onto another.
@@ -96,25 +86,6 @@ namespace UniPlaySong.Tests.Services
                 foreach (var c in cases)
                     Assert.AreEqual(c.Expected, GameMusicResumePolicy.ResumeFrom(c.On, c.Path, c.Mark), c.Name);
             });
-        }
-
-        // --- composing with Switch Mode (RandomizeOnEverySelect) ---
-        //
-        // Marks are keyed by SONG, not by game, and these pin why. An earlier design keyed them
-        // by game and pinned one track per game so the position could apply, which stopped
-        // Switch Mode shuffling at all - both settings on looked like shuffle was broken.
-        // Per-song marks let shuffle pick freely; whichever track it lands on resumes on its own.
-
-        [Test]
-        public void EachTrackKeepsItsOwnPosition()
-        {
-            // The property that makes shuffle and resume compose: two tracks, two independent
-            // positions, neither inheriting the other's.
-            var songMark = MarkAt(Song, Thirty);
-            var otherMark = MarkAt(OtherSong, TimeSpan.FromSeconds(90));
-
-            Assert.AreEqual(Thirty, GameMusicResumePolicy.ResumeFrom(true, Song, songMark));
-            Assert.AreEqual(TimeSpan.FromSeconds(90), GameMusicResumePolicy.ResumeFrom(true, OtherSong, otherMark));
         }
     }
 }

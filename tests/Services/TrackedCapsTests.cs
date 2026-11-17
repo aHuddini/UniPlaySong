@@ -45,19 +45,11 @@ namespace UniPlaySong.Tests.Services
             Assert.That(gap, Is.GreaterThan(0), "the real space survives");
             Assert.That(segs[gap - 1].FontSize.HasValue, Is.True, "spacer before the word gap");
             Assert.That(segs[gap + 1].FontSize.HasValue, Is.True, "spacer after the word gap");
-        }
-
-        [Test]
-        public void AWordGapIsWiderThanALetterGap()
-        {
-            var segs = TrackedCaps.Segments("AB CD", Tracking, Size).ToList();
-            var gap = segs.FindIndex(s => s.Text == " " && !s.FontSize.HasValue);
 
             // Advance is proportional to font size for the same glyph, so the sum of the three
             // runs spanning a word gap must beat the single spacer between two letters.
             var letterGap = segs[1].FontSize.Value;
             var wordGap = segs[gap - 1].FontSize.Value + Size + segs[gap + 1].FontSize.Value;
-
             Assert.That(wordGap, Is.GreaterThan(letterGap * 2));
         }
 

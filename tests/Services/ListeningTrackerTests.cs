@@ -46,9 +46,12 @@ namespace UniPlaySong.Tests.Services
         // Asserted against the wall clock this test actually observed, not against hard-coded
         // seconds. A fixed threshold here is one tuned to whatever the machine was doing that day:
         // the first version compared against 0.65s and failed once under build load, which proves
-        // nothing about the code and costs the next person an afternoon.
+        // nothing about the code and costs the next person an afternoon. The clock starts BEFORE Begin so it
+        // covers every second the tracker could have counted.
+        //
+        // Pause sources stack, so Suspend and Resume are each called twice: a repeat must not corrupt the clock.
         [Test]
-        public void PausedTimeIsNotCountedAsListening()
+        public void PausedTimeIsNotCountedAsListening_EvenWithRepeatedSuspendAndResume()
         {
             var wall = Stopwatch.StartNew();
 
@@ -56,9 +59,11 @@ namespace UniPlaySong.Tests.Services
             Thread.Sleep(200);
 
             _tracker.Suspend();
+            _tracker.Suspend();
             var pauseStarted = wall.Elapsed;
             Thread.Sleep(500);        // the stretch that must NOT be counted
             var paused = wall.Elapsed - pauseStarted;
+            _tracker.Resume();
             _tracker.Resume();
 
             Thread.Sleep(200);
@@ -73,38 +78,6 @@ namespace UniPlaySong.Tests.Services
             Assert.Less(recorded, wall.Elapsed.TotalSeconds - (paused.TotalSeconds * 0.5),
                 "paused time is being counted - this is DateTime.Now - _songStartTime behaviour");
             Assert.Greater(recorded, 0.05, "audible time was not accumulated at all");
-        }
-
-        // Pause sources stack. Only the first is a real transition, and the service already gates
-        // on that - but a double Suspend must not corrupt the clock either way.
-        [Test]
-        public void RepeatedSuspendAndResumeAreIdempotent()
-        {
-            // Started BEFORE Begin, so the clock covers every second the tracker could have
-            // counted. Starting it later left 150ms of audible time inside `recorded` that `wall`
-            // never saw, which cut the margin to about 50ms and made this flake roughly one run
-            // in three - a threshold that close is measuring the machine, not the code.
-            var wall = Stopwatch.StartNew();
-
-            _tracker.Begin("C:\\music\\a.mp3", null, null);
-            Thread.Sleep(150);
-
-            _tracker.Suspend();
-            _tracker.Suspend();
-            var pauseStarted = wall.Elapsed;
-            Thread.Sleep(400);
-            var paused = wall.Elapsed - pauseStarted;
-            _tracker.Resume();
-            _tracker.Resume();
-
-            Thread.Sleep(150);
-            _tracker.Abandon();
-            wall.Stop();
-
-            var recorded = ListeningInsights.Summarize(_store.Snapshot()).TotalTime.TotalSeconds;
-            Assert.Less(recorded, wall.Elapsed.TotalSeconds - (paused.TotalSeconds * 0.5),
-                "a repeated Suspend or Resume let paused time leak in");
-            Assert.Greater(recorded, 0.05, "audible time was lost");
         }
 
         // A short skip is listening time but not a play. Otherwise flicking through fifty tracks

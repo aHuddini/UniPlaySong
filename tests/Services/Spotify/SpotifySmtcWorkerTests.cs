@@ -35,8 +35,11 @@ namespace UniPlaySong.Tests.Services.Spotify
                 w.PostRequest(() => gate.Wait(TimeSpan.FromSeconds(5)));
                 w.PostControl(SpotifyControlIntent.Play, i => { lock (executed) executed.Add(i); });
                 w.PostControl(SpotifyControlIntent.Pause, i => { lock (executed) executed.Add(i); });
+                // The queue is FIFO on one thread, so a request posted after the controls runs only once they drained.
+                var drained = new ManualResetEventSlim(false);
+                w.PostRequest(() => drained.Set());
                 gate.Set(); // release the worker
-                Thread.Sleep(300); // let it drain
+                Assert.IsTrue(drained.Wait(TimeSpan.FromSeconds(5)), "worker did not drain");
                 lock (executed)
                 {
                     // Latest control intent wins: exactly one control executes, and it is Pause.

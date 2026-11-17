@@ -1,9 +1,7 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
 using NUnit.Framework;
 using UniPlaySong;
-using UniPlaySong.Common;
 using UniPlaySong.Services;
 
 namespace UniPlaySong.Tests.Services
@@ -17,54 +15,28 @@ namespace UniPlaySong.Tests.Services
     [TestFixture]
     public class JingleVolumeTests
     {
-        // Mirrors JingleService.JingleLevel, which is private and static on a service whose
-        // construction needs a live player factory. The rule is what matters, and it is stated
-        // once in each place.
-        private static double Level(int jingleVolume)
+        // The setting alone decides the level: full scale is reachable however quiet the music is, 50 is the
+        // out-of-box level (the old 50% music x 100% jingle), and 0 is jingles turned off deliberately.
+        [TestCase(0, 0.0)]
+        [TestCase(50, 0.50)]
+        [TestCase(60, 0.60)]
+        [TestCase(100, 1.0)]
+        public void JingleLevel_IsTheJingleSettingAlone(int jingleVolume, double expected)
         {
-            return Math.Max(0.0, Math.Min(1.0, jingleVolume / 100.0));
+            Assert.AreEqual(expected, JingleService.JingleLevel(new UniPlaySongSettings { JingleVolume = jingleVolume }), 1e-9);
         }
 
+        // Settings only - no Music Volume and no Playnite fullscreen multiplier are passed in, which is what keeps
+        // jingles independent of both. Both playback paths (completion/abandoned and external notifications) call it.
         [Test]
-        public void MusicVolumeDoesNotChangeIt()
+        public void JingleLevel_TakesTheSettingsAndNothingElse()
         {
-            // The whole point. The same jingle setting means the same loudness whether the music is
-            // at full or nearly off - which is what makes it usable for someone who games quiet.
-            Assert.AreEqual(0.60, Level(60), 1e-9);
+            var level = typeof(JingleService).GetMethod("JingleLevel", BindingFlags.NonPublic | BindingFlags.Static);
 
-            // Previously this same setting would have produced 0.06 with music at 10%, i.e. silence
-            // in practice. There is no music term left to vary.
-            var parameters = typeof(JingleService)
-                .GetMethod("JingleLevel", BindingFlags.NonPublic | BindingFlags.Static)
-                .GetParameters();
-            Assert.AreEqual(1, parameters.Length, "settings only - nothing else feeds the level");
-        }
-
-        [Test]
-        public void TheDefaultMatchesWhatAFreshInstallUsedToSound()
-        {
-            // 50 was chosen to equal the old effective default: DefaultMusicVolume (50) x the old
-            // DefaultJingleVolume (100) = 0.50. Out of the box nothing changed loudness; only users
-            // who had moved their Music Volume hear a difference, and they are the ones the change
-            // is for.
-            Assert.AreEqual(50, Constants.DefaultJingleVolume);
-            Assert.AreEqual(Constants.DefaultMusicVolume, Constants.DefaultJingleVolume,
-                "the default is pinned to the music default so the out-of-box level is unchanged");
-            Assert.AreEqual(0.50, Level(new UniPlaySongSettings().JingleVolume), 1e-9);
-        }
-
-        [Test]
-        public void FullScaleIsReachableRegardlessOfMusic()
-        {
-            // The reported bug in one line: this was impossible before unless Music Volume was also
-            // at 100.
-            Assert.AreEqual(1.0, Level(100), 1e-9);
-        }
-
-        [Test]
-        public void ZeroIsSilence()
-        {
-            Assert.AreEqual(0.0, Level(0), 1e-9, "jingles turned off deliberately");
+            Assert.NotNull(level, "both playback paths must share one level calculation");
+            Assert.AreEqual(typeof(double), level.ReturnType);
+            Assert.AreEqual(1, level.GetParameters().Length, "settings only - nothing else feeds the level");
+            Assert.AreEqual(typeof(UniPlaySongSettings), level.GetParameters()[0].ParameterType);
         }
 
         [Test]
@@ -77,19 +49,6 @@ namespace UniPlaySong.Tests.Services
 
             s.JingleVolume = -20;
             Assert.AreEqual(0, s.JingleVolume);
-        }
-
-        [Test]
-        public void EveryJingleUsesTheSameLevel()
-        {
-            // One rule for all non-music sound: the completion/abandoned jingle and the external
-            // notification path (achievements, ControlUp) both read it from the same place, so they
-            // cannot drift apart.
-            var level = typeof(JingleService).GetMethod("JingleLevel",
-                BindingFlags.NonPublic | BindingFlags.Static);
-
-            Assert.NotNull(level, "both playback paths must share one level calculation");
-            Assert.AreEqual(typeof(double), level.ReturnType);
         }
 
         [Test]
@@ -109,22 +68,6 @@ namespace UniPlaySong.Tests.Services
                 "the preview must read the shared level, not compute its own");
             Assert.IsFalse(text.Contains("_previewVolume = Settings.MusicVolume"),
                 "the preview must not fall back to Music Volume");
-        }
-
-        [Test]
-        public void JinglesAreNotScaledByPlaynitesFullscreenVolume()
-        {
-            // A deliberate asymmetry, not an oversight. Music is scaled by Playnite's Background
-            // Volume; jingles are not, so they still cut through in Fullscreen. Applying it here
-            // would reintroduce exactly the ceiling this change removed, just with a different
-            // slider holding the lid down.
-            var level = typeof(JingleService).GetMethod("JingleLevel",
-                BindingFlags.NonPublic | BindingFlags.Static);
-
-            Assert.NotNull(level);
-            Assert.AreEqual(1, level.GetParameters().Length,
-                "settings only - no multiplier is passed in, which is what keeps the two independent");
-            Assert.AreEqual(typeof(UniPlaySongSettings), level.GetParameters()[0].ParameterType);
         }
     }
 }

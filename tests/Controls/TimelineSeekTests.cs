@@ -36,18 +36,13 @@ namespace UniPlaySong.Tests.Controls
             Assert.Less(TimelineSeekMath.TiltSecondsPerSecond(-0.8, 0), 0);
         }
 
-        [Test]
-        public void Tilt_InsideTheDeadZone_DoesNothing()
+        // Inside the dead zone, or pushing mostly up or down (even far from the centre), isn't a seek.
+        [TestCase(0.2, 0)]
+        [TestCase(0, 0)]
+        [TestCase(0.5, 0.9)]
+        public void Tilt_InsideTheDeadZoneOrMostlyVertical_DoesNothing(double x, double y)
         {
-            Assert.AreEqual(0, TimelineSeekMath.TiltSecondsPerSecond(0.2, 0));
-            Assert.AreEqual(0, TimelineSeekMath.TiltSecondsPerSecond(0, 0));
-        }
-
-        // Pushing mostly up or down isn't a seek, even when far from the centre.
-        [Test]
-        public void Tilt_MostlyVertical_DoesNothing()
-        {
-            Assert.AreEqual(0, TimelineSeekMath.TiltSecondsPerSecond(0.5, 0.9));
+            Assert.AreEqual(0, TimelineSeekMath.TiltSecondsPerSecond(x, y));
         }
 
         [Test]

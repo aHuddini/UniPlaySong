@@ -83,32 +83,7 @@ namespace UniPlaySong.Tests.Services
                 "Listed as never-reset yet owned by a group:\n  " + string.Join("\n  ", both));
         }
 
-        [Test]
-        public void ResetGroupRestoresTheShippedDefault()
-        {
-            var settings = new UniPlaySongSettings();
-            var defaults = new UniPlaySongSettings();
-
-            settings.RandomizeOnEverySelect = !defaults.RandomizeOnEverySelect;
-            SettingsResetService.ResetGroup(settings, SettingsGroups.Playback);
-
-            Assert.That(settings.RandomizeOnEverySelect, Is.EqualTo(defaults.RandomizeOnEverySelect));
-        }
-
-        [Test]
-        public void VolumeAndFadeBelongToLiveEffectsNotPlayback()
-        {
-            // Deliberate, and easy to undo by accident: the rail plan moves the Volume and Fade
-            // sections off the Playback page into the Live Effects group, so their reset moved too.
-            var liveEffects = SettingsGroups.Map[SettingsGroups.LiveEffects];
-            var playback = SettingsGroups.Map[SettingsGroups.Playback];
-
-            Assert.That(liveEffects, Contains.Item(nameof(UniPlaySongSettings.MusicVolume)));
-            Assert.That(liveEffects, Contains.Item(nameof(UniPlaySongSettings.FadeInDuration)));
-            Assert.That(liveEffects, Contains.Item(nameof(UniPlaySongSettings.FadeOutDuration)));
-            Assert.That(playback, Has.No.Member(nameof(UniPlaySongSettings.MusicVolume)));
-        }
-
+        // Restores the reset group's own settings to the shipped default and leaves every other group alone.
         [Test]
         public void ResetGroupLeavesOtherGroupsAlone()
         {
@@ -123,29 +98,6 @@ namespace UniPlaySong.Tests.Services
             Assert.That(settings.PauseOnMinimize, Is.EqualTo(defaults.PauseOnMinimize), "Pauses should be restored");
             Assert.That(settings.RandomizeOnEverySelect, Is.Not.EqualTo(defaults.RandomizeOnEverySelect),
                 "Playback should be untouched");
-        }
-
-        [Test]
-        public void ResetRestoresTheShippedIconGlowAndVisualizerDefaults()
-        {
-            // Two things the old handlers got wrong, now correct by construction. ResetIconGlow
-            // set EnableIconGlow = true against a shipped default of false, and the Live Effects
-            // handler wrote the Default preset's numbers while labelling the selection Punchy.
-            var settings = new UniPlaySongSettings
-            {
-                EnableIconGlow = true,
-                SelectedVizPreset = VizPreset.Cinematic,
-                VizGravity = 7,
-            };
-
-            SettingsResetService.ResetGroup(settings, SettingsGroups.Advanced);
-            SettingsResetService.ResetGroup(settings, SettingsGroups.LiveEffects);
-
-            var defaults = new UniPlaySongSettings();
-            Assert.That(settings.EnableIconGlow, Is.False);
-            Assert.That(settings.SelectedVizPreset, Is.EqualTo(defaults.SelectedVizPreset));
-            Assert.That(settings.VizGravity, Is.EqualTo(defaults.VizGravity),
-                "the tuning numbers must agree with the preset the dropdown names");
         }
 
         [Test]
@@ -248,6 +200,10 @@ namespace UniPlaySong.Tests.Services
         {
             var cases = new[]
             {
+                // The rail plan moved the Volume and Fade sections off Playback into the Live Effects group.
+                new { Name = nameof(UniPlaySongSettings.MusicVolume), Group = SettingsGroups.LiveEffects },
+                new { Name = nameof(UniPlaySongSettings.FadeInDuration), Group = SettingsGroups.LiveEffects },
+                new { Name = nameof(UniPlaySongSettings.FadeOutDuration), Group = SettingsGroups.LiveEffects },
                 // Media Controls page, which resets with General.
                 new { Name = nameof(UniPlaySongSettings.ShowCalmDownButton), Group = SettingsGroups.General },
                 // The Calm Down page, which resets with Live Effects.

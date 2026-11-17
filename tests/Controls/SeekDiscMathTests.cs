@@ -7,21 +7,14 @@ namespace UniPlaySong.Tests.Controls
     [TestFixture]
     public class SeekDiscMathTests
     {
-        // Screen convention (y down): right -> down is a quarter turn clockwise, which is forward.
-        [Test]
-        public void ClockwiseQuarterTurn_IsForward()
+        // Screen convention (y down): right -> down is a quarter turn clockwise, which is forward; right -> up is back.
+        [TestCase(1, 90)]
+        [TestCase(-1, -90)]
+        public void QuarterTurnFromTheRight_ClockwiseIsForward(double toY, double expectedDegrees)
         {
             double from = SeekDiscMath.AngleDegrees(1, 0);
-            double to = SeekDiscMath.AngleDegrees(0, 1);
-            Assert.AreEqual(90, SeekDiscMath.WrapDegrees(to - from), 1e-9);
-        }
-
-        [Test]
-        public void AntiClockwiseQuarterTurn_IsBack()
-        {
-            double from = SeekDiscMath.AngleDegrees(1, 0);
-            double to = SeekDiscMath.AngleDegrees(0, -1);
-            Assert.AreEqual(-90, SeekDiscMath.WrapDegrees(to - from), 1e-9);
+            double to = SeekDiscMath.AngleDegrees(0, toY);
+            Assert.AreEqual(expectedDegrees, SeekDiscMath.WrapDegrees(to - from), 1e-9);
         }
 
         // Crossing the seam on the left is a tiny turn, not nearly a full one: 170 -> -170 is 20 degrees clockwise.

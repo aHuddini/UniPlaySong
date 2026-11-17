@@ -9,68 +9,40 @@ namespace UniPlaySong.Tests.Services.Spotify
         private static SpotifyRadioState S(bool life, bool user) =>
             new SpotifyRadioState { LifecyclePausedByUps = life, UserPausedExternally = user };
 
+        // The two-flag radio decision: UPS pauses and resumes only what it paused itself, and never resumes a pause the
+        // user made in Spotify. A null expected flag is not checked.
         [Test]
-        public void LifecyclePause_Engages_IssuesPause_AndOwnsIt()
+        public void Decide_TruthTable()
         {
-            var (action, next) = SpotifyRadioDecision.Decide(radioOn: true, lifecyclePaused: true, spotifyIsPlaying: true, prev: S(false, false));
-            Assert.AreEqual(SpotifyRadioAction.Pause, action);
-            Assert.IsTrue(next.LifecyclePausedByUps);
-        }
-
-        [Test]
-        public void LifecycleClears_WhenUpsOwnsPause_IssuesResume()
-        {
-            var (action, next) = SpotifyRadioDecision.Decide(radioOn: true, lifecyclePaused: false, spotifyIsPlaying: false, prev: S(true, false));
-            Assert.AreEqual(SpotifyRadioAction.Play, action);
-            Assert.IsFalse(next.LifecyclePausedByUps);
-        }
-
-        [Test]
-        public void ExternalPause_NotLifecycle_Respected_NoResume()
-        {
-            // radio on, not lifecycle-paused, Spotify is paused but UPS didn't pause it → user did.
-            var (action, next) = SpotifyRadioDecision.Decide(radioOn: true, lifecyclePaused: false, spotifyIsPlaying: false, prev: S(false, false));
-            Assert.AreEqual(SpotifyRadioAction.None, action, "must NOT resume a user's external pause");
-            Assert.IsTrue(next.UserPausedExternally, "records the external pause");
-        }
-
-        [Test]
-        public void ExternalPause_ThenNextTick_StillNoResume()
-        {
-            var (action, _) = SpotifyRadioDecision.Decide(radioOn: true, lifecyclePaused: false, spotifyIsPlaying: false, prev: S(false, true));
-            Assert.AreEqual(SpotifyRadioAction.None, action, "external pause stays respected");
-        }
-
-        [Test]
-        public void ExternalResume_ClearsFlag()
-        {
-            // user resumed in Spotify → spotifyIsPlaying true → clear the external-pause flag.
-            var (action, next) = SpotifyRadioDecision.Decide(radioOn: true, lifecyclePaused: false, spotifyIsPlaying: true, prev: S(false, true));
-            Assert.AreEqual(SpotifyRadioAction.None, action);
-            Assert.IsFalse(next.UserPausedExternally);
-        }
-
-        [Test]
-        public void RadioEngage_NotPlaying_NotPaused_IssuesResumeOnce()
-        {
-            var (action, _) = SpotifyRadioDecision.Decide(radioOn: true, lifecyclePaused: false, spotifyIsPlaying: false, prev: S(true, false));
-            Assert.AreEqual(SpotifyRadioAction.Play, action);
-        }
-
-        [Test]
-        public void AlreadyPlaying_NotLifecyclePaused_NoAction()
-        {
-            var (action, _) = SpotifyRadioDecision.Decide(radioOn: true, lifecyclePaused: false, spotifyIsPlaying: true, prev: S(false, false));
-            Assert.AreEqual(SpotifyRadioAction.None, action, "no command spam when already in the desired state");
-        }
-
-        [Test]
-        public void RadioOff_NoAction_FlagsCleared()
-        {
-            var (action, next) = SpotifyRadioDecision.Decide(radioOn: false, lifecyclePaused: false, spotifyIsPlaying: true, prev: S(true, true));
-            Assert.AreEqual(SpotifyRadioAction.None, action);
-            Assert.IsFalse(next.LifecyclePausedByUps);
-            Assert.IsFalse(next.UserPausedExternally);
+            var cases = new[]
+            {
+                new { Radio = true, Lifecycle = true, Playing = true, Prev = S(false, false), Action = SpotifyRadioAction.Pause,
+                      NextLife = (bool?)true, NextUser = (bool?)null, Why = "lifecycle pause engages: pause and own it" },
+                // Also the engage seed: radio turned on with Spotify not playing issues one resume.
+                new { Radio = true, Lifecycle = false, Playing = false, Prev = S(true, false), Action = SpotifyRadioAction.Play,
+                      NextLife = (bool?)false, NextUser = (bool?)null, Why = "lifecycle clears while UPS owns the pause: resume" },
+                new { Radio = true, Lifecycle = false, Playing = false, Prev = S(false, false), Action = SpotifyRadioAction.None,
+                      NextLife = (bool?)null, NextUser = (bool?)true, Why = "paused but not by UPS: the user did it - must NOT resume, record it" },
+                new { Radio = true, Lifecycle = false, Playing = false, Prev = S(false, true), Action = SpotifyRadioAction.None,
+                      NextLife = (bool?)null, NextUser = (bool?)null, Why = "external pause stays respected on the next tick" },
+                new { Radio = true, Lifecycle = false, Playing = true, Prev = S(false, true), Action = SpotifyRadioAction.None,
+                      NextLife = (bool?)null, NextUser = (bool?)false, Why = "user resumed in Spotify: clear the external-pause flag" },
+                new { Radio = true, Lifecycle = false, Playing = true, Prev = S(false, false), Action = SpotifyRadioAction.None,
+                      NextLife = (bool?)null, NextUser = (bool?)null, Why = "already playing: no command spam" },
+                new { Radio = false, Lifecycle = false, Playing = true, Prev = S(true, true), Action = SpotifyRadioAction.None,
+                      NextLife = (bool?)false, NextUser = (bool?)false, Why = "radio off: no action, flags cleared" },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var t in cases)
+                {
+                    var (action, next) = SpotifyRadioDecision.Decide(radioOn: t.Radio, lifecyclePaused: t.Lifecycle,
+                        spotifyIsPlaying: t.Playing, prev: t.Prev);
+                    Assert.That(action, Is.EqualTo(t.Action), t.Why);
+                    if (t.NextLife.HasValue) Assert.That(next.LifecyclePausedByUps, Is.EqualTo(t.NextLife.Value), t.Why + " (lifecycle flag)");
+                    if (t.NextUser.HasValue) Assert.That(next.UserPausedExternally, Is.EqualTo(t.NextUser.Value), t.Why + " (external flag)");
+                }
+            });
         }
     }
 }

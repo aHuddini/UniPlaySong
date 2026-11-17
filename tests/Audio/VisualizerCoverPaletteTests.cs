@@ -35,8 +35,6 @@ namespace UniPlaySong.Tests.Audio
             Assert.Less(cols[0].R + cols[0].G + cols[0].B, cols[1].R + cols[1].G + cols[1].B, "darkest first, brightest second");
         }
 
-        // A picture is taken apart once: a new session finds its colours stored (the file unchanged), and a changed
-        // picture is taken again.
         // The strip's colours on a red cover whose hues straddle 0/360: a plain average of 355 and 5 is 180 - cyan. The
         // circular mean keeps it red.
         [Test]
@@ -51,6 +49,8 @@ namespace UniPlaySong.Tests.Audio
             Assert.Less(foot.R, top.R, "one hue: dark foot, bright top");
         }
 
+        // A picture is taken apart once: a new session finds its colours stored (the file unchanged), and a changed
+        // picture is taken again.
         [Test]
         public void Store_KeepsColoursAcrossSessions_UntilThePictureChanges()
         {

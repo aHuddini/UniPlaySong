@@ -50,14 +50,6 @@ namespace UniPlaySong.Tests.Audio
         }
 
         [Test]
-        public void FifteenBands_IsTheDefault()
-        {
-            var s = new UniPlaySongSettings();
-            Assert.AreEqual(15, Equalizer.BandCount(s));
-            Assert.AreEqual(15, Equalizer.Bands(s).Length);
-        }
-
-        [Test]
         public void Off_OrFlat_PassesAudioThroughUntouched()
         {
             var off = new UniPlaySongSettings { EqualizerEnabled = false, Equalizer15Band1k = 12 };

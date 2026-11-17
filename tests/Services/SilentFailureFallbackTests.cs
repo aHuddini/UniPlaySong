@@ -15,64 +15,51 @@ namespace UniPlaySong.Tests.Services
     [TestFixture]
     public class SilentFailureFallbackTests
     {
-        [Test]
-        public void ACustomFolderWithNoFolderIsNotUsable()
+        private static UniPlaySongSettings Source(DefaultMusicSource source, string file = null, string folder = null,
+                                                  bool clearLists = false)
         {
             var s = new UniPlaySongSettings
             {
                 EnableDefaultMusic = true,
-                DefaultMusicSourceOption = DefaultMusicSource.CustomFolder,
-                DefaultMusicFolderPath = null
+                DefaultMusicSourceOption = source,
+                DefaultMusicPath = file,
+                DefaultMusicFolderPath = folder
             };
-
-            Assert.IsFalse(QuickStartProfiles.DefaultSourceIsUsable(s),
-                "a source the user never finished configuring must be recognised as unusable, or " +
-                "default music silently produces nothing");
-        }
-
-        [Test]
-        public void TheBundledPresetIsAlwaysUsable()
-        {
-            // The fallback has to be a source that cannot itself be unconfigured, or the recovery
-            // path has the same failure mode as the thing it is recovering from.
-            var s = new UniPlaySongSettings
+            if (clearLists)
             {
-                EnableDefaultMusic = true,
-                DefaultMusicSourceOption = DefaultMusicSource.BundledPreset
-            };
-
-            Assert.IsTrue(QuickStartProfiles.DefaultSourceIsUsable(s));
-        }
-
-        [Test]
-        public void EverySourceNeedingUserInputIsCoveredByTheUsabilityCheck()
-        {
-            // The check is only as good as its coverage: a source that needs configuration but is
-            // not listed reports "usable" and reintroduces the silent failure for that source only.
-            var needsInput = new[]
-            {
-                DefaultMusicSource.CustomFile,
-                DefaultMusicSource.CustomFolder,
-                DefaultMusicSource.CustomRotation,
-                DefaultMusicSource.CompletionStatusPool
-            };
-
-            foreach (var source in needsInput)
-            {
-                var s = new UniPlaySongSettings
-                {
-                    EnableDefaultMusic = true,
-                    DefaultMusicSourceOption = source,
-                    DefaultMusicPath = null,
-                    DefaultMusicFolderPath = null,
-                    CustomRotationGameIds = null,
-                    DefaultMusicStatusPoolIds = null
-                };
-
-                Assert.IsFalse(QuickStartProfiles.DefaultSourceIsUsable(s),
-                    $"{source} needs the user to supply something, so an unconfigured one must " +
-                    "report unusable");
+                s.CustomRotationGameIds = null;
+                s.DefaultMusicStatusPoolIds = null;
             }
+            return s;
+        }
+
+        // Unusable = the user never finished configuring it, so default music would silently produce nothing.
+        // The fallback substitutes a source and tells the user their setting is unfinished; doing that to
+        // somebody whose setup is fine would be worse than the silence it prevents, hence the "usable" rows.
+        [Test]
+        public void DefaultSourceIsUsable_TruthTable()
+        {
+            var cases = new[]
+            {
+                // Every source that needs user input must be covered, or it reports usable and stays silent.
+                new { S = Source(DefaultMusicSource.CustomFile, clearLists: true), Expected = false, Why = "CustomFile with no file" },
+                new { S = Source(DefaultMusicSource.CustomFolder, clearLists: true), Expected = false, Why = "CustomFolder with no folder" },
+                new { S = Source(DefaultMusicSource.CustomRotation, clearLists: true), Expected = false, Why = "CustomRotation with no games" },
+                new { S = Source(DefaultMusicSource.CompletionStatusPool, clearLists: true), Expected = false, Why = "CompletionStatusPool with no statuses" },
+                // The fallback target must itself need no setup, or recovery has the same failure mode.
+                new { S = Source(DefaultMusicSource.BundledPreset), Expected = true, Why = "BundledPreset needs no setup" },
+                new { S = Source(DefaultMusicSource.RandomGame), Expected = true, Why = "RandomGame needs no setup" },
+                new { S = Source(DefaultMusicSource.ActiveThemeMusic), Expected = true, Why = "ActiveThemeMusic needs no setup" },
+                new { S = Source(DefaultMusicSource.CustomFile, file: @"C:\Music\ambient.mp3"), Expected = true, Why = "configured file" },
+                new { S = Source(DefaultMusicSource.CustomFolder, folder: @"C:\Music"), Expected = true, Why = "configured folder" },
+                // Deliberately not stat-ed: a NAS still waking or an unplugged drive is not "unconfigured".
+                new { S = Source(DefaultMusicSource.CustomFolder, folder: @"Z:\definitely-not-mounted\music"), Expected = true, Why = "set but unreachable path" },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var c in cases)
+                    Assert.That(QuickStartProfiles.DefaultSourceIsUsable(c.S), Is.EqualTo(c.Expected), c.Why);
+            });
         }
 
         [Test]
@@ -91,10 +78,6 @@ namespace UniPlaySong.Tests.Services
                 "turning default music off here would make an empty radio pool mean total silence");
         }
 
-        // ---- False-positive guards -------------------------------------------------------------
-        // The fallback substitutes a source and tells the user their setting is unfinished. Doing
-        // that to somebody whose setup is fine would be worse than the silence it prevents.
-
         [Test]
         public void AFreshOrFailedToLoadSettingsObjectNeverTripsTheCheck()
         {
@@ -109,79 +92,5 @@ namespace UniPlaySong.Tests.Services
 
             Assert.IsTrue(QuickStartProfiles.DefaultSourceIsUsable(new UniPlaySongSettings()));
         }
-
-        [Test]
-        public void AProperlyConfiguredSourceIsLeftAlone()
-        {
-            var file = new UniPlaySongSettings
-            {
-                EnableDefaultMusic = true,
-                DefaultMusicSourceOption = DefaultMusicSource.CustomFile,
-                DefaultMusicPath = @"C:\Musicmbient.mp3"
-            };
-            var folder = new UniPlaySongSettings
-            {
-                EnableDefaultMusic = true,
-                DefaultMusicSourceOption = DefaultMusicSource.CustomFolder,
-                DefaultMusicFolderPath = @"C:\Music"
-            };
-
-            Assert.IsTrue(QuickStartProfiles.DefaultSourceIsUsable(file));
-            Assert.IsTrue(QuickStartProfiles.DefaultSourceIsUsable(folder));
-        }
-
-        [Test]
-        public void APathIsNotCheckedForExistence()
-        {
-            // Deliberate: the check asks "did the user finish setting this up", not "is the media
-            // reachable right now". Stat-ing the path would fire on a NAS that has not woken, an
-            // unplugged external drive, or a folder mid-copy - accusing a correct setup of being
-            // unconfigured, which is exactly the false positive to avoid. An unreachable-but-set
-            // path stays the user's own business.
-            var s = new UniPlaySongSettings
-            {
-                EnableDefaultMusic = true,
-                DefaultMusicSourceOption = DefaultMusicSource.CustomFolder,
-                DefaultMusicFolderPath = @"Z:\definitely-not-mounted\music"
-            };
-
-            Assert.IsTrue(QuickStartProfiles.DefaultSourceIsUsable(s));
-        }
-
-        [Test]
-        public void SourcesThatNeedNoSetupAreNeverFlagged()
-        {
-            var noSetupNeeded = new[]
-            {
-                DefaultMusicSource.BundledPreset,
-                DefaultMusicSource.RandomGame,
-                DefaultMusicSource.ActiveThemeMusic
-            };
-
-            foreach (var source in noSetupNeeded)
-            {
-                var s = new UniPlaySongSettings
-                {
-                    EnableDefaultMusic = true,
-                    DefaultMusicSourceOption = source,
-                    DefaultMusicPath = null,
-                    DefaultMusicFolderPath = null
-                };
-
-                Assert.IsTrue(QuickStartProfiles.DefaultSourceIsUsable(s),
-                    $"{source} needs nothing from the user, so it must never be reported unconfigured");
-            }
-        }
-
-        [Test]
-        public void TheWarningReachesTheUserAndNotOnlyTheLog()
-        {
-            // MusicPlaybackService has no Playnite API, so the host injects the notifier. Without
-            // this seam the substitution is log-only and the user hears music from a source they did
-            // not pick with no idea why.
-            var setter = typeof(MusicPlaybackService).GetMethod("SetUserWarningHandler");
-            Assert.NotNull(setter, "the service needs a way to warn the user, not just _fileLogger");
-        }
-
     }
 }

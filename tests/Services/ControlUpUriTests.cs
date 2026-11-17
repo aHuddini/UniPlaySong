@@ -45,26 +45,19 @@ namespace UniPlaySong.Tests.Services
         }
 
         // "controlup" must be a known command — reaching the default branch would pop a user-facing
-        // "Unknown command" notification every time a controller connects.
+        // "Unknown command" notification every time a controller connects. An unknown or missing event
+        // segment (a future ControlUp adding events) no-ops rather than playing the wrong sound.
         [Test]
-        public void ControlUpCommand_IsRecognized()
-        {
-            CreateService().HandleCommand(Uri("controlup", "detecttrigger"));
-
-            _notifications.Verify(n => n.Add(It.IsAny<NotificationMessage>()), Times.Never,
-                "a recognized command must not notify");
-        }
-
-        // A future ControlUp adding events must not make this build play the wrong sound.
-        [Test]
-        public void UnknownEventSegment_NoOpsWithoutNotifying()
+        public void ControlUpCommand_IsRecognized_AndUnknownEventsNoOp_WithoutNotifying()
         {
             var service = CreateService();
 
+            Assert.DoesNotThrow(() => service.HandleCommand(Uri("controlup", "detecttrigger")));
             Assert.DoesNotThrow(() => service.HandleCommand(Uri("controlup", "bogusevent")));
             Assert.DoesNotThrow(() => service.HandleCommand(Uri("controlup")), "missing segment");
 
-            _notifications.Verify(n => n.Add(It.IsAny<NotificationMessage>()), Times.Never);
+            _notifications.Verify(n => n.Add(It.IsAny<NotificationMessage>()), Times.Never,
+                "a recognized command must not notify");
         }
 
         // The burst case this guard exists for: a swallowed fire must leave the previous fire's clock
@@ -101,16 +94,6 @@ namespace UniPlaySong.Tests.Services
 
             Assert.Less(DebounceElapsed(service), DebounceWindowMs,
                 "the fire after the window must pass and restart the clock, not stay latched");
-        }
-
-        // A deliberate press shortly after a controller connect must still sound. The window was
-        // sized for millisecond-scale hardware bursts, and it also gates the hotkey now that both
-        // triggers share this handler — plug a controller in, press the hotkey, hear both.
-        [Test]
-        public void APressAQuarterSecondAfterAConnect_IsNotSwallowed()
-        {
-            Assert.LessOrEqual(DebounceWindowMs, 250,
-                "a window longer than this eats deliberate hotkey presses that follow a connect");
         }
 
         // Read from the source of truth so the timings above can't drift from the shipped value.

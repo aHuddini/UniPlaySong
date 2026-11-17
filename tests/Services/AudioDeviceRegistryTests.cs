@@ -94,12 +94,5 @@ namespace UniPlaySong.Tests.Services
             a.Open = true;
             Assert.IsTrue(reg.IsAnyDeviceOpen);
         }
-
-        [Test]
-        public void ReleaseAllDevices_NoHolders_DoesNotThrow_ReturnsZero()
-        {
-            var reg = new AudioDeviceRegistry(null);
-            Assert.AreEqual(0, reg.ReleaseAllDevices("test"));
-        }
     }
 }

@@ -29,83 +29,62 @@ namespace UniPlaySong.Tests.Services.Spotify
             stopEffectedOutput: () => e.EffectedOutput = false,
             isCalmDown: () => e.CalmDown);
 
+        // The safety invariant: effected output => Spotify muted, dry Spotify => not muted. A null expectation is not checked.
         [Test]
-        public void EffectsOnSpotify_MutesSpotify_AndOutputs()
+        public void SingleEvaluate_TruthTable()
         {
-            var e = new Env { LiveEffects = true, ApplyToSpotify = true, SpotifyActive = true };
-            Make(e).Evaluate();
-            Assert.That(e.CaptureRunning, Is.True);
-            Assert.That(e.EffectedOutput, Is.True);
-            Assert.That(e.MutedNow, Is.True);            // invariant: effected output => Spotify muted
+            var cases = new[]
+            {
+                new { E = new Env { LiveEffects = true, ApplyToSpotify = true, SpotifyActive = true },
+                      Capture = (bool?)true, Output = true, Muted = (bool?)true, Why = "effects on Spotify: mute and output" },
+                new { E = new Env { Visualizer = true, SpotifyActive = true },
+                      Capture = (bool?)true, Output = false, Muted = (bool?)false, Why = "visualizer only: capture, dry Spotify stays unmuted" },
+                // Calm Down on, Live Effects OFF - should still duck + produce effected (calmed) output.
+                new { E = new Env { CalmDown = true, SpotifyActive = true },
+                      Capture = (bool?)true, Output = true, Muted = (bool?)true, Why = "Calm Down alone: mute and output" },
+                new { E = new Env { LiveEffects = true, ApplyToSpotify = true, SpotifyActive = true, MuteSucceeds = false },
+                      Capture = (bool?)null, Output = false, Muted = (bool?)null, Why = "mute failed: better dry than doubled" },
+                new { E = new Env { LiveEffects = true, ApplyToSpotify = true, SpotifyActive = true, OsCapable = false },
+                      Capture = (bool?)false, Output = false, Muted = (bool?)null, Why = "OS not capable: never captures" },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var t in cases)
+                {
+                    Make(t.E).Evaluate();
+                    if (t.Capture.HasValue) Assert.That(t.E.CaptureRunning, Is.EqualTo(t.Capture.Value), t.Why + " (capture)");
+                    Assert.That(t.E.EffectedOutput, Is.EqualTo(t.Output), t.Why + " (output)");
+                    if (t.Muted.HasValue) Assert.That(t.E.MutedNow == true, Is.EqualTo(t.Muted.Value), t.Why + " (muted)");
+                }
+            });
         }
 
+        // Whatever ends the effected output must unmute Spotify (invariant: stop output => unmute).
         [Test]
-        public void VizOnly_CapturesButDoesNotMute()
+        public void TurningItOff_StopsAndUnmutes()
         {
-            var e = new Env { Visualizer = true, SpotifyActive = true };  // effects off
-            Make(e).Evaluate();
-            Assert.That(e.CaptureRunning, Is.True);
-            Assert.That(e.EffectedOutput, Is.False);
-            Assert.That(e.MutedNow, Is.Not.EqualTo(true)); // dry Spotify -> not muted
-        }
-
-        [Test]
-        public void CalmDownAlone_MutesSpotify_AndOutputs()
-        {
-            // Calm Down on, Live Effects OFF — should still duck + produce effected (calmed) output.
-            var e = new Env { CalmDown = true, SpotifyActive = true };
-            Make(e).Evaluate();
-            Assert.That(e.CaptureRunning, Is.True);
-            Assert.That(e.EffectedOutput, Is.True);
-            Assert.That(e.MutedNow, Is.True);
-        }
-
-        [Test]
-        public void CalmDownOff_WithNothingElse_UnmutesSpotify()
-        {
-            var e = new Env { CalmDown = true, SpotifyActive = true };
-            var c = Make(e); c.Evaluate();
-            e.CalmDown = false; c.Evaluate();
-            Assert.That(e.EffectedOutput, Is.False);
-            Assert.That(e.CaptureRunning, Is.False);
-            Assert.That(e.MutedNow, Is.False);
-        }
-
-        [Test]
-        public void EffectsToggledOff_UnmutesSpotify()
-        {
-            var e = new Env { LiveEffects = true, ApplyToSpotify = true, SpotifyActive = true };
-            var c = Make(e); c.Evaluate();
-            e.ApplyToSpotify = false; c.Evaluate();
-            Assert.That(e.EffectedOutput, Is.False);
-            Assert.That(e.MutedNow, Is.False);           // invariant: stop output => unmute
-        }
-
-        [Test]
-        public void SpotifyNoLongerActive_StopsAndUnmutes()
-        {
-            var e = new Env { LiveEffects = true, ApplyToSpotify = true, SpotifyActive = true };
-            var c = Make(e); c.Evaluate();
-            e.SpotifyActive = false; c.Evaluate();
-            Assert.That(e.CaptureRunning, Is.False);
-            Assert.That(e.MutedNow, Is.False);
-        }
-
-        [Test]
-        public void MuteFails_DoesNotStartEffectedOutput()
-        {
-            var e = new Env { LiveEffects = true, ApplyToSpotify = true, SpotifyActive = true, MuteSucceeds = false };
-            Make(e).Evaluate();
-            Assert.That(e.EffectedOutput, Is.False);     // better dry than doubled
-        }
-
-        [Test]
-        public void OsNotCapable_NeverCaptures()
-        {
-            var e = new Env { LiveEffects = true, ApplyToSpotify = true, SpotifyActive = true, OsCapable = false };
-            Make(e).Evaluate();
-            Assert.That(e.CaptureRunning, Is.False);
-            Assert.That(e.EffectedOutput, Is.False);
+            var cases = new[]
+            {
+                new { E = new Env { CalmDown = true, SpotifyActive = true }, Change = (Action<Env>)(x => x.CalmDown = false),
+                      Capture = (bool?)false, Output = (bool?)false, Why = "Calm Down off with nothing else" },
+                new { E = new Env { LiveEffects = true, ApplyToSpotify = true, SpotifyActive = true }, Change = (Action<Env>)(x => x.ApplyToSpotify = false),
+                      Capture = (bool?)null, Output = (bool?)false, Why = "effects toggled off" },
+                new { E = new Env { LiveEffects = true, ApplyToSpotify = true, SpotifyActive = true }, Change = (Action<Env>)(x => x.SpotifyActive = false),
+                      Capture = (bool?)false, Output = (bool?)null, Why = "Spotify no longer active" },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var t in cases)
+                {
+                    var c = Make(t.E);
+                    c.Evaluate();
+                    t.Change(t.E);
+                    c.Evaluate();
+                    if (t.Capture.HasValue) Assert.That(t.E.CaptureRunning, Is.EqualTo(t.Capture.Value), t.Why + " (capture)");
+                    if (t.Output.HasValue) Assert.That(t.E.EffectedOutput, Is.EqualTo(t.Output.Value), t.Why + " (output)");
+                    Assert.That(t.E.MutedNow, Is.EqualTo(false), t.Why + " (unmuted)");
+                }
+            });
         }
 
         [Test]

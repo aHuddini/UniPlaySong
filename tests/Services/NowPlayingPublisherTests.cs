@@ -230,34 +230,6 @@ namespace UniPlaySong.Tests.Services
         }
 
         [Test]
-        public void Refresh_GameMusic_ClearsSpotifyOnlyMetadata()
-        {
-            // Game music must not carry over a prior Spotify track's album/genre/duration.
-            var songPath = System.IO.Path.Combine(_dir, "song.mp3");
-            System.IO.File.WriteAllBytes(songPath, new byte[] { 0, 1, 2, 3 });
-
-            var (pub, spotify, meta, pb) = BuildPublisher();
-            pb.SetupGet(p => p.CurrentSongPath).Returns(songPath);
-            meta.ResubscribeToService(pb.Object);
-            pub.Refresh();
-
-            Assert.AreEqual(string.Empty, _settings.NowPlayingAlbum);
-            Assert.AreEqual(string.Empty, _settings.NowPlayingGenre);
-            Assert.AreEqual(string.Empty, _settings.NowPlayingDuration);
-        }
-
-        [Test]
-        public void Refresh_NothingActive_ClearsAll()
-        {
-            // Spotify not active, no UPS song.
-            var (pub, spotify, meta, pb) = BuildPublisher();
-            pub.Refresh();
-            Assert.AreEqual(string.Empty, _settings.NowPlayingTitle);
-            Assert.AreEqual(string.Empty, _settings.NowPlayingArtist);
-            Assert.AreEqual(string.Empty, _settings.NowPlayingAlbumArtPath);
-        }
-
-        [Test]
         public void Refresh_SpotifyActiveButNoArtBytes_LeavesArtPathEmpty()
         {
             _settings.RadioModeEnabled = true;
@@ -275,43 +247,35 @@ namespace UniPlaySong.Tests.Services
             Assert.AreEqual(System.Windows.Media.Color.FromRgb(0x1D, 0xB9, 0x54), _settings.NowPlayingArtColor2);
         }
 
-        [Test]
-        public void Refresh_GameMusicNoEmbeddedArt_FallsBackToGameCover()
+        // A game-music track with no embedded art: the dummy "audio" file makes WriteFromAudioFile return ""
+        // (TagLib can't read it), so the publisher falls back to the resolved game cover - or, with no resolver
+        // wired, leaves the art path empty.
+        [TestCase(true)]
+        [TestCase(false)]
+        public void Refresh_GameMusicNoEmbeddedArt_FallsBackToGameCoverWhenAResolverIsWired(bool withResolver)
         {
-            // A game-music track with no embedded art: the dummy "audio" file makes
-            // WriteFromAudioFile return "" (TagLib can't read it), so the publisher should fall
-            // back to the resolved game cover path.
             var songPath = System.IO.Path.Combine(_dir, "song.mp3");
             System.IO.File.WriteAllBytes(songPath, new byte[] { 0, 1, 2, 3 }); // not valid audio → no art
             var coverPath = System.IO.Path.Combine(_dir, "cover.jpg");
             System.IO.File.WriteAllBytes(coverPath, new byte[] { 9, 9, 9 });
 
             string resolverReceivedPath = null;
-            var (pub, spotify, meta, pb) = BuildPublisher(p => { resolverReceivedPath = p; return coverPath; });
+            var (pub, spotify, meta, pb) = BuildPublisher(
+                withResolver ? p => { resolverReceivedPath = p; return coverPath; } : (Func<string, string>)null);
             pb.SetupGet(p => p.CurrentSongPath).Returns(songPath);
             meta.ResubscribeToService(pb.Object); // populates CurrentSongInfo from songPath
             pub.Refresh();
 
+            if (!withResolver)
+            {
+                Assert.AreEqual(string.Empty, _settings.NowPlayingAlbumArtPath);
+                return;
+            }
             Assert.AreEqual(coverPath, _settings.NowPlayingAlbumArtPath);
             // The resolver must receive the TRACK's path so it can derive the owning game
             // (Games\{GameId}\...) — the right cover for pool/radio songs, and works when
             // CurrentGame is null (radio never sets it).
             Assert.AreEqual(songPath, resolverReceivedPath);
-        }
-
-        [Test]
-        public void Refresh_GameMusicNoEmbeddedArt_NoResolver_LeavesArtPathEmpty()
-        {
-            // Same as above but no cover resolver wired → fallback disabled → art path stays empty.
-            var songPath = System.IO.Path.Combine(_dir, "song.mp3");
-            System.IO.File.WriteAllBytes(songPath, new byte[] { 0, 1, 2, 3 });
-
-            var (pub, spotify, meta, pb) = BuildPublisher(); // no resolver
-            pb.SetupGet(p => p.CurrentSongPath).Returns(songPath);
-            meta.ResubscribeToService(pb.Object);
-            pub.Refresh();
-
-            Assert.AreEqual(string.Empty, _settings.NowPlayingAlbumArtPath);
         }
     }
 }

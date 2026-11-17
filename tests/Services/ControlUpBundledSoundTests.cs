@@ -26,15 +26,8 @@ namespace UniPlaySong.Tests.Services
             BundledJingleService.Initialize(Path.GetDirectoryName(JinglesRoot()));
         }
 
-        [Test]
-        public void TheBundledSound_ExistsOnDisk()
-        {
-            var path = Path.Combine(JinglesRoot(), BundledJingleService.DefaultControlUpJingle);
-
-            Assert.IsTrue(File.Exists(path),
-                $"the shipped ControlUp sound must exist at {path} — a rename here silences the feature");
-        }
-
+        // Also what JingleService falls back to (the first entry) when a settings file written before this
+        // sound shipped has an empty selection.
         [Test]
         public void TheBundledSound_IsListedUnderTheControlUpCategory()
         {
@@ -75,16 +68,7 @@ namespace UniPlaySong.Tests.Services
 
             var resolved = BundledJingleService.ResolveJinglePath(settings.SelectedControlUpDetectJingle);
             Assert.IsNotNull(resolved, "the default selection must resolve through the manifest");
-            Assert.IsTrue(File.Exists(resolved));
-        }
-
-        // Belt and braces for a settings file written before this sound shipped: its stored selection
-        // is empty, and JingleService falls back to the first entry rather than playing nothing.
-        [Test]
-        public void AnEmptySelection_FallsBackToTheBundledSound()
-        {
-            Assert.AreEqual(BundledJingleService.DefaultControlUpJingle,
-                BundledJingleService.GetDefaultControlUpJingleFilename());
+            Assert.IsTrue(File.Exists(resolved), "a rename of the shipped file silences the feature");
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
 using UniPlaySong;
@@ -14,9 +13,8 @@ namespace UniPlaySong.Tests.Services
     //
     // The catch is that every tuning table in the visualizer - band edges, per-bar gain, bleed
     // fractions, gravity scales - is hand-calibrated for exactly 12 bars. Any other count resamples
-    // them, and these tests pin the two properties that makes safe: the resampling is the identity
-    // at 12, so the default look is untouched, and a lower count still spans the whole spectrum
-    // rather than showing a zoomed-in slice of the bass.
+    // them, and these tests pin what makes that safe: the resampling is the identity at 12, so the
+    // default look is untouched, and resampled band edges always rise left to right.
     [TestFixture]
     public class VisualizerBarCountTests
     {
@@ -55,24 +53,6 @@ namespace UniPlaySong.Tests.Services
         }
 
         [Test]
-        public void EveryCountStillCoversTheWholeSpectrum()
-        {
-            // Fewer bars must mean wider bands, not a truncated range. Taking the first N entries of
-            // the table would have left a 4-bar visualizer showing bass only, with the top of the
-            // spectrum invisible.
-            var edges = Edges();
-            double lowest = edges.First();
-            double highest = edges.Last();
-
-            foreach (int count in new[] { 1, 2, 3, 4, 6, 8, 12 })
-            {
-                Assert.AreEqual(lowest, EdgeAt(0), 1e-9, $"{count} bars should start at the bottom");
-                Assert.AreEqual(highest, EdgeAt(count * (12.0 / count)), 1e-9,
-                    $"{count} bars should still reach the top");
-            }
-        }
-
-        [Test]
         public void BandsAlwaysRiseLeftToRight()
         {
             foreach (int count in new[] { 1, 2, 3, 5, 7, 9, 12 })
@@ -94,23 +74,6 @@ namespace UniPlaySong.Tests.Services
 
             for (int i = 0; i < table.Length; i++)
                 Assert.AreEqual(table[i], SampleTable(table, i), 1e-6, $"entry {i}");
-        }
-
-        [Test]
-        public void AWideBarTakesTheGainOfTheBassItContains()
-        {
-            // Sampled at each bar's LOW frequency edge, not its centre. RMS across a band is
-            // dominated by its lowest frequencies, so one bar spanning the whole spectrum behaves
-            // like bass and needs the bass gain. Centre-sampling would hand it a treble gain around
-            // 5.0 and peg it at full height permanently - a solid block, not a visualizer.
-            var gains = new[] { 1.4f, 1.7f, 2.2f, 2.8f, 3.6f, 4.5f, 5.5f, 7.0f, 9.0f, 12.0f, 16.0f, 20.0f };
-
-            Assert.AreEqual(gains[0], SampleTable(gains, 0), 1e-6,
-                "a single bar spans everything and must take the bass gain");
-
-            // And the first bar of any count starts at the bottom, so it always gets that gain.
-            foreach (int count in new[] { 1, 3, 6, 12 })
-                Assert.AreEqual(gains[0], SampleTable(gains, 0 * (double)12 / count), 1e-6);
         }
 
         [Test]

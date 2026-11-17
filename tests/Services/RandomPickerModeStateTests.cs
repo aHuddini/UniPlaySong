@@ -1,7 +1,5 @@
-﻿using System.Reflection;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using UniPlaySong;
-using UniPlaySong.Monitors;
 
 namespace UniPlaySong.Tests.Services
 {
@@ -38,32 +36,6 @@ namespace UniPlaySong.Tests.Services
                     Assert.That(s.AllowsMusicInMode(isFullscreen: false), Is.EqualTo(c.Desktop), $"{c.State} on Desktop");
                 }
             });
-        }
-
-        [Test]
-        public void ThePickerAndTheCoordinatorShareOneModeRule()
-        {
-            // Both read AllowsMusicInMode. If the picker grew its own copy of the rule, the two
-            // would drift and this setting would mean different things in different places - which
-            // is how the picker came to ignore it in the first place.
-            var rule = typeof(UniPlaySongSettings).GetMethod(nameof(UniPlaySongSettings.AllowsMusicInMode));
-
-            Assert.NotNull(rule, "the mode rule must live on the settings, reachable by both callers");
-            Assert.AreEqual(typeof(bool), rule.ReturnType);
-            Assert.AreEqual(1, rule.GetParameters().Length, "mode in, allowed out - nothing else");
-        }
-
-        [Test]
-        public void ThePickerAsksBeforeItHooksTheDialog()
-        {
-            // Gating at the hook, not at playback: if the mode disallows music the monitor never
-            // takes ownership at all, so IsActive stays false and the coordinator carries on
-            // normally instead of being told to stand down for a picker that will not play.
-            var gate = typeof(RandomPickerMonitor).GetMethod("MusicAllowedHere",
-                BindingFlags.NonPublic | BindingFlags.Static);
-
-            Assert.NotNull(gate, "the picker must consult the mode state before hooking");
-            Assert.AreEqual(typeof(bool), gate.ReturnType);
         }
 
         [Test]

@@ -25,11 +25,12 @@ namespace UniPlaySong.Tests.Audio
             public int Read(float[] buffer, int offset, int count) => count;
         }
 
-        [Test]
-        public void Played_IsSubmittedMinusWhatIsQueued()
+        // Played is submitted minus what is queued; a device ahead of submitted counts as all played.
+        [TestCase(13230, 6615, ExpectedResult = 6615)]
+        [TestCase(1000, 1001, ExpectedResult = 1000)]
+        public long Played_IsSubmittedMinusWhatIsQueued(long submitted, long devicePlayedFrames)
         {
-            // 13230 frames submitted, the device has played 6615 of them.
-            Assert.AreEqual(6615, OutputClock.Played(13230, 6615L * BlockAlign, BlockAlign));
+            return OutputClock.Played(submitted, devicePlayedFrames * BlockAlign, BlockAlign);
         }
 
         // waveOut's byte position is 32-bit and wraps after ~3.4 hours; the persistent device runs all session.
@@ -42,12 +43,6 @@ namespace UniPlaySong.Tests.Audio
             long wrappedPosition = (playedFrames * BlockAlign) & 0xFFFFFFFFL;
 
             Assert.AreEqual(playedFrames, OutputClock.Played(submitted, wrappedPosition, BlockAlign));
-        }
-
-        [Test]
-        public void Played_DeviceAheadOfSubmitted_CountsAsAllPlayed()
-        {
-            Assert.AreEqual(1000, OutputClock.Played(1000, 1001L * BlockAlign, BlockAlign));
         }
 
         // A device rebuilt after an audio-device release starts its position at zero; the clock carries on.
@@ -79,24 +74,15 @@ namespace UniPlaySong.Tests.Audio
             Assert.AreEqual(100, clock.FramesPlayed);
         }
 
-        [Test]
-        public void WindowEnd_HoldsBackByWhatIsNotYetPlayed()
+        // Newest sample is ring index 20000 = device frame 50000. The window holds back by what is not yet played,
+        // ends at the newest sample once all is played, and never reaches back further than the ring holds.
+        [TestCase(36770, 20000, ExpectedResult = 20000 - 13230)]
+        [TestCase(50000, 20000, ExpectedResult = 20000)]
+        [TestCase(60000, 20000, ExpectedResult = 20000)]
+        [TestCase(0, 17000, ExpectedResult = 20000 - 17000)]
+        public int WindowEnd_HoldsBackByWhatIsNotYetPlayed(long devicePlayed, int ringHolds)
         {
-            // Newest sample is ring index 20000 = device frame 50000; the device has played up to 36770.
-            Assert.AreEqual(20000 - 13230, VisualizationDataProvider.WindowEnd(20000, 50000, 36770, 20000));
-        }
-
-        [Test]
-        public void WindowEnd_AllPlayed_IsTheNewestSample()
-        {
-            Assert.AreEqual(20000, VisualizationDataProvider.WindowEnd(20000, 50000, 50000, 20000));
-            Assert.AreEqual(20000, VisualizationDataProvider.WindowEnd(20000, 50000, 60000, 20000));
-        }
-
-        [Test]
-        public void WindowEnd_NeverReachesBackFurtherThanTheRingHolds()
-        {
-            Assert.AreEqual(20000 - 17000, VisualizationDataProvider.WindowEnd(20000, 50000, 0, 17000));
+            return VisualizationDataProvider.WindowEnd(20000, 50000, devicePlayed, ringHolds);
         }
 
         // The smoothing must look the same at any update rate: two half-steps land where one full step does.

@@ -41,25 +41,6 @@ namespace UniPlaySong.Tests.Services
             });
         }
 
-        // Three independent toggles, all off on a fresh install, so nothing about playback changes
-        // until they are asked for. GameHoverDelayPatch is its own switch rather than a change to
-        // PS5ThemeCompatMode, which fixes a different problem on the same Tag.
-        [Test]
-        public void PatchToggles_AreOffByDefault_AndIndependent()
-        {
-            var s = new UniPlaySongSettings();
-            Assert.Multiple(() =>
-            {
-                Assert.That(s.HoverSettleEnabled, Is.False, "the delay itself");
-                Assert.That(s.GameHoverDelayPatch, Is.False, "the Tag-path patch");
-                Assert.That(s.PS5ThemeCompatMode, Is.False, "the flicker debounce, unrelated");
-            });
-
-            s.GameHoverDelayPatch = true;
-            Assert.That(s.PS5ThemeCompatMode, Is.False,
-                "enabling the hover patch must not turn on the flicker debounce");
-        }
-
         // The bridge is what makes game-to-game feel like the PS5: leaving a game returns to the
         // default music at once, and the NEW game's music takes the delay. The abandoned track
         // never plays out the wait. With default music disabled there is nothing to bridge WITH;
@@ -120,30 +101,24 @@ namespace UniPlaySong.Tests.Services
                 "must finish inside even the shortest game-to-game wait");
         }
 
+        // The policy and the settings setter clamp separately; a config edited by hand must not escape the range.
         [Test]
-        public void ClampSeconds_HoldsTheSupportedRange()
+        public void ClampSeconds_AndTheSettingsSetter_HoldTheSupportedRange()
         {
+            var s = new UniPlaySongSettings();
             Assert.Multiple(() =>
             {
                 Assert.That(HoverSettlePolicy.ClampSeconds(0), Is.EqualTo(Constants.MinHoverSettleSeconds));
                 Assert.That(HoverSettlePolicy.ClampSeconds(-5), Is.EqualTo(Constants.MinHoverSettleSeconds));
                 Assert.That(HoverSettlePolicy.ClampSeconds(999), Is.EqualTo(Constants.MaxHoverSettleSeconds));
                 Assert.That(HoverSettlePolicy.ClampSeconds(3), Is.EqualTo(3));
+
+                Assert.That(s.HoverSettleSeconds, Is.EqualTo(Constants.DefaultHoverSettleSeconds), "setter default");
+                s.HoverSettleSeconds = 100;
+                Assert.That(s.HoverSettleSeconds, Is.EqualTo(Constants.MaxHoverSettleSeconds), "setter above max");
+                s.HoverSettleSeconds = 0;
+                Assert.That(s.HoverSettleSeconds, Is.EqualTo(Constants.MinHoverSettleSeconds), "setter below min");
             });
-        }
-
-        // The settings setter clamps too; a config edited by hand must not escape the range.
-        [Test]
-        public void SettingsProperty_ClampsOnSet()
-        {
-            var s = new UniPlaySongSettings();
-            Assert.That(s.HoverSettleSeconds, Is.EqualTo(Constants.DefaultHoverSettleSeconds));
-
-            s.HoverSettleSeconds = 100;
-            Assert.That(s.HoverSettleSeconds, Is.EqualTo(Constants.MaxHoverSettleSeconds));
-
-            s.HoverSettleSeconds = 0;
-            Assert.That(s.HoverSettleSeconds, Is.EqualTo(Constants.MinHoverSettleSeconds));
         }
     }
 }

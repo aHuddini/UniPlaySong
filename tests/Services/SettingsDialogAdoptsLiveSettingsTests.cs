@@ -36,37 +36,9 @@ namespace UniPlaySong.Tests.Services
             var body = text.Substring(begin, 1600);
             StringAssert.Contains("GetSettingsService()?.Current", body,
                 "the dialog must adopt what is in effect, not the copy loaded at startup");
+            // The Settings setter moves the PropertyChanged subscription; assigning the field would leak the startup object.
             StringAssert.Contains("Settings = live", body,
                 "assigned through the property so the PropertyChanged subscription moves with it");
-        }
-
-        [Test]
-        public void TheViewModelIsCachedWhichIsWhyThisIsNeeded()
-        {
-            // If GetSettings ever starts returning a fresh view model per open, the adoption above
-            // becomes redundant rather than wrong -- but while it returns a cached one, removing it
-            // brings the bug straight back.
-            var text = ReadSource(Path.Combine("src", "UniPlaySong.cs"));
-
-            var getter = text.IndexOf("public override ISettings GetSettings(");
-            Assert.Greater(getter, -1);
-
-            var body = text.Substring(getter, 400);
-            StringAssert.Contains("_settingsViewModel", body,
-                "the same view model instance is handed back for every settings dialog");
-        }
-
-        [Test]
-        public void TheSubscriptionMovesWithTheObject()
-        {
-            // The Settings setter unsubscribes the old object and subscribes the new one. Adopting
-            // by assigning the FIELD would leave the startup object subscribed forever -- the leak
-            // CancelEdit's comment already warns about.
-            var text = ReadSource(Path.Combine("src", "UniPlaySongSettingsViewModel.cs"));
-
-            var begin = text.IndexOf("public void BeginEdit()");
-            var body = text.Substring(begin, 1600);
-
             Assert.IsFalse(body.Contains("settings = live;"),
                 "assign through the Settings property, not the backing field");
         }

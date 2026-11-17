@@ -28,13 +28,6 @@ namespace UniPlaySong.Tests.Downloaders
             Assert.AreEqual(DownloadFailure.Kind.Cookies, DownloadFailure.Classify(stderr));
         }
 
-        [Test]
-        public void BotCheck_IsRecognised()
-        {
-            Assert.AreEqual(DownloadFailure.Kind.BotCheck,
-                DownloadFailure.Classify("ERROR: [youtube] abc: Sign in to confirm you're not a bot. Use --cookies-from-browser"));
-        }
-
         // The old check was Contains("bot"), which "both" matches.
         [Test]
         public void TheWordBoth_IsNotABotCheck()
@@ -43,6 +36,7 @@ namespace UniPlaySong.Tests.Downloaders
                 DownloadFailure.Classify("WARNING: both formats were rejected"));
         }
 
+        [TestCase("ERROR: [youtube] abc: Sign in to confirm you're not a bot. Use --cookies-from-browser", DownloadFailure.Kind.BotCheck)]
         [TestCase("ERROR: [youtube] abc: Private video. Sign in if you've been granted access", DownloadFailure.Kind.Unavailable)]
         [TestCase("ERROR: [youtube] abc: Video unavailable", DownloadFailure.Kind.Unavailable)]
         [TestCase("ERROR: unable to download video data: HTTP Error 403: Forbidden", DownloadFailure.Kind.Network)]

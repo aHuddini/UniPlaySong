@@ -108,60 +108,31 @@ namespace UniPlaySong.Tests.Services
             Assert.AreEqual(1, h.ReleaseCalls); // lock/suspend ignore the idle 0-disable
         }
 
-        // Minimize / hide-to-tray releases early rather than waiting out the idle countdown.
-        // Conditional on silence, unlike lock and suspend: minimizing with PauseOnMinimize off is
-        // someone deliberately keeping the music going, and releasing would cut it off.
+        // Minimize / hide-to-tray releases early rather than waiting out the idle countdown, but only when silent,
+        // no game is running, and "Release after" is not 0 (one control for every trigger, unlike lock and suspend).
         [Test]
-        public void WindowHidden_ReleasesWhenSilent()
+        public void WindowHidden_TruthTable()
         {
-            var holder = new FakeHolder();
-            var registry = new AudioDeviceRegistry(null);
-            registry.Register(holder);
-            var c = new SleepCoordinator(registry, () => false, () => 10, null);
+            var cases = new[]
+            {
+                new { Audible = false, Game = false, Minutes = 10, Expected = true, Why = "silent - no reason to hold the device" },
+                new { Audible = true, Game = false, Minutes = 10, Expected = false, Why = "PauseOnMinimize off means the user wants it playing in the background" },
+                new { Audible = false, Game = true, Minutes = 10, Expected = false, Why = "minimizing to play a game is the common case, and the machine stays awake anyway" },
+                new { Audible = false, Game = false, Minutes = 0, Expected = false, Why = "Release after: 0 min turns off UPS releasing on its own" },
+            };
+            Assert.Multiple(() =>
+            {
+                foreach (var t in cases)
+                {
+                    var holder = new FakeHolder();
+                    var registry = new AudioDeviceRegistry(null);
+                    registry.Register(holder);
+                    var c = new SleepCoordinator(registry, () => t.Audible, () => t.Minutes, null, isGameRunning: () => t.Game);
 
-            Assert.That(c.OnWindowHidden("Minimized"), Is.True, "silent — no reason to hold the device");
-            Assert.That(holder.ReleaseCalls, Is.EqualTo(1));
+                    Assert.That(c.OnWindowHidden("Minimized"), Is.EqualTo(t.Expected), t.Why);
+                    Assert.That(holder.ReleaseCalls, Is.EqualTo(t.Expected ? 1 : 0), t.Why);
+                }
+            });
         }
-
-        [Test]
-        public void WindowHidden_KeepsTheDeviceWhileAudible()
-        {
-            var holder = new FakeHolder();
-            var registry = new AudioDeviceRegistry(null);
-            registry.Register(holder);
-            var c = new SleepCoordinator(registry, () => true, () => 10, null);
-
-            Assert.That(c.OnWindowHidden("Minimized"), Is.False,
-                "PauseOnMinimize off means the user wants it playing in the background");
-            Assert.That(holder.ReleaseCalls, Is.Zero);
-        }
-
-        [Test]
-        public void WindowHidden_KeepsTheDeviceWhileAGameIsRunning()
-        {
-            var holder = new FakeHolder();
-            var registry = new AudioDeviceRegistry(null);
-            registry.Register(holder);
-            var c = new SleepCoordinator(registry, () => false, () => 10, null, isGameRunning: () => true);
-
-            Assert.That(c.OnWindowHidden("Minimized"), Is.False,
-                "minimizing to play a game is the common case, and the machine stays awake anyway");
-            Assert.That(holder.ReleaseCalls, Is.Zero);
-        }
-
-        // "Release after: 0 min" turns off UPS releasing the device on its own - one control, not
-        // one per trigger.
-        [Test]
-        public void WindowHidden_RespectsTheDisabledSetting()
-        {
-            var holder = new FakeHolder();
-            var registry = new AudioDeviceRegistry(null);
-            registry.Register(holder);
-            var c = new SleepCoordinator(registry, () => false, () => 0, null);
-
-            Assert.That(c.OnWindowHidden("Minimized"), Is.False);
-            Assert.That(holder.ReleaseCalls, Is.Zero);
-        }
-
     }
 }

@@ -54,43 +54,25 @@ namespace UniPlaySong.Tests.Services
         private static void VerifyPlayedOnce(Mock<IMusicPlaybackService> playback, string because) =>
             playback.Verify(p => p.PlayGameMusic(It.IsAny<Game>(), It.IsAny<UniPlaySongSettings>(), It.IsAny<bool>()), Times.Once, because);
 
-        // The report: game music off, default music on, "Play music in: Fullscreen only" - and default music played in Desktop.
-        [Test]
-        public void GameMusicOff_DefaultMusicFullscreenOnly_DesktopStaysQuiet()
-        {
-            var settings = new UniPlaySongSettings { EnableMusic = false, EnableDefaultMusic = true, DefaultMusicState = AudioState.Fullscreen };
-            var (coordinator, playback) = Coordinator(settings, fullscreen: false);
-
-            coordinator.HandleGameSelected(AGame, isFullscreen: false);
-
-            VerifyNoPlay(playback, "default music is Fullscreen only");
-        }
-
-        [Test]
-        public void GameMusicOff_DefaultMusicAllowed_DefaultPlays()
-        {
-            var settings = new UniPlaySongSettings { EnableMusic = false, EnableDefaultMusic = true, DefaultMusicState = AudioState.Always };
-            var (coordinator, playback) = Coordinator(settings, fullscreen: false);
-
-            coordinator.HandleGameSelected(AGame, isFullscreen: false);
-
-            VerifyPlayedOnce(playback, "routed to PlayGameMusic, which plays the default music");
-        }
-
-        // Game music Fullscreen only, default music both modes, in Desktop: every game plays the default music.
-        [Test]
-        public void GameMusicNotAllowedHere_DefaultAllowed_DefaultPlays()
+        // In Desktop, default music on. Row 1 is the report: game music off, default music Fullscreen only - and
+        // default music played in Desktop. Game music off or blocked here falls through to default music where allowed
+        // (routed to PlayGameMusic, which plays it).
+        [TestCase(false, AudioState.Always, AudioState.Fullscreen, false, TestName = "GameMusicOff_DefaultMusicFullscreenOnly_DesktopStaysQuiet")]
+        [TestCase(false, AudioState.Always, AudioState.Always, true, TestName = "GameMusicOff_DefaultMusicAllowed_DefaultPlays")]
+        [TestCase(true, AudioState.Fullscreen, AudioState.Always, true, TestName = "GameMusicNotAllowedHere_DefaultAllowed_DefaultPlays")]
+        public void DesktopGameSelected_DefaultMusicFollowsItsOwnMode(bool gameOn, AudioState gameState, AudioState defaultState, bool plays)
         {
             var settings = new UniPlaySongSettings
             {
-                EnableMusic = true, MusicState = AudioState.Fullscreen,
-                EnableDefaultMusic = true, DefaultMusicState = AudioState.Always,
+                EnableMusic = gameOn, MusicState = gameState,
+                EnableDefaultMusic = true, DefaultMusicState = defaultState,
             };
             var (coordinator, playback) = Coordinator(settings, fullscreen: false);
 
             coordinator.HandleGameSelected(AGame, isFullscreen: false);
 
-            VerifyPlayedOnce(playback, "game music is blocked here but default music is not");
+            if (plays) VerifyPlayedOnce(playback, "default music is allowed in Desktop");
+            else VerifyNoPlay(playback, "default music is Fullscreen only");
         }
 
         // "Play automatically on first launch (Desktop only)" off means nothing starts on its own - default music

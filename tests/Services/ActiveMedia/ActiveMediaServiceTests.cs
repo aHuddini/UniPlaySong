@@ -9,6 +9,8 @@ using UniPlaySong.Services.Spotify;
 
 namespace UniPlaySong.Tests.Services.ActiveMedia
 {
+    // Which source is active, and that transport and seeks reach it: Spotify through its client, UPS music through
+    // the current playback service.
     [TestFixture]
     public class ActiveMediaServiceTests
     {
@@ -35,12 +37,33 @@ namespace UniPlaySong.Tests.Services.ActiveMedia
             _service = new ActiveMediaService(_playback.Object, _spotifyControl, _client.Object, null);
         }
 
-        [Test]
-        public void Resolve_SpotifyActive_SnapshotIsSpotify()
+        private ActiveMediaService Create(Func<IMusicPlaybackService> current = null) =>
+            new ActiveMediaService(_playback.Object, _spotifyControl, _client.Object, null, current);
+
+        // Spotify as the radio source => SpotifyControlService.IsSpotifyActive true.
+        private void ArmSpotifyAsActiveSource()
         {
             _settings.RadioModeEnabled = true;
             _settings.RadioMusicSource = RadioMusicSource.Spotify;
             _spotifyControl.Recompute();
+            Assert.IsTrue(_spotifyControl.IsSpotifyActive, "guard: Spotify should be the active source");
+        }
+
+        // A paused Spotify track, 60 s into 200 s, that accepts seeks. Paused, so a seek's start position does not
+        // drift with the wall clock between steps.
+        private void ArrangeSeekableSpotify()
+        {
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+            _client.SetupGet(c => c.CanSeek).Returns(true);
+            _client.Setup(c => c.GetTimeline()).Returns(new SpotifyTimeline(TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(200)));
+        }
+
+        // ---- source resolution ----
+
+        [Test]
+        public void Resolve_SpotifyActive_SnapshotIsSpotify()
+        {
+            ArmSpotifyAsActiveSource();
 
             var snap = _service.GetSnapshot();
             Assert.AreEqual(ActiveMediaSourceKind.Spotify, snap.SourceKind);
@@ -101,6 +124,154 @@ namespace UniPlaySong.Tests.Services.ActiveMedia
             var snap = _service.GetSnapshot();
             Assert.IsFalse(snap.CanNext, "single song -> cannot skip");
             Assert.IsTrue(snap.CanPrevious, "loaded -> can restart");
+        }
+
+        // ---- taskbar + media-key routing ----
+        // The thumbbar buttons and hardware media keys predated Spotify and drove the UPS player unconditionally: with
+        // Spotify active, play/pause resumed UPS's silent-but-loaded player (game music over Spotify) and next/previous
+        // acted on the UPS pool. Both now route through ActiveMediaService.
+
+        // The reported bug: RemovePauseSource(Manual) un-paused that silent-but-loaded player.
+        [Test]
+        public void PlayPause_SpotifyActive_ReachesSpotify_NotTheUpsPlayer()
+        {
+            ArmSpotifyAsActiveSource();
+            _playback.SetupGet(p => p.IsPaused).Returns(true);
+            _playback.SetupGet(p => p.IsLoaded).Returns(true);
+
+            _service.PlayPause();
+
+            _client.Verify(c => c.TryTogglePlayPause(), Times.Once,
+                "with Spotify active, play/pause must command Spotify");
+            _playback.Verify(p => p.RemovePauseSource(PauseSource.Manual), Times.Never,
+                "with Spotify active, play/pause must not resume the UPS player — that is the game-music-over-Spotify bug");
+            _playback.Verify(p => p.NotifyManualStart(), Times.Never);
+        }
+
+        [Test]
+        public void Next_SpotifyActive_SkipsSpotifyNotUpsPool()
+        {
+            ArmSpotifyAsActiveSource();
+
+            _service.Next();
+
+            _client.Verify(c => c.TrySkipNext(), Times.Once);
+            _playback.Verify(p => p.SkipToNextSong(), Times.Never,
+                "with Spotify active, next must not advance the UPS pool");
+        }
+
+        [Test]
+        public void Previous_SpotifyActive_SkipsSpotifyNotUpsPool()
+        {
+            ArmSpotifyAsActiveSource();
+
+            _service.Previous();
+
+            _client.Verify(c => c.TrySkipPrevious(), Times.Once);
+            _playback.Verify(p => p.RestartCurrentSong(), Times.Never,
+                "with Spotify active, previous must not restart the UPS song");
+        }
+
+        // The other direction: with Spotify NOT the source, transport still drives the UPS player - the fix is a
+        // routing change, not a Spotify-only rewrite.
+        [Test]
+        public void Next_SpotifyInactive_StillSkipsUpsPool()
+        {
+            _playback.SetupGet(p => p.IsLoaded).Returns(true);
+            _spotifyControl.Recompute();
+            Assert.IsFalse(_spotifyControl.IsSpotifyActive, "guard: Spotify should not be active");
+
+            _service.Next();
+
+            _playback.Verify(p => p.SkipToNextSong(), Times.Once);
+            _client.Verify(c => c.TrySkipNext(), Times.Never);
+        }
+
+        [Test]
+        public void Previous_SpotifyInactive_StillRestartsUpsSong()
+        {
+            _playback.SetupGet(p => p.IsLoaded).Returns(true);
+            _spotifyControl.Recompute();
+
+            _service.Previous();
+
+            _playback.Verify(p => p.RestartCurrentSong(), Times.Once);
+            _client.Verify(c => c.TrySkipPrevious(), Times.Never);
+        }
+
+        // ---- seeking ----
+
+        [Test]
+        public void SeekTo_Spotify_GoesToSpotifyAtThatShareOfTheTrack()
+        {
+            ArrangeSeekableSpotify();
+            ArmSpotifyAsActiveSource();
+            Create().SeekTo(50);
+            _client.Verify(c => c.RequestSeek(TimeSpan.FromSeconds(100), It.IsAny<Action>()), Times.Once);
+            _playback.Verify(p => p.Seek(It.IsAny<TimeSpan>()), Times.Never);
+        }
+
+        // Past the end Spotify skips to the next track, so a seek stops a second short.
+        [Test]
+        public void SeekTo_Spotify_StopsASecondShortOfTheEnd()
+        {
+            ArrangeSeekableSpotify();
+            ArmSpotifyAsActiveSource();
+            Create().SeekTo(100);
+            _client.Verify(c => c.RequestSeek(TimeSpan.FromSeconds(199), It.IsAny<Action>()), Times.Once);
+        }
+
+        [Test]
+        public void SeekBy_Spotify_MovesFromTheCurrentPosition()
+        {
+            ArrangeSeekableSpotify();
+            ArmSpotifyAsActiveSource();
+            Create().SeekBy(-15);
+            _client.Verify(c => c.RequestSeek(TimeSpan.FromSeconds(45), It.IsAny<Action>()), Times.Once);
+        }
+
+        // Spotify's reported position lags a seek; a quick second step builds on the first target, not on the stale
+        // position (which would lose the first step).
+        [Test]
+        public void SeekBy_Spotify_QuickSteps_BuildOnTheLastTarget()
+        {
+            ArrangeSeekableSpotify();
+            ArmSpotifyAsActiveSource();
+            var service = Create();
+            service.SeekBy(10);
+            service.SeekBy(10);
+            _client.Verify(c => c.RequestSeek(TimeSpan.FromSeconds(70), It.IsAny<Action>()), Times.Once);
+            _client.Verify(c => c.RequestSeek(TimeSpan.FromSeconds(80), It.IsAny<Action>()), Times.Once);
+        }
+
+        [Test]
+        public void Spotify_ThatRefusesSeeking_IsLeftAlone()
+        {
+            ArrangeSeekableSpotify();
+            _client.SetupGet(c => c.CanSeek).Returns(false);
+            ArmSpotifyAsActiveSource();
+            var service = Create();
+
+            Assert.IsFalse(service.CanSeek);
+            service.SeekTo(50);
+            service.SeekBy(5);
+            _client.Verify(c => c.RequestSeek(It.IsAny<TimeSpan>(), It.IsAny<Action>()), Times.Never);
+        }
+
+        // A backend swap replaces the playback service; seeks must go to the current one, not the one from startup.
+        [Test]
+        public void SeekBy_Ups_UsesTheCurrentPlaybackService()
+        {
+            ArrangeSeekableSpotify();
+            var current = new Mock<IMusicPlaybackService>();
+            current.SetupGet(p => p.CanSeek).Returns(true);
+            current.SetupGet(p => p.CurrentTime).Returns(TimeSpan.FromSeconds(30));
+            _spotifyControl.Recompute();
+
+            Create(() => current.Object).SeekBy(5);
+
+            current.Verify(p => p.Seek(TimeSpan.FromSeconds(35)), Times.Once);
+            _playback.Verify(p => p.Seek(It.IsAny<TimeSpan>()), Times.Never);
         }
     }
 }

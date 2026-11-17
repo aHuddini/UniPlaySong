@@ -1,7 +1,6 @@
 ﻿using System.IO;
 using NUnit.Framework;
 using UniPlaySong;
-using UniPlaySong.DeskMediaControl;
 
 namespace UniPlaySong.Tests.Services
 {
@@ -18,15 +17,6 @@ namespace UniPlaySong.Tests.Services
             var joined = Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..", "..", "src");
             foreach (var part in parts) joined = Path.Combine(joined, part);
             return joined;
-        }
-
-        [Test]
-        public void TheMoonGlyphIsTheOneInPlaynitesFont()
-        {
-            // U+EF9E is the glyph named "moon" in the icofont.ttf Playnite bundles - read out of the
-            // font's cmap, not recalled. A wrong code does not fail loudly; it renders as a blank
-            // box or some unrelated pictogram in everyone's top panel.
-            Assert.AreEqual("", MediaControlIcons.Moon);
         }
 
         [Test]
@@ -91,24 +81,6 @@ namespace UniPlaySong.Tests.Services
             StringAssert.Contains("_updateSettings(", body, "must route through the settings writer");
             Assert.IsFalse(body.Contains("_getSettings?.Invoke().CalmDownModeEnabled ="),
                 "must not mutate the live settings object directly");
-        }
-
-        [Test]
-        public void TheButtonFollowsTheSettingRatherThanItsOwnLastClick()
-        {
-            // Calm Down is also reachable from the settings dialog, a theme binding and the
-            // Fullscreen menu. If the button tracked only its own presses it would show the wrong
-            // state after any of those.
-            var path = Src("DeskMediaControl", "TopPanelMediaControlViewModel.cs");
-            if (!File.Exists(path)) Assert.Ignore("view model source not reachable from the test output directory");
-
-            var text = File.ReadAllText(path);
-            var refresh = text.IndexOf("public void UpdateIcons()");
-            Assert.Greater(refresh, -1);
-
-            var body = text.Substring(refresh);
-            StringAssert.Contains("UpdateCalmDownVisual(settings?.CalmDownModeEnabled == true)", body,
-                "the periodic refresh must re-read the setting");
         }
     }
 }

@@ -10,7 +10,7 @@ using UniPlaySong.Services.Spotify;
 namespace UniPlaySong.Tests.Services.Spotify
 {
     // Integration test against the REAL MusicPlaybackService (not a mock) to prove that
-    // DefaultMusicSource.Spotify actually engages the default-music gap. The 10 unit tests
+    // DefaultMusicSource.Spotify actually engages the default-music gap. The SpotifyControlService unit tests
     // stub IsPlayingDefaultMusic directly on a mock, so they cannot catch a wiring gap in
     // the engine itself. This test exercises the real resolution switch in PlayGameMusic.
     [TestFixture]
@@ -102,48 +102,9 @@ namespace UniPlaySong.Tests.Services.Spotify
         }
 
         [Test]
-        public void DefaultSourceSpotify_NoGameMusic_MarksDefaultMusicGap()
-        {
-            var settings = new UniPlaySongSettings
-            {
-                EnableMusic = true,
-                EnableDefaultMusic = true,
-                DefaultMusicSourceOption = DefaultMusicSource.Spotify
-            };
-            var game = new Game("Game With No Music") { Id = Guid.NewGuid() };
-
-            // Before: not in a default-music gap.
-            Assert.IsFalse(_service.IsPlayingDefaultMusic, "Precondition: should not be in a default gap before play.");
-
-            _service.PlayGameMusic(game, settings);
-
-            // After: the engine must have marked the default-music gap so SpotifyControlService
-            // computes SpotifyActive=true. This is the I-1 wiring under test.
-            Assert.IsTrue(_service.IsPlayingDefaultMusic,
-                "DefaultMusicSource.Spotify with a no-music game must set IsPlayingDefaultMusic=true.");
-        }
-
-        [Test]
-        public void SpotifyRadioMode_GameWithMusic_DoesNotPlayGameMusic()
+        public void SpotifyRadioMode_GameWithMusic_SuppressedWithoutStateChangeEvents()
         {
             // Spotify Radio Mode must REPLACE all game music, including for games that HAVE songs.
-            var settings = new UniPlaySongSettings { EnableMusic = true, RadioModeEnabled = true, RadioMusicSource = RadioMusicSource.Spotify };
-            var game = new Game("Game With Music") { Id = Guid.NewGuid() };
-            var gameDir = Path.Combine(_tempMusicDir, game.Id.ToString());
-            Directory.CreateDirectory(gameDir);
-            File.WriteAllText(Path.Combine(gameDir, "Title Screen.mp3"), "presence");
-
-            _service.PlayGameMusic(game, settings);
-
-            _player.Verify(p => p.Load(It.IsAny<string>()), Times.Never(),
-                "SpotifyRadioMode must suppress game music — UPS should never load the game's track.");
-            _player.Verify(p => p.Play(), Times.Never(),
-                "SpotifyRadioMode must suppress game music — UPS should never start the game's track.");
-        }
-
-        [Test]
-        public void SpotifyRadioMode_RepeatedSameGameSelect_FiresNoPlaybackStateChanged()
-        {
             // FREEZE FIX: Playnite calls PlayGameMusic repeatedly for the same game at launch and on
             // recovery paths. The suppression branch must fire NO state-change events — each such event
             // synchronously drives SpotifyControlService.Recompute; the flood froze Playnite.
@@ -160,6 +121,10 @@ namespace UniPlaySong.Tests.Services.Spotify
             _service.PlayGameMusic(game, settings);
             _service.PlayGameMusic(game, settings);
 
+            _player.Verify(p => p.Load(It.IsAny<string>()), Times.Never(),
+                "SpotifyRadioMode must suppress game music — UPS should never load the game's track.");
+            _player.Verify(p => p.Play(), Times.Never(),
+                "SpotifyRadioMode must suppress game music — UPS should never start the game's track.");
             Assert.AreEqual(0, fireCount,
                 "The SpotifyRadioMode suppression branch must never fire OnPlaybackStateChanged.");
         }
@@ -186,6 +151,7 @@ namespace UniPlaySong.Tests.Services.Spotify
             using (var control = new SpotifyControlService(_service, client.Object, () => settings, null))
             {
                 Assert.IsFalse(settings.SpotifyActive, "Precondition: SpotifyActive starts false.");
+                Assert.IsFalse(_service.IsPlayingDefaultMusic, "Precondition: should not be in a default gap before play.");
 
                 var game = new Game("Game With No Music") { Id = Guid.NewGuid() };
                 _service.PlayGameMusic(game, settings);

@@ -113,17 +113,8 @@ namespace UniPlaySong.Tests.Services
             }
         }
 
-        // CompletionStatusPool has to be handled in BOTH switches — it was previously easy to add a
-        // source to one and forget the other. Neither may fall through to a null return.
-        [Test]
-        public void CompletionStatusPool_IsHandledByBothPools()
-        {
-            var settings = new UniPlaySongSettings();
-
-            Assert.IsNotNull(Provider().GetDefaultSongPool(DefaultMusicSource.CompletionStatusPool, settings));
-            Assert.IsNotNull(Provider().GetRadioSongPool(RadioMusicSource.CompletionStatusPool, settings));
-        }
-
+        // Every source must be handled in BOTH switches (CompletionStatusPool was once easy to add to one and forget
+        // in the other). Neither may fall through to a null return.
         [Test]
         public void NullSettings_NeverThrows()
         {

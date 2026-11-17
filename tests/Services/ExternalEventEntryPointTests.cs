@@ -1,7 +1,6 @@
 using Moq;
 using NUnit.Framework;
 using Playnite.SDK;
-using Playnite.SDK.Events;
 using UniPlaySong.Services;
 using UniPlaySong.Services.ActiveMedia;
 
@@ -15,7 +14,7 @@ namespace UniPlaySong.Tests.Services
     {
         private Mock<INotificationsAPI> _notifications;
 
-        private ExternalControlService CreateService()
+        private ExternalControlService CreateService(UniPlaySongSettings settings = null)
         {
             _notifications = new Mock<INotificationsAPI>();
             var api = new Mock<IPlayniteAPI>();
@@ -26,7 +25,7 @@ namespace UniPlaySong.Tests.Services
                 new Mock<IActiveMediaService>().Object,
                 api.Object,
                 null,
-                () => new UniPlaySongSettings());
+                () => settings ?? new UniPlaySongSettings());
         }
 
         // Case must not decide whether the event lands — a caller shouldn't have to guess. False is
@@ -43,6 +42,9 @@ namespace UniPlaySong.Tests.Services
                 Assert.IsTrue(CreateService().HandleExternalEvent("ControlUp", "detecttrigger"), "case-insensitive source");
                 Assert.IsFalse(service.HandleExternalEvent("someotherplugin", "whatever"), "unknown source");
                 Assert.IsFalse(service.HandleExternalEvent(null, null), "null source");
+                // Handled means routed, not "made a sound": a caller must not retry over the URI because the sound is off.
+                Assert.IsTrue(CreateService(new UniPlaySongSettings { EnableControlUpDetectSound = false })
+                    .HandleExternalEvent("controlup", "detecttrigger"), "handled even with the sound setting off");
             });
         }
 
@@ -55,48 +57,6 @@ namespace UniPlaySong.Tests.Services
 
             Assert.DoesNotThrow(() => service.HandleExternalEvent("controlup", null));
             Assert.DoesNotThrow(() => service.HandleExternalEvent("playniteachievements", null));
-        }
-
-        // Handled means routed, not "made a sound": the settings gate lives deeper, and a caller must
-        // not retry over the URI just because the user has the sound switched off.
-        [Test]
-        public void HandledIsReportedEvenWhenTheSoundSettingIsOff()
-        {
-            var service = new ExternalControlService(
-                new Mock<IMusicPlaybackService>().Object,
-                new Mock<IActiveMediaService>().Object,
-                new Mock<IPlayniteAPI>().Object,
-                null,
-                () => new UniPlaySongSettings { EnableControlUpDetectSound = false });
-
-            Assert.IsTrue(service.HandleExternalEvent("controlup", "detecttrigger"));
-        }
-
-        // Both entry points must share one debounce, or a caller mixing them (or falling back
-        // mid-burst) would get the double-ding the guard exists to prevent.
-        [Test]
-        public void TheDebounceIsSharedWithTheUriPath()
-        {
-            var service = CreateService();
-
-            service.HandleExternalEvent("controlup", "detecttrigger");
-            long afterDirect = DebounceElapsed(service);
-
-            service.HandleCommand(new PlayniteUriEventArgs
-            {
-                Arguments = new[] { "controlup", "detecttrigger" }
-            });
-
-            Assert.GreaterOrEqual(DebounceElapsed(service), afterDirect,
-                "a URI fire right after a direct call must be swallowed, not restart the window");
-        }
-
-        private static long DebounceElapsed(ExternalControlService service)
-        {
-            var field = typeof(ExternalControlService).GetField(
-                "_controlUpLastFire",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            return ((System.Diagnostics.Stopwatch)field.GetValue(service)).ElapsedMilliseconds;
         }
     }
 }

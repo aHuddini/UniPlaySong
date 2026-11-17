@@ -123,23 +123,14 @@ namespace UniPlaySong.Tests.Services
         // A game switch can load and close a track without ever sounding it. That is a loading
         // artefact, not a listen - but the floor is deliberately low enough that a track genuinely
         // heard for a fraction of a second still counts.
-        [Test]
-        public void NegligibleSpansAreIgnored()
+        [TestCase(0.004, 0)]   // a loading artefact
+        [TestCase(0.3, 1)]     // short, but listening that happened
+        public void NegligibleSpansAreIgnored_BriefRealOnesAreRecorded(double seconds, int expectedTracks)
         {
             var store = new ListeningHistoryStore(_dir, enabled: true);
-            store.Record(Span("a.mp3", 0.004, false, "g1", "Game One"));
+            store.Record(Span("a.mp3", seconds, false, "g1", "Game One"));
 
-            Assert.AreEqual(0, ListeningInsights.Summarize(store.Snapshot()).DistinctTracks);
-        }
-
-        [Test]
-        public void BriefButRealListeningIsStillRecorded()
-        {
-            var store = new ListeningHistoryStore(_dir, enabled: true);
-            store.Record(Span("a.mp3", 0.3, false, "g1", "Game One"));
-
-            Assert.AreEqual(1, ListeningInsights.Summarize(store.Snapshot()).DistinctTracks,
-                "a third of a second is short, but it is listening that happened");
+            Assert.AreEqual(expectedTracks, ListeningInsights.Summarize(store.Snapshot()).DistinctTracks);
         }
 
         [Test]

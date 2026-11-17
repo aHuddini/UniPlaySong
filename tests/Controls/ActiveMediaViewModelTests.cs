@@ -62,53 +62,9 @@ namespace UniPlaySong.Tests.Controls
             _service.Verify(s => s.SeekTo(It.IsAny<double>()), Times.Once);
         }
 
-        [Test]
-        public void TransportCommands_InvokeService()
-        {
-            _vm.PlayPauseCommand.Execute(null);
-            _vm.NextCommand.Execute(null);
-            _vm.PreviousCommand.Execute(null);
-            _service.Verify(s => s.PlayPause(), Times.Once);
-            _service.Verify(s => s.Next(), Times.Once);
-            _service.Verify(s => s.Previous(), Times.Once);
-        }
-
-        [Test]
-        public void Snapshot_Spotify_MirrorsIntoSettingsAndProps()
-        {
-            var snap = new ActiveMediaSnapshot(
-                true, ActiveMediaSourceKind.Spotify, "Spotify", true, false,
-                50.0, "1:00", "2:00", 0.0, true, true);
-            _service.Setup(s => s.GetSnapshot()).Returns(snap);
-
-            _vm.Attach();
-
-            // Simulate a service change.
-            _service.Raise(s => s.Changed += null);
-
-            Assert.IsTrue(_vm.HasActiveMedia);
-            Assert.AreEqual(ActiveMediaSourceKind.Spotify, _vm.SourceKind);
-            Assert.AreEqual(50.0, _vm.Progress);
-            Assert.IsTrue(_vm.IsPlaying);
-            // {PluginSettings} mirror updated too:
-            Assert.IsTrue(_settings.ActiveMediaHasMedia);
-            Assert.AreEqual(ActiveMediaSourceKind.Spotify, _settings.ActiveMediaSourceKind);
-            Assert.AreEqual(50.0, _settings.ActiveMediaProgress);
-        }
-
-        [Test]
-        public void VolumeSetter_TwoWay_CallsServiceSetVolume()
-        {
-            _vm.Volume = 65.0;
-            _service.Verify(s => s.SetVolume(65.0), Times.Once);
-        }
-
-        // Regression: OnServiceChanged now marshals MirrorToSettings (+ the raises)
-        // through OnUi via Dispatcher.BeginInvoke instead of running them inline on
-        // whatever thread raised Changed (e.g. a non-UI SMTC/WinRT callback thread).
-        // Application.Current is null in the test host, so OnUi falls through to its
-        // inline branch — this locks in that the marshalled path still performs the
-        // full settings mirror synchronously in that fallback case.
+        // Regression: OnServiceChanged marshals MirrorToSettings (+ the raises) through OnUi instead of running
+        // them on whatever thread raised Changed (e.g. an SMTC/WinRT callback). Application.Current is null in
+        // the test host, so OnUi runs inline: the VM props and the full {PluginSettings} mirror must still land.
         [Test]
         public void Changed_MirrorsSettings_EvenWhenMarshalled()
         {
@@ -119,6 +75,11 @@ namespace UniPlaySong.Tests.Controls
 
             _vm.Attach();
             _service.Raise(s => s.Changed += null);
+
+            Assert.IsTrue(_vm.HasActiveMedia);
+            Assert.AreEqual(ActiveMediaSourceKind.Spotify, _vm.SourceKind);
+            Assert.AreEqual(42.0, _vm.Progress);
+            Assert.IsTrue(_vm.IsPlaying);
 
             Assert.AreEqual(42.0, _settings.ActiveMediaProgress);
             Assert.AreEqual("0:42", _settings.ActiveMediaPositionText);

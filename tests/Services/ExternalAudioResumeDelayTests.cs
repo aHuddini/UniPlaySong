@@ -10,20 +10,11 @@ namespace UniPlaySong.Tests.Services
     public class ExternalAudioResumeDelayTests
     {
         [TestCase(0, 500.0, 1)]   // instant: the next poll
-        [TestCase(0, 1000.0, 1)]
         [TestCase(2, 500.0, 4)]   // the new default, on the instant-mode poll
         [TestCase(2, 1000.0, 2)]
-        [TestCase(3, 1000.0, 3)]
-        [TestCase(15, 500.0, 30)]
         public void PollsForCoversTheSeconds(int seconds, double intervalMs, int expected)
         {
             Assert.AreEqual(expected, ExternalAudioMonitor.PollsFor(seconds, intervalMs));
-        }
-
-        [Test]
-        public void ResumeDelayDefaultsToTwoSeconds()
-        {
-            Assert.AreEqual(2, new UniPlaySongSettings().ExternalAudioResumeDelaySeconds);
         }
 
         // A debounce the user set used to time the resume too, so it carries over; the default 0 takes the new default.

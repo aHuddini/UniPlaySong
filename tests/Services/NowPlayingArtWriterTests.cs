@@ -178,24 +178,16 @@ namespace UniPlaySong.Tests.Services
             }, left);
         }
 
+        // Nothing to write or sweep is a quiet no-op, never a throw. The sweep goes first, before anything can
+        // create the art folder.
         [Test]
-        public void WriteBytes_WithNullOrEmpty_ReturnsEmptyString()
+        public void EmptyInputs_AndAMissingArtFolder_AreNoOps()
         {
+            Assert.AreEqual(0, _writer.Sweep(), "no art folder yet");
             Assert.AreEqual(string.Empty, _writer.WriteBytes(null));
             Assert.AreEqual(string.Empty, _writer.WriteBytes(new byte[0]));
-        }
-
-        [Test]
-        public void WriteFromAudioFile_NonexistentOrNullPath_ReturnsEmptyString()
-        {
             Assert.AreEqual(string.Empty, _writer.WriteFromAudioFile(Path.Combine(_root, "nope.mp3")));
             Assert.AreEqual(string.Empty, _writer.WriteFromAudioFile(null));
-        }
-
-        [Test]
-        public void Sweep_WithNoArtFolder_ReturnsZero()
-        {
-            Assert.AreEqual(0, _writer.Sweep());
         }
     }
 }

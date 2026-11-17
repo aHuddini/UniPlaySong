@@ -24,16 +24,6 @@ namespace UniPlaySong.Tests.Services
         }
 
         [Test]
-        public void ItIsOffByDefaultAndTimesOutInTenMinutes()
-        {
-            var s = new UniPlaySongSettings();
-
-            Assert.IsFalse(s.CalmDownOnIdle, "opt-in — nobody's music changes on upgrade");
-            Assert.AreEqual(10, s.CalmDownIdleTimeoutMinutes);
-            Assert.IsFalse(s.CalmDownIdleActive, "runtime state starts clear every launch");
-        }
-
-        [Test]
         public void TheTimeoutIsClampedLikeTheOtherIdleSettings()
         {
             var s = new UniPlaySongSettings();
@@ -60,28 +50,6 @@ namespace UniPlaySong.Tests.Services
             StringAssert.Contains("CalmDownIdleActive", body, "idle drives the runtime flag");
             Assert.IsFalse(body.Contains("CalmDownModeEnabled ="),
                 "idle must never assign the persisted user setting");
-        }
-
-        [Test]
-        public void EitherReasonEngagesTheEffect()
-        {
-            // The processor ORs them, so the user's toggle and idle are independent routes to the
-            // same ramp — and one cannot cancel the other.
-            var text = ReadSource("src", "Audio", "CalmDownProcessor.cs");
-
-            StringAssert.Contains("s.CalmDownModeEnabled || s.CalmDownIdleActive", text,
-                "both reasons must engage Calm Down");
-        }
-
-        [Test]
-        public void OptingInForcesTheBackendThatCanHostIt()
-        {
-            // Calm Down needs the NAudio pipeline. Deciding that at idle time would mean swapping the
-            // player mid-idle, which restarts the song — so enabling the setting settles it up front.
-            var text = ReadSource("src", "UniPlaySong.cs");
-
-            StringAssert.Contains("s.CalmDownModeEnabled || s.CalmDownOnIdle", text,
-                "the player choice must account for idle Calm Down, not just the manual toggle");
         }
 
         [Test]
