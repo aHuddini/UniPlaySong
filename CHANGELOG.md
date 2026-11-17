@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to UniPlaySong will be documented in this file.
 
@@ -9,6 +9,7 @@ All notable changes to UniPlaySong will be documented in this file.
 ### Added
 
 - Added a Music Info Card entry to Playnite's own game menus, for games with music: below "Create Desktop Shortcut" in Desktop's right-click menu and below Play/Install in Fullscreen's game menu; the UniPlaySong submenu entry stays
+- Added a UI settings group (Desktop UI, Fullscreen UI) to hide UniPlaySong's game-menu groups and entries, Playnite-menu items and, shared with their original pages, the top panel, sidebar and taskbar controls
 
 ### Fixed
 

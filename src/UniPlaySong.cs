@@ -3068,7 +3068,8 @@ namespace UniPlaySong
             _musicInfoCardHandler = new Features.MusicInfoCard.MusicInfoCardHandler(
                 _api, _fileService, IsFullscreen, _playbackService);
             Features.MusicInfoCard.MusicInfoCardMenuEntries.Attach(
-                _api, game => _fileService.HasMusic(game), game => _musicInfoCardHandler.Show(game), IsFullscreen);
+                _api, game => _fileService.HasMusic(game), game => _musicInfoCardHandler.Show(game), IsFullscreen,
+                () => _settings);
             _normalizationDialogHandler = new Handlers.NormalizationDialogHandler(
                 _api, _normalizationService, _playbackService, _fileService, () => _settings);
             var conversionService = new Services.AudioConversionService(_fileLogger);
@@ -3089,7 +3090,7 @@ namespace UniPlaySong
             _gameMenuBuilder = new Menus.GameMenuBuilder(
                 _fileLogger, _fileService, _gameMenuHandler, _controllerDialogHandler, _musicInfoCardHandler,
                 _normalizationDialogHandler, _trimDialogHandler, _waveformTrimDialogHandler, _amplifyDialogHandler,
-                _nsfTrackManagerHandler, _hesSplitHandler, () => IsFullscreen, GetSpotifyMenuActions);
+                _nsfTrackManagerHandler, _hesSplitHandler, () => IsFullscreen, GetSpotifyMenuActions, () => _settings);
         }
 
         // NAudioMusicPlayer when a feature needs it (NeedsNAudio), otherwise SDL2MusicPlayer, falling back to the WPF
@@ -3849,11 +3850,12 @@ namespace UniPlaySong
         public override IEnumerable<MainMenuItem> GetMainMenuItems(GetMainMenuItemsArgs args)
         {
             var items = new List<MainMenuItem>();
+            var ui = _settings ?? new UniPlaySongSettings(); // Settings -> UI; Playnite asks on every menu open
 
             // "UniPlaySong Settings" opens the WPF settings dialog — that works in Desktop but isn't meaningful in
             // Fullscreen (no keyboard/mouse, no WPF dialog rendering). Hide it in Fullscreen; the quick-settings sub-menu
             // below replaces it for Fullscreen users.
-            if (IsDesktop)
+            if (IsDesktop && ui.DesktopMainMenuSettings)
             {
                 items.Add(new MainMenuItem
                 {
@@ -3863,17 +3865,22 @@ namespace UniPlaySong
             }
 
             // Export entire music library as M3U playlist
-            items.Add(new MainMenuItem
+            if (IsDesktop ? ui.DesktopMainMenuExportPlaylist : ui.FullscreenMainMenuExportPlaylist)
             {
-                Description = "Export Music Library Playlist (UPS)",
-                Action = _ => _gameMenuHandler.ExportLibraryPlaylist()
-            });
+                items.Add(new MainMenuItem
+                {
+                    Description = "Export Music Library Playlist (UPS)",
+                    Action = _ => _gameMenuHandler.ExportLibraryPlaylist()
+                });
+            }
 
             // Spotify transport commands — only when a controllable Spotify session is present. Same actions as the game
             // menu (one source of truth). MenuSection "@" places them at the TOP of the Fullscreen Extensions menu (not
             // nested under a UniPlaySong submenu), so they carry a "Spotify: " prefix for context (the shared action labels
             // are bare, since the game menu nests them under a "Spotify" submenu that already provides context).
-            foreach (var (label, action) in GetSpotifyMenuActions())
+            var spotifyActions = (IsDesktop ? ui.DesktopMainMenuSpotify : ui.FullscreenMainMenuSpotify)
+                ? GetSpotifyMenuActions() : new List<(string Label, Action Invoke)>();
+            foreach (var (label, action) in spotifyActions)
             {
                 items.Add(new MainMenuItem
                 {
@@ -3896,7 +3903,7 @@ namespace UniPlaySong
             // Fullscreen-only quick settings: the full WPF settings dialog isn't
             // controller-navigable, so we surface the most-commonly-changed toggles
             // and picker menus directly under Menu > Extensions > UniPlaySong.
-            if (IsFullscreen)
+            if (IsFullscreen && ui.FullscreenMainMenuQuickSettings)
             {
                 items.AddRange(BuildFullscreenQuickSettings());
             }

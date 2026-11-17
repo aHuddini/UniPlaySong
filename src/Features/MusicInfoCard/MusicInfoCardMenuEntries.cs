@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Linq;
 using System.Windows;
@@ -25,12 +25,15 @@ namespace UniPlaySong.Features.MusicInfoCard
         private static IPlayniteAPI _api;
         private static Func<Game, bool> _hasMusic;
         private static Action<Game> _show;
+        private static Func<UniPlaySongSettings> _getSettings; // read live: Settings -> UI can hide either entry
 
-        public static void Attach(IPlayniteAPI api, Func<Game, bool> hasMusic, Action<Game> show, bool isFullscreen)
+        public static void Attach(IPlayniteAPI api, Func<Game, bool> hasMusic, Action<Game> show, bool isFullscreen,
+            Func<UniPlaySongSettings> getSettings)
         {
             _api = api;
             _hasMusic = hasMusic;
             _show = show;
+            _getSettings = getSettings;
 
             // Class handlers can't be removed, so register once per process.
             if (_registered) return;
@@ -55,6 +58,7 @@ namespace UniPlaySong.Features.MusicInfoCard
         {
             try
             {
+                if (_getSettings?.Invoke()?.DesktopMenuMusicInfoCardShortcut == false) return;
                 var selected = _api?.MainView?.SelectedGames?.Take(2).ToList();
                 if (selected == null || selected.Count != 1) return;
                 var game = selected[0];
@@ -83,6 +87,7 @@ namespace UniPlaySong.Features.MusicInfoCard
         private static void OnWindowLoaded(object sender, RoutedEventArgs e)
         {
             if (!(sender is Window window) || window.GetType().Name != "GameMenuWindow") return;
+            if (_getSettings?.Invoke()?.FullscreenMenuMusicInfoCardGameMenu == false) return;
 
             try
             {

@@ -328,6 +328,18 @@
             </TabControl>
         </TabItem>
 
+        <!-- Which UniPlaySong entries appear in Playnite's menus and panels, per mode. -->
+        <TabItem Header="UI">
+            <TabControl Style="{StaticResource NavStrip}" Tag="UI">
+                <TabItem Header="Desktop UI">
+                    <settings:DesktopUiPage/>
+                </TabItem>
+                <TabItem Header="Fullscreen UI">
+                    <settings:FullscreenUiPage/>
+                </TabItem>
+            </TabControl>
+        </TabItem>
+
         <TabItem Header="Advanced">
             <TabControl Style="{StaticResource NavStrip}" Tag="Advanced">
                 <TabItem Header="Theme Support">

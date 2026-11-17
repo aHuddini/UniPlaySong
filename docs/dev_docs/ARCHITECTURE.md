@@ -700,6 +700,7 @@ page it appears on will be cleared by a button the user never associated with it
 | **Live Effects** | Volume, Fade Transitions, Live Effects, Equalizer (EQ), Calm Down, Visualizers |
 | **Gamification** | Library Events, Achievements (Legacy), ControlUp, Miscellaneous |
 | **Library** | Statistics, Audio Editing, Audio Management |
+| **UI** | Desktop UI, Fullscreen UI (which menu entries and panel buttons appear; the top panel, sidebar and taskbar toggles are shared with their original pages and stay filed in those groups) |
 | **Advanced** | Theme Support, Backup, Migration, Cleanup, Debug, Experimental |
 
 Notes worth knowing before moving anything:

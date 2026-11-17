@@ -287,7 +287,7 @@ namespace UniPlaySong.Services
         {
             SettingsGroups.About, SettingsGroups.QuickStart, SettingsGroups.Setup, SettingsGroups.General,
             SettingsGroups.Playback, SettingsGroups.Pauses, SettingsGroups.LiveEffects, SettingsGroups.Gamification,
-            SettingsGroups.Library, SettingsGroups.Advanced,
+            SettingsGroups.Library, SettingsGroups.UI, SettingsGroups.Advanced,
         };
 
         // "PauseOnFocusLoss" -> "Pause On Focus Loss", "FFmpegPath" -> "FFmpeg Path", "PS5ThemeCompatMode" -> "PS5 Theme Compat Mode".

@@ -135,6 +135,7 @@ Download or update directly from the Playnite add-on database, or browse Generic
 - **Live Effects**: Volume, fade transitions, real-time effects and reverb presets, Calm Down, spectrum visualizer
 - **Gamification**: Completion celebration (fanfare + toast), achievement unlock sounds (legacy — PlayniteAchievements plays its own now), ControlUp controller-detected sound, abandoned-status sound + toast, jingle volume
 - **Library**: Statistics with audio metrics, EBU R128 normalization and silence trimming, audio management
+- **UI**: Choose which UniPlaySong entries and buttons appear in Playnite's menus, panels and sidebar, separately for Desktop and Fullscreen
 - **Advanced**: Theme support (overlay/video pause opt-outs, PS5-Experience mode), backup, migration from PlayniteSound, cleanup and factory reset, debug logging, experimental features
 
 **Music Location**: `%APPDATA%\Playnite\ExtraMetadata\UniPlaySong\Games\{GameId}\`

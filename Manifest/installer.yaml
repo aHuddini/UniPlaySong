@@ -6,6 +6,7 @@ Packages:
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.5/UniPlaySong-1_9_5.pext'
     Changelog:
       - '[New] Music Info Card in the game menu: below "Create Desktop Shortcut" (Desktop) and below Play/Install (Fullscreen).'
+      - '[New Setting] UI -> Desktop UI / Fullscreen UI: choose which UniPlaySong menu entries and buttons appear.'
       - '[Fix] Auto-tags ([UPS] Has Music / No Music) now update after a library refresh, bulk download or URL download.'
       - '[Fix] Bulk download: Back in the song picker returns to the album list instead of skipping the game.'
   - Version: 1.9.4

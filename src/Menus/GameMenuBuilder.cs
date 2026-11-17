@@ -26,6 +26,7 @@ namespace UniPlaySong.Menus
         private readonly Handlers.HesSplitHandler _hesSplitHandler;
         private readonly Func<bool> _isFullscreen;
         private readonly Func<List<(string Label, Action Invoke)>> _getSpotifyMenuActions; // shared with the main menu
+        private readonly Func<UniPlaySongSettings> _getSettings; // read per build: a save swaps the settings object
 
         public GameMenuBuilder(
             FileLogger fileLogger,
@@ -40,8 +41,10 @@ namespace UniPlaySong.Menus
             Handlers.NsfTrackManagerHandler nsfTrackManagerHandler,
             Handlers.HesSplitHandler hesSplitHandler,
             Func<bool> isFullscreen,
-            Func<List<(string Label, Action Invoke)>> getSpotifyMenuActions)
+            Func<List<(string Label, Action Invoke)>> getSpotifyMenuActions,
+            Func<UniPlaySongSettings> getSettings)
         {
+            _getSettings = getSettings;
             _fileLogger = fileLogger;
             _fileService = fileService;
             _gameMenuHandler = gameMenuHandler;
@@ -65,6 +68,16 @@ namespace UniPlaySong.Menus
             var items = new List<GameMenuItem>();
             var games = args.Games.ToList();
 
+            // Which entries the user keeps (Settings -> UI). Playnite rebuilds this menu on every open, so a change
+            // applies on the next right-click.
+            var ui = _getSettings?.Invoke() ?? new UniPlaySongSettings();
+            bool fs = _isFullscreen();
+            bool bulk = fs ? ui.FullscreenMenuBulkActions : ui.DesktopMenuBulkActions;
+            bool infoLine = fs ? ui.FullscreenMenuInfoLine : ui.DesktopMenuInfoLine;
+            bool musicInfoCard = fs ? ui.FullscreenMenuMusicInfoCard : ui.DesktopMenuMusicInfoCard;
+            bool spotify = fs ? ui.FullscreenMenuSpotify : ui.DesktopMenuSpotify;
+            void AddIf(bool show, GameMenuItem item) { if (show) items.Add(item); }
+
             // Debug: Log how many games Playnite is passing to us
             _fileLogger?.Debug($"[Menu] GetGameMenuItems called with {games.Count} game(s)");
 
@@ -82,7 +95,7 @@ namespace UniPlaySong.Menus
             if (games.Count > 1)
             {
                 // Download All - uses Source.All (tries KHInsider first, falls back to YouTube)
-                items.Add(new GameMenuItem
+                AddIf(bulk, new GameMenuItem
                 {
                     Description = $"Download All ({games.Count} games)",
                     MenuSection = menuSection,
@@ -90,7 +103,7 @@ namespace UniPlaySong.Menus
                 });
 
                 // Normalize All - bulk normalize selected games
-                items.Add(new GameMenuItem
+                AddIf(bulk, new GameMenuItem
                 {
                     Description = $"Normalize All ({games.Count} games)",
                     MenuSection = menuSection,
@@ -98,7 +111,7 @@ namespace UniPlaySong.Menus
                 });
 
                 // Trim All - bulk trim selected games
-                items.Add(new GameMenuItem
+                AddIf(bulk, new GameMenuItem
                 {
                     Description = $"Trim All ({games.Count} games)",
                     MenuSection = menuSection,
@@ -106,7 +119,7 @@ namespace UniPlaySong.Menus
                 });
 
                 // Delete Music (All) - bulk delete music for selected games
-                items.Add(new GameMenuItem
+                AddIf(bulk, new GameMenuItem
                 {
                     Description = $"Delete Music (All) ({games.Count} games)",
                     MenuSection = menuSection,
@@ -114,7 +127,7 @@ namespace UniPlaySong.Menus
                 });
 
                 // Export M3U Playlist - combined playlist for selected games
-                items.Add(new GameMenuItem
+                AddIf(bulk, new GameMenuItem
                 {
                     Description = $"Export M3U Playlist ({games.Count} games)",
                     MenuSection = menuSection,
@@ -138,7 +151,7 @@ namespace UniPlaySong.Menus
                     });
                 }
 
-                return items;
+                return TidySeparators(items);
             }
 
             // Single game selection
@@ -148,7 +161,7 @@ namespace UniPlaySong.Menus
             if (songs.Count > 0)
             {
                 long folderBytes = _fileService.GetMusicFolderSize(game);
-                items.Add(new GameMenuItem
+                AddIf(infoLine, new GameMenuItem
                 {
                     Description = $"[ {songs.Count} {(songs.Count == 1 ? "song" : "songs")} | {FormatFileSize(folderBytes)} ]",
                     MenuSection = menuSection
@@ -159,7 +172,7 @@ namespace UniPlaySong.Menus
                 // more" affordance. Picks Desktop vs Fullscreen flavor internally. No emoji prefix — Playnite Desktop's
                 // right-click menu can silently drop items whose Description starts with chars it can't render through its font
                 // fallback chain; Fullscreen controller dialogs render emojis fine because they use a different UI surface.
-                items.Add(new GameMenuItem
+                AddIf(musicInfoCard, new GameMenuItem
                 {
                     Description = "Music Info Card",
                     MenuSection = menuSection,
@@ -173,7 +186,7 @@ namespace UniPlaySong.Menus
                 var spotifySection = menuSection + "|Spotify";
                 foreach (var (label, action) in _getSpotifyMenuActions())
                 {
-                    items.Add(new GameMenuItem
+                    AddIf(spotify, new GameMenuItem
                     {
                         Description = label,
                         MenuSection = spotifySection,
@@ -197,7 +210,7 @@ namespace UniPlaySong.Menus
                 var pcModeSection = $"{menuSection}|🖥️ PC Mode";
 
                 // Download Music (🎮 Mode) - at parent level for quick access
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuDownloadMusic, new GameMenuItem
                 {
                     Description = "🎮 Download Music",
                     MenuSection = menuSection,
@@ -205,14 +218,14 @@ namespace UniPlaySong.Menus
                 });
 
                 // === Primary Song Submenu (🎮 Mode options) ===
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuPrimarySong, new GameMenuItem
                 {
                     Description = "🎮 Set Primary Song",
                     MenuSection = primarySongSection,
                     Action = _ => _controllerDialogHandler.ShowSetPrimarySong(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuPrimarySong, new GameMenuItem
                 {
                     Description = "🎮 Clear Primary Song",
                     MenuSection = primarySongSection,
@@ -220,56 +233,56 @@ namespace UniPlaySong.Menus
                 });
 
                 // === Audio Processing Submenu ===
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuAudioProcessing, new GameMenuItem
                 {
                     Description = "🎮 Normalize Single Song",
                     MenuSection = audioProcessingSection,
                     Action = _ => _controllerDialogHandler.ShowNormalizeIndividualSong(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuAudioProcessing, new GameMenuItem
                 {
                     Description = "Normalize Music Folder",
                     MenuSection = audioProcessingSection,
                     Action = _ => _normalizationDialogHandler?.NormalizeSelectedGamesFullscreen(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuAudioProcessing, new GameMenuItem
                 {
                     Description = "🎮 Silence Trim - Single Song",
                     MenuSection = audioProcessingSection,
                     Action = _ => _controllerDialogHandler.ShowTrimIndividualSong(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuAudioProcessing, new GameMenuItem
                 {
                     Description = "Silence Trim - Music Folder",
                     MenuSection = audioProcessingSection,
                     Action = _ => _trimDialogHandler?.TrimSelectedGamesFullscreen(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuAudioProcessing, new GameMenuItem
                 {
                     Description = "🎮 Precise Trim",
                     MenuSection = audioProcessingSection,
                     Action = _ => _waveformTrimDialogHandler.ShowControllerPreciseTrimDialog(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuAudioProcessing, new GameMenuItem
                 {
                     Description = "🎮 Amplify Audio",
                     MenuSection = audioProcessingSection,
                     Action = _ => _amplifyDialogHandler.ShowControllerAmplifyDialog(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuAudioProcessing, new GameMenuItem
                 {
                     Description = "🎮 Repair Audio File",
                     MenuSection = audioProcessingSection,
                     Action = _ => _controllerDialogHandler.ShowRepairIndividualSong(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuAudioProcessing, new GameMenuItem
                 {
                     Description = "Repair Music Folder",
                     MenuSection = audioProcessingSection,
@@ -277,28 +290,28 @@ namespace UniPlaySong.Menus
                 });
 
                 // === Manage Music Submenu (🎮 Mode options) ===
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuManageMusic, new GameMenuItem
                 {
                     Description = "🎮 Add Music File",
                     MenuSection = manageMusicSection,
                     Action = _ => _controllerDialogHandler.ShowAddMusicFile(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuManageMusic, new GameMenuItem
                 {
                     Description = "🎮 Add Music Folder",
                     MenuSection = manageMusicSection,
                     Action = _ => _controllerDialogHandler.ShowAddMusicFolder(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuManageMusic, new GameMenuItem
                 {
                     Description = "🎮 Delete Songs",
                     MenuSection = manageMusicSection,
                     Action = _ => _controllerDialogHandler.ShowDeleteSongs(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuManageMusic, new GameMenuItem
                 {
                     Description = "Open Music Folder",
                     MenuSection = manageMusicSection,
@@ -306,28 +319,28 @@ namespace UniPlaySong.Menus
                 });
 
                 // === PC Mode Submenu (Desktop dialogs for keyboard/mouse users) ===
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuPcMode, new GameMenuItem
                 {
                     Description = "🖥️ Download Music",
                     MenuSection = pcModeSection,
                     Action = _ => _gameMenuHandler.DownloadMusicForGame(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuPcMode, new GameMenuItem
                 {
                     Description = "🖥️ Download From URL",
                     MenuSection = pcModeSection,
                     Action = _ => _gameMenuHandler.DownloadFromUrl(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuPcMode, new GameMenuItem
                 {
                     Description = "🖥️ Set Primary Song",
                     MenuSection = pcModeSection,
                     Action = _ => _gameMenuHandler.SetPrimarySong(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.FullscreenMenuPcMode, new GameMenuItem
                 {
                     Description = "🖥️Clear Primary Song",
                     MenuSection = pcModeSection,
@@ -342,7 +355,7 @@ namespace UniPlaySong.Menus
                 var controllerModeSection = $"{menuSection}|🎮 Controller Mode";
 
                 // Download Music - Desktop download dialog with source selection
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuDownloadMusic, new GameMenuItem
                 {
                     Description = "Download Music",
                     MenuSection = menuSection,
@@ -350,7 +363,7 @@ namespace UniPlaySong.Menus
                 });
 
                 // Download From URL - Download audio from a specific YouTube URL
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuDownloadFromUrl, new GameMenuItem
                 {
                     Description = "Download From URL",
                     MenuSection = menuSection,
@@ -358,7 +371,7 @@ namespace UniPlaySong.Menus
                 });
 
                 // Add Music File - Browse local files to add to game
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuAddMusicFile, new GameMenuItem
                 {
                     Description = "Add Music File",
                     MenuSection = menuSection,
@@ -366,7 +379,7 @@ namespace UniPlaySong.Menus
                 });
 
                 // Add Music Folder - copy every playable file in a folder (plus PSF libraries / HES sidecars)
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuAddMusicFolder, new GameMenuItem
                 {
                     Description = "Add Music Folder",
                     MenuSection = menuSection,
@@ -381,7 +394,7 @@ namespace UniPlaySong.Menus
                 });
 
                 // Set Primary Song - Desktop file picker
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuPrimarySong, new GameMenuItem
                 {
                     Description = "Set Primary Song",
                     MenuSection = menuSection,
@@ -389,7 +402,7 @@ namespace UniPlaySong.Menus
                 });
 
                 // Clear Primary Song - Desktop
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuPrimarySong, new GameMenuItem
                 {
                     Description = "Clear Primary Song",
                     MenuSection = menuSection,
@@ -397,28 +410,28 @@ namespace UniPlaySong.Menus
                 });
 
                 // === Audio Processing Submenu (Normalize and Silence Trim options) ===
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuAudioProcessing, new GameMenuItem
                 {
                     Description = "Normalize Single Song",
                     MenuSection = audioProcessingSection,
                     Action = _ => _gameMenuHandler.ShowNormalizeIndividualSong(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuAudioProcessing, new GameMenuItem
                 {
                     Description = "Normalize Music Folder",
                     MenuSection = audioProcessingSection,
                     Action = _ => _normalizationDialogHandler.NormalizeSelectedGames(new List<Game> { game })
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuAudioProcessing, new GameMenuItem
                 {
                     Description = "Silence Trim - Single Song",
                     MenuSection = audioProcessingSection,
                     Action = _ => _gameMenuHandler.ShowTrimIndividualSong(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuAudioProcessing, new GameMenuItem
                 {
                     Description = "Silence Trim - Music Folder",
                     MenuSection = audioProcessingSection,
@@ -426,28 +439,28 @@ namespace UniPlaySong.Menus
                 });
 
                 // === Audio Editing Submenu (Precise Trim, Amplify, and Repair options) ===
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuAudioEditing, new GameMenuItem
                 {
                     Description = "Precise Trim",
                     MenuSection = audioEditingSection,
                     Action = _ => _waveformTrimDialogHandler.ShowPreciseTrimDialog(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuAudioEditing, new GameMenuItem
                 {
                     Description = "Amplify Audio",
                     MenuSection = audioEditingSection,
                     Action = _ => _amplifyDialogHandler.ShowAmplifyDialog(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuAudioEditing, new GameMenuItem
                 {
                     Description = "Repair Audio File",
                     MenuSection = audioEditingSection,
                     Action = _ => _gameMenuHandler.ShowRepairAudioFile(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuAudioEditing, new GameMenuItem
                 {
                     Description = "Repair Music Folder",
                     MenuSection = audioEditingSection,
@@ -459,7 +472,7 @@ namespace UniPlaySong.Menus
                 bool hasNsf = songs != null && songs.Any(s => s.EndsWith(".nsf", StringComparison.OrdinalIgnoreCase));
                 if (hasNsf)
                 {
-                    items.Add(new GameMenuItem
+                    AddIf(ui.DesktopMenuChiptunes, new GameMenuItem
                     {
                         Description = "NSF Management",
                         MenuSection = chiptunesSection,
@@ -472,7 +485,7 @@ namespace UniPlaySong.Menus
                 // discovery — file enumeration + small sidecar parse.
                 if (_hesSplitHandler != null && _hesSplitHandler.FindSplittable(game).Count > 0)
                 {
-                    items.Add(new GameMenuItem
+                    AddIf(ui.DesktopMenuChiptunes, new GameMenuItem
                     {
                         Description = "Split HES Tracks",
                         MenuSection = chiptunesSection,
@@ -488,7 +501,7 @@ namespace UniPlaySong.Menus
                 });
 
                 // Open Music Folder
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuOpenMusicFolder, new GameMenuItem
                 {
                     Description = "Open Music Folder",
                     MenuSection = menuSection,
@@ -504,7 +517,7 @@ namespace UniPlaySong.Menus
                 // });
 
                 // Export M3U Playlist
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuExportPlaylist, new GameMenuItem
                 {
                     Description = "Export M3U Playlist",
                     MenuSection = menuSection,
@@ -512,35 +525,35 @@ namespace UniPlaySong.Menus
                 });
 
                 // === Controller Mode Submenu (Controller-friendly dialogs) ===
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuControllerMode, new GameMenuItem
                 {
                     Description = "🎮 Download Music",
                     MenuSection = controllerModeSection,
                     Action = _ => _controllerDialogHandler.ShowDownloadDialog(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuControllerMode, new GameMenuItem
                 {
                     Description = "🎮 Set Primary Song",
                     MenuSection = controllerModeSection,
                     Action = _ => _controllerDialogHandler.ShowSetPrimarySong(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuControllerMode, new GameMenuItem
                 {
                     Description = "🎮 Clear Primary Song",
                     MenuSection = controllerModeSection,
                     Action = _ => _controllerDialogHandler.ClearPrimarySong(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuControllerMode, new GameMenuItem
                 {
                     Description = "🎮 Delete Songs",
                     MenuSection = controllerModeSection,
                     Action = _ => _controllerDialogHandler.ShowDeleteSongs(game)
                 });
 
-                items.Add(new GameMenuItem
+                AddIf(ui.DesktopMenuControllerMode, new GameMenuItem
                 {
                     Description = "🎮 Precise Trim",
                     MenuSection = controllerModeSection,
@@ -548,7 +561,25 @@ namespace UniPlaySong.Menus
                 });
             }
 
-            return items;
+            return TidySeparators(items);
+        }
+
+        // Hidden entries can leave a separator first, last or doubled within its submenu; drop those.
+        internal static List<GameMenuItem> TidySeparators(List<GameMenuItem> items)
+        {
+            var kept = new List<GameMenuItem>(items.Count);
+            var lastInSection = new Dictionary<string, GameMenuItem>();
+            foreach (var item in items)
+            {
+                var section = item.MenuSection ?? string.Empty;
+                lastInSection.TryGetValue(section, out var previous);
+                if (item.Description == "-" && (previous == null || previous.Description == "-")) continue;
+                kept.Add(item);
+                lastInSection[section] = item;
+            }
+            foreach (var last in lastInSection.Values)
+                if (last.Description == "-") kept.Remove(last);
+            return kept;
         }
 
         private static string FormatFileSize(long bytes)

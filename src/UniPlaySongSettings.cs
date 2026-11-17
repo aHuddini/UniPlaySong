@@ -3407,5 +3407,108 @@ namespace UniPlaySong
             get => sidebarGlowMode;
             set { sidebarGlowMode = value; OnPropertyChanged(); }
         }
+
+        #region UI - which menu entries appear (UI -> Desktop UI / Fullscreen UI)
+
+        // Playnite asks for game and main menu items each time a menu opens, so these apply on the next open, no
+        // restart. All default to true: a fresh install shows every entry, as before these settings existed.
+
+        private bool desktopMenuInfoLine = true;
+        public bool DesktopMenuInfoLine { get => desktopMenuInfoLine; set { desktopMenuInfoLine = value; OnPropertyChanged(); } }
+
+        private bool desktopMenuMusicInfoCard = true;
+        public bool DesktopMenuMusicInfoCard { get => desktopMenuMusicInfoCard; set { desktopMenuMusicInfoCard = value; OnPropertyChanged(); } }
+
+        private bool desktopMenuMusicInfoCardShortcut = true;
+        public bool DesktopMenuMusicInfoCardShortcut { get => desktopMenuMusicInfoCardShortcut; set { desktopMenuMusicInfoCardShortcut = value; OnPropertyChanged(); } }
+
+        private bool desktopMenuSpotify = true;
+        public bool DesktopMenuSpotify { get => desktopMenuSpotify; set { desktopMenuSpotify = value; OnPropertyChanged(); } }
+
+        private bool desktopMenuDownloadMusic = true;
+        public bool DesktopMenuDownloadMusic { get => desktopMenuDownloadMusic; set { desktopMenuDownloadMusic = value; OnPropertyChanged(); } }
+
+        private bool desktopMenuDownloadFromUrl = true;
+        public bool DesktopMenuDownloadFromUrl { get => desktopMenuDownloadFromUrl; set { desktopMenuDownloadFromUrl = value; OnPropertyChanged(); } }
+
+        private bool desktopMenuAddMusicFile = true;
+        public bool DesktopMenuAddMusicFile { get => desktopMenuAddMusicFile; set { desktopMenuAddMusicFile = value; OnPropertyChanged(); } }
+
+        private bool desktopMenuAddMusicFolder = true;
+        public bool DesktopMenuAddMusicFolder { get => desktopMenuAddMusicFolder; set { desktopMenuAddMusicFolder = value; OnPropertyChanged(); } }
+
+        private bool desktopMenuPrimarySong = true;
+        public bool DesktopMenuPrimarySong { get => desktopMenuPrimarySong; set { desktopMenuPrimarySong = value; OnPropertyChanged(); } }
+
+        private bool desktopMenuAudioProcessing = true;
+        public bool DesktopMenuAudioProcessing { get => desktopMenuAudioProcessing; set { desktopMenuAudioProcessing = value; OnPropertyChanged(); } }
+
+        private bool desktopMenuAudioEditing = true;
+        public bool DesktopMenuAudioEditing { get => desktopMenuAudioEditing; set { desktopMenuAudioEditing = value; OnPropertyChanged(); } }
+
+        private bool desktopMenuChiptunes = true;
+        public bool DesktopMenuChiptunes { get => desktopMenuChiptunes; set { desktopMenuChiptunes = value; OnPropertyChanged(); } }
+
+        private bool desktopMenuOpenMusicFolder = true;
+        public bool DesktopMenuOpenMusicFolder { get => desktopMenuOpenMusicFolder; set { desktopMenuOpenMusicFolder = value; OnPropertyChanged(); } }
+
+        private bool desktopMenuExportPlaylist = true;
+        public bool DesktopMenuExportPlaylist { get => desktopMenuExportPlaylist; set { desktopMenuExportPlaylist = value; OnPropertyChanged(); } }
+
+        private bool desktopMenuControllerMode = true;
+        public bool DesktopMenuControllerMode { get => desktopMenuControllerMode; set { desktopMenuControllerMode = value; OnPropertyChanged(); } }
+
+        private bool desktopMenuBulkActions = true;
+        public bool DesktopMenuBulkActions { get => desktopMenuBulkActions; set { desktopMenuBulkActions = value; OnPropertyChanged(); } }
+
+        private bool desktopMainMenuSettings = true;
+        public bool DesktopMainMenuSettings { get => desktopMainMenuSettings; set { desktopMainMenuSettings = value; OnPropertyChanged(); } }
+
+        private bool desktopMainMenuExportPlaylist = true;
+        public bool DesktopMainMenuExportPlaylist { get => desktopMainMenuExportPlaylist; set { desktopMainMenuExportPlaylist = value; OnPropertyChanged(); } }
+
+        private bool desktopMainMenuSpotify = true;
+        public bool DesktopMainMenuSpotify { get => desktopMainMenuSpotify; set { desktopMainMenuSpotify = value; OnPropertyChanged(); } }
+
+        private bool fullscreenMenuInfoLine = true;
+        public bool FullscreenMenuInfoLine { get => fullscreenMenuInfoLine; set { fullscreenMenuInfoLine = value; OnPropertyChanged(); } }
+
+        private bool fullscreenMenuMusicInfoCard = true;
+        public bool FullscreenMenuMusicInfoCard { get => fullscreenMenuMusicInfoCard; set { fullscreenMenuMusicInfoCard = value; OnPropertyChanged(); } }
+
+        private bool fullscreenMenuMusicInfoCardGameMenu = true;
+        public bool FullscreenMenuMusicInfoCardGameMenu { get => fullscreenMenuMusicInfoCardGameMenu; set { fullscreenMenuMusicInfoCardGameMenu = value; OnPropertyChanged(); } }
+
+        private bool fullscreenMenuSpotify = true;
+        public bool FullscreenMenuSpotify { get => fullscreenMenuSpotify; set { fullscreenMenuSpotify = value; OnPropertyChanged(); } }
+
+        private bool fullscreenMenuDownloadMusic = true;
+        public bool FullscreenMenuDownloadMusic { get => fullscreenMenuDownloadMusic; set { fullscreenMenuDownloadMusic = value; OnPropertyChanged(); } }
+
+        private bool fullscreenMenuPrimarySong = true;
+        public bool FullscreenMenuPrimarySong { get => fullscreenMenuPrimarySong; set { fullscreenMenuPrimarySong = value; OnPropertyChanged(); } }
+
+        private bool fullscreenMenuAudioProcessing = true;
+        public bool FullscreenMenuAudioProcessing { get => fullscreenMenuAudioProcessing; set { fullscreenMenuAudioProcessing = value; OnPropertyChanged(); } }
+
+        private bool fullscreenMenuManageMusic = true;
+        public bool FullscreenMenuManageMusic { get => fullscreenMenuManageMusic; set { fullscreenMenuManageMusic = value; OnPropertyChanged(); } }
+
+        private bool fullscreenMenuPcMode = true;
+        public bool FullscreenMenuPcMode { get => fullscreenMenuPcMode; set { fullscreenMenuPcMode = value; OnPropertyChanged(); } }
+
+        private bool fullscreenMenuBulkActions = true;
+        public bool FullscreenMenuBulkActions { get => fullscreenMenuBulkActions; set { fullscreenMenuBulkActions = value; OnPropertyChanged(); } }
+
+        private bool fullscreenMainMenuSpotify = true;
+        public bool FullscreenMainMenuSpotify { get => fullscreenMainMenuSpotify; set { fullscreenMainMenuSpotify = value; OnPropertyChanged(); } }
+
+        private bool fullscreenMainMenuQuickSettings = true;
+        public bool FullscreenMainMenuQuickSettings { get => fullscreenMainMenuQuickSettings; set { fullscreenMainMenuQuickSettings = value; OnPropertyChanged(); } }
+
+        private bool fullscreenMainMenuExportPlaylist = true;
+        public bool FullscreenMainMenuExportPlaylist { get => fullscreenMainMenuExportPlaylist; set { fullscreenMainMenuExportPlaylist = value; OnPropertyChanged(); } }
+
+        #endregion
     }
 }

@@ -1,0 +1,72 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.FullscreenUiPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="800" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ups:SharedResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Fullscreen UI" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Choose which UniPlaySong entries appear in Playnite's Fullscreen menus. Changes show the next time you open a menu."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Game Menu" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Music Info Card below Play or Install"
+                      IsChecked="{Binding Settings.FullscreenMenuMusicInfoCardGameMenu}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="A button in the game menu itself, for games with music."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="UniPlaySong Game Options" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+            <TextBlock Style="{StaticResource UpsHint}" Text="The UniPlaySong submenu under Extensions in the game menu."/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Song count and folder size"
+                      IsChecked="{Binding Settings.FullscreenMenuInfoLine}"/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Music Info Card"
+                      IsChecked="{Binding Settings.FullscreenMenuMusicInfoCard}"/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Spotify controls"
+                      IsChecked="{Binding Settings.FullscreenMenuSpotify}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="Shown while Spotify is playing."/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Download Music"
+                      IsChecked="{Binding Settings.FullscreenMenuDownloadMusic}"/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Primary Song submenu"
+                      IsChecked="{Binding Settings.FullscreenMenuPrimarySong}"/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Audio Processing submenu"
+                      IsChecked="{Binding Settings.FullscreenMenuAudioProcessing}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="Normalize, Silence Trim, Precise Trim, Amplify and Repair."/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Manage Music submenu"
+                      IsChecked="{Binding Settings.FullscreenMenuManageMusic}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="Add Music File, Add Music Folder, Delete Songs and Open Music Folder."/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="PC Mode submenu"
+                      IsChecked="{Binding Settings.FullscreenMenuPcMode}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="The keyboard-and-mouse dialogs, for a PC used in Fullscreen."/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Actions for several selected games"
+                      IsChecked="{Binding Settings.FullscreenMenuBulkActions}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="Download All, Normalize All, Trim All, Delete Music and Export M3U Playlist. Retry Failed Downloads always shows when there are failures."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Playnite Menu" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Spotify controls"
+                      IsChecked="{Binding Settings.FullscreenMainMenuSpotify}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="At the top of the menu while Spotify is playing."/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Quick settings"
+                      IsChecked="{Binding Settings.FullscreenMainMenuQuickSettings}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="The UniPlaySong toggles you can change with a controller. Without them, Fullscreen has no way to change settings: switch to Desktop mode to turn them back on."/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Export Music Library Playlist"
+                      IsChecked="{Binding Settings.FullscreenMainMenuExportPlaylist}"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

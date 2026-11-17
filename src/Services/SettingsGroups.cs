@@ -20,6 +20,7 @@ namespace UniPlaySong.Services
         internal const string LiveEffects = "Live Effects";
         internal const string Gamification = "Gamification";
         internal const string Library = "Library";
+        internal const string UI = "UI";
         internal const string Advanced = "Advanced";
 
         internal static readonly IReadOnlyDictionary<string, string[]> Map =
@@ -332,6 +333,43 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.PreciseTrimSuffix),
                     nameof(UniPlaySongSettings.SkipAlreadyNormalized),
                     nameof(UniPlaySongSettings.TrimSuffix),
+                },
+                // The UI pages also show the top panel, sidebar and taskbar toggles; those stay filed with the
+                // group of the page they first lived on (Media Controls, General, Experimental).
+                [UI] = new string[]
+                {
+                    nameof(UniPlaySongSettings.DesktopMainMenuExportPlaylist),
+                    nameof(UniPlaySongSettings.DesktopMainMenuSettings),
+                    nameof(UniPlaySongSettings.DesktopMainMenuSpotify),
+                    nameof(UniPlaySongSettings.DesktopMenuAddMusicFile),
+                    nameof(UniPlaySongSettings.DesktopMenuAddMusicFolder),
+                    nameof(UniPlaySongSettings.DesktopMenuAudioEditing),
+                    nameof(UniPlaySongSettings.DesktopMenuAudioProcessing),
+                    nameof(UniPlaySongSettings.DesktopMenuBulkActions),
+                    nameof(UniPlaySongSettings.DesktopMenuChiptunes),
+                    nameof(UniPlaySongSettings.DesktopMenuControllerMode),
+                    nameof(UniPlaySongSettings.DesktopMenuDownloadFromUrl),
+                    nameof(UniPlaySongSettings.DesktopMenuDownloadMusic),
+                    nameof(UniPlaySongSettings.DesktopMenuExportPlaylist),
+                    nameof(UniPlaySongSettings.DesktopMenuInfoLine),
+                    nameof(UniPlaySongSettings.DesktopMenuMusicInfoCard),
+                    nameof(UniPlaySongSettings.DesktopMenuMusicInfoCardShortcut),
+                    nameof(UniPlaySongSettings.DesktopMenuOpenMusicFolder),
+                    nameof(UniPlaySongSettings.DesktopMenuPrimarySong),
+                    nameof(UniPlaySongSettings.DesktopMenuSpotify),
+                    nameof(UniPlaySongSettings.FullscreenMainMenuExportPlaylist),
+                    nameof(UniPlaySongSettings.FullscreenMainMenuQuickSettings),
+                    nameof(UniPlaySongSettings.FullscreenMainMenuSpotify),
+                    nameof(UniPlaySongSettings.FullscreenMenuAudioProcessing),
+                    nameof(UniPlaySongSettings.FullscreenMenuBulkActions),
+                    nameof(UniPlaySongSettings.FullscreenMenuDownloadMusic),
+                    nameof(UniPlaySongSettings.FullscreenMenuInfoLine),
+                    nameof(UniPlaySongSettings.FullscreenMenuManageMusic),
+                    nameof(UniPlaySongSettings.FullscreenMenuMusicInfoCard),
+                    nameof(UniPlaySongSettings.FullscreenMenuMusicInfoCardGameMenu),
+                    nameof(UniPlaySongSettings.FullscreenMenuPcMode),
+                    nameof(UniPlaySongSettings.FullscreenMenuPrimarySong),
+                    nameof(UniPlaySongSettings.FullscreenMenuSpotify),
                 },
                 [Advanced] = new string[]
                 {

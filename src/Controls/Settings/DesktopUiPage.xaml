@@ -1,0 +1,135 @@
+﻿<UserControl x:Class="UniPlaySong.Controls.Settings.DesktopUiPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="900" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ups:SharedResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Desktop UI" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}" Text="Choose which UniPlaySong entries appear in Playnite's Desktop menus and panels. Menu changes show the next time you open the menu."/>
+
+            <!-- Game right-click menu: Playnite asks for these on every open, so no restart. -->
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Game Right-Click Menu" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Song count and folder size"
+                      IsChecked="{Binding Settings.DesktopMenuInfoLine}"/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Music Info Card"
+                      IsChecked="{Binding Settings.DesktopMenuMusicInfoCard}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="In the UniPlaySong submenu."/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Music Info Card below &quot;Create Desktop Shortcut&quot;"
+                      IsChecked="{Binding Settings.DesktopMenuMusicInfoCardShortcut}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="A second entry in Playnite's own part of the menu, for games with music."/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Spotify controls"
+                      IsChecked="{Binding Settings.DesktopMenuSpotify}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="Shown while Spotify is playing."/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Download Music"
+                      IsChecked="{Binding Settings.DesktopMenuDownloadMusic}"/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Download From URL"
+                      IsChecked="{Binding Settings.DesktopMenuDownloadFromUrl}"/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Add Music File"
+                      IsChecked="{Binding Settings.DesktopMenuAddMusicFile}"/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Add Music Folder"
+                      IsChecked="{Binding Settings.DesktopMenuAddMusicFolder}"/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Set and Clear Primary Song"
+                      IsChecked="{Binding Settings.DesktopMenuPrimarySong}"/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Audio Processing submenu"
+                      IsChecked="{Binding Settings.DesktopMenuAudioProcessing}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="Normalize and Silence Trim."/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Audio Editing submenu"
+                      IsChecked="{Binding Settings.DesktopMenuAudioEditing}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="Precise Trim, Amplify and Repair."/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Chiptunes submenu"
+                      IsChecked="{Binding Settings.DesktopMenuChiptunes}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="NSF Management and Split HES Tracks, for games that have those files."/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Open Music Folder"
+                      IsChecked="{Binding Settings.DesktopMenuOpenMusicFolder}"/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Export M3U Playlist"
+                      IsChecked="{Binding Settings.DesktopMenuExportPlaylist}"/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Controller Mode submenu"
+                      IsChecked="{Binding Settings.DesktopMenuControllerMode}"/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Actions for several selected games"
+                      IsChecked="{Binding Settings.DesktopMenuBulkActions}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="Download All, Normalize All, Trim All, Delete Music and Export M3U Playlist. Retry Failed Downloads always shows when there are failures."/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Playnite Menu" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="UniPlaySong Settings"
+                      IsChecked="{Binding Settings.DesktopMainMenuSettings}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="Without it, open these settings from Add-ons, or from the sidebar button below."/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Export Music Library Playlist"
+                      IsChecked="{Binding Settings.DesktopMainMenuExportPlaylist}"/>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Spotify controls"
+                      IsChecked="{Binding Settings.DesktopMainMenuSpotify}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="Shown while Spotify is playing."/>
+
+            <!-- The same settings as General -> Media Controls, General -> Miscellaneous and
+                 Advanced -> Experimental: both checkboxes bind one property, so they always agree. -->
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Top Panel" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Show Media Controls on Panel (Desktop)"
+                      IsChecked="{Binding Settings.ShowDesktopMediaControls}"/>
+            <TextBlock Style="{StaticResource UpsHint}" Text="Also on General → Media Controls. Takes effect straight away."/>
+            <CheckBox Style="{StaticResource UpsToggleChild}" Content="Play/Pause button"
+                      IsChecked="{Binding Settings.ShowPlayPauseButton}"
+                      IsEnabled="{Binding Settings.ShowDesktopMediaControls}"/>
+            <CheckBox Style="{StaticResource UpsToggleChild}" Content="Skip button"
+                      IsChecked="{Binding Settings.ShowSkipButton}"
+                      IsEnabled="{Binding Settings.ShowDesktopMediaControls}"/>
+            <CheckBox Style="{StaticResource UpsToggleChild}" Content="Calm Down button"
+                      IsChecked="{Binding Settings.ShowCalmDownButton}"
+                      IsEnabled="{Binding Settings.ShowDesktopMediaControls}"/>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Sidebar" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Show a UniPlaySong button in the sidebar"
+                      IsChecked="{Binding Settings.ShowSettingsSidebarButton}"
+                      Command="{Binding SetRestartRequired}"
+                      CommandParameter="{Binding RelativeSource={RelativeSource Self}}"/>
+            <TextBlock Style="{StaticResource UpsHint}">
+                <Run Text="Also on General → Miscellaneous."/>
+                <Run Text="Restart required."
+                     Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
+            </TextBlock>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Enable Music Dashboard sidebar panel"
+                      IsChecked="{Binding Settings.ShowMusicDashboard}"
+                      Command="{Binding SetRestartRequired}"
+                      CommandParameter="{Binding RelativeSource={RelativeSource Self}}"/>
+            <TextBlock Style="{StaticResource UpsHint}">
+                <Run Text="Also on Advanced → Experimental."/>
+                <Run Text="Restart required."
+                     Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
+            </TextBlock>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Taskbar" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+            <CheckBox Style="{StaticResource UpsToggle}" Content="Show Media Controls in Windows Taskbar's Thumbnail Preview."
+                      IsChecked="{Binding Settings.ShowTaskbarMediaControls}"
+                      Command="{Binding SetRestartRequired}"
+                      CommandParameter="{Binding RelativeSource={RelativeSource Self}}"/>
+            <TextBlock Style="{StaticResource UpsHint}">
+                <Run Text="Also on General → Media Controls."/>
+                <Run Text="Requires a Playnite restart to take effect."
+                     Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
+            </TextBlock>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
