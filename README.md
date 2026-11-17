@@ -64,7 +64,7 @@ https://github.com/user-attachments/assets/d7a9964e-fa2e-4d66-8de7-9ff16b1010de
 
 ### Music Info Card (v1.5.0+)
 
-Right-click any game → **Music Info Card** for a stylized per-game music dashboard. Each card picks up the game's art and accent colors so it feels native to that title.
+Right-click any game → **Music Info Card** (in Fullscreen: the game menu, below Play) for a stylized per-game music dashboard. Each card picks up the game's art and accent colors so it feels native to that title.
 
 <img src="docs/assets/MusicInfoCard.png" alt="Music Info Card example" width="600">
 

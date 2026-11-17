@@ -6,6 +6,10 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.9.5] - Unreleased
 
+### Added
+
+- Added a Music Info Card entry to Playnite's own game menus, for games with music: below "Create Desktop Shortcut" in Desktop's right-click menu and below Play/Install in Fullscreen's game menu; the UniPlaySong submenu entry stays
+
 ### Fixed
 
 - Fixed music status tags not showing after a library update, bulk download or URL download: `TagIds` was edited in place, which raises no change notification, so Playnite saved the tag but kept displaying the old one

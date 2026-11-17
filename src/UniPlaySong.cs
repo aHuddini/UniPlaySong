@@ -3067,6 +3067,8 @@ namespace UniPlaySong
             // the plugin core. See src/Features/MusicInfoCard/ for the rest.
             _musicInfoCardHandler = new Features.MusicInfoCard.MusicInfoCardHandler(
                 _api, _fileService, IsFullscreen, _playbackService);
+            Features.MusicInfoCard.MusicInfoCardMenuEntries.Attach(
+                _api, game => _fileService.HasMusic(game), game => _musicInfoCardHandler.Show(game), IsFullscreen);
             _normalizationDialogHandler = new Handlers.NormalizationDialogHandler(
                 _api, _normalizationService, _playbackService, _fileService, () => _settings);
             var conversionService = new Services.AudioConversionService(_fileLogger);
