@@ -31,7 +31,6 @@ namespace UniPlaySong.Services
         private readonly SettingsService _settingsService;
         private readonly ErrorHandlerService _errorHandler;
         private INormalizationService _normalizationService;
-        private GameMusicTagService _tagService;
         private SearchCacheService _searchCacheService;
 
         private bool IsFullscreenMode => _playniteApi.ApplicationInfo.Mode == ApplicationMode.Fullscreen;
@@ -54,9 +53,6 @@ namespace UniPlaySong.Services
 
         public void SetNormalizationService(INormalizationService normalizationService) =>
             _normalizationService = normalizationService;
-
-        public void SetTagService(GameMusicTagService tagService) =>
-            _tagService = tagService;
 
         public void SetSearchCacheService(SearchCacheService searchCacheService) =>
             _searchCacheService = searchCacheService;
@@ -115,7 +111,7 @@ namespace UniPlaySong.Services
 
             var sourceOptions = new List<Playnite.SDK.GenericItemOption>
             {
-                // DISABLED: KHInsider and Zophar temporarily removed (GitHub TOS review)
+                // DISABLED: KHInsider and Zophar not offered in this build
                 // new Playnite.SDK.GenericItemOption("KHInsider", "Download from KHInsider (Game soundtracks)"),
                 // new Playnite.SDK.GenericItemOption("Zophar", "Download from Zophar (Video game music archive)"),
                 new Playnite.SDK.GenericItemOption("YouTube",
@@ -695,26 +691,8 @@ namespace UniPlaySong.Services
                 }
             };
 
-            // Set up callback for auto-normalization and tag update after download
-            viewModel.OnFilesDownloaded = (downloadedFiles) =>
-            {
-                AutoNormalizeDownloadedFiles(downloadedFiles);
-
-                // Update the game's music status tag after download — but ONLY if auto-tagging is enabled. Mirrors the
-                // OnLibraryUpdated gate, so "off" fully stops tagging and a manual "Remove All Tags" survives the next download.
-                if (_settingsService?.Current?.AutoTagOnLibraryUpdate == true && _tagService != null && game != null)
-                {
-                    try
-                    {
-                        _tagService.UpdateGameMusicTag(game);
-                        Logger.DebugIf(LogPrefix,$"Updated music tag for game '{game.Name}' after download");
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Warn(ex, $"Failed to update music tag for game '{game.Name}': {ex.Message}");
-                    }
-                }
-            };
+            // Auto-normalize after download (the music tag follows GameMusicChanged)
+            viewModel.OnFilesDownloaded = AutoNormalizeDownloadedFiles;
 
             viewModel.ConfirmCommand = new Common.RelayCommand(() =>
             {
@@ -860,6 +838,7 @@ namespace UniPlaySong.Services
             viewModel.BackCommand = new Common.RelayCommand(() =>
             {
                 viewModel.CleanupPreviewFiles();
+                viewModel.BackWasPressed = true;
                 window.DialogResult = false;
                 window.Close();
             });
@@ -895,7 +874,8 @@ namespace UniPlaySong.Services
                 return selectedSongs;
             }
 
-            return new List<Song>();
+            // null = Back (caller returns to album selection); empty = cancelled
+            return viewModel.BackWasPressed ? null : new List<Song>();
         }
 
         // No game context — downloaded files land in the default-music folder
@@ -2164,8 +2144,10 @@ namespace UniPlaySong.Services
             var downloadPath = System.IO.Path.Combine(musicDir, safeFileName + extension);
 
             var success = _downloadManager.DownloadSong(songToDownload, downloadPath, cancellationToken);
+            if (!success || !System.IO.File.Exists(downloadPath)) return null;
 
-            return success && System.IO.File.Exists(downloadPath) ? downloadPath : null;
+            _fileService.InvalidateCacheForGame(game);
+            return downloadPath;
         }
 
         // Manual retry using BatchManualDownloadDialog for all failed games
@@ -2533,6 +2515,9 @@ namespace UniPlaySong.Services
                                 }
                             }
                         }
+
+                        if (songsAdded > 0)
+                            _fileService.InvalidateCacheForGame(result.Game);
 
                         progressDialog.Dispatcher.BeginInvoke(new Action(() =>
                         {

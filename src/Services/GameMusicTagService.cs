@@ -41,9 +41,10 @@ namespace UniPlaySong.Services
             return newTag.Id;
         }
 
+        // Re-resolved when the cached tag was deleted in Playnite, or games would get an ID no tag matches.
         private Guid GetHasMusicTagId()
         {
-            if (!_hasMusicTagId.HasValue)
+            if (!_hasMusicTagId.HasValue || _playniteApi.Database.Tags.Get(_hasMusicTagId.Value) == null)
             {
                 _hasMusicTagId = GetOrCreateTag(Constants.TagHasMusic);
             }
@@ -52,7 +53,7 @@ namespace UniPlaySong.Services
 
         private Guid GetNoMusicTagId()
         {
-            if (!_noMusicTagId.HasValue)
+            if (!_noMusicTagId.HasValue || _playniteApi.Database.Tags.Get(_noMusicTagId.Value) == null)
             {
                 _noMusicTagId = GetOrCreateTag(Constants.TagNoMusic);
             }
@@ -67,50 +68,39 @@ namespace UniPlaySong.Services
             try
             {
                 bool hasMusic = _fileService.HasMusic(game);
-                var hasMusicTagId = GetHasMusicTagId();
-                var noMusicTagId = GetNoMusicTagId();
 
-                // Determine which tag to add and which to remove
-                Guid tagToAdd = hasMusic ? hasMusicTagId : noMusicTagId;
-                Guid tagToRemove = hasMusic ? noMusicTagId : hasMusicTagId;
-
-                // Check current state
-                bool hasTagToAdd = game.TagIds?.Contains(tagToAdd) ?? false;
-                bool hasTagToRemove = game.TagIds?.Contains(tagToRemove) ?? false;
-
-                // Skip if already in correct state
-                if (hasTagToAdd && !hasTagToRemove)
-                {
-                    return false;
-                }
-
-                // Initialize TagIds if null
-                if (game.TagIds == null)
-                {
-                    game.TagIds = new List<Guid>();
-                }
-
-                // Remove old tag if present
-                if (hasTagToRemove)
-                {
-                    game.TagIds.Remove(tagToRemove);
-                }
-
-                // Add new tag if not present
-                if (!hasTagToAdd)
-                {
-                    game.TagIds.Add(tagToAdd);
-                }
-
-                // Save changes
-                _playniteApi.Database.Games.Update(game);
-                return true;
+                // The write runs on the UI thread: Playnite's library views only refresh there, and
+                // parallel batch downloads must not each create the tag.
+                var dispatcher = System.Windows.Application.Current?.Dispatcher;
+                return dispatcher != null && !dispatcher.CheckAccess()
+                    ? dispatcher.Invoke(() => ApplyMusicTag(game, hasMusic))
+                    : ApplyMusicTag(game, hasMusic);
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, $"Error updating music tag for game '{game?.Name}': {ex.Message}");
                 return false;
             }
+        }
+
+        private bool ApplyMusicTag(Game game, bool hasMusic)
+        {
+            var tagToAdd = hasMusic ? GetHasMusicTagId() : GetNoMusicTagId();
+            var tagToRemove = hasMusic ? GetNoMusicTagId() : GetHasMusicTagId();
+
+            var tagIds = game.TagIds ?? new List<Guid>();
+            if (tagIds.Contains(tagToAdd) && !tagIds.Contains(tagToRemove))
+            {
+                return false;
+            }
+
+            // Assign a new list: editing TagIds in place raises no change notification, so Playnite
+            // saved the tag but kept showing the old one until restart.
+            var updated = tagIds.Where(id => id != tagToRemove && id != tagToAdd).ToList();
+            updated.Add(tagToAdd);
+            game.TagIds = updated;
+            _playniteApi.Database.Games.Update(game);
+            return true;
         }
 
         public async Task<TagScanResult> ScanAndTagAllGamesAsync(
@@ -123,10 +113,6 @@ namespace UniPlaySong.Services
             {
                 var allGames = _playniteApi.Database.Games.ToList();
                 result.TotalGames = allGames.Count;
-
-                // Ensure tags exist before scanning
-                GetHasMusicTagId();
-                GetNoMusicTagId();
 
                 await Task.Run(() =>
                 {

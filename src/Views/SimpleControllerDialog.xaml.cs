@@ -184,7 +184,7 @@ namespace UniPlaySong.Views
                 
                 _sourceOptions = new List<GenericItemOption>
                 {
-                    // DISABLED: KHInsider source temporarily removed (GitHub TOS review).
+                    // DISABLED: KHInsider not offered in this build.
                     // Matches the Desktop dialog's source list (DownloadDialogService).
                     // new GenericItemOption("KHInsider", "Download from KHInsider (Game soundtracks)"),
                     new GenericItemOption("YouTube",

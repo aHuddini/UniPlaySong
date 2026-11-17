@@ -1134,14 +1134,15 @@ namespace UniPlaySong.Menus
                         {
                             var sourceOptions = new List<Playnite.SDK.MessageBoxOption>
                             {
-                                new Playnite.SDK.MessageBoxOption("KHInsider", true, false),  // isDefault = true
-                                new Playnite.SDK.MessageBoxOption("YouTube", false, false),
+                                // DISABLED: KHInsider and Zophar not offered in this build
+                                // new Playnite.SDK.MessageBoxOption("KHInsider", true, false),  // isDefault = true
+                                new Playnite.SDK.MessageBoxOption("YouTube", true, false),    // isDefault = true
                                 new Playnite.SDK.MessageBoxOption("Skip Game", false, true)   // isCancel = true
                             };
 
                             var selected = _playniteApi.Dialogs.ShowMessage(
                                 $"Select music source for '{game.Name}':\n\n" +
-                                "• KHInsider: Video game soundtracks database\n" +
+                                // DISABLED: "• KHInsider: Video game soundtracks database\n" +
                                 "• YouTube: Search YouTube for game music\n" +
                                 "• Skip Game: Skip this game and continue",
                                 "Select Source",
@@ -1221,6 +1222,14 @@ namespace UniPlaySong.Menus
                 // Show song selection dialog (dispatched to UI thread)
                 songs = System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
                     _dialogService.ShowSongSelectionDialogWithReturn(game, album));
+
+                // Back: pick another album for this game (even if the first was auto-picked), not skip it
+                if (songs == null)
+                {
+                    _logger.Debug($"User pressed back in song selection for '{game.Name}' - returning to album selection");
+                    return DownloadMusicForSingleGame(
+                        args, game, currentSource, albumSelect: true, songSelect, overwrite, progressTitle, downloadedFilePaths);
+                }
             }
             else
             {
@@ -1305,6 +1314,9 @@ namespace UniPlaySong.Menus
                     _logger.Warn($"Failed to download: {song.Name}");
                 }
             }
+
+            if (downloaded > 0)
+                _fileService.InvalidateCacheForGame(game);
 
             return downloaded > 0;
         }

@@ -1003,7 +1003,7 @@ namespace UniPlaySong
                         new Action(() => _jingleService?.PrewarmJinglePlayer())));
             }
 
-            // DISABLED: GitHub hints update check temporarily removed (GitHub TOS review)
+            // DISABLED: GitHub hints update check not run in this build
             // if (_settings?.AutoCheckHintsOnStartup == true)
             // {
             //     CheckForHintsUpdatesAsync();
@@ -2935,8 +2935,13 @@ namespace UniPlaySong
                 _api, _fileLogger, _settingsService, _downloadManager, _fileService, _normalizationService, _tagService,
                 PlayDownloadCompleteSound, SavePluginSettings);
 
-            // Wire up tag service to download dialog service for post-download tag updates
-            _downloadDialogService.SetTagService(_tagService);
+            // Retag a game whenever its music changes, from any download, add or delete path.
+            // Gated like the library-update scan, so "off" stops tagging entirely.
+            _fileService.GameMusicChanged += game =>
+            {
+                if (_settingsService?.Current?.AutoTagOnLibraryUpdate == true)
+                    _tagService.UpdateGameMusicTag(game);
+            };
 
             // Wire up search cache service to download dialog service for Auto-Add Songs on skipped games
             _downloadDialogService.SetSearchCacheService(_cacheService);

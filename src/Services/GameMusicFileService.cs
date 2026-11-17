@@ -261,12 +261,16 @@ namespace UniPlaySong.Services
             return (copied, skipped);
         }
 
+        // Raised after any change to a game's music files, so its music tag follows every path that adds or removes them.
+        public event Action<Game> GameMusicChanged;
+
         public void InvalidateCacheForGame(Game game)
         {
             var directory = GetGameMusicDirectory(game);
             if (!string.IsNullOrWhiteSpace(directory))
             {
                 _songCache.Remove(directory);
+                GameMusicChanged?.Invoke(game);
             }
         }
 
