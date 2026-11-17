@@ -4,6 +4,15 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [1.9.5] - Unreleased
+
+### Fixed
+
+- Fixed music status tags not showing after a library update, bulk download or URL download: `TagIds` was edited in place, which raises no change notification, so Playnite saved the tag but kept displaying the old one
+- Fixed bulk, URL, broader-search retry and Auto-Add More Songs downloads not updating music status tags: every music change now retags through `GameMusicFileService.GameMusicChanged`
+- Fixed manual-pick bulk downloads, broader-search retries and Auto-Add More Songs leaving the song-list cache stale
+- Fixed music status tags getting a dead ID after the tag was deleted in Playnite; the tag is now re-created
+- Fixed Back in bulk download's song picker skipping the game; it now returns to album selection for that game
 ## [1.9.4] - 2026-11-16
 
 ### Added
