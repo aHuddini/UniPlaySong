@@ -1,0 +1,139 @@
+name: Beta release
+
+# Builds, tests and packages a beta from the chosen branch and publishes it as a GitHub pre-release
+# (X.Y.Z-betaN, the version from version.txt, N one past the highest existing beta of that version).
+# Run it from the Actions tab ("Run workflow") or: gh workflow run beta.yml --ref dev
+#
+# Bundled audio that is kept out of this public repo lives in the private aHuddini/UniPlaySong-assets
+# repo, laid out like src/. It is fetched with a read-only deploy key (secret ASSETS_DEPLOY_KEY) and
+# copied over src/ before the build, so the .pext matches a local build. Never commit it here.
+#
+# The pre-release never touches Manifest/installer.yaml, so a beta does not reach Playnite's add-on browser.
+
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: 'Release notes (leave empty to list the commits since the last release)'
+        required: false
+        default: ''
+      publish:
+        description: 'Publish the pre-release (untick for a dry run: the .pext is kept as a workflow artifact)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: beta-release
+  cancel-in-progress: false
+
+jobs:
+  beta:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check the assets key
+        env:
+          ASSETS_DEPLOY_KEY: ${{ secrets.ASSETS_DEPLOY_KEY }}
+        run: |
+          if [ -z "${ASSETS_DEPLOY_KEY}" ]; then
+            echo "::error::ASSETS_DEPLOY_KEY secret is empty. It is the private half of the read-only deploy key on aHuddini/UniPlaySong-assets."
+            exit 1
+          fi
+
+      - name: Fetch private bundled audio
+        uses: actions/checkout@v4
+        with:
+          repository: aHuddini/UniPlaySong-assets
+          ssh-key: ${{ secrets.ASSETS_DEPLOY_KEY }}
+          path: _assets
+
+      - name: Copy bundled audio into src
+        run: |
+          cp -R _assets/DefaultMusic/. src/DefaultMusic/
+          cp -R _assets/Jingles/. src/Jingles/
+          echo "Copied $(find _assets/DefaultMusic _assets/Jingles -type f | wc -l) private audio files"
+          rm -rf _assets
+
+      - name: Work out the beta version
+        id: ver
+        run: |
+          version="$(tr -d '\r\n ' < version.txt)"
+          # Highest existing N across releases (drafts included) and tags; a bare "-beta" counts as 1.
+          existing="$( { gh release list --limit 200 --json tagName -q '.[].tagName'; git tag -l; } \
+            | grep -E "^${version//./\\.}-beta[0-9]*$" | sed -E "s/^.*-beta//; s/^$/1/" | sort -n | tail -1)"
+          n=$(( ${existing:-0} + 1 ))
+          if [ "$n" -eq 1 ]; then tag="${version}-beta"; else tag="${version}-beta${n}"; fi
+          asset="UniPlaySong-${version//./_}-beta$([ "$n" -eq 1 ] || echo "$n").pext"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "asset=$asset" >> "$GITHUB_OUTPUT"
+          echo "Beta: $tag ($asset)"
+
+      - name: Build
+        run: dotnet build -c Release
+
+      - name: Test
+        run: dotnet test tests/UniPlaySong.Tests.csproj -c Release --no-build
+
+      - name: Package
+        shell: pwsh
+        run: ./scripts/package_extension.ps1
+
+      - name: Name the beta package
+        run: |
+          src="pext/UniPlaySong-$(echo '${{ steps.ver.outputs.version }}' | tr . _).pext"
+          if [ ! -f "$src" ]; then echo "::error::Package not found: $src"; ls pext; exit 1; fi
+          cp "$src" "pext/${{ steps.ver.outputs.asset }}"
+          ls -la pext
+
+      - name: Write release notes
+        env:
+          NOTES: ${{ inputs.notes }}
+        run: |
+          {
+            echo "Beta build for testing. Not a release: install over the current version, and report back on what you test."
+            echo
+            if [ -n "$NOTES" ]; then
+              printf '%s\n' "$NOTES"
+            else
+              prev="$(git describe --tags --abbrev=0 HEAD 2>/dev/null || true)"
+              echo "## Changes since ${prev:-the start}"
+              echo
+              git log --no-merges --format='- %s' ${prev:+$prev..}HEAD
+            fi
+            echo
+            echo "## Install"
+            echo
+            echo "Download \`${{ steps.ver.outputs.asset }}\` below and drag it onto Playnite, or open it with Playnite."
+          } > beta_notes.md
+          cat beta_notes.md
+
+      - name: Publish pre-release
+        if: ${{ inputs.publish }}
+        run: |
+          gh release create "${{ steps.ver.outputs.tag }}" "pext/${{ steps.ver.outputs.asset }}" \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "UniPlaySong v${{ steps.ver.outputs.tag }}" \
+            --notes-file beta_notes.md
+
+      - name: Keep the package (dry run)
+        if: ${{ !inputs.publish }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.ver.outputs.tag }}-dry-run
+          path: |
+            pext/${{ steps.ver.outputs.asset }}
+            beta_notes.md
+          retention-days: 3
