@@ -27,6 +27,7 @@ namespace UniPlaySong.Menus
         private readonly Func<bool> _isFullscreen;
         private readonly Func<List<(string Label, Action Invoke)>> _getSpotifyMenuActions; // shared with the main menu
         private readonly Func<UniPlaySongSettings> _getSettings; // read per build: a save swaps the settings object
+        private readonly Action<Game> _playNextInRadio;
 
         public GameMenuBuilder(
             FileLogger fileLogger,
@@ -42,9 +43,11 @@ namespace UniPlaySong.Menus
             Handlers.HesSplitHandler hesSplitHandler,
             Func<bool> isFullscreen,
             Func<List<(string Label, Action Invoke)>> getSpotifyMenuActions,
-            Func<UniPlaySongSettings> getSettings)
+            Func<UniPlaySongSettings> getSettings,
+            Action<Game> playNextInRadio)
         {
             _getSettings = getSettings;
+            _playNextInRadio = playNextInRadio;
             _fileLogger = fileLogger;
             _fileService = fileService;
             _gameMenuHandler = gameMenuHandler;
@@ -177,6 +180,14 @@ namespace UniPlaySong.Menus
                     Description = "Music Info Card",
                     MenuSection = menuSection,
                     Action = _ => _musicInfoCardHandler.Show(game)
+                });
+
+                // Only while Radio Mode plays game music: Spotify radio has no UPS queue to jump.
+                AddIf(ui.RadioModeEnabled && ui.RadioMusicSource != RadioMusicSource.Spotify, new GameMenuItem
+                {
+                    Description = "Play Next in Radio Queue",
+                    MenuSection = menuSection,
+                    Action = _ => _playNextInRadio?.Invoke(game)
                 });
 
                 // Spotify transport commands — only when a controllable Spotify session is present.

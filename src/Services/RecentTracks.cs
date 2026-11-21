@@ -41,6 +41,13 @@ namespace UniPlaySong.Services
 
         public static RecentTracks Spotify { get; } = new RecentTracks("SpotifyRecentTracks.txt");
         public static RecentTracks Games { get; } = new RecentTracks("GameRecentTracks.txt");
+        public static RecentTracks RadioUpNext { get; } = new RecentTracks(null);   // no file: radio re-picks on every start
+
+        public void Replace(System.Collections.Generic.IEnumerable<RecentTrack> tracks)
+        {
+            Items.Clear();
+            foreach (var t in tracks) Items.Add(t);
+        }
 
         public string FileName { get; }
         public ObservableCollection<RecentTrack> Items { get; } = new ObservableCollection<RecentTrack>();

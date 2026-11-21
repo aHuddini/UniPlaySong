@@ -363,10 +363,17 @@ if (_currentSettings?.RandomizeOnMusicEnd == true && _currentGame != null)
 
 ### Randomization Avoidance
 
-**Previous Song Tracking:**
-- `_previousSongPath`: Tracks last played song
-- Used to avoid playing same song twice in a row
-- Maximum 10 attempts to find different song (prevents infinite loops)
+Every random pick goes through `PickRandomOther(pool, avoid)`: a random song other than `avoid` (the current, previous or last radio song). It gives up after 10 draws and keeps the last one; a one-song pool returns that song. `_previousSongPath` records the song a skip or song end left.
+
+### Radio Mode queue (1.9.5+)
+
+Radio doesn't pick at the moment a song ends. `RadioUpNextQueue` holds the next 5 picks, and `TakeNextRadioSong` is the single consumer: `StartRadioPlayback` (first start, song end, Next) and the crossfade pick in `PickNextSongForCrossfade` both take its head. That is why the `RadioUpNext` theme list is always what actually plays.
+
+- **Take** drops queued files that no longer exist, takes the head, then refills from the pool, each fill avoiding the song before it.
+- **Play Next** (`PlayNextInRadio(game)`) inserts one of the game's songs at the head. A pick stays queued even if its game leaves the pool, since the user asked for it.
+- **Clear**: `StopRadioMode`, radio turned off (including while it has yielded to a game), and a switch to Spotify radio. A change of `RadioMusicSource` also starts a fresh queue on the next take.
+- **Display**: `OnRadioUpNextChanged` fires on the UI thread. `UniPlaySong.OnRadioUpNextChanged` reads tags off the UI thread under a generation counter, then replaces `RecentTracks.RadioUpNext`.
+- Spotify radio has no queue: SMTC can't read or add to Spotify's.
 
 ---
 

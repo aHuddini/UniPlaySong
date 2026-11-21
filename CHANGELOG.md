@@ -10,6 +10,8 @@ All notable changes to UniPlaySong will be documented in this file.
 
 - Added a Music Info Card entry to Playnite's own game menus, for games with music: below "Create Desktop Shortcut" in Desktop's right-click menu and below Play/Install in Fullscreen's game menu; the UniPlaySong submenu entry stays
 - Added a UI settings group (Desktop UI, Fullscreen UI) to hide UniPlaySong's game-menu groups and entries, Playnite-menu items and, shared with their original pages, the top panel, sidebar and taskbar controls
+- Added "Play Next in Radio Queue" while Radio Mode plays game music: one of the game's songs goes to the front of the radio queue; in the UniPlaySong submenu and below Music Info Card in Playnite's game menus
+- Added the theme element `UPS_RadioUpNext` and binding `RadioUpNext`: the next 5 radio songs, kept in `RadioUpNextQueue`, which every radio pick (song end, Next, crossfade) takes from, so the list matches what plays
 
 ### Fixed
 

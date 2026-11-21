@@ -44,7 +44,7 @@ namespace UniPlaySong.Tests.Services
         public void LiveValues_NeverReachPlaynitesSettingsFile()
         {
             foreach (var name in new[] { nameof(UniPlaySongSettings.SpotifyRecentTracks), nameof(UniPlaySongSettings.GameRecentTracks),
-                nameof(UniPlaySongSettings.NowPlayingArtColor1), nameof(UniPlaySongSettings.NowPlayingArtColor2) })
+                nameof(UniPlaySongSettings.RadioUpNext), nameof(UniPlaySongSettings.NowPlayingArtColor1), nameof(UniPlaySongSettings.NowPlayingArtColor2) })
                 Assert.IsTrue(Attribute.IsDefined(typeof(UniPlaySongSettings).GetProperty(name),
                     typeof(Playnite.SDK.Data.DontSerializeAttribute)), name);
         }

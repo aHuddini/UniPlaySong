@@ -583,11 +583,11 @@ New ideas brainstormed during the v1.4.6 cycle, audited against the live codebas
 
 | Feature | Description | Effort | Impact |
 |---------|-------------|--------|--------|
-| **Download from URL respects auto-normalize** | "Download from URL" (`DownloadFromUrlViewModel`) has no normalization step, so the auto-normalize-after-download setting is silently ignored there; the regular download dialog, game-menu search and batch downloads honour it. Add the same post-download normalize, built with `NormalizationSettings.From(...)` (1.9.1) like the download dialog. Confirmed wanted by the owner (2026-11-01). | Low | Medium |
+| ~~**Download from URL respects auto-normalize**~~ ✅ | **Shipped v1.9.2** (333117b): the URL dialog runs the same `OnFilesDownloaded` → `AutoNormalizeDownloadedFiles` hook as the search dialog, before the new song plays. | Low | Medium |
 | **Right-click song → "Lock as #1 in Custom Rotation"** | Discoverability fix for the existing Custom Rotation default-music source. Currently adding games to it requires diving into Settings → Playback. New right-click action on any song row (dashboard or game music list) one-clicks adding the song's parent game to the Custom Rotation pool, with optional "pin to top". Pairs with Drag-Drop Reorder (next row). | Low | Low |
 | **Drag-Drop Reorder for Custom Rotation Pool** | Custom Rotation already exists as a `List<Guid>` setting. WPF `ListBox` drag-drop attached properties + ↑/↓ row buttons. Lets users pin favorites to the top of the rotation cycle. Pure UI tweak, no backend change. | Low | Low |
 | **Per-Song Skip Memory** | When user manually skips a song mid-playback (Next), remember it in a session-scoped HashSet. UPS won't re-pick that song for the rest of the session even if shuffle would normally include it. Cleared on Playnite restart. **Opt-in setting** — off by default, user enables in Settings → Playback as `Remember Manual Skips This Session`. **Visible state** — small `(N skipped this session)` counter in top panel tooltip or Now Playing area; click to see list and one-click un-skip. **Hard time bound** — auto-clears at restart; manual "Clear skip memory" button in Settings. Debug log lines surface skip-block events for transparency. Distinct from the existing permanent-per-game "Don't Play This Song Skip List" idea. | Low | Medium |
-| **"Queue Next Game's Music" in Radio Mode** | Single-slot queue for Radio Mode only. While radio is playing, right-click a game → "Queue this game next in radio." When current radio song ends (or user hits Next), UPS plays from the queued game's pool for one cycle, then resumes radio. Single nullable `_queuedGameForRadio` field; `OnSongEnded` checks it before pulling next radio song. Standard playback uses game-selection itself as the queue, so this only makes sense in radio mode where the user has stepped outside per-game playback. | Low | Low |
+| ~~**"Queue Next Game's Music" in Radio Mode**~~ ✅ | **Shipped v1.9.5** as "Play Next in Radio Queue": a 5-song `RadioUpNextQueue` that every radio pick takes from, a pick jumping to its front, and the `UPS_RadioUpNext` theme list. Game music only; Spotify's queue isn't reachable over SMTC. | Low | Low |
 | **Restore Last Volume on Restart** | Confirm and close the gap where live volume slider changes (during playback) don't always persist back to settings on shutdown. `MusicVolume` is a setting; `OnApplicationStopped` exists; just need to write current player volume back at shutdown, or every N seconds while idle. Small but high-frequency annoyance fix. | Low | Medium |
 
 ### Novel / Functional
@@ -707,7 +707,7 @@ Technical improvements and library integrations identified through research. The
 5. **Scrobbling (Last.fm / ListenBrainz)** — simple HTTP POST, ListenBrainz is MIT-friendly and accepts game music metadata
 6. **Restore Last Volume on Restart** — close the gap where live volume slider changes don't always persist (v1.5 idea, see "v1.5+ Opportunities" below)
 7. **Right-click song → "Lock as #1 in Custom Rotation"** — surfaces an existing under-discovered feature (v1.5 idea, see below)
-8. **"Queue Next Game's Music" in Radio Mode** — single-slot queue for radio users (v1.5 idea, see below)
+8. ~~**"Queue Next Game's Music" in Radio Mode**~~ — shipped v1.9.5
 9. Gapless playback
 10. Per-game effects presets
 11. OBS text file export

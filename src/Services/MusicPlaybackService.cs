@@ -2219,7 +2219,7 @@ namespace UniPlaySong.Services
                 return false;
             }
 
-            string nextSong = PickRandomOther(pool, _lastRadioSongPath);
+            string nextSong = TakeNextRadioSong(pool, settings.RadioMusicSource, _lastRadioSongPath);
 
             _fileLogger?.Info($"RadioMode: starting — {System.IO.Path.GetFileName(nextSong)} (source: {settings.RadioMusicSource})");
             RememberTrackBeforeRadio(settings);
@@ -2302,7 +2302,46 @@ namespace UniPlaySong.Services
         {
             _isInRadioMode = false;
             _lastRadioSongPath = null;
+            ClearRadioUpNext();
             FadeOutAndStop();
+        }
+
+        // Radio's next songs (RadioUpNextQueue). A source switch starts a fresh queue: the old picks came from another pool.
+        private RadioUpNextQueue _radioUpNext;
+        private RadioMusicSource? _radioUpNextSource;
+
+        public event Action<IReadOnlyList<string>> OnRadioUpNextChanged;
+
+        public IReadOnlyList<string> RadioUpNext => _radioUpNext?.Paths ?? (IReadOnlyList<string>)new string[0];
+
+        private RadioUpNextQueue UpNext =>
+            _radioUpNext ?? (_radioUpNext = new RadioUpNextQueue(PickRandomOther, File.Exists));
+
+        private string TakeNextRadioSong(IList<string> pool, RadioMusicSource source, string avoid)
+        {
+            if (_radioUpNextSource != source) { UpNext.Clear(); _radioUpNextSource = source; }
+            var next = UpNext.Take(pool, avoid) ?? PickRandomOther(pool, avoid);
+            OnRadioUpNextChanged?.Invoke(UpNext.Paths);
+            return next;
+        }
+
+        // "Play Next in Radio": one of the game's songs goes to the front of the queue. False when the game has none.
+        public bool PlayNextInRadio(Game game)
+        {
+            var songs = game == null ? null : _fileService.GetAvailableSongs(game);
+            if (songs == null || songs.Count == 0) return false;
+            var song = PickRandomOther(songs, _currentSongPath);
+            UpNext.PlayNext(song);
+            _fileLogger?.Info($"RadioMode: '{Path.GetFileName(song)}' ({game.Name}) plays next");
+            OnRadioUpNextChanged?.Invoke(UpNext.Paths);
+            return true;
+        }
+
+        public void ClearRadioUpNext()
+        {
+            if (_radioUpNext == null || _radioUpNext.Paths.Count == 0) return;
+            _radioUpNext.Clear();
+            OnRadioUpNextChanged?.Invoke(_radioUpNext.Paths);
         }
 
         public void ClearLastDefaultMusicPath()
@@ -2639,7 +2678,7 @@ namespace UniPlaySong.Services
                     var pool = _radioSongPoolProvider(_currentSettings.RadioMusicSource, _currentSettings);
                     if (pool != null && pool.Count > 0)
                     {
-                        return PickRandomOther(pool, _currentSongPath);
+                        return TakeNextRadioSong(pool, _currentSettings.RadioMusicSource, _currentSongPath);
                     }
                 }
 

@@ -366,7 +366,7 @@ namespace UniPlaySong
             AddCustomElementSupport(new AddCustomElementSupportArgs
             {
                 SourceName = "UPS",
-                ElementList = new List<string> { "MusicControl", "SpectrumVisualizer", "MusicControl_PauseGamePlayDefault", "NowPlayingMiniPlayer", "NowPlayingMiniPlayerCompact", "MediaControllerBar", "MediaControllerOverlay", "MediaControllerCompact", "MediaControllerTransport", "SeekDisc", "MusicVisualControl", "MusicPlayerControlVisual", "MusicVisualStrip", "SpotifyRecentTracks", "GameRecentTracks" }
+                ElementList = new List<string> { "MusicControl", "SpectrumVisualizer", "MusicControl_PauseGamePlayDefault", "NowPlayingMiniPlayer", "NowPlayingMiniPlayerCompact", "MediaControllerBar", "MediaControllerOverlay", "MediaControllerCompact", "MediaControllerTransport", "SeekDisc", "MusicVisualControl", "MusicPlayerControlVisual", "MusicVisualStrip", "SpotifyRecentTracks", "GameRecentTracks", "RadioUpNext" }
             });
 
             // Register settings support for theme integration via Playnite's {PluginSettings} markup extension.
@@ -1601,6 +1601,7 @@ namespace UniPlaySong
                 {
                     // ON -> OFF: leave radio, fall back to whatever fits the current game.
                     if (_playbackService.IsInRadioMode) _playbackService.StopRadioMode();
+                    _playbackService.ClearRadioUpNext(); // radio may have yielded to a game: not "in radio", queue still full
                     if (game != null) _playbackService.PlayGameMusic(game, _settings, true);
                 }
                 return;
@@ -1623,6 +1624,7 @@ namespace UniPlaySong
                     // through PlayGameMusic (no forceReload) hits the SpotifyRadioMode suppression
                     // branch (fade-out + suppress); Recompute engages Spotify now, not on the next poll.
                     if (_playbackService.IsInRadioMode) _playbackService.StopRadioMode();
+                    _playbackService.ClearRadioUpNext(); // radio may have yielded to a game: not "in radio", queue still full
                     if (game != null) _playbackService.PlayGameMusic(game, _settings);
                     else _playbackService.Stop();
                     _spotifyControlService?.Recompute();
@@ -1959,6 +1961,7 @@ namespace UniPlaySong
                         {
                             _playbackService.StopRadioMode();
                         }
+                        _playbackService.ClearRadioUpNext();
                         if (game != null)
                         {
                             _playbackService.PlayGameMusic(game, e.NewSettings, true);
@@ -2643,6 +2646,7 @@ namespace UniPlaySong
 
             _playbackService = new MusicPlaybackService(_currentMusicPlayer, _fileService, _fileLogger, _errorHandler, _trailerAudioService, _listeningTracker);
             _playbackService.SetDefaultSongPoolProvider(GetDefaultSongPool);
+            _playbackService.OnRadioUpNextChanged += OnRadioUpNextChanged;
             _playbackService.SetFilterActiveProvider(() => IsAnyFilterActive());
             _playbackService.SetUserWarningHandler(_warnings.Show);
             _playbackService.SetWindowStateVerifier(() => ResyncWindowStatePauseSources(bidirectional: true));
@@ -3069,7 +3073,7 @@ namespace UniPlaySong
                 _api, _fileService, IsFullscreen, _playbackService);
             Features.MusicInfoCard.MusicInfoCardMenuEntries.Attach(
                 _api, game => _fileService.HasMusic(game), game => _musicInfoCardHandler.Show(game), IsFullscreen,
-                () => _settings);
+                () => _settings, PlayNextInRadioQueue);
             _normalizationDialogHandler = new Handlers.NormalizationDialogHandler(
                 _api, _normalizationService, _playbackService, _fileService, () => _settings);
             var conversionService = new Services.AudioConversionService(_fileLogger);
@@ -3090,7 +3094,51 @@ namespace UniPlaySong
             _gameMenuBuilder = new Menus.GameMenuBuilder(
                 _fileLogger, _fileService, _gameMenuHandler, _controllerDialogHandler, _musicInfoCardHandler,
                 _normalizationDialogHandler, _trimDialogHandler, _waveformTrimDialogHandler, _amplifyDialogHandler,
-                _nsfTrackManagerHandler, _hesSplitHandler, () => IsFullscreen, GetSpotifyMenuActions, () => _settings);
+                _nsfTrackManagerHandler, _hesSplitHandler, () => IsFullscreen, GetSpotifyMenuActions, () => _settings,
+                PlayNextInRadioQueue);
+        }
+
+        // "Play Next in Radio Queue", from the UniPlaySong submenu and from Playnite's own game menu
+        private void PlayNextInRadioQueue(Game game)
+        {
+            if (_playbackService.PlayNextInRadio(game))
+                DialogHelper.ShowSuccessToast(_api, $"{game.Name} plays next.", "Radio Mode");
+        }
+
+        // Radio's Up Next for themes (RadioUpNext / UPS_RadioUpNext). Titles, games and covers are read off the UI thread;
+        // only the newest change is applied.
+        private int _upNextGeneration;
+
+        private void OnRadioUpNextChanged(IReadOnlyList<string> paths)
+        {
+            var snapshot = paths.ToList();
+            int generation = Interlocked.Increment(ref _upNextGeneration);
+            Task.Run(() =>
+            {
+                try
+                {
+                    var rows = snapshot.Select(DescribeUpNext).ToList();
+                    Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                    {
+                        if (generation == Volatile.Read(ref _upNextGeneration)) Services.RecentTracks.RadioUpNext.Replace(rows);
+                    }));
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Debug($"[RadioUpNext] not published: {ex.Message}");
+                }
+            });
+        }
+
+        private Services.RecentTrack DescribeUpNext(string path)
+        {
+            var info = _publisherMetadata?.ReadMetadata(path);
+            var game = ResolveOwningGameFromPath(path);
+            var title = string.IsNullOrEmpty(info?.Title) ? Path.GetFileNameWithoutExtension(path) : info.Title;
+            var artist = string.IsNullOrEmpty(info?.Artist) ? game?.Name : info.Artist;
+            var art = string.IsNullOrEmpty(game?.CoverImage) ? null
+                : Services.RecentTracks.Thumb(_api.Database.GetFullFilePath(game.CoverImage));
+            return new Services.RecentTrack(title, artist, game?.Name, default(DateTime), path, art);
         }
 
         // NAudioMusicPlayer when a feature needs it (NeedsNAudio), otherwise SDL2MusicPlayer, falling back to the WPF
@@ -3814,6 +3862,8 @@ namespace UniPlaySong
                 return new Controls.RecentTracksControl(Services.RecentTracks.Spotify, "UPS_SpotifyRecentTracksTemplate");
             if (args.Name == "GameRecentTracks")
                 return new Controls.RecentTracksControl(Services.RecentTracks.Games, "UPS_GameRecentTracksTemplate");
+            if (args.Name == "RadioUpNext")
+                return new Controls.RecentTracksControl(Services.RecentTracks.RadioUpNext, "UPS_RadioUpNextTemplate");
             // the popup with a spectrum strip on its seek bar, drawn by the visualizer's renderer
             if (args.Name == "MusicPlayerControlVisual")
                 return new Controls.MediaControllerOverlay(_activeMediaViewModel, CreateMusicVisualStrip(),

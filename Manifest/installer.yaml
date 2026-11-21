@@ -6,9 +6,11 @@ Packages:
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.5/UniPlaySong-1_9_5.pext'
     Changelog:
       - '[New] Music Info Card in the game menu: below "Create Desktop Shortcut" (Desktop) and below Play/Install (Fullscreen).'
-      - '[New Setting] UI -> Desktop UI / Fullscreen UI: choose which UniPlaySong menu entries and buttons appear.'
+      - '[New Feature] Settings -> UI -> Desktop UI / Fullscreen UI: Hide/show which UniPlaySong menu entries and buttons appear on Playnite.'
+      - '[New Feature] Play Next in Radio Queue: in Radio Mode (game music), open a game  menu in your Library to add it to the Radio Queue and its music plays next.'
+      - '[New Feature] Themes can show the next 5 Radio Mode songs (UPS_RadioUpNext; see the theme integration guide on Github).'
       - '[Fix] Auto-tags ([UPS] Has Music / No Music) now update after a library refresh, bulk download or URL download.'
-      - '[Fix] Bulk download: Back in the song picker returns to the album list instead of skipping the game.'
+      - '[Fix] Bulk download: Pressing Back in the song picker returns to the album list instead of skipping the game entirely.'
   - Version: 1.9.4
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-11-16

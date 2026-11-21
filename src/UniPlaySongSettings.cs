@@ -793,6 +793,11 @@ namespace UniPlaySong
         public System.Collections.ObjectModel.ObservableCollection<Services.RecentTrack> GameRecentTracks
             => Services.RecentTracks.Games.Items;
 
+        // Radio Mode's next songs, next first, same row shape (PlayedAt unset). Empty while radio is off or plays Spotify.
+        [JsonIgnore, Playnite.SDK.Data.DontSerialize]
+        public System.Collections.ObjectModel.ObservableCollection<Services.RecentTrack> RadioUpNext
+            => Services.RecentTracks.RadioUpNext.Items;
+
         // Live now-playing ARTIST of the active music. [JsonIgnore] runtime state — theme devs bind
         // via {PluginSettings Plugin=UniPlaySong, Path=NowPlayingArtist}. Empty when none.
         [JsonIgnore]

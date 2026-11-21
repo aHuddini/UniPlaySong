@@ -5,7 +5,7 @@ using UniPlaySong.Services;
 
 namespace UniPlaySong.Controls
 {
-    // UPS_SpotifyRecentTracks / UPS_GameRecentTracks: a ready-made recent-tracks list. A theme restyles the rows with a
+    // UPS_SpotifyRecentTracks / UPS_GameRecentTracks / UPS_RadioUpNext: a ready-made track list. A theme restyles the rows with a
     // DataTemplate keyed by the element's name + "Template" (UPS_SpotifyRecentTracksTemplate), found where the element
     // sits; for a layout of its own it binds SpotifyRecentTracks / GameRecentTracks directly instead.
     public partial class RecentTracksControl : PluginUserControl

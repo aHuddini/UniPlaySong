@@ -78,6 +78,15 @@ namespace UniPlaySong.Services
         // Stops Radio Mode playback and clears radio state
         void StopRadioMode();
 
+        // Radio's next songs, head first; raised whenever they change (on the UI thread)
+        System.Collections.Generic.IReadOnlyList<string> RadioUpNext { get; }
+        event System.Action<System.Collections.Generic.IReadOnlyList<string>> OnRadioUpNextChanged;
+
+        // Puts one of the game's songs at the front of radio's queue; false when the game has no music
+        bool PlayNextInRadio(Playnite.SDK.Models.Game game);
+
+        void ClearRadioUpNext();
+
         // True when Radio Mode is actively running (radio pool selected and playing).
         // Distinct from settings.RadioModeEnabled (the user preference) — this reflects
         // whether the player is currently in a radio playback state.

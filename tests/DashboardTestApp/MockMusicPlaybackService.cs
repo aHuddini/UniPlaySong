@@ -83,6 +83,12 @@ namespace DashboardTestApp
         public void SetRadioSongPoolProvider(Func<global::UniPlaySong.RadioMusicSource, global::UniPlaySong.UniPlaySongSettings, List<string>> provider) { }
         public bool StartRadioPlayback(global::UniPlaySong.UniPlaySongSettings settings) { return true; }
         public void StopRadioMode() { }
+        public IReadOnlyList<string> RadioUpNext => new string[0];
+#pragma warning disable CS0067 // the mock never raises it
+        public event Action<IReadOnlyList<string>> OnRadioUpNextChanged;
+#pragma warning restore CS0067
+        public bool PlayNextInRadio(Playnite.SDK.Models.Game game) => false;
+        public void ClearRadioUpNext() { }
         public void ClearLastDefaultMusicPath() { }
         public void LoadAndPlayFile(string filePath) { }
         public void LoadAndPlayFileFrom(string filePath, TimeSpan startFrom) { }

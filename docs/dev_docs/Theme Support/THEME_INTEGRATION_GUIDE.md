@@ -377,6 +377,7 @@ UniPlaySong publishes the active music's metadata as live, bindable properties (
 | `NowPlayingArtColor1`, `NowPlayingArtColor2` | colour (darker first; black with no art) | The current art's two colours, for a backdrop gradient. Spotify with no art of its own gives Spotify's dark `#121212` and green `#1DB954`. In Fullscreen's main view a brush can't take `{PluginSettings}` - bind a hidden element's `Tag` to it and the `GradientStop.Color` to that `Tag` (see the demo theme's Spotify page). |
 | `SpotifyRecentTracks` | list, newest first (Spotify only) | `<ItemsControl ItemsSource="{PluginSettings Plugin=UniPlaySong, Path=SpotifyRecentTracks}"/>` - each item has `Title`, `Artist`, `Album`, `PlayedAt` and `Art` (cover image, tracks heard this session only). Kept across restarts (last 50). |
 | `GameRecentTracks` | list, newest first (game music) | The same for game music; `Album` is the game's name. See [Recent tracks](#recent-tracks--ups_spotifyrecenttracks-ups_gamerecenttracks-v190). |
+| `RadioUpNext` | list, next first (Radio Mode, game music) | The next 5 radio songs, same item shape; `PlayedAt` is empty. See [Up next](#up-next-in-radio-mode--ups_radioupnext-v195). |
 
 These reflect whichever source is the active music. Title, artist, and art are populated for both a UniPlaySong game track and a Spotify track. `NowPlayingAlbumArtPath` is a file path to the current art image — embedded ID3 art for game tracks (falling back to the game's cover when the track has none), or the Spotify track's album art — and is empty only when nothing is resolvable (show your own placeholder).
 
@@ -398,6 +399,18 @@ Three ways to use it:
 3. **Your own layout** — skip the element and bind `ItemsSource="{PluginSettings Plugin=UniPlaySong, Path=SpotifyRecentTracks}"` (or `GameRecentTracks`) on your own list.
 
 Both lists outlive a restart: UPS keeps the last 50 in `SpotifyRecentTracks.txt` and `GameRecentTracks.txt` in its data folder (`<Playnite config>\ExtraMetadata\UniPlaySong`), one tab-separated line per track, which other add-ons can read. Covers show only for tracks heard this session.
+
+### Up next in Radio Mode — `UPS_RadioUpNext` (v1.9.5+)
+
+The next 5 songs Radio Mode will play, in order: cover (the game's), title and artist (the game's name when the file has no artist). It is the real queue — song end, Next and crossfade all take its first song — and "Play Next in Radio Queue" puts a game's song at the top.
+
+```xml
+<ContentControl x:Name="UPS_RadioUpNext" Height="220" />
+```
+
+The same three ways as recent tracks: place it as is, restyle rows with a `DataTemplate` keyed `UPS_RadioUpNextTemplate`, or bind `ItemsSource="{PluginSettings Plugin=UniPlaySong, Path=RadioUpNext}"` on your own list. `PlayedAt` is empty (`DateTime.MinValue`) because nothing has played yet; the built-in rows show the artist alone.
+
+The list is empty while radio is off and for Spotify radio (Spotify's queue isn't readable), and clears when radio stops or its source changes. It is not saved across restarts.
 
 ### Fire an animation when the track changes — `IsMusicChanged` (v1.5.9+)
 
@@ -1239,7 +1252,7 @@ For a brush, bind to an `Image` that already shows the art: `ImageSource="{Bindi
 
 | | |
 |---|---|
-| **UniPlaySong** | 1.1.9+ for `UPS_MusicControl`; 1.4.6+ for `{PluginSettings}`; 1.5.2+ for `UPS_BackgroundAudio`; 1.5.3+ for `UPS_MusicControl_PauseGamePlayDefault`; 1.5.7+ for live now-playing bindings (`NowPlayingTitle`/`NowPlayingArtist`/`NowPlayingAlbumArtPath`, plus Spotify-only `NowPlayingAlbum`/`NowPlayingGenre`/`NowPlayingDuration`); 1.5.7+ for the now-playing mini-player elements (UPS_NowPlayingMiniPlayer / UPS_NowPlayingMiniPlayerCompact); 1.5.8+ for the unified media controller elements (UPS_MediaControllerOverlay / UPS_MediaControllerBar / UPS_MediaControllerCompact), the `ActiveMedia*` data bindings, and the source-aware `playpausetoggle`/`next`/`previous`/`togglemute` URIs; 1.9.0+ for seeking (seekable `ActiveMediaProgress` timelines, two-way `Slider`, `seek`/`seekto` URIs, `UPS_SeekDisc`), `UPS_MediaControllerTransport`, `UPS_MusicPlayerControlVisual`, `UPS_MusicVisualStrip`, recent tracks (`UPS_SpotifyRecentTracks`/`UPS_GameRecentTracks`), `NowPlayingArtColor1`/`NowPlayingArtColor2`, and `UPS_MusicVisualControl` |
+| **UniPlaySong** | 1.1.9+ for `UPS_MusicControl`; 1.4.6+ for `{PluginSettings}`; 1.5.2+ for `UPS_BackgroundAudio`; 1.5.3+ for `UPS_MusicControl_PauseGamePlayDefault`; 1.5.7+ for live now-playing bindings (`NowPlayingTitle`/`NowPlayingArtist`/`NowPlayingAlbumArtPath`, plus Spotify-only `NowPlayingAlbum`/`NowPlayingGenre`/`NowPlayingDuration`); 1.5.7+ for the now-playing mini-player elements (UPS_NowPlayingMiniPlayer / UPS_NowPlayingMiniPlayerCompact); 1.5.8+ for the unified media controller elements (UPS_MediaControllerOverlay / UPS_MediaControllerBar / UPS_MediaControllerCompact), the `ActiveMedia*` data bindings, and the source-aware `playpausetoggle`/`next`/`previous`/`togglemute` URIs; 1.9.0+ for seeking (seekable `ActiveMediaProgress` timelines, two-way `Slider`, `seek`/`seekto` URIs, `UPS_SeekDisc`), `UPS_MediaControllerTransport`, `UPS_MusicPlayerControlVisual`, `UPS_MusicVisualStrip`, recent tracks (`UPS_SpotifyRecentTracks`/`UPS_GameRecentTracks`), `NowPlayingArtColor1`/`NowPlayingArtColor2`, and `UPS_MusicVisualControl`; 1.9.4+ for `UPS_Dialog*` styles; 1.9.5+ for `UPS_RadioUpNext` / `RadioUpNext` |
 | **Playnite** | 10.x and 11.x, Fullscreen and Desktop |
 | **PlayniteSound** | Coexists — both `Sounds_MusicControl` and `UPS_MusicControl` work in the same theme |
 | **ANIKI REMAKE** | Fully supported reference theme |
