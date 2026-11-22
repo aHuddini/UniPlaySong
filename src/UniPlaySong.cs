@@ -2464,6 +2464,42 @@ namespace UniPlaySong
             }
         }
 
+        // The Now Playing card's list: what can be played from here right now (rules in NowPlayingCardTracks).
+        private (DeskMediaControl.NowPlayingCardContext, IReadOnlyList<DeskMediaControl.NowPlayingCardTrack>) BuildNowPlayingCardTracks()
+        {
+            bool radio = _playbackService?.IsInRadioMode == true && _playbackService?.IsRadioYieldedToGameMusic != true;
+            var game = _playbackService?.CurrentGame;
+            var songs = game == null || _fileService == null ? null : _fileService.GetAvailableSongs(game);
+            return DeskMediaControl.NowPlayingCardTracks.Build(
+                IsSpotifyTheActiveMediaSource(), radio, _playbackService?.IsPlayingDefaultMusic == true,
+                _playbackService?.CurrentSongPath, _settings?.NowPlayingTitle, songs,
+                Services.RecentTracks.RadioUpNext.Items.ToList(), Services.RecentTracks.Spotify.Items.ToList());
+        }
+
+        // The card's banner art: the game's background (or cover) while its music plays, so the banner matches what's
+        // on screen and doesn't change from track to track; Spotify and default music keep the track's own art.
+        private string NowPlayingCardArt()
+        {
+            var game = _playbackService?.CurrentGame;
+            if (game != null && !IsSpotifyTheActiveMediaSource() && _playbackService?.IsPlayingDefaultMusic != true)
+            {
+                foreach (var id in new[] { game.BackgroundImage, game.CoverImage })
+                {
+                    if (string.IsNullOrEmpty(id)) continue;
+                    var path = _api.Database.GetFullFilePath(id);
+                    if (!string.IsNullOrEmpty(path) && File.Exists(path)) return path;
+                }
+            }
+            return _settings?.NowPlayingAlbumArtPath;
+        }
+
+        private void PlayNowPlayingCardTrack(DeskMediaControl.NowPlayingCardTrack track)
+        {
+            if (track?.Path == null || _playbackService == null) return;
+            if (_playbackService.IsInRadioMode && !_playbackService.IsRadioYieldedToGameMusic) _playbackService.PlayRadioQueued(track.Path);
+            else if (_playbackService.CurrentGame != null) _playbackService.PlaySong(_playbackService.CurrentGame, track.Path);
+        }
+
         private void OnMediaKeyNext()
         {
             if (IsSpotifyTheActiveMediaSource()) _activeMediaService?.Next();
@@ -2985,6 +3021,24 @@ namespace UniPlaySong
                     () => _spotifyControlService,
                     mutate => UpdateSettingsFromMenu(mutate, "DesktopTopPanel")
                 );
+                _topPanelMediaControl.AttachCard(new DeskMediaControl.NowPlayingCardHost
+                {
+                    Song = () => (_settings?.NowPlayingTitle, _settings?.NowPlayingArtist, NowPlayingCardArt()),
+                    Snapshot = () => _activeMediaService?.GetSnapshot(),
+                    CalmDownOn = () => _settings?.CalmDownModeEnabled == true,
+                    Tracks = BuildNowPlayingCardTracks,
+                    PlayPause = OnMediaKeyPlayPause,
+                    Next = OnMediaKeyNext,
+                    Previous = () => _activeMediaService?.Previous(),
+                    ToggleCalmDown = () => UpdateSettingsFromMenu(s => s.CalmDownModeEnabled = !s.CalmDownModeEnabled, "NowPlayingCard"),
+                    PlayTrack = PlayNowPlayingCardTrack,
+                    CanSeek = () => _activeMediaService?.CanSeek == true,
+                    SeekTo = percent => _activeMediaService?.SeekTo(percent),
+                    SongLength = path =>
+                    {
+                        using (var file = TagLib.File.Create(path)) return file.Properties?.Duration ?? TimeSpan.Zero;
+                    },
+                });
                 _fileLogger?.Debug("TopPanelMediaControlViewModel initialized");
 
                 // Dashboard playback service (independent NAudio player)

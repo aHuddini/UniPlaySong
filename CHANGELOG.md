@@ -15,6 +15,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added General → Keyboard Shortcuts (also under Quick Start): system-wide shortcuts for Play/Pause, Next, Calm Down and Music Volume up/down, any combination including media keys; a combination another app holds is flagged, and changes apply on save (`GlobalHotkeyService`)
 - Added "Scroll long song titles" (`ScrollNowPlayingTitle`, General → Now Playing, default on): off shortens a long Now Playing title with an ellipsis instead of scrolling it
 - Added "Use legacy scroll animation" (`UseLegacyNowPlayingAnimation`, General → Now Playing, default off): scrolls the Now Playing title the pre-1.9.5 way, for themes that misplace the compositor's title
+- Added a Now Playing card: hovering or clicking Now Playing opens a frosted card with the song, controls, seeking, a context-aware song list (game songs, Radio Up Next, Spotify history) and the music folder (`ShowNowPlayingCard`, default on)
 
 ### Changed
 
@@ -29,6 +30,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Fixed Back in bulk download's song picker skipping the game; it now returns to album selection for that game
 - Fixed the top panel's scrolling Now Playing title using constant GPU (#55): the system compositor now animates it (`CompositionTicker`), 6.1% → 1.4% GPU at 120 Hz, and it stops while paused, hidden, unfocused or hovered
 - Fixed UniPlaySong capping every WPF animation in Playnite, themes and add-ons included, at 60 fps: the Now Playing panel overrode `Timeline.DesiredFrameRate` globally
+- Fixed the compositor-drawn Now Playing title staying bright over Playnite's dim overlay while a dialog is open: what covers it is rechecked twice a second
 
 ### Removed
 

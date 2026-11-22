@@ -88,6 +88,7 @@ namespace DashboardTestApp
         public event Action<IReadOnlyList<string>> OnRadioUpNextChanged;
 #pragma warning restore CS0067
         public bool PlayNextInRadio(Playnite.SDK.Models.Game game) => false;
+        public bool PlayRadioQueued(string path) => false;
         public void ClearRadioUpNext() { }
         public void ClearLastDefaultMusicPath() { }
         public void LoadAndPlayFile(string filePath) { }

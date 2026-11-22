@@ -28,6 +28,11 @@ namespace UniPlaySong.Tests.Services
             Assert.AreEqual("queued", queue.Paths[0]);
             Assert.AreEqual("queued", queue.Take(pool, null));
 
+            // Played straight from the card's Up Next list: it leaves the queue
+            queue.PlayNext("picked");
+            Assert.IsTrue(queue.Remove("picked"));
+            Assert.IsFalse(queue.Paths.Contains("picked"));
+
             deleted.Add(queue.Paths[0]);
             var expected = queue.Paths.First(p => !deleted.Contains(p));
             Assert.AreEqual(expected, queue.Take(pool, null));

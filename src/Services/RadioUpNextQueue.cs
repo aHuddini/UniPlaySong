@@ -39,6 +39,8 @@ namespace UniPlaySong.Services
 
         public void PlayNext(string path) => _paths.Insert(0, path);
 
+        public bool Remove(string path) => _paths.Remove(path);
+
         public void Clear() => _paths.Clear();
 
         private void Fill(IList<string> pool, string avoid)

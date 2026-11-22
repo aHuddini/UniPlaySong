@@ -221,7 +221,7 @@ namespace UniPlaySong.Features.MusicInfoCard
         private static readonly System.Collections.Generic.Dictionary<string, (BitmapSource Backdrop, BitmapSource Frost)> _backdropCache =
             new System.Collections.Generic.Dictionary<string, (BitmapSource, BitmapSource)>();
 
-        private static (BitmapSource Backdrop, BitmapSource Frost) LoadBlurredBackdrop(string path)
+        internal static (BitmapSource Backdrop, BitmapSource Frost) LoadBlurredBackdrop(string path)
         {
             var key = path + "|" + File.GetLastWriteTimeUtc(path).Ticks;
             if (_backdropCache.TryGetValue(key, out var cached)) return cached;

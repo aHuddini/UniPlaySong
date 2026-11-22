@@ -245,52 +245,55 @@ namespace UniPlaySong.Common
                 uint gradientColor = ((uint)ToastBlurOpacity << 24) | ((uint)b << 16) | ((uint)g << 8) | r;
 
                 // Blur mode: 0 = Basic, 1 = Acrylic (with noise texture)
-                var blurState = ToastBlurMode == 0
-                    ? AccentState.ACCENT_ENABLE_BLURBEHIND
-                    : AccentState.ACCENT_ENABLE_ACRYLICBLURBEHIND;
-
-                var accent = new AccentPolicy
-                {
-                    AccentState = blurState,
-                    AccentFlags = 0, // No special flags needed
-                    GradientColor = gradientColor,
-                    AnimationId = 0
-                };
-
-                var accentSize = Marshal.SizeOf(accent);
-                var accentPtr = Marshal.AllocHGlobal(accentSize);
-
-                try
-                {
-                    Marshal.StructureToPtr(accent, accentPtr, false);
-
-                    var data = new WindowCompositionAttributeData
-                    {
-                        Attribute = WindowCompositionAttribute.WCA_ACCENT_POLICY,
-                        Data = accentPtr,
-                        SizeOfData = accentSize
-                    };
-
-                    int result = SetWindowCompositionAttribute(hwnd, ref data);
-                    Logger.Debug($"EnableWindowBlur ACRYLICBLURBEHIND result: {result}");
-
-                    // Fallback to BLURBEHIND if acrylic fails
-                    if (result == 0)
-                    {
-                        accent.AccentState = AccentState.ACCENT_ENABLE_BLURBEHIND;
-                        Marshal.StructureToPtr(accent, accentPtr, false);
-                        result = SetWindowCompositionAttribute(hwnd, ref data);
-                        Logger.Debug($"EnableWindowBlur BLURBEHIND fallback result: {result}");
-                    }
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(accentPtr);
-                }
+                EnableBlurBehind(hwnd, gradientColor, acrylic: ToastBlurMode != 0);
             }
             catch (Exception ex)
             {
                 Logger.Debug(ex, "EnableWindowBlur failed");
+            }
+        }
+
+        // The compositor blurs what's behind the window (acrylic, or plain blur where acrylic fails), tinted with
+        // gradientColor (AABBGGRR). Unlike Windows 11's system backdrop it also works on windows that never become
+        // active: toasts, the Now Playing card. False when neither took.
+        internal static bool EnableBlurBehind(IntPtr hwnd, uint gradientColor, bool acrylic)
+        {
+            var accent = new AccentPolicy
+            {
+                AccentState = acrylic ? AccentState.ACCENT_ENABLE_ACRYLICBLURBEHIND : AccentState.ACCENT_ENABLE_BLURBEHIND,
+                AccentFlags = 0,
+                GradientColor = gradientColor,
+                AnimationId = 0
+            };
+
+            var accentSize = Marshal.SizeOf(accent);
+            var accentPtr = Marshal.AllocHGlobal(accentSize);
+            try
+            {
+                Marshal.StructureToPtr(accent, accentPtr, false);
+                var data = new WindowCompositionAttributeData
+                {
+                    Attribute = WindowCompositionAttribute.WCA_ACCENT_POLICY,
+                    Data = accentPtr,
+                    SizeOfData = accentSize
+                };
+
+                int result = SetWindowCompositionAttribute(hwnd, ref data);
+                Logger.Debug($"EnableBlurBehind {accent.AccentState} result: {result}");
+
+                // Fallback to BLURBEHIND if acrylic fails
+                if (result == 0 && acrylic)
+                {
+                    accent.AccentState = AccentState.ACCENT_ENABLE_BLURBEHIND;
+                    Marshal.StructureToPtr(accent, accentPtr, false);
+                    result = SetWindowCompositionAttribute(hwnd, ref data);
+                    Logger.Debug($"EnableBlurBehind BLURBEHIND fallback result: {result}");
+                }
+                return result != 0;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(accentPtr);
             }
         }
 

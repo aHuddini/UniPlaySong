@@ -427,6 +427,7 @@ namespace UniPlaySong
         private bool enableMediaKeyControl = false;
         private bool scrollNowPlayingTitle = true;
         private bool useLegacyNowPlayingAnimation = false;
+        private bool showNowPlayingCard = true;
         private string shortcutPlayPause = "";
         private string shortcutNext = "";
         private string shortcutCalmDown = "";
@@ -1284,6 +1285,13 @@ namespace UniPlaySong
         {
             get => useLegacyNowPlayingAnimation;
             set { useLegacyNowPlayingAnimation = value; OnPropertyChanged(); }
+        }
+
+        // Hovering (or clicking) Now Playing opens a card with the song, controls and a song list
+        public bool ShowNowPlayingCard
+        {
+            get => showNowPlayingCard;
+            set { showNowPlayingCard = value; OnPropertyChanged(); }
         }
 
         public bool HideNowPlayingForDefaultMusic

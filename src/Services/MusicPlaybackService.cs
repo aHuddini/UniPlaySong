@@ -2337,6 +2337,17 @@ namespace UniPlaySong.Services
             return true;
         }
 
+        // An Up Next song picked on the Now Playing card: it leaves its place in the queue and plays now.
+        public bool PlayRadioQueued(string path)
+        {
+            if (!_isInRadioMode || string.IsNullOrEmpty(path)) return false;
+            UpNext.Remove(path);
+            UpNext.PlayNext(path);
+            OnRadioUpNextChanged?.Invoke(UpNext.Paths);
+            SkipToNextSong();
+            return true;
+        }
+
         public void ClearRadioUpNext()
         {
             if (_radioUpNext == null || _radioUpNext.Paths.Count == 0) return;

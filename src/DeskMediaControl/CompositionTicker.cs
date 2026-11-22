@@ -23,12 +23,6 @@ namespace UniPlaySong.DeskMediaControl
     // another target on the window): the panel then keeps its WPF animation.
     internal sealed class CompositionTicker
     {
-        [ComImport, Guid("29E691FA-4567-4DCA-B319-D0F207EB6807"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-        private interface ICompositorDesktopInterop { void CreateDesktopWindowTarget(IntPtr hwnd, bool isTopmost, out ICompositionTarget target); }
-
-        [ComImport, Guid("A1BEA8BA-D726-4663-8129-6B5E7927FFA6"), InterfaceType(ComInterfaceType.InterfaceIsIInspectable)]
-        private interface ICompositionTarget { CompVisual Root { get; set; } }
-
         [ComImport, Guid("25297D5C-3AD4-4C9C-B5CF-E36A38512330"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
         private interface ICompositorInterop
         {
@@ -51,9 +45,6 @@ namespace UniPlaySong.DeskMediaControl
             void SuspendDraw();
         }
 
-        [StructLayout(LayoutKind.Sequential)] private struct DispatcherQueueOptions { public int Size, ThreadType, ApartmentType; }
-        [DllImport("CoreMessaging.dll")] private static extern int CreateDispatcherQueueController(DispatcherQueueOptions options, out IntPtr controller);
-
         [DllImport("d3d11.dll")]
         private static extern int D3D11CreateDevice(IntPtr adapter, int driverType, IntPtr software, uint flags, IntPtr levels,
             uint levelCount, uint sdkVersion, out IntPtr device, out int level, out IntPtr context);
@@ -64,7 +55,6 @@ namespace UniPlaySong.DeskMediaControl
 
         private const int UpdateSubresourceSlot = 48; // ID3D11DeviceContext vtable
         private static readonly Guid Texture2DIid = new Guid("6F15AAF2-D208-4E89-9AB4-489535D34F9C");
-        private static IntPtr _dispatcherQueueController; // one per process, kept for its lifetime
 
         private readonly Compositor _compositor;
         private readonly ICompositionTarget _target;
@@ -108,21 +98,7 @@ namespace UniPlaySong.DeskMediaControl
             {
                 var hwnd = host == null ? IntPtr.Zero : new WindowInteropHelper(host).Handle;
                 if (hwnd == IntPtr.Zero) return null;
-
-                // The compositor needs a DispatcherQueue on this (UI) thread; reuse one another component made.
-                if (Windows.System.DispatcherQueue.GetForCurrentThread() == null && _dispatcherQueueController == IntPtr.Zero)
-                {
-                    int hr = CreateDispatcherQueueController(new DispatcherQueueOptions
-                    {
-                        Size = Marshal.SizeOf(typeof(DispatcherQueueOptions)),
-                        ThreadType = 2,    // DQTYPE_THREAD_CURRENT
-                        ApartmentType = 2, // DQTAT_COM_STA
-                    }, out _dispatcherQueueController);
-                    Marshal.ThrowExceptionForHR(hr);
-                }
-
-                var compositor = new Compositor();
-                ((ICompositorDesktopInterop)(object)compositor).CreateDesktopWindowTarget(hwnd, true, out var target);
+                var (compositor, target) = CompositionLayer.Create(hwnd);
 
                 // 0x20 = D3D11_CREATE_DEVICE_BGRA_SUPPORT, 7 = D3D11_SDK_VERSION
                 Marshal.ThrowExceptionForHR(D3D11CreateDevice(IntPtr.Zero, 1, IntPtr.Zero, 0x20, IntPtr.Zero, 0, 7, out var device, out _, out var context));

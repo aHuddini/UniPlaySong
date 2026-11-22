@@ -305,6 +305,16 @@ unavailable (pre-1809, no D3D), or the user turns on "Use legacy scroll animatio
 switched live through `SetLegacyAnimation`), the old `CompositionTarget.Rendering` loop runs instead. The panel no longer
 overrides `Timeline.DesiredFrameRate` globally (that capped every theme's and add-on's animations).
 
+**NowPlayingCard (.xaml/.cs), NowPlayingCardModel, NowPlayingCardTracks, CompositionBars, CompositionLayer** (1.9.5+): the
+card that opens under Now Playing on hover (0.4 s, Normal-priority timer) or click. Its own window, owned through
+`WindowInteropHelper.Owner` (WPF ownership would set Playnite's `HasChildWindow` and themes dim the main window),
+`WS_EX_NOACTIVATE`, frosted with the compositor's blur-behind (`DialogHelper.EnableBlurBehind`; Windows 11's system
+backdrop only draws for active windows). It reaches the rest of UniPlaySong only through `NowPlayingCardHost` delegates
+built in `UniPlaySong.cs`; `NowPlayingCardTracks.Build` decides the list (game songs, Radio Up Next with the playing song
+first, Spotify history read-only, none for default music). Placement: centred on Now Playing, top on the first visible
+element below Playnite's `TopPanel` (hit-test walk; `CardTopEdge`). The playing row's bouncing bars are drawn by
+`CompositionBars` over the row's still WPF bars; `CompositionLayer` is the compositor plumbing the ticker shares.
+
 #### Key Features
 
 - **Service Getter Pattern**: Uses `Func<IMusicPlaybackService>` instead of storing service directly, allowing proper resubscription when service is recreated (e.g., Live Effects toggle)

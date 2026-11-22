@@ -87,6 +87,9 @@ namespace UniPlaySong.Services
 
         void ClearRadioUpNext();
 
+        // Plays an Up Next song now, taking it out of the queue. False outside Radio Mode.
+        bool PlayRadioQueued(string path);
+
         // True when Radio Mode is actively running (radio pool selected and playing).
         // Distinct from settings.RadioModeEnabled (the user preference) — this reflects
         // whether the player is currently in a radio playback state.

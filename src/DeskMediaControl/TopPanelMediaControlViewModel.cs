@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
@@ -286,17 +287,221 @@ namespace UniPlaySong.DeskMediaControl
 
         private const string NowPlayingIdleTitle = "UniPlaySong: Now Playing (click to open music folder)";
 
-        // The tooltip names the whole song: the panel shows only what fits, or a moving slice of it.
+        // The song the panel shows changed: the tooltip and an open card follow it; an emptied panel closes the card.
         private void OnNowPlayingSongShown(SongInfo song)
         {
+            _shownSong = song;
+            UpdateNowPlayingTooltip();
+            if (song == null) _card?.HideCard();
+            _cardHost?.RaiseChanged();
+        }
+
+        // The tooltip names the whole song: the panel shows only what fits, or a moving slice of it. With the card on,
+        // no tooltip: the card shows all of it and the two would stack.
+        private void UpdateNowPlayingTooltip()
+        {
             if (_nowPlayingItem == null) return;
-            if (song == null || string.IsNullOrEmpty(song.Title))
+            var song = _shownSong;
+            string title;
+            if (CardEnabled) title = null;
+            else if (song == null || string.IsNullOrEmpty(song.Title)) title = NowPlayingIdleTitle;
+            else
             {
-                _nowPlayingItem.Title = NowPlayingIdleTitle;
-                return;
+                var lines = string.IsNullOrEmpty(song.Artist) ? song.Title : song.Title + "\n" + song.Artist;
+                title = lines + "\n\nClick to open the music folder";
             }
-            var lines = string.IsNullOrEmpty(song.Artist) ? song.Title : song.Title + "\n" + song.Artist;
-            _nowPlayingItem.Title = lines + "\n\nClick to open the music folder";
+            if (_nowPlayingItem.Title != title) _nowPlayingItem.Title = title;
+        }
+
+        // ---- Now Playing card: hover opens it after a moment, leaving the panel and the card closes it ----
+
+        private NowPlayingCardHost _cardHost;
+        private NowPlayingCard _card;
+        private SongInfo _shownSong;
+        private DispatcherTimer _cardOpenTimer, _cardCloseTimer;
+        private static readonly TimeSpan CardOpenDelay = TimeSpan.FromMilliseconds(400);
+        private static readonly TimeSpan CardCloseDelay = TimeSpan.FromMilliseconds(350);
+
+        private bool CardEnabled => _cardHost != null && _getSettings?.Invoke()?.ShowNowPlayingCard != false;
+
+        // Called once by the plugin with what the card may read and do. Open folder stays this view model's.
+        internal void AttachCard(NowPlayingCardHost host)
+        {
+            _cardHost = host;
+            host.OpenFolder = OpenMusicFolder;
+            host.CanOpenFolder = () => File.Exists(_getPlaybackService?.Invoke()?.CurrentSongPath ?? string.Empty);
+            RecentTracks.RadioUpNext.Items.CollectionChanged += (s, e) => host.RaiseChanged();
+
+            // Normal priority: at Background a busy Playnite (just after a game is selected) held them back a second
+            _cardOpenTimer = new DispatcherTimer(DispatcherPriority.Normal) { Interval = CardOpenDelay };
+            _cardOpenTimer.Tick += (s, e) => { _cardOpenTimer.Stop(); OpenCard(); };
+            _cardCloseTimer = new DispatcherTimer(DispatcherPriority.Normal) { Interval = CardCloseDelay };
+            _cardCloseTimer.Tick += (s, e) =>
+            {
+                _cardCloseTimer.Stop();
+                // Still on the way between the bar and the card, or the card just folded its list away under the mouse
+                if (MouseInCardZone() || (_card != null && DateTime.UtcNow < _card.KeepOpenUntil)) _cardCloseTimer.Start();
+                else _card?.HideCard();
+            };
+
+            if (_nowPlayingPanel != null)
+            {
+                // The whole top-panel button reacts, not just the text inside it: its padding counts as Now Playing.
+                // Found once the panel is in the bar; the panel itself until then.
+                _nowPlayingPanel.MouseEnter += (s, e) => { if (_cardHoverTarget == null) OnCardHoverEnter(); };
+                _nowPlayingPanel.MouseLeave += (s, e) => { if (_cardHoverTarget == null) OnCardHoverLeave(); };
+                _nowPlayingPanel.Loaded += (s, e) => AttachCardHoverTarget();
+                AttachCardHoverTarget();
+            }
+            UpdateNowPlayingTooltip();
+        }
+
+        // Where the card's top goes, in screen pixels: the top edge of the first view below the top bar, under Now
+        // Playing (themes often leave a band between Playnite's TopPanel and the game view, which reads as part of the
+        // bar). Found by walking down from the bar's bottom with hit tests until an element starts there; the bar's
+        // bottom edge when nothing does.
+        internal static double CardTopEdge(FrameworkElement panel, out string source)
+        {
+            var bar = TopBarOf(panel);
+            var window = Window.GetWindow(panel);
+            source = bar.GetType().Name;
+            if (window == null) return bar.PointToScreen(new Point(0, bar.ActualHeight)).Y;
+
+            double barBottom = bar.TransformToAncestor(window).Transform(new Point(0, bar.ActualHeight)).Y;
+            double x = panel.TransformToAncestor(window).Transform(new Point(panel.ActualWidth / 2, 0)).X;
+            for (double y = barBottom + 1; y < barBottom + CardEdgeSearchDepth; y += 2)
+            {
+                for (var node = VisualTreeHelper.HitTest(window, new Point(x, y))?.VisualHit; node != null && node != window; node = VisualTreeHelper.GetParent(node))
+                {
+                    if (!(node is FrameworkElement element) || bar.IsAncestorOf(element) || element == bar) break;
+                    double top = element.TransformToAncestor(window).Transform(new Point(0, 0)).Y;
+                    // Only something you can see counts: layout containers often start right at the bar's edge
+                    // with nothing drawn, while the view the eye reads as "below the bar" starts further down
+                    if (top >= barBottom - 0.5 && top <= y + 0.5 && HasVisibleSurface(element))
+                    {
+                        source = element.GetType().Name + " below " + bar.GetType().Name;
+                        return window.PointToScreen(new Point(0, top)).Y;
+                    }
+                    if (top < barBottom - 0.5) break; // a background that starts above the bar's edge: keep walking down
+                }
+            }
+            return window.PointToScreen(new Point(0, barBottom)).Y;
+        }
+
+        private const double CardEdgeSearchDepth = 120; // how far below the bar a view may start, in DIPs
+
+        private static bool HasVisibleSurface(FrameworkElement element)
+        {
+            switch (element)
+            {
+                case System.Windows.Controls.Image image: return image.Source != null;
+                case System.Windows.Shapes.Shape shape: return Visible(shape.Fill);
+                case Border border: return Visible(border.Background);
+                case Panel panel: return Visible(panel.Background);
+                case Control control: return Visible(control.Background);
+                default: return false;
+            }
+        }
+
+        private static bool Visible(Brush brush) =>
+            brush != null && brush.Opacity > 0 && !(brush is SolidColorBrush solid && solid.Color.A == 0);
+
+        // The top bar holding the panel: Playnite's own TopPanel control, which themes keep; failing that, the outermost
+        // ancestor that is still bar-sized (the next level up is the whole window body).
+        internal static FrameworkElement TopBarOf(FrameworkElement panel)
+        {
+            FrameworkElement fallback = panel;
+            bool fallbackDone = false;
+            double limit = Math.Max(120, panel.ActualHeight * 3);
+            for (var node = System.Windows.Media.VisualTreeHelper.GetParent(panel); node != null; node = System.Windows.Media.VisualTreeHelper.GetParent(node))
+            {
+                if (node is Window) break;
+                if (!(node is FrameworkElement element) || element.ActualHeight <= 0) continue;
+                if (element.GetType().Name == "TopPanel") return element;
+                if (element.ActualHeight > limit) fallbackDone = true;
+                else if (!fallbackDone) fallback = element;
+            }
+            return fallback;
+        }
+
+        private FrameworkElement _cardHoverTarget;
+
+        private void AttachCardHoverTarget()
+        {
+            if (_cardHoverTarget != null || _nowPlayingPanel == null) return;
+            for (var node = VisualTreeHelper.GetParent(_nowPlayingPanel); node != null && !(node is Window); node = VisualTreeHelper.GetParent(node))
+            {
+                if (node is System.Windows.Controls.Primitives.ButtonBase button)
+                {
+                    _cardHoverTarget = button;
+                    button.MouseEnter += (s, e) => OnCardHoverEnter();
+                    button.MouseLeave += (s, e) => OnCardHoverLeave();
+                    return;
+                }
+            }
+        }
+
+        // The button, the card and the corridor between them, in screen pixels: crossing the gap to the card
+        // (the card hangs from the game view, some way below the bar) must not close it.
+        private bool MouseInCardZone()
+        {
+            if (_card?.IsOpen != true || !GetCursorPos(out var cursor)) return false;
+            var target = _cardHoverTarget ?? _nowPlayingPanel;
+            if (target == null || !target.IsVisible) return false;
+            var a = target.PointToScreen(new Point(0, 0));
+            var b = target.PointToScreen(new Point(target.ActualWidth, target.ActualHeight));
+            var zone = Rect.Union(new Rect(a, b), _card.ScreenBounds);
+            return zone.Contains(new Point(cursor.X, cursor.Y));
+        }
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        private struct NativePoint { public int X, Y; }
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool GetCursorPos(out NativePoint point);
+
+        private void OnCardHoverEnter()
+        {
+            _cardCloseTimer?.Stop();
+            if (!CardEnabled || _card?.IsOpen == true) return;
+            _cardOpenTimer?.Start();
+            // Get the window and its data ready during the wait, so the card's first frame isn't held up by them
+            EnsureCard()?.Prepare();
+        }
+
+        private void OnCardHoverLeave()
+        {
+            _cardOpenTimer?.Stop();
+            if (_card?.IsOpen == true) _cardCloseTimer?.Start();
+        }
+
+        private void OpenCard()
+        {
+            if (!CardEnabled || _nowPlayingPanel == null || !_nowPlayingPanel.IsVisible || _shownSong == null) return;
+            try
+            {
+                if (EnsureCard() == null) return;
+                // Centred on Now Playing, its top on the line where the top bar ends and the game view begins
+                var topLeft = _nowPlayingPanel.PointToScreen(new Point(0, 0));
+                var right = _nowPlayingPanel.PointToScreen(new Point(_nowPlayingPanel.ActualWidth, 0)).X;
+                var edge = CardTopEdge(_nowPlayingPanel, out var source);
+                _log?.Invoke($"TopPanel: card top at {edge:F0}px ({source}), panel top {topLeft.Y:F0}px");
+                _card.ShowUnder(new Rect(topLeft, new Point(right, Math.Max(edge, topLeft.Y))));
+            }
+            catch (Exception ex)
+            {
+                _log?.Invoke($"TopPanel: Now Playing card failed: {ex.Message}");
+            }
+        }
+
+        private NowPlayingCard EnsureCard()
+        {
+            if (_card != null) return _card;
+            var owner = _nowPlayingPanel == null ? null : Window.GetWindow(_nowPlayingPanel);
+            if (owner == null || _cardHost == null) return null;
+            _card = new NowPlayingCard(owner, _cardHost);
+            _card.MouseEnter += (s, e) => _cardCloseTimer?.Stop();
+            _card.MouseLeave += (s, e) => _cardCloseTimer?.Start();
+            return _card;
         }
 
         private void InitializeNowPlayingPanel()
@@ -350,7 +555,19 @@ namespace UniPlaySong.DeskMediaControl
             }
         }
 
+        // Click: the card at once when it's on (its footer opens the folder); otherwise the folder, as before.
         private void OnNowPlayingActivated()
+        {
+            if (CardEnabled)
+            {
+                _cardOpenTimer?.Stop();
+                OpenCard();
+                return;
+            }
+            OpenMusicFolder();
+        }
+
+        private void OpenMusicFolder()
         {
             try
             {
@@ -748,6 +965,9 @@ namespace UniPlaySong.DeskMediaControl
                 var settings = _getSettings?.Invoke();
                 _nowPlayingPanel.SetScrollEnabled(settings?.ScrollNowPlayingTitle != false);
                 _nowPlayingPanel.SetLegacyAnimation(settings?.UseLegacyNowPlayingAnimation == true);
+                UpdateNowPlayingTooltip();        // the card setting may have changed
+                if (!CardEnabled) _card?.HideCard();
+                _cardHost?.RaiseChanged();        // play state, Calm Down
             }));
         }
     }

@@ -38,6 +38,13 @@
                 <TextBlock Text="When enabled, shows [Default] prefix in the Now Playing ticker when default/fallback music is playing"
                            Style="{StaticResource UpsHintIndented}"/>
 
+                <CheckBox Style="{StaticResource UpsToggleChild}" Content="Show a song card when hovering Now Playing"
+                          IsChecked="{Binding Settings.ShowNowPlayingCard}"
+                          IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
+                          />
+                <TextBlock Text="Pops in under Now Playing with playback controls, the song list and the music folder. Clicking Now Playing opens it too. Turn off to keep a tooltip and open the folder on click."
+                           Style="{StaticResource UpsHintIndented}"/>
+
                 <CheckBox Style="{StaticResource UpsToggleChild}" Content="Scroll long song titles"
                           IsChecked="{Binding Settings.ScrollNowPlayingTitle}"
                           IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
