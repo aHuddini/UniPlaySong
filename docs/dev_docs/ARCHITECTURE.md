@@ -301,7 +301,8 @@ layer draws above all WPF content, `PlaceTicker` trims it to what WPF would show
 (`VisualTreeHelper.GetClip`, layout clipping included) and the run of the strip that hit-tests to the panel, so a
 theme button over its end cuts it there; the scroll distance is measured to that visible edge. Nothing moves while
 the music is paused, the panel is hidden, Playnite is inactive or the title is hovered. Where the compositor is
-unavailable (pre-1809, no D3D) the old `CompositionTarget.Rendering` loop runs instead. The panel no longer
+unavailable (pre-1809, no D3D), or the user turns on "Use legacy scroll animation" (`UseLegacyNowPlayingAnimation`,
+switched live through `SetLegacyAnimation`), the old `CompositionTarget.Rendering` loop runs instead. The panel no longer
 overrides `Timeline.DesiredFrameRate` globally (that capped every theme's and add-on's animations).
 
 #### Key Features

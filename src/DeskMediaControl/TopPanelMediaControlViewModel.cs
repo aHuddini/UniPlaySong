@@ -729,7 +729,9 @@ namespace UniPlaySong.DeskMediaControl
                     ? spotify.IsSpotifyPlaying
                     : playback?.IsPlaying == true && playback?.IsPaused != true;
                 _nowPlayingPanel.SetPlaying(playing);
-                _nowPlayingPanel.SetScrollEnabled(_getSettings?.Invoke()?.ScrollNowPlayingTitle != false);
+                var settings = _getSettings?.Invoke();
+                _nowPlayingPanel.SetScrollEnabled(settings?.ScrollNowPlayingTitle != false);
+                _nowPlayingPanel.SetLegacyAnimation(settings?.UseLegacyNowPlayingAnimation == true);
             }));
         }
     }

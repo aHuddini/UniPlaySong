@@ -14,6 +14,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added the theme element `UPS_RadioUpNext` and binding `RadioUpNext`: the next 5 radio songs, kept in `RadioUpNextQueue`, which every radio pick (song end, Next, crossfade) takes from, so the list matches what plays
 - Added General → Keyboard Shortcuts (also under Quick Start): system-wide shortcuts for Play/Pause, Next, Calm Down and Music Volume up/down, any combination including media keys; a combination another app holds is flagged, and changes apply on save (`GlobalHotkeyService`)
 - Added "Scroll long song titles" (`ScrollNowPlayingTitle`, General → Now Playing, default on): off shortens a long Now Playing title with an ellipsis instead of scrolling it
+- Added "Use legacy scroll animation" (`UseLegacyNowPlayingAnimation`, General → Now Playing, default off): scrolls the Now Playing title the pre-1.9.5 way, for themes that misplace the compositor's title
 
 ### Fixed
 

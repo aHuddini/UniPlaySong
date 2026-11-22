@@ -60,6 +60,7 @@ namespace UniPlaySong.DeskMediaControl
         private bool _isAppFocused = true;
         private bool _isPlaying = true;
         private bool _scrollEnabled = true;
+        private bool _legacyAnimation; // "Use legacy scroll animation": the WPF loop even where the compositor works
 
         // Compositor scroll: created on the first title that scrolls; null where unavailable (WPF fallback)
         private CompositionTicker _ticker;
@@ -165,6 +166,18 @@ namespace UniPlaySong.DeskMediaControl
             if (enabled == _scrollEnabled) return;
             _scrollEnabled = enabled;
             if (!string.IsNullOrEmpty(_currentText)) ApplyLayout(_lastTextWidth);
+        }
+
+        // "Use legacy scroll animation": switches a scrolling title between the compositor and the WPF loop live.
+        public void SetLegacyAnimation(bool legacy)
+        {
+            if (legacy == _legacyAnimation) return;
+            _legacyAnimation = legacy;
+            if (_isScrolling)
+            {
+                LeaveTicker();
+                StartScroll(_lastTextWidth);
+            }
         }
 
         private bool MayScroll => _isAppFocused && !_isScrollPaused && _isPlaying && IsVisible;
@@ -480,6 +493,7 @@ namespace UniPlaySong.DeskMediaControl
 
         private bool EnsureTicker()
         {
+            if (_legacyAnimation) return false;
             if (_ticker != null) return true;
             if (_tickerTried) return false;
             var window = Window.GetWindow(this);

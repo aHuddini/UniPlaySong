@@ -426,6 +426,7 @@ namespace UniPlaySong
         private bool enableRandomPickerMusic = true;
         private bool enableMediaKeyControl = false;
         private bool scrollNowPlayingTitle = true;
+        private bool useLegacyNowPlayingAnimation = false;
         private string shortcutPlayPause = "";
         private string shortcutNext = "";
         private string shortcutCalmDown = "";
@@ -1275,6 +1276,14 @@ namespace UniPlaySong
         {
             get => scrollNowPlayingTitle;
             set { scrollNowPlayingTitle = value; OnPropertyChanged(); }
+        }
+
+        // Scroll the Now Playing title the pre-1.9.5 way (WPF, every frame) instead of through the system compositor:
+        // for a theme where the compositor's title doesn't line up. Costs more GPU.
+        public bool UseLegacyNowPlayingAnimation
+        {
+            get => useLegacyNowPlayingAnimation;
+            set { useLegacyNowPlayingAnimation = value; OnPropertyChanged(); }
         }
 
         public bool HideNowPlayingForDefaultMusic

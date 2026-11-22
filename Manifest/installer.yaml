@@ -12,6 +12,7 @@ Packages:
       - '[New Feature] Keyboard Shortcut Support In Add-On Settings > General: Play/Pause, Next, Calm Down and volume up/down from anywhere in Windows, media keys included (replaces the Experimental media keys option).'
       - '[New Feature] Keyboard Shortcuts are also in Add-On Settings > Quick Start, next to Equalizer (EQ).'
       - '[New Setting] Now Playing -> Scroll long song titles: turn off to show long titles shortened instead.'
+      - '[New Setting] Now Playing -> Use legacy scroll animation: the old scrolling, in case a theme doesn''t show the new one properly.'
       - '[Fix] The scrolling Now Playing title in the top panel no longer keeps your GPU busy (issue #55); it also stops while music is paused.'
       - '[Fix] Other themes'' and add-ons'' animations are no longer limited to 60 fps.'
       - '[Fix] Auto-tags ([UPS] Has Music / No Music) now update after a library refresh, bulk download or URL download.'

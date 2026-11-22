@@ -44,6 +44,13 @@
                           />
                 <TextBlock Text="Long titles slide back and forth while music plays. Turn off to show them shortened instead."
                            Style="{StaticResource UpsHintIndented}"/>
+
+                <CheckBox Style="{StaticResource UpsToggleChild}" Content="Use legacy scroll animation"
+                          IsChecked="{Binding Settings.UseLegacyNowPlayingAnimation}"
+                          IsEnabled="{Binding Settings.ScrollNowPlayingTitle}"
+                          />
+                <TextBlock Text="The scrolling used before 1.9.5. Try it if the title is misplaced or cut off in your theme. Uses noticeably more graphics power."
+                           Style="{StaticResource UpsHintIndented}"/>
     
 
             <!-- A card, not a bar: the one block here that is output rather than input, so it
