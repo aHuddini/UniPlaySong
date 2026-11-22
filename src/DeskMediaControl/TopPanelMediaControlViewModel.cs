@@ -284,11 +284,27 @@ namespace UniPlaySong.DeskMediaControl
             }
         }
 
+        private const string NowPlayingIdleTitle = "UniPlaySong: Now Playing (click to open music folder)";
+
+        // The tooltip names the whole song: the panel shows only what fits, or a moving slice of it.
+        private void OnNowPlayingSongShown(SongInfo song)
+        {
+            if (_nowPlayingItem == null) return;
+            if (song == null || string.IsNullOrEmpty(song.Title))
+            {
+                _nowPlayingItem.Title = NowPlayingIdleTitle;
+                return;
+            }
+            var lines = string.IsNullOrEmpty(song.Artist) ? song.Title : song.Title + "\n" + song.Artist;
+            _nowPlayingItem.Title = lines + "\n\nClick to open the music folder";
+        }
+
         private void InitializeNowPlayingPanel()
         {
             try
             {
                 _nowPlayingPanel = new NowPlayingPanel(_log);
+                _nowPlayingPanel.SongShown += OnNowPlayingSongShown;
 
                 // Enable embedded progress bar if BelowNowPlaying mode
                 var progressSettings = _getSettings?.Invoke();
@@ -301,7 +317,7 @@ namespace UniPlaySong.DeskMediaControl
                 _nowPlayingItem = new TopPanelItem
                 {
                     Icon = _nowPlayingPanel,
-                    Title = "UniPlaySong: Now Playing (click to open music folder)",
+                    Title = NowPlayingIdleTitle,
                     Visible = true,
                     Activated = OnNowPlayingActivated
                 };

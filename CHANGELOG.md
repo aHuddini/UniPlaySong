@@ -16,6 +16,10 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added "Scroll long song titles" (`ScrollNowPlayingTitle`, General → Now Playing, default on): off shortens a long Now Playing title with an ellipsis instead of scrolling it
 - Added "Use legacy scroll animation" (`UseLegacyNowPlayingAnimation`, General → Now Playing, default off): scrolls the Now Playing title the pre-1.9.5 way, for themes that misplace the compositor's title
 
+### Changed
+
+- Changed the Now Playing title to keep scrolling under the mouse with the compositor ticker (the legacy animation still pauses on hover), and its tooltip to show the full song title and artist
+
 ### Fixed
 
 - Fixed music status tags not showing after a library update, bulk download or URL download: `TagIds` was edited in place, which raises no change notification, so Playnite saved the tag but kept displaying the old one

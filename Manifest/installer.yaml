@@ -13,10 +13,11 @@ Packages:
       - '[New Feature] Keyboard Shortcuts are also in Add-On Settings > Quick Start, next to Equalizer (EQ).'
       - '[New Setting] Now Playing -> Scroll long song titles: turn off to show long titles shortened instead.'
       - '[New Setting] Now Playing -> Use legacy scroll animation: the old scrolling, in case a theme doesn''t show the new one properly.'
-      - '[Fix] The scrolling Now Playing title in the top panel no longer keeps your GPU busy (issue #55); it also stops while music is paused.'
-      - '[Fix] Other themes'' and add-ons'' animations are no longer limited to 60 fps.'
+      - '[Fix] The scrolling Now Playing title in the top panel no longer keeps your GPU busy by switching to Windows OS display compositor over WPF (issue #55); it also stops while music is paused.'
+      - '[Critical Fix] With Now Playing ticker upgraded to use Windows OS display compositor over WPF, other themes'' and add-ons'' animations should no longer limited to 60 fps.'
       - '[Fix] Auto-tags ([UPS] Has Music / No Music) now update after a library refresh, bulk download or URL download.'
       - '[Fix] Bulk download: Pressing Back in the song picker returns to the album list instead of skipping the game entirely.'
+      - '[Improved] The Now Playing tooltip shows the full song title and artist, and the title keeps scrolling while you hover it.'
   - Version: 1.9.4
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-11-16

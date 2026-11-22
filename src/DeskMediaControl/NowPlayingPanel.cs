@@ -40,7 +40,7 @@ namespace UniPlaySong.DeskMediaControl
 
         // Scroll animation state
         private bool _isScrolling = false;
-        private bool _isScrollPaused = false; // mouse over the title
+        private bool _isScrollPaused = false; // mouse over the title (legacy animation only)
         private double _scrollDistance = 0;
         private double _scrollPosition = 0;
         private int _scrollDirection = -1; // -1 = scrolling left, +1 = scrolling right
@@ -123,7 +123,7 @@ namespace UniPlaySong.DeskMediaControl
             Children.Add(_scrollCanvas);
             Children.Add(_rightFade);
 
-            // Mouse over the title pauses the scroll
+            // Mouse over the title pauses the legacy animation; the compositor's keeps going
             MouseEnter += (s, e) => { _isScrollPaused = true; UpdateMotion(); };
             MouseLeave += (s, e) => { _isScrollPaused = false; UpdateMotion(); };
             IsVisibleChanged += (s, e) => UpdateMotion();
@@ -181,13 +181,17 @@ namespace UniPlaySong.DeskMediaControl
         }
 
         private bool MayScroll => _isAppFocused && !_isScrollPaused && _isPlaying && IsVisible;
+        private bool MayScrollTicker => _isAppFocused && _isPlaying && IsVisible;
+
+        // The song shown changed (null when the panel empties): the top panel item's tooltip follows it.
+        public event Action<SongInfo> SongShown;
 
         // Re-evaluates whether anything should move after a state change.
         private void UpdateMotion()
         {
             if (_useTicker)
             {
-                _ticker.SetPaused(!MayScroll);
+                _ticker.SetPaused(!MayScrollTicker);
                 PlaceTicker();
                 return;
             }
@@ -349,6 +353,7 @@ namespace UniPlaySong.DeskMediaControl
                         _songText.Text = string.Empty;
                         Visibility = Visibility.Collapsed;
                         StopScroll();
+                        SongShown?.Invoke(null);
                     }
                     return;
                 }
@@ -367,6 +372,7 @@ namespace UniPlaySong.DeskMediaControl
                 _currentText = newText;
                 _currentBaseText = newBaseText;
                 _songText.Text = newText;
+                SongShown?.Invoke(songInfo);
                 Visibility = Visibility.Visible;
 
                 // Natural width: measured without the ellipsis limit the scroll toggle may have set
