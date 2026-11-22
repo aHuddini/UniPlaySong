@@ -17,6 +17,7 @@ namespace UniPlaySong.DeskMediaControl
         public string Detail { get; }
         public string Path { get; }     // the song file; null for Spotify rows
         public bool Playable { get; }
+        public bool IsPrimary { get; }  // the game's primary song (plays first when the game is selected)
 
         // Changes in place when the next song starts, so the card moves its marker without rebuilding the list
         public bool IsCurrent
@@ -58,10 +59,12 @@ namespace UniPlaySong.DeskMediaControl
 
         // Same row as another: same song in the same place (the playing flag aside)
         internal bool SameRow(NowPlayingCardTrack other) =>
-            other != null && Title == other.Title && Detail == other.Detail && Path == other.Path && Playable == other.Playable;
+            other != null && Title == other.Title && Detail == other.Detail && Path == other.Path && Playable == other.Playable
+            && IsPrimary == other.IsPrimary;
 
-        public NowPlayingCardTrack(string title, string detail, string path, bool isCurrent, bool playable)
+        public NowPlayingCardTrack(string title, string detail, string path, bool isCurrent, bool playable, bool isPrimary = false)
         {
+            IsPrimary = isPrimary;
             Title = title ?? string.Empty;
             Detail = detail ?? string.Empty;
             Path = path;
@@ -76,7 +79,8 @@ namespace UniPlaySong.DeskMediaControl
     {
         public static (NowPlayingCardContext Context, IReadOnlyList<NowPlayingCardTrack> Rows) Build(
             bool spotify, bool radio, bool defaultMusic, string currentPath, string currentTitle,
-            IReadOnlyList<string> gameSongs, IReadOnlyList<RecentTrack> upNext, IReadOnlyList<RecentTrack> spotifyRecent)
+            IReadOnlyList<string> gameSongs, IReadOnlyList<RecentTrack> upNext, IReadOnlyList<RecentTrack> spotifyRecent,
+            string primaryPath = null)
         {
             // Spotify's history: what was heard, not something UniPlaySong can start
             if (spotify)
@@ -97,7 +101,8 @@ namespace UniPlaySong.DeskMediaControl
 
             return (NowPlayingCardContext.GameSongs, (gameSongs ?? new string[0])
                 .Select(p => new NowPlayingCardTrack(System.IO.Path.GetFileNameWithoutExtension(p), null, p,
-                    string.Equals(p, currentPath, System.StringComparison.OrdinalIgnoreCase), true))
+                    string.Equals(p, currentPath, System.StringComparison.OrdinalIgnoreCase), true,
+                    string.Equals(p, primaryPath, System.StringComparison.OrdinalIgnoreCase)))
                 .ToList());
         }
     }

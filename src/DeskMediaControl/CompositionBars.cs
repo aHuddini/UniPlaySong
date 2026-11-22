@@ -24,6 +24,14 @@ namespace UniPlaySong.DeskMediaControl
         private readonly SpriteVisual[] _bars = new SpriteVisual[Loops.Length];
         private Rect _placedBars = Rect.Empty, _placedClip = Rect.Empty;
         private bool _live;
+        private readonly CompositionColorBrush _brush; // one brush for the three bars
+
+        // The bars' colour (the playing row's: accent, or the primary song's tint)
+        public void SetColor(System.Windows.Media.Color c)
+        {
+            var next = WinColor.FromArgb(c.A, c.R, c.G, c.B);
+            if (!_brush.Color.Equals(next)) _brush.Color = next;
+        }
 
         private CompositionBars(Compositor compositor, ICompositionTarget target, System.Windows.Media.Color accent)
         {
@@ -37,11 +45,11 @@ namespace UniPlaySong.DeskMediaControl
             root.Children.InsertAtTop(_clip);
             _group = compositor.CreateContainerVisual();
             _clip.Children.InsertAtTop(_group);
-            var brush = compositor.CreateColorBrush(WinColor.FromArgb(accent.A, accent.R, accent.G, accent.B));
+            _brush = compositor.CreateColorBrush(WinColor.FromArgb(accent.A, accent.R, accent.G, accent.B));
             for (int i = 0; i < _bars.Length; i++)
             {
                 _bars[i] = compositor.CreateSpriteVisual();
-                _bars[i].Brush = brush;
+                _bars[i].Brush = _brush;
                 _group.Children.InsertAtTop(_bars[i]);
             }
         }

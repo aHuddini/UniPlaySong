@@ -339,7 +339,7 @@ namespace UniPlaySong.DeskMediaControl
             _cardCloseTimer.Tick += (s, e) =>
             {
                 _cardCloseTimer.Stop();
-                if (_card?.Pinned == true) return;
+                if (_card?.HoldOpen == true) return;
                 // Still on the way between the bar and the card, or the card just folded its list away under the mouse
                 if (MouseInCardZone() || (_card != null && DateTime.UtcNow < _card.KeepOpenUntil)) _cardCloseTimer.Start();
                 else _card?.HideCard();
@@ -502,7 +502,7 @@ namespace UniPlaySong.DeskMediaControl
             _card = new NowPlayingCard(owner, _cardHost);
             _card.MouseEnter += (s, e) => _cardCloseTimer?.Stop();
             _card.MouseLeave += (s, e) => _cardCloseTimer?.Start();
-            _card.Unpinned += () => _cardCloseTimer?.Start(); // closes once the mouse is away
+            _card.Released += () => _cardCloseTimer?.Start(); // closes once the mouse is away
             // A pinned card stays under Now Playing when Playnite's window moves or resizes
             EventHandler follow = (s, e) => { if (_card.Pinned && _card.IsOpen) OpenCard(); };
             owner.LocationChanged += follow;

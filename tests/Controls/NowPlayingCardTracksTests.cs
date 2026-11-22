@@ -32,9 +32,10 @@ namespace UniPlaySong.Tests.Controls
             Assert.AreEqual(NowPlayingCardContext.SpotifyRecent, sp.Context);
             Assert.IsFalse(sp.Rows.Any(r => r.Playable));
 
-            var game = NowPlayingCardTracks.Build(false, false, false, @"C:\m\a2.mp3", "a2", gameSongs, upNext, spotify);
+            var game = NowPlayingCardTracks.Build(false, false, false, @"C:\m\a2.mp3", "a2", gameSongs, upNext, spotify, @"C:\M\A1.mp3");
             Assert.AreEqual(NowPlayingCardContext.GameSongs, game.Context);
             Assert.AreEqual(new[] { false, true }, game.Rows.Select(r => r.IsCurrent).ToArray());
+            Assert.AreEqual(new[] { true, false }, game.Rows.Select(r => r.IsPrimary).ToArray()); // path case ignored
         }
     }
 }

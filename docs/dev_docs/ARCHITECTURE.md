@@ -318,6 +318,10 @@ element below Playnite's `TopPanel` (hit-test walk; `CardTopEdge`). The playing 
 WPF effects: Glass (D2) by default, Art (F) with `ShowNowPlayingCardArt`, D when the game has no art; the rest are kept,
 unused, for the pop-out player. Hidden for look work: right-click the banner cycles every look, Ctrl+right-click hides
 the art layers (`DevIndex`, `GlassBanner`, not persisted).
+Right-clicking one of the game's songs (game-songs context only) offers Set/Clear primary song and Move to Recycle Bin:
+`SongRecycler` lets the player go of the playing song (skip, or stop for a game's only song), waits for the file to be
+free, then uses the shell's recycle; the host clears the primary song if needed and calls `InvalidateCacheForGame`. The
+primary song's row is tinted (`PrimaryTint`), not starred: a star or heart is kept for a future "liked songs".
 
 #### Key Features
 

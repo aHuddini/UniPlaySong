@@ -22,6 +22,9 @@ namespace UniPlaySong.DeskMediaControl
         public Func<bool> CardShowsArt;                    // the Art look over the Glass one
         public Action ToggleEqualizer, ToggleLiveEffects;
         public Action<NowPlayingCardTrack> PlayTrack;
+        public Action<string> SetPrimarySong;               // a song of the playing game
+        public Action ClearPrimarySong;
+        public Func<string, System.Threading.Tasks.Task<bool>> RecycleSong; // true once it's in the Recycle Bin
         public Func<string, TimeSpan> SongLength;   // read from the file; called off the UI thread
         public Func<bool> CanSeek;
         public Func<int> MusicVolume;             // 0..100
@@ -85,6 +88,7 @@ namespace UniPlaySong.DeskMediaControl
         public bool CalmDownOn { get; private set; }
         public string ListHeader { get; private set; }
         public bool HasList { get; private set; }
+        public NowPlayingCardContext Context { get; private set; }
         public IReadOnlyList<NowPlayingCardTrack> Tracks { get; private set; } = new NowPlayingCardTrack[0];
         public bool CanOpenFolder { get; private set; }
         public bool CanSeek { get; private set; }
@@ -151,6 +155,7 @@ namespace UniPlaySong.DeskMediaControl
             LoadLengths(Tracks);
             UpdateLive();
             HasList = context != NowPlayingCardContext.None;
+            Context = context;
             _header = Header(context, rows.Count);
             if (context != NowPlayingCardContext.GameSongs) _sizeText = null;
             ShowHeader();
@@ -309,8 +314,24 @@ namespace UniPlaySong.DeskMediaControl
 
         private void ShowHeader()
         {
-            ListHeader = (_sizeText == null ? _header : _header + " · " + _sizeText).ToUpperInvariant();
+            var text = DateTime.UtcNow < _noteUntil ? _note : _sizeText == null ? _header : _header + " · " + _sizeText;
+            ListHeader = text.ToUpperInvariant();
             Set(nameof(ListHeader));
+        }
+
+        // A few seconds in place of the header ("Moved to Recycle Bin: …"); list refreshes meanwhile keep it
+        private string _note;
+        private DateTime _noteUntil;
+        private static readonly TimeSpan NoteTime = TimeSpan.FromSeconds(4);
+
+        public void ShowNote(string note)
+        {
+            _note = note;
+            _noteUntil = DateTime.UtcNow + NoteTime;
+            ShowHeader();
+            var timer = new System.Windows.Threading.DispatcherTimer { Interval = NoteTime + TimeSpan.FromMilliseconds(100) };
+            timer.Tick += (s, e) => { timer.Stop(); ShowHeader(); };
+            timer.Start();
         }
 
         private void LoadSize(IReadOnlyList<NowPlayingCardTrack> rows)

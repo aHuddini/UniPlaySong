@@ -115,12 +115,16 @@ namespace UniPlaySong.DeskMediaControl
 
         // Pinned: the card stays open when the mouse leaves, until it's unpinned or the music stops
         public bool Pinned { get; private set; }
-        public event Action Unpinned;
+
+        // Stays open through the mouse leaving: pinned, or its right-click menu is up (the menu can reach past the card)
+        public bool HoldOpen => Pinned || _menuOpen;
+        public event Action Released; // no longer held: close once the mouse is away
+        private bool _menuOpen;
 
         private void Pin_Click(object sender, RoutedEventArgs e)
         {
             SetPinned(!Pinned);
-            if (!Pinned) Unpinned?.Invoke();
+            if (!Pinned) Released?.Invoke();
         }
 
         private void SetPinned(bool on)
@@ -321,6 +325,7 @@ namespace UniPlaySong.DeskMediaControl
             {
                 var bounds = icon.TransformToAncestor(this).TransformBounds(new Rect(0, 0, icon.ActualWidth, icon.ActualHeight));
                 var clip = TrackScroll.TransformToAncestor(this).TransformBounds(new Rect(0, 0, TrackScroll.ActualWidth, TrackScroll.ActualHeight));
+                _bars.SetColor(((SolidColorBrush)FindResource(row.IsPrimary ? "PrimaryTint" : "Accent")).Color);
                 _bars.Place(bounds, clip, VisualTreeHelper.GetDpi(this).DpiScaleX);
                 _bars.SetLive(true);
                 icon.Opacity = 0;
@@ -455,6 +460,45 @@ namespace UniPlaySong.DeskMediaControl
                 _model.MarkPicked(track); // the marker moves now, not after the old song has faded out
                 _host.PlayTrack?.Invoke(track);
             }
+        }
+
+        // Right-click one of this game's songs: primary song, Recycle Bin. Radio's queue and Spotify's history aren't
+        // this game's songs, so they get no menu.
+        private void Track_RightClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (!((sender as FrameworkElement)?.DataContext is NowPlayingCardTrack track) || track.Path == null
+                || _model.Context != NowPlayingCardContext.GameSongs) return;
+            e.Handled = true;
+            var menu = new ContextMenu
+            {
+                Style = (Style)FindResource("CardMenu"),
+                PlacementTarget = (UIElement)sender,
+                Placement = System.Windows.Controls.Primitives.PlacementMode.MousePoint,
+            };
+            menu.Items.Add(CardMenuItem(track.IsPrimary ? "Clear primary song" : "Set as primary song", () =>
+            {
+                if (track.IsPrimary) _host.ClearPrimarySong?.Invoke();
+                else _host.SetPrimarySong?.Invoke(track.Path);
+                _model.Refresh();
+            }));
+            menu.Items.Add(CardMenuItem("Move to Recycle Bin", () => Recycle(track)));
+            menu.Opened += (s, a) => _menuOpen = true;
+            menu.Closed += (s, a) => { _menuOpen = false; Released?.Invoke(); };
+            menu.IsOpen = true;
+        }
+
+        private MenuItem CardMenuItem(string header, Action action)
+        {
+            var item = new MenuItem { Header = header, Style = (Style)FindResource("CardMenuItem") };
+            item.Click += (s, e) => action();
+            return item;
+        }
+
+        private async void Recycle(NowPlayingCardTrack track)
+        {
+            bool moved = _host.RecycleSong != null && await _host.RecycleSong(track.Path);
+            _model.Refresh();
+            _model.ShowNote(moved ? "Moved to Recycle Bin: " + track.Title : "Couldn't move " + track.Title + ", it's in use");
         }
 
         private static readonly Duration TintFade = new Duration(TimeSpan.FromMilliseconds(900)); // a game change: slow enough to notice, eased

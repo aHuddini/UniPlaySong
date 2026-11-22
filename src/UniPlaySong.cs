@@ -2473,7 +2473,29 @@ namespace UniPlaySong
             return DeskMediaControl.NowPlayingCardTracks.Build(
                 IsSpotifyTheActiveMediaSource(), radio, _playbackService?.IsPlayingDefaultMusic == true,
                 _playbackService?.CurrentSongPath, _settings?.NowPlayingTitle, songs,
-                Services.RecentTracks.RadioUpNext.Items.ToList(), Services.RecentTracks.Spotify.Items.ToList());
+                Services.RecentTracks.RadioUpNext.Items.ToList(), Services.RecentTracks.Spotify.Items.ToList(),
+                game == null ? null : _fileService?.GetPrimarySong(game));
+        }
+
+        // The card's "Move to Recycle Bin" for a song of the playing game. The playing song is skipped first (the music
+        // stops if it's the game's only song); afterwards the primary song is cleared if it was this one, and the cache
+        // (song list, music tags) is refreshed.
+        private async System.Threading.Tasks.Task<bool> RecycleNowPlayingCardSong(string path)
+        {
+            var game = _playbackService?.CurrentGame;
+            if (game == null || _fileService == null) return false;
+            bool playing = string.Equals(path, _playbackService.CurrentSongPath, StringComparison.OrdinalIgnoreCase);
+            bool onlySong = _fileService.GetAvailableSongs(game).Count < 2;
+            bool primary = string.Equals(path, _fileService.GetPrimarySong(game), StringComparison.OrdinalIgnoreCase);
+            bool moved = await Services.SongRecycler.RecycleAsync(path, playing,
+                () => { if (onlySong) _playbackService.Stop(); else _playbackService.SkipToNextSong(); },
+                message => _fileLogger?.Warn(message));
+            if (moved)
+            {
+                if (primary) _fileService.ClearPrimarySong(game);
+                _fileService.InvalidateCacheForGame(game);
+            }
+            return moved;
         }
 
         // The card's banner art: the game's background (or cover) while its music plays, so the banner matches what's
@@ -3037,6 +3059,9 @@ namespace UniPlaySong
                     ToggleEqualizer = () => UpdateSettingsFromMenu(s => s.EqualizerEnabled = !s.EqualizerEnabled, "NowPlayingCard"),
                     ToggleLiveEffects = () => UpdateSettingsFromMenu(s => s.LiveEffectsEnabled = !s.LiveEffectsEnabled, "NowPlayingCard"),
                     PlayTrack = PlayNowPlayingCardTrack,
+                    SetPrimarySong = path => { var g = _playbackService?.CurrentGame; if (g != null) _fileService?.SetPrimarySong(g, path); },
+                    ClearPrimarySong = () => { var g = _playbackService?.CurrentGame; if (g != null) _fileService?.ClearPrimarySong(g); },
+                    RecycleSong = RecycleNowPlayingCardSong,
                     CanSeek = () => _activeMediaService?.CanSeek == true,
                     MusicVolume = () => _settings?.MusicVolume ?? 0,
                     CanSetVolume = () => !IsSpotifyTheActiveMediaSource(),

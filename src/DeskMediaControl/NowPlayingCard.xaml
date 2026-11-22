@@ -40,6 +40,42 @@
         <Geometry x:Key="IconSpeaker">M1.5,5.5 H4.5 L8.5,2 V14 L4.5,10.5 H1.5 Z M10.5,5.2 A3.6,3.6 0 0 1 10.5,10.8 L11.4,11.8 A5,5 0 0 0 11.4,4.2 Z</Geometry>
         <!-- Three faders, knobs at different heights (F1: overlapping parts fill rather than cancel) -->
         <Geometry x:Key="IconEqualizer">F1 M2.4,1 H4.6 V15 H2.4 Z M1,8.6 H6 V11.4 H1 Z M6.9,1 H9.1 V15 H6.9 Z M5.5,3.8 H10.5 V6.6 H5.5 Z M11.4,1 H13.6 V15 H11.4 Z M10,10.2 H15 V13 H10 Z</Geometry>
+        <!-- The game's primary song: its title (and the playing marker, when it plays) in this colour -->
+        <SolidColorBrush x:Key="PrimaryTint" Color="#E9A8F2"/>
+
+        <!-- The song list's right-click menu, drawn like the card (a theme's menu styles would otherwise apply) -->
+        <Style x:Key="CardMenu" TargetType="ContextMenu">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="HasDropShadow" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="#F2191D26" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6" Padding="4">
+                            <StackPanel IsItemsHost="True"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CardMenuItem" TargetType="MenuItem">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="Bg" Background="Transparent" CornerRadius="4" Padding="10,6">
+                            <TextBlock Text="{Binding Header, RelativeSource={RelativeSource TemplatedParent}}" Foreground="#F2F4F8"
+                                       FontFamily="Segoe UI" FontSize="12.5"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Bg" Property="Background" Value="#1FFFFFFF"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Geometry x:Key="IconFolder">M1.5,3.5 A1,1 0 0 1 2.5,2.5 H6.1 L7.6,4.1 H13.5 A1,1 0 0 1 14.5,5.1 V12.5 A1,1 0 0 1 13.5,13.5 H2.5 A1,1 0 0 1 1.5,12.5 Z</Geometry>
 
         <!-- Round icon button: equal square box, icon centred; Tag carries the geometry -->
@@ -298,7 +334,7 @@
                     <ItemsControl x:Name="TrackList" ItemsSource="{Binding Tracks}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Click="Track_Click" Focusable="False" Cursor="Hand" IsEnabled="{Binding Playable}">
+                                <Button Click="Track_Click" MouseRightButtonUp="Track_RightClick" Focusable="False" Cursor="Hand" IsEnabled="{Binding Playable}">
                                     <Button.Template>
                                         <ControlTemplate TargetType="Button">
                                             <Border x:Name="Row" Background="Transparent" CornerRadius="5" Padding="6,5">
@@ -331,6 +367,14 @@
                                                     <Setter TargetName="RowTitle" Property="Foreground" Value="{StaticResource Accent}"/>
                                                     <Setter TargetName="RowTitle" Property="Opacity" Value="1"/>
                                                     <Setter TargetName="NowIcon" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsPrimary}" Value="True">
+                                                    <Setter TargetName="RowTitle" Property="Foreground" Value="{StaticResource PrimaryTint}"/>
+                                                    <Setter TargetName="RowTitle" Property="Opacity" Value="1"/>
+                                                    <Setter TargetName="RowTitle" Property="ToolTip" Value="Primary song"/>
+                                                    <Setter TargetName="Bar1" Property="Fill" Value="{StaticResource PrimaryTint}"/>
+                                                    <Setter TargetName="Bar2" Property="Fill" Value="{StaticResource PrimaryTint}"/>
+                                                    <Setter TargetName="Bar3" Property="Fill" Value="{StaticResource PrimaryTint}"/>
                                                 </DataTrigger>
                                                 <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Row" Property="Background" Value="#12FFFFFF"/></Trigger>
                                             </ControlTemplate.Triggers>
