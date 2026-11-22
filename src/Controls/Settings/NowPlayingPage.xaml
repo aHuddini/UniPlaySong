@@ -38,20 +38,6 @@
                 <TextBlock Text="When enabled, shows [Default] prefix in the Now Playing ticker when default/fallback music is playing"
                            Style="{StaticResource UpsHintIndented}"/>
 
-                <CheckBox Style="{StaticResource UpsToggleChild}" Content="Show a song card when hovering Now Playing"
-                          IsChecked="{Binding Settings.ShowNowPlayingCard}"
-                          IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
-                          />
-                <TextBlock Text="Pops in under Now Playing with playback controls, the song list and the music folder. Clicking Now Playing opens it too. Turn off to keep a tooltip and open the folder on click."
-                           Style="{StaticResource UpsHintIndented}"/>
-
-                <CheckBox Style="{StaticResource UpsToggleChild}" Content="Show the game's art on the card"
-                          IsChecked="{Binding Settings.ShowNowPlayingCardArt}"
-                          IsEnabled="{Binding Settings.ShowNowPlayingCard}"
-                          />
-                <TextBlock Text="The top of the card shows the playing game's artwork. Turn off for tinted glass in the art's colours."
-                           Style="{StaticResource UpsHintIndented}"/>
-
                 <CheckBox Style="{StaticResource UpsToggleChild}" Content="Scroll long song titles"
                           IsChecked="{Binding Settings.ScrollNowPlayingTitle}"
                           IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
@@ -107,6 +93,23 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
+
+            <Border Style="{StaticResource UpsSectionBar}">
+                <TextBlock ups:TrackedCaps.Text="Now Playing Mini Player Hover Card" Style="{StaticResource UpsSectionTitle}"/>
+            </Border>
+                <CheckBox Style="{StaticResource UpsToggle}" Content="Show a song card when hovering Now Playing"
+                          IsChecked="{Binding Settings.ShowNowPlayingCard}"
+                          IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
+                          />
+                <TextBlock Text="Pops in under Now Playing with playback controls, the song list and the music folder. Clicking Now Playing opens it too. Turn off to keep a tooltip and open the folder on click."
+                           Style="{StaticResource UpsHint}"/>
+
+                <CheckBox Style="{StaticResource UpsToggleChild}" Content="Show the game's art on the card"
+                          IsChecked="{Binding Settings.ShowNowPlayingCardArt}"
+                          IsEnabled="{Binding Settings.ShowNowPlayingCard}"
+                          />
+                <TextBlock Text="The top of the card shows the playing game's artwork. Turn off for tinted glass in the art's colours."
+                           Style="{StaticResource UpsHintIndented}"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
