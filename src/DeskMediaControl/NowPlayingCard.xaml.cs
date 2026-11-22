@@ -113,8 +113,26 @@ namespace UniPlaySong.DeskMediaControl
             }
         }
 
+        // Pinned: the card stays open when the mouse leaves, until it's unpinned or the music stops
+        public bool Pinned { get; private set; }
+        public event Action Unpinned;
+
+        private void Pin_Click(object sender, RoutedEventArgs e)
+        {
+            SetPinned(!Pinned);
+            if (!Pinned) Unpinned?.Invoke();
+        }
+
+        private void SetPinned(bool on)
+        {
+            Pinned = on;
+            PinButton.Foreground = on ? CalmOnBrush : CalmOffBrush;
+            PinButton.ToolTip = on ? "Unpin" : "Pin: keep the card open";
+        }
+
         public void HideCard()
         {
+            if (Pinned) SetPinned(false);
             _tick.Stop();
             _model.SetShown(false);
             UpdateBars();
@@ -439,7 +457,7 @@ namespace UniPlaySong.DeskMediaControl
             }
         }
 
-        private static readonly Duration TintFade = new Duration(TimeSpan.FromMilliseconds(600));
+        private static readonly Duration TintFade = new Duration(TimeSpan.FromMilliseconds(900)); // a game change: slow enough to notice, eased
 
         // The art's colour, toned down so the banner reads as a dark tinted glass rather than a bright swatch
         private bool _glass;
@@ -451,15 +469,23 @@ namespace UniPlaySong.DeskMediaControl
 
         // Scales a colour's brightness, keeping its hue: by a factor, or (value > 0) to that brightness, so every
         // game's tint lands equally dark however bright its art is
-        private static Color Shade(Color c, byte alpha, double factor, double value)
+        private static Color Shade(Color c, byte alpha, double factor, double value, double saturation = 1)
         {
             if (value > 0)
             {
                 int max = Math.Max(c.R, Math.Max(c.G, c.B));
                 factor = max == 0 ? 0 : value * 255 / max;
             }
-            return Color.FromArgb(alpha, (byte)Math.Min(255, c.R * factor), (byte)Math.Min(255, c.G * factor), (byte)Math.Min(255, c.B * factor));
+            double r = c.R * factor, g = c.G * factor, b = c.B * factor;
+            if (saturation != 1)
+            {
+                double grey = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                r = grey + (r - grey) * saturation; g = grey + (g - grey) * saturation; b = grey + (b - grey) * saturation;
+            }
+            return Color.FromArgb(alpha, Channel(r), Channel(g), Channel(b));
         }
+
+        private static byte Channel(double v) => (byte)Math.Max(0, Math.Min(255, v));
 
         // Fine monochrome noise, tiled; drawn pixel for pixel
         private static readonly ImageBrush GrainBrush = MakeGrain();
@@ -500,7 +526,7 @@ namespace UniPlaySong.DeskMediaControl
             if (look.BannerTintAlpha > 0)
             {
                 FadeTo(_bannerVivid, Shade(_model.TintVivid, look.BannerTintAlpha, 1, look.BannerTintValue));
-                FadeTo(_bannerDark, Shade(_model.TintDark, look.BannerTintAlpha, 1, look.BannerTintDarkValue));
+                FadeTo(_bannerDark, Shade(_model.TintDark, look.BannerTintAlpha, 1, look.BannerTintDarkValue, look.BannerTintDarkSaturation));
             }
         }
 

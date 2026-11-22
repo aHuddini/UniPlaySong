@@ -17,6 +17,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added "Use legacy scroll animation" (`UseLegacyNowPlayingAnimation`, General → Now Playing, default off): scrolls the Now Playing title the pre-1.9.5 way, for themes that misplace the compositor's title
 - Added the Now Playing Mini Player Hover Card, a new feature: hovering or clicking Now Playing opens a card with the song, controls, seeking, a context-aware song list and the music folder (`ShowNowPlayingCard`, own settings section, default on)
 - Added a vertical Music Volume slider to the Now Playing card, beside the song list: live while dragging, saved on release, 5% per wheel notch; hidden while Spotify plays
+- Added a pin to the Now Playing card: pinned, it stays open when the mouse leaves and follows Playnite's window; it still closes when the music stops
 - Added Equalizer and Live Effects toggles to the Now Playing card, opposite Calm Down and the pin; all three show grey when off and blue when on
 - Added "Show the game's art on the card" (`ShowNowPlayingCardArt`, General → Now Playing → Mini Player Hover Card, default off): a progressively blurred art banner instead of tinted glass; games without art get plain glass (`BannerLook`)
 

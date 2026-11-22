@@ -5,7 +5,7 @@ Packages:
     ReleaseDate: 2026-11-16
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.5/UniPlaySong-1_9_5.pext'
     Changelog:
-      - '[New Feature] Now Playing Mini Player Hover Card (brand new): hover or click Now Playing for the song, playback controls, seeking, volume, EQ / Live Effects toggles and the song list.'
+      - '[New Feature] Now Playing Desktop Mini Player Hover Card (brand new): hover or click Now Playing for the song, playback controls, seeking, volume, EQ / Live Effects toggles, a pin to keep it open, and the song list.'
       - '[New Feature] Keyboard Shortcuts (Add-On Settings > General, also in Quick Start): Play/Pause, Next, Calm Down and volume up/down from anywhere in Windows, media keys included; replaces the Experimental media keys option.'
       - '[New Feature] Play Next in Radio Queue: in Radio Mode (game music), open a game''s menu in your Library to play its music next.'
       - '[New Feature] Themes can show the next 5 Radio Mode songs (UPS_RadioUpNext; see the theme integration guide on GitHub).'

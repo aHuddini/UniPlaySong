@@ -26,6 +26,7 @@ namespace UniPlaySong.DeskMediaControl
         public Color ListShade;                             // the list alone (whole-card looks)
         public byte BannerTintAlpha;                        // > 0: the banner shaded with the art's two colours instead
         public double BannerTintValue, BannerTintDarkValue; // their brightness, hue kept
+        public double BannerTintDarkSaturation = 1;         // the dark colour's saturation lift (dark colours read greyer)
 
         public static readonly BannerLook[] All =
         {
@@ -116,7 +117,7 @@ namespace UniPlaySong.DeskMediaControl
             new BannerLook
             {
                 Name = "D2 (glass, dark banner)", WholeCard = true, Glass = 0x80201812,
-                BannerTintAlpha = 0x73, BannerTintValue = 0.40, BannerTintDarkValue = 0.18,
+                BannerTintAlpha = 0x73, BannerTintValue = 0.32, BannerTintDarkValue = 0.32, BannerTintDarkSaturation = 1.25,
                 ListShade = Color.FromArgb(0x40, 0x12, 0x18, 0x20),
                 Frost = Color.FromArgb(0x05, 0xFF, 0xFF, 0xFF), Grain = 0.02,
                 Veil = Colors.Transparent, VignetteMid = Colors.Transparent, VignetteEdge = Colors.Transparent,
