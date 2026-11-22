@@ -1,33 +1,57 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using UniPlaySong.Common;
 using UniPlaySong.Services;
 
 namespace UniPlaySong.Controls.Settings
 {
-    // Each row's Tag names its ShortcutAction; the setting is "Shortcut" + Tag. The live shortcuts are suspended for as
-    // long as the settings window is open (the view model's BeginEdit/EndEdit/CancelEdit), so a bound one records.
+    // A box's text: "Press keys…" while it records, else the saved shortcut spaced ("Media Next Track"), or "Not set".
+    public class ShortcutTextConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values.Length > 1 && values[1] is bool recording && recording) return "Press keys…";
+            var saved = values[0] as string;
+            return string.IsNullOrEmpty(saved) ? "Not set" : Regex.Replace(saved, "(?<=[a-z])(?=[A-Z])", " ");
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+            => throw new NotSupportedException();
+    }
+
+    // Each row's Tag names its ShortcutAction; the setting is "Shortcut" + Tag. The boxes bind to the setting, so this
+    // page's two copies (General and Quick Start) and a reset or import all show the same value. The live shortcuts
+    // are suspended while the settings window is open (the view model's BeginEdit/EndEdit/CancelEdit), so a bound
+    // one records instead of firing.
     public partial class KeyboardShortcutsPage : UserControl
     {
-        private const string NotSet = "Not set";
-        private const string Recording = "Press keys…";
+        private static readonly ShortcutTextConverter TextConverter = new ShortcutTextConverter();
 
         public KeyboardShortcutsPage()
         {
             InitializeComponent();
             foreach (var box in Boxes)
             {
-                box.GotKeyboardFocus += (s, e) => box.Text = Recording;
-                box.LostKeyboardFocus += (s, e) => Show(box);
+                box.SetBinding(TextBox.TextProperty, new MultiBinding
+                {
+                    Converter = TextConverter,
+                    Mode = BindingMode.OneWay,
+                    Bindings =
+                    {
+                        new Binding("Settings.Shortcut" + box.Tag),
+                        new Binding(nameof(IsKeyboardFocused)) { RelativeSource = RelativeSource.Self },
+                    },
+                });
                 box.PreviewKeyDown += Box_PreviewKeyDown;
             }
             Loaded += (s, e) =>
             {
-                foreach (var box in Boxes) Show(box);
                 var refused = Hotkeys?.Refused;
                 if (refused != null)
                     foreach (var action in refused) Warn(action.ToString(), "Another app is already using this shortcut.");
@@ -49,13 +73,6 @@ namespace UniPlaySong.Controls.Settings
         {
             if (Settings == null) return;
             typeof(UniPlaySongSettings).GetProperty("Shortcut" + action)?.SetValue(Settings, value);
-        }
-
-        private void Show(TextBox box)
-        {
-            var value = Get((string)box.Tag);
-            // Saved as key names ("MediaNextTrack"); shown spaced ("Media Next Track").
-            box.Text = string.IsNullOrEmpty(value) ? NotSet : Regex.Replace(value, "(?<=[a-z])(?=[A-Z])", " ");
         }
 
         private void Warn(string action, string text)
@@ -101,7 +118,6 @@ namespace UniPlaySong.Controls.Settings
             {
                 Set((string)other.Tag, "");
                 Warn((string)other.Tag, null);
-                Show(other);
             }
 
             Set(action, text);
@@ -114,8 +130,6 @@ namespace UniPlaySong.Controls.Settings
             var action = (string)((FrameworkElement)sender).Tag;
             Set(action, "");
             Warn(action, null);
-            var box = Boxes.FirstOrDefault(b => (string)b.Tag == action);
-            if (box != null) Show(box);
         }
     }
 }

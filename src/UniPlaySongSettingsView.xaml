@@ -185,6 +185,9 @@
                 <TabItem Header="Equalizer (EQ)">
                     <settings:EqualizerPage/>
                 </TabItem>
+                <TabItem Header="Keyboard Shortcuts">
+                    <settings:KeyboardShortcutsPage/>
+                </TabItem>
             </TabControl>
         </TabItem>
 

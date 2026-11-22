@@ -692,7 +692,7 @@ page it appears on will be cleared by a button the user never associated with it
 | Group | Pages |
 |---|---|
 | **About** | Overview (What's New, Troubleshooting), Credits, Links, Donate |
-| **Quick Start** | Profiles, Equalizer (EQ) |
+| **Quick Start** | Profiles, Equalizer (EQ), Keyboard Shortcuts |
 | **Setup** | Tools, Downloads, Automations |
 | **General** | Media Controls, Keyboard Shortcuts, Now Playing, Tagging, Performance, Miscellaneous |
 | **Playback** | Startup, Music Mode, Default Music, Randomization, Trigger Methods, Global Override |
