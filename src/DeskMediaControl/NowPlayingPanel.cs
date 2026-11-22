@@ -70,6 +70,7 @@ namespace UniPlaySong.DeskMediaControl
         private Rect _tickerShown = Rect.Empty;
         private bool _tickerVisible;
         private bool _placeQueued;
+        private DispatcherTimer _coverCheck; // rechecks what covers the title (see StartCoverCheck)
 
         // Embedded progress bar (BelowNowPlaying mode)
         private Rectangle _embeddedProgressTrack;
@@ -461,6 +462,7 @@ namespace UniPlaySong.DeskMediaControl
                     _tickerPlacement = Rect.Empty;
                     _tickerShown = Rect.Empty;
                     _tickerVisible = false;
+                    StartCoverCheck();
                     UpdateMotion();
                     return;
                 }
@@ -491,6 +493,7 @@ namespace UniPlaySong.DeskMediaControl
         {
             if (!_useTicker) return;
             _useTicker = false;
+            _coverCheck?.Stop();
             _ticker?.StopScroll();
             _ticker?.Hide();
             _tickerVisible = false;
@@ -507,6 +510,19 @@ namespace UniPlaySong.DeskMediaControl
             _tickerTried = true;
             _ticker = CompositionTicker.TryCreate(window, _log);
             return _ticker != null;
+        }
+
+        // Something can cover the title without a layout pass: Playnite's dim overlay behind a dialog, a theme's
+        // pulsing button. While the compositor draws the title, recheck what covers it twice a second (hit tests only;
+        // the compositor is only told about a change).
+        private void StartCoverCheck()
+        {
+            if (_coverCheck == null)
+            {
+                _coverCheck = new DispatcherTimer(DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(500) };
+                _coverCheck.Tick += (s, e) => PlaceTicker();
+            }
+            _coverCheck.Start();
         }
 
         // LayoutUpdated fires for every layout pass in the window: work out the placement once, after the burst.
