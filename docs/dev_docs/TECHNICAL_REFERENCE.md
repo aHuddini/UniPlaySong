@@ -15,12 +15,13 @@ This document provides detailed technical references for key variables, logic, a
 7. [Preview Mode](#preview-mode)
 8. [Volume and Fade Control](#volume-and-fade-control)
 9. [Controller Input Handling](#controller-input-handling)
-10. [Audio Normalization](#audio-normalization)
-11. [Download Manager](#download-manager)
-12. [Seeking](#seeking)
-13. [Theme Integration](#theme-integration)
-14. [Theme Integration Internals (UPS_MusicControl)](#theme-integration-internals-ups_musiccontrol)
-15. [Debugging Tips](#debugging-tips)
+10. [Keyboard Shortcuts](#keyboard-shortcuts)
+11. [Audio Normalization](#audio-normalization)
+12. [Download Manager](#download-manager)
+13. [Seeking](#seeking)
+14. [Theme Integration](#theme-integration)
+15. [Theme Integration Internals (UPS_MusicControl)](#theme-integration-internals-ups_musiccontrol)
+16. [Debugging Tips](#debugging-tips)
 
 > Theme **developer** documentation (XAML you put in a theme) lives in
 > [THEME_INTEGRATION_GUIDE.md](Theme%20Support/THEME_INTEGRATION_GUIDE.md). This file documents UPS internals.
@@ -567,7 +568,7 @@ public bool ShouldPlayMusic(Game game)
 A session-scoped flag on `MusicPlaybackService` (`_userHasManuallyStartedThisSession`, exposed via `IMusicPlaybackService.UserHasManuallyStartedThisSession`) gates Desktop auto-play when `Settings.AutoPlayOnFirstLaunchDesktop` is `false`. The flag is set `true` by `NotifyManualStart()` calls placed at every manual-play UI path:
 
 - `TopPanelMediaControlViewModel.OnPlayPauseActivated` — Resume + Start-from-Stopped branches
-- `UniPlaySong.OnMediaKeyPlayPause` — Resume branch (taskbar thumbnail shares this handler)
+- `UniPlaySong.OnMediaKeyPlayPause` — Resume branch (taskbar thumbnail and the Play/Pause keyboard shortcut share this handler)
 - `ExternalControlService` — `play` and `playpausetoggle` (Resume branch)
 - `MusicLibraryViewModel.OnPlayPause` — Resume + Start-from-Stopped branches (main playback service only)
 - `DownloadDialogService.OnMusicPausePlayRequested` — Resume branch
@@ -931,6 +932,18 @@ private void CheckLoginBypassButtonPresses(XINPUT_GAMEPAD currentState, XINPUT_G
     }
 }
 ```
+
+---
+
+## Keyboard Shortcuts
+
+System-wide shortcuts (1.9.5+) set on General → Keyboard Shortcuts: Play/Pause, Next, Calm Down, Volume up, Volume down.
+
+- **`GlobalHotkeyService`** — `RegisterHotKey` on a hidden `HwndSource`; knows keys, not music. `Apply(bindings)` unregisters then re-registers (a held combo would otherwise be refused as in use); `Refused` lists combos another app owns; `IsAvailable` trial-registers for the page's live warning.
+- **Suspended while the settings window is open** (`BeginEdit` → `EndEdit`/`CancelEdit`): a Calm Down or volume press would save a settings copy behind the dialog, and the recorder must receive a bound combo instead of firing it. `Apply` during suspension only stores the bindings.
+- **`KeyCombo`** — saved text (`Ctrl+Alt+P`, `MediaPlayPause`) ↔ Win32 modifiers/VK. Typing keys need a modifier; F-keys and media/browser/volume keys work alone.
+- **Actions** (`UniPlaySong.OnShortcutPressed`): Play/Pause and Next reuse `OnMediaKeyPlayPause`/`OnMediaKeyNext`; Calm Down and volume (`MusicVolume` ± `Constants.VolumeShortcutStep`) go through `UpdateSettingsFromMenu`, so they save and their diff event applies them.
+- Replaced the Experimental `EnableMediaKeyControl`; `SettingsService.MigrateMediaKeys` binds media Play/Pause and Next once for users who had it on.
 
 ---
 

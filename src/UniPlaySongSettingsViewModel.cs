@@ -35,6 +35,9 @@ namespace UniPlaySong
             finally { _pcDepth--; }
         }
 
+        // The live shortcuts, so the Keyboard Shortcuts page can pause them while recording and check for conflicts.
+        public Services.GlobalHotkeyService Hotkeys => plugin.GetHotkeyService();
+
         public UniPlaySongSettingsViewModel(UniPlaySong plugin)
         {
             this.plugin = plugin;
@@ -3447,6 +3450,9 @@ namespace UniPlaySong
 
         public void BeginEdit()
         {
+            // Shortcuts stay off while the window is open (see GlobalHotkeyService.Suspend); EndEdit/CancelEdit resume.
+            Hotkeys?.Suspend();
+
             // Adopt whatever settings are actually in effect before showing them.
             //
             // Playnite calls GetSettings once and this view model is cached for the life of the
@@ -3654,6 +3660,7 @@ namespace UniPlaySong
                 Settings = savedSettings;
                 // DefaultMusicPath is NOT modified - it remains separate and untouched
             }
+            Hotkeys?.Resume();
         }
 
         public void EndEdit()
@@ -3694,6 +3701,7 @@ namespace UniPlaySong
                 context: "saving settings",
                 showUserMessage: true
             );
+            Hotkeys?.Resume();
         }
 
         public bool VerifySettings(out List<string> errors)

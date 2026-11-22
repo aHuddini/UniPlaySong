@@ -425,6 +425,11 @@ namespace UniPlaySong
         private bool focusLossIgnoreBrief = false;
         private bool enableRandomPickerMusic = true;
         private bool enableMediaKeyControl = false;
+        private string shortcutPlayPause = "";
+        private string shortcutNext = "";
+        private string shortcutCalmDown = "";
+        private string shortcutVolumeUp = "";
+        private string shortcutVolumeDown = "";
         private bool showTaskbarMediaControls = true;
         private bool showNowPlayingInTopPanel = true;
         private bool hideNowPlayingForDefaultMusic = false;
@@ -1199,12 +1204,53 @@ namespace UniPlaySong
             set { enableRandomPickerMusic = value; OnPropertyChanged(); }
         }
 
-        // Control music playback using keyboard media keys (Play/Pause, Next, Previous)
+        // Legacy: the old Experimental media-key toggle, no longer in the UI. Read once by SettingsService.MigrateMediaKeys.
         public bool EnableMediaKeyControl
         {
             get => enableMediaKeyControl;
             set { enableMediaKeyControl = value; OnPropertyChanged(); }
         }
+
+        // System-wide keyboard shortcuts, saved as KeyCombo text ("Ctrl+Alt+P"); empty = unbound.
+        public string ShortcutPlayPause
+        {
+            get => shortcutPlayPause;
+            set { shortcutPlayPause = value ?? ""; OnPropertyChanged(); }
+        }
+
+        public string ShortcutNext
+        {
+            get => shortcutNext;
+            set { shortcutNext = value ?? ""; OnPropertyChanged(); }
+        }
+
+        public string ShortcutCalmDown
+        {
+            get => shortcutCalmDown;
+            set { shortcutCalmDown = value ?? ""; OnPropertyChanged(); }
+        }
+
+        public string ShortcutVolumeUp
+        {
+            get => shortcutVolumeUp;
+            set { shortcutVolumeUp = value ?? ""; OnPropertyChanged(); }
+        }
+
+        public string ShortcutVolumeDown
+        {
+            get => shortcutVolumeDown;
+            set { shortcutVolumeDown = value ?? ""; OnPropertyChanged(); }
+        }
+
+        [JsonIgnore, Playnite.SDK.Data.DontSerialize]
+        public IReadOnlyDictionary<Services.ShortcutAction, string> ShortcutBindings => new Dictionary<Services.ShortcutAction, string>
+        {
+            [Services.ShortcutAction.PlayPause] = ShortcutPlayPause,
+            [Services.ShortcutAction.Next] = ShortcutNext,
+            [Services.ShortcutAction.CalmDown] = ShortcutCalmDown,
+            [Services.ShortcutAction.VolumeUp] = ShortcutVolumeUp,
+            [Services.ShortcutAction.VolumeDown] = ShortcutVolumeDown,
+        };
 
         // Show media control buttons (Previous/Play-Pause/Next) in the taskbar thumbnail preview
         public bool ShowTaskbarMediaControls

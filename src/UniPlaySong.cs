@@ -112,7 +112,7 @@ namespace UniPlaySong
         private Handlers.HesSplitHandler _hesSplitHandler;
         private Menus.GameMenuBuilder _gameMenuBuilder;
         private Services.AutoDownloadService _autoDownload;
-        private Services.MediaKeyService _mediaKeyService;
+        private Services.GlobalHotkeyService _hotkeyService;
         private Services.TaskbarMediaControls _taskbarMediaControls;
         private IMusicPlaybackCoordinator _coordinator;
         private Services.Spotify.SpotifySmtcClient _spotifyClient;
@@ -932,21 +932,16 @@ namespace UniPlaySong
                 RewarmJinglePlayerIfEnabled, () => _isUsingLiveEffectsPlayer);
             Monitors.RandomPickerMonitor.Attach(_playbackService, _settings, _fileLogger, () => IsFullscreen);
 
-            // Media key control (experimental)
-            if (_settings?.EnableMediaKeyControl == true)
+            // Keyboard shortcuts (General -> Keyboard Shortcuts), system-wide. Re-applied on every settings save.
+            try
             {
-                try
-                {
-                    _mediaKeyService = new Services.MediaKeyService(_fileLogger);
-                    _mediaKeyService.PlayPausePressed += OnMediaKeyPlayPause;
-                    _mediaKeyService.NextTrackPressed += OnMediaKeyNext;
-                    _mediaKeyService.PreviousTrackPressed += OnMediaKeyPrevious;
-                    _mediaKeyService.Start();
-                }
-                catch (Exception ex)
-                {
-                    _fileLogger?.Debug($"MediaKeyService failed to start: {ex.Message}");
-                }
+                _hotkeyService = new Services.GlobalHotkeyService(_fileLogger);
+                _hotkeyService.Pressed += OnShortcutPressed;
+                _hotkeyService.Apply(_settings?.ShortcutBindings);
+            }
+            catch (Exception ex)
+            {
+                _fileLogger?.Debug($"Keyboard shortcuts failed to start: {ex.Message}");
             }
 
             // Taskbar thumbnail media controls (Desktop only)
@@ -1178,8 +1173,8 @@ namespace UniPlaySong
             _focusVerifyTimer?.Stop();
             _focusVerifyTimer = null;
             Monitors.RandomPickerMonitor.Detach();
-            _mediaKeyService?.Dispose();
-            _mediaKeyService = null;
+            _hotkeyService?.Dispose();
+            _hotkeyService = null;
             _nowPlayingPublisher?.Dispose();
             _nowPlayingPublisher = null;
             _publisherMetadata = null;
@@ -1688,6 +1683,8 @@ namespace UniPlaySong
             // teardown — no reason to make that case wait.
             if (_settings != null)
                 Services.SDL2MusicPlayer.SetAudioBufferSamples(_settings.AudioBufferSamples);
+
+            _hotkeyService?.Apply(e.NewSettings?.ShortcutBindings);
 
             // Read live rather than captured, so turning listening history off stops recording at
             // once instead of at the next restart. A settings save swaps the whole settings object,
@@ -2444,6 +2441,27 @@ namespace UniPlaySong
             }
 
             _topPanelMediaControl?.UpdateIcons();
+        }
+
+        // Play/Pause and Next share the media-key/taskbar handlers. Calm Down and volume go through the same settings
+        // writer as the top panel's moon: it saves, and its diff event applies the change (backend swap, new volume).
+        private void OnShortcutPressed(Services.ShortcutAction action)
+        {
+            switch (action)
+            {
+                case Services.ShortcutAction.PlayPause: OnMediaKeyPlayPause(); break;
+                case Services.ShortcutAction.Next: OnMediaKeyNext(); break;
+                case Services.ShortcutAction.CalmDown:
+                    UpdateSettingsFromMenu(s => s.CalmDownModeEnabled = !s.CalmDownModeEnabled, "KeyboardShortcut");
+                    _topPanelMediaControl?.UpdateIcons();
+                    break;
+                case Services.ShortcutAction.VolumeUp:
+                    UpdateSettingsFromMenu(s => s.MusicVolume += Constants.VolumeShortcutStep, "KeyboardShortcut");
+                    break;
+                case Services.ShortcutAction.VolumeDown:
+                    UpdateSettingsFromMenu(s => s.MusicVolume -= Constants.VolumeShortcutStep, "KeyboardShortcut");
+                    break;
+            }
         }
 
         private void OnMediaKeyNext()
@@ -4602,6 +4620,8 @@ namespace UniPlaySong
 
         // Gets the settings service.
         public SettingsService GetSettingsService() => _settingsService;
+
+        public Services.GlobalHotkeyService GetHotkeyService() => _hotkeyService;
 
         // Gets the search cache service.
         public SearchCacheService GetSearchCacheService() => _cacheService;

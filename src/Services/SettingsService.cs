@@ -280,6 +280,7 @@ namespace UniPlaySong.Services
 
             changed |= MigrateExternalAudioResumeDelay(settings);
             changed |= MigrateDefaultMusicState(settings);
+            changed |= MigrateMediaKeys(settings);
 
             if (changed)
             {
@@ -308,6 +309,17 @@ namespace UniPlaySong.Services
             if (settings.DefaultMusicStateMigrated) return false;
             settings.DefaultMusicState = settings.MusicState;
             settings.DefaultMusicStateMigrated = true;
+            return true;
+        }
+
+        // The Experimental media-key toggle became keyboard shortcuts: with it on, media Play/Pause and Next are bound
+        // where the user hasn't set a shortcut. Clearing the toggle makes this run once.
+        internal static bool MigrateMediaKeys(UniPlaySongSettings settings)
+        {
+            if (!settings.EnableMediaKeyControl) return false;
+            if (string.IsNullOrEmpty(settings.ShortcutPlayPause)) settings.ShortcutPlayPause = "MediaPlayPause";
+            if (string.IsNullOrEmpty(settings.ShortcutNext)) settings.ShortcutNext = "MediaNextTrack";
+            settings.EnableMediaKeyControl = false;
             return true;
         }
     }

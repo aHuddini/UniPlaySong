@@ -12,6 +12,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added a UI settings group (Desktop UI, Fullscreen UI) to hide UniPlaySong's game-menu groups and entries, Playnite-menu items and, shared with their original pages, the top panel, sidebar and taskbar controls
 - Added "Play Next in Radio Queue" while Radio Mode plays game music: one of the game's songs goes to the front of the radio queue; in the UniPlaySong submenu and below Music Info Card in Playnite's game menus
 - Added the theme element `UPS_RadioUpNext` and binding `RadioUpNext`: the next 5 radio songs, kept in `RadioUpNextQueue`, which every radio pick (song end, Next, crossfade) takes from, so the list matches what plays
+- Added General → Keyboard Shortcuts: system-wide shortcuts for Play/Pause, Next, Calm Down and Music Volume up/down, any combination including media keys; a combination another app holds is flagged, and changes apply on save (`GlobalHotkeyService`)
 
 ### Fixed
 
@@ -20,6 +21,11 @@ All notable changes to UniPlaySong will be documented in this file.
 - Fixed manual-pick bulk downloads, broader-search retries and Auto-Add More Songs leaving the song-list cache stale
 - Fixed music status tags getting a dead ID after the tag was deleted in Playnite; the tag is now re-created
 - Fixed Back in bulk download's song picker skipping the game; it now returns to album selection for that game
+
+### Removed
+
+- Removed the Experimental "Control music with keyboard media keys" toggle; with it on, media Play/Pause and Next become keyboard shortcuts once
+
 ## [1.9.4] - 2026-11-16
 
 ### Added

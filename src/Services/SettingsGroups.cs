@@ -77,6 +77,11 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.ShowNowPlayingInTopPanel),
                     nameof(UniPlaySongSettings.ShowSettingsSidebarButton),
                     nameof(UniPlaySongSettings.ShowTaskbarMediaControls),
+                    nameof(UniPlaySongSettings.ShortcutCalmDown),
+                    nameof(UniPlaySongSettings.ShortcutNext),
+                    nameof(UniPlaySongSettings.ShortcutPlayPause),
+                    nameof(UniPlaySongSettings.ShortcutVolumeDown),
+                    nameof(UniPlaySongSettings.ShortcutVolumeUp),
                     nameof(UniPlaySongSettings.SpotifyExePath),
                 },
                 [Playback] = new string[]
@@ -376,7 +381,6 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.AlternativeAudioReactiveVisualizerSync),
                     nameof(UniPlaySongSettings.AudioBufferSamples),
                     nameof(UniPlaySongSettings.EnableDebugLogging),
-                    nameof(UniPlaySongSettings.EnableMediaKeyControl),
                     nameof(UniPlaySongSettings.EnableToastAcrylicBlur),
                     nameof(UniPlaySongSettings.IdleAudioDeviceTeardownMinutes),
                     nameof(UniPlaySongSettings.PauseOnThemeOverlay),
@@ -407,6 +411,7 @@ namespace UniPlaySong.Services
         // Machine-specific paths and live runtime state. No reset restores these.
         internal static readonly HashSet<string> NeverReset = new HashSet<string>
         {
+            nameof(UniPlaySongSettings.EnableMediaKeyControl), // legacy, migrated into the Shortcut* settings
             nameof(UniPlaySongSettings.ActiveMediaCanNext),
             nameof(UniPlaySongSettings.ActiveMediaCanPrevious),
             nameof(UniPlaySongSettings.ActiveMediaDurationText),

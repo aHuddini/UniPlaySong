@@ -8,7 +8,7 @@ theme developers integrating *with* UPS want [THEME_INTEGRATION_GUIDE.md](Theme%
 | Doc | Read it when |
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | You need the shape of the system — directory map, service organization, data flow, threading model, extension points. |
-| [TECHNICAL_REFERENCE.md](TECHNICAL_REFERENCE.md) | You're chasing a specific behaviour — playback state variables, song selection and the Radio Mode queue, default-music fallback, skip logic, preview mode, fades, seeking (players, timelines, the seek disc, the right stick, Spotify), constants. The debugging tips at the end are the fastest way in. |
+| [TECHNICAL_REFERENCE.md](TECHNICAL_REFERENCE.md) | You're chasing a specific behaviour — playback state variables, song selection and the Radio Mode queue, default-music fallback, skip logic, preview mode, fades, keyboard shortcuts, seeking (players, timelines, the seek disc, the right stick, Spotify), constants. The debugging tips at the end are the fastest way in. |
 | [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md) | You're building or packaging. `version.txt` is the version single source of truth. |
 | [DEPENDENCIES.md](DEPENDENCIES.md) | You hit a missing DLL or external tool (SDL2, NAudio, yt-dlp, FFmpeg, the native Spotify loopback shim). |
 | [SHIPPED_BINARIES.md](SHIPPED_BINARIES.md) | You need to know what is inside the `.pext` and where each binary came from — every shipped `.dll` with its SHA-256, provenance and licence, and which natives are unsigned or self-built. |

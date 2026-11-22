@@ -1,0 +1,85 @@
+<UserControl x:Class="UniPlaySong.Controls.Settings.KeyboardShortcutsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:ups="clr-namespace:UniPlaySong.Controls.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500" d:DesignWidth="600">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ups:SharedResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Click, then press the keys: the box records rather than takes typing -->
+            <Style x:Key="ShortcutBox" TargetType="TextBox" BasedOn="{StaticResource UpsTextBox}">
+                <Setter Property="IsReadOnly" Value="True"/>
+                <Setter Property="IsReadOnlyCaretVisible" Value="False"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Width" Value="220"/>
+                <Setter Property="Margin" Value="0,0,8,0"/>
+            </Style>
+            <Style x:Key="ShortcutLabel" TargetType="TextBlock" BasedOn="{StaticResource UpsBody}">
+                <Setter Property="Width" Value="120"/>
+                <Setter Property="Margin" Value="0"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+            <Style x:Key="ShortcutRow" TargetType="StackPanel">
+                <Setter Property="Orientation" Value="Horizontal"/>
+                <Setter Property="Margin" Value="0,8,0,0"/>
+            </Style>
+            <Style x:Key="ShortcutWarning" TargetType="TextBlock" BasedOn="{StaticResource UpsWarning}">
+                <Setter Property="Margin" Value="120,3,0,0"/>
+                <Setter Property="Visibility" Value="Collapsed"/>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer Style="{StaticResource UpsPage}">
+        <StackPanel MaxWidth="820" HorizontalAlignment="Stretch">
+
+            <TextBlock Text="Keyboard Shortcuts" Style="{StaticResource UpsPageTitle}"/>
+            <TextBlock Style="{StaticResource UpsPageSubtitle}"
+                       Text="Control music from anywhere in Windows, even while a game is running."/>
+
+            <StackPanel Style="{StaticResource ShortcutRow}">
+                <TextBlock Text="Play / Pause" Style="{StaticResource ShortcutLabel}"/>
+                <TextBox x:Name="BoxPlayPause" Tag="PlayPause" Style="{StaticResource ShortcutBox}"/>
+                <Button Content="Clear" Tag="PlayPause" Style="{StaticResource UpsButton}" Click="Clear_Click"/>
+            </StackPanel>
+            <TextBlock x:Name="WarnPlayPause" Style="{StaticResource ShortcutWarning}"/>
+
+            <StackPanel Style="{StaticResource ShortcutRow}">
+                <TextBlock Text="Next song" Style="{StaticResource ShortcutLabel}"/>
+                <TextBox x:Name="BoxNext" Tag="Next" Style="{StaticResource ShortcutBox}"/>
+                <Button Content="Clear" Tag="Next" Style="{StaticResource UpsButton}" Click="Clear_Click"/>
+            </StackPanel>
+            <TextBlock x:Name="WarnNext" Style="{StaticResource ShortcutWarning}"/>
+
+            <StackPanel Style="{StaticResource ShortcutRow}">
+                <TextBlock Text="Calm Down" Style="{StaticResource ShortcutLabel}"/>
+                <TextBox x:Name="BoxCalmDown" Tag="CalmDown" Style="{StaticResource ShortcutBox}"/>
+                <Button Content="Clear" Tag="CalmDown" Style="{StaticResource UpsButton}" Click="Clear_Click"/>
+            </StackPanel>
+            <TextBlock x:Name="WarnCalmDown" Style="{StaticResource ShortcutWarning}"/>
+
+            <StackPanel Style="{StaticResource ShortcutRow}">
+                <TextBlock Text="Volume up" Style="{StaticResource ShortcutLabel}"/>
+                <TextBox x:Name="BoxVolumeUp" Tag="VolumeUp" Style="{StaticResource ShortcutBox}"/>
+                <Button Content="Clear" Tag="VolumeUp" Style="{StaticResource UpsButton}" Click="Clear_Click"/>
+            </StackPanel>
+            <TextBlock x:Name="WarnVolumeUp" Style="{StaticResource ShortcutWarning}"/>
+
+            <StackPanel Style="{StaticResource ShortcutRow}">
+                <TextBlock Text="Volume down" Style="{StaticResource ShortcutLabel}"/>
+                <TextBox x:Name="BoxVolumeDown" Tag="VolumeDown" Style="{StaticResource ShortcutBox}"/>
+                <Button Content="Clear" Tag="VolumeDown" Style="{StaticResource UpsButton}" Click="Clear_Click"/>
+            </StackPanel>
+            <TextBlock x:Name="WarnVolumeDown" Style="{StaticResource ShortcutWarning}"/>
+
+            <TextBlock Style="{StaticResource UpsHint}" Margin="0,14,0,0"
+                       Text="Click a box and press the keys, for example Ctrl+Alt+P or a media key. A shortcut works everywhere, so pick one your other apps don't use. Esc cancels, Backspace clears. Takes effect when you save."/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

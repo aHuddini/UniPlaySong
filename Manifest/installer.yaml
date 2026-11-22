@@ -9,6 +9,7 @@ Packages:
       - '[New Feature] Settings -> UI -> Desktop UI / Fullscreen UI: Hide/show which UniPlaySong menu entries and buttons appear on Playnite.'
       - '[New Feature] Play Next in Radio Queue: in Radio Mode (game music), open a game  menu in your Library to add it to the Radio Queue and its music plays next.'
       - '[New Feature] Themes can show the next 5 Radio Mode songs (UPS_RadioUpNext; see the theme integration guide on Github).'
+      - '[New Feature] Add-On Settings -> General -> Keyboard Shortcuts: Play/Pause, Next, Calm Down and volume up/down from anywhere in Windows, media keys included (replaces the Experimental media keys option).'
       - '[Fix] Auto-tags ([UPS] Has Music / No Music) now update after a library refresh, bulk download or URL download.'
       - '[Fix] Bulk download: Pressing Back in the song picker returns to the album list instead of skipping the game entirely.'
   - Version: 1.9.4
