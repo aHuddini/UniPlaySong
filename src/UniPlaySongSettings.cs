@@ -428,6 +428,7 @@ namespace UniPlaySong
         private bool scrollNowPlayingTitle = true;
         private bool useLegacyNowPlayingAnimation = false;
         private bool showNowPlayingCard = true;
+        private bool showNowPlayingCardArt = false;
         private string shortcutPlayPause = "";
         private string shortcutNext = "";
         private string shortcutCalmDown = "";
@@ -1292,6 +1293,13 @@ namespace UniPlaySong
         {
             get => showNowPlayingCard;
             set { showNowPlayingCard = value; OnPropertyChanged(); }
+        }
+
+        // The card shows the game's art in its banner; off, it's tinted glass
+        public bool ShowNowPlayingCardArt
+        {
+            get => showNowPlayingCardArt;
+            set { showNowPlayingCardArt = value; OnPropertyChanged(); }
         }
 
         public bool HideNowPlayingForDefaultMusic

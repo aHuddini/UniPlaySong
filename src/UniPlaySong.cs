@@ -3031,8 +3031,17 @@ namespace UniPlaySong
                     Next = OnMediaKeyNext,
                     Previous = () => _activeMediaService?.Previous(),
                     ToggleCalmDown = () => UpdateSettingsFromMenu(s => s.CalmDownModeEnabled = !s.CalmDownModeEnabled, "NowPlayingCard"),
+                    EqualizerOn = () => _settings?.EqualizerEnabled == true,
+                    LiveEffectsOn = () => _settings?.LiveEffectsEnabled == true,
+                    CardShowsArt = () => _settings?.ShowNowPlayingCardArt == true,
+                    ToggleEqualizer = () => UpdateSettingsFromMenu(s => s.EqualizerEnabled = !s.EqualizerEnabled, "NowPlayingCard"),
+                    ToggleLiveEffects = () => UpdateSettingsFromMenu(s => s.LiveEffectsEnabled = !s.LiveEffectsEnabled, "NowPlayingCard"),
                     PlayTrack = PlayNowPlayingCardTrack,
                     CanSeek = () => _activeMediaService?.CanSeek == true,
+                    MusicVolume = () => _settings?.MusicVolume ?? 0,
+                    CanSetVolume = () => !IsSpotifyTheActiveMediaSource(),
+                    PreviewVolume = v => _playbackService?.SetVolume(v / Constants.VolumeDivisor),
+                    SaveVolume = v => UpdateSettingsFromMenu(s => s.MusicVolume = v, "NowPlayingCard"),
                     SeekTo = percent => _activeMediaService?.SeekTo(percent),
                     SongLength = path =>
                     {

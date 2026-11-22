@@ -27,12 +27,12 @@ namespace UniPlaySong.DeskMediaControl
         private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
         private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
         private const int DWMWCP_ROUND = 2;
-        private const uint GlassGradient = 0x992C201C; // AABBGGRR: #1C202C at 60%, the blur's tint
         private const double GapBelowPanel = 0; // flush with the edge the view model found
 
         private static readonly Brush GlassTint = Frozen(Color.FromArgb(0x01, 0x1C, 0x20, 0x2C));   // the blur tints; this keeps hit-testing
         private static readonly Brush SolidTint = Frozen(Color.FromArgb(0xF0, 0x16, 0x1A, 0x24));   // no acrylic
-        private static readonly Brush CalmOnBrush = Frozen(Color.FromRgb(0x4C, 0xC2, 0xFF));
+        private static readonly Brush CalmOnBrush = Frozen(Color.FromRgb(0x4C, 0xC2, 0xFF));   // Calm Down on: blue
+        private static readonly Brush CalmOffBrush = Frozen(Color.FromRgb(0x8A, 0x8F, 0x9A));  // off: grey
 
         private readonly Window _owner;
         private readonly NowPlayingCardHost _host;
@@ -58,6 +58,11 @@ namespace UniPlaySong.DeskMediaControl
             LayoutUpdated += (s, e) => UpdateBars();
             TrackScroll.ScrollChanged += (s, e) => UpdateBars();
             SeekStrip.MouseEnter += (s, e) => { if (_model.CanSeek) SeekLine.Height = 5; };
+            VolumeTrack.SizeChanged += (s, e) => ShowVolume(_shownVolume);
+            BannerArea.SizeChanged += (s, e) => SizeBackdrop();
+            BannerLook.Current = BannerLook.Pick(_host.CardShowsArt?.Invoke() == true, _model.HasArt);
+            ApplyLook();
+            FxButton.Tag = WaveIcon;
             SeekStrip.MouseLeave += (s, e) => SeekLine.Height = 3;
             CollapseButton.Tag = FindResource(NowPlayingCardModel.StartsCollapsed ? "IconChevronDown" : "IconChevronUp");
             // The mouse back on the card while it fades out: it stays
@@ -94,6 +99,7 @@ namespace UniPlaySong.DeskMediaControl
         {
             new WindowInteropHelper(this).EnsureHandle();
             if (!IsVisible) _model.Refresh();
+            UpdateLook(reloadArt: true); // the setting may have changed since the last open
         }
 
         // Where the card is on screen, in pixels (empty while hidden)
@@ -168,7 +174,21 @@ namespace UniPlaySong.DeskMediaControl
 
         private void OnModelChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(NowPlayingCardModel.Progress))
+            if (e.PropertyName == nameof(NowPlayingCardModel.EqualizerOn))
+            {
+                EqButton.Foreground = _model.EqualizerOn ? CalmOnBrush : CalmOffBrush;
+                EqButton.ToolTip = _model.EqualizerOn ? "Equalizer is on" : "Equalizer";
+            }
+            else if (e.PropertyName == nameof(NowPlayingCardModel.LiveEffectsOn))
+            {
+                FxButton.Foreground = _model.LiveEffectsOn ? CalmOnBrush : CalmOffBrush;
+                FxButton.ToolTip = _model.LiveEffectsOn ? "Live Effects are on" : "Live Effects";
+            }
+            else if (e.PropertyName == nameof(NowPlayingCardModel.Volume))
+            {
+                if (!_dragVolume) ShowVolume(_model.Volume);
+            }
+            else if (e.PropertyName == nameof(NowPlayingCardModel.Progress))
             {
                 if (!_seeking) ProgressScale.ScaleX = _model.Progress;
             }
@@ -181,17 +201,21 @@ namespace UniPlaySong.DeskMediaControl
                 CollapseButton.Tag = FindResource(_model.Collapsed ? "IconChevronDown" : "IconChevronUp");
                 CollapseButton.ToolTip = _model.Collapsed ? "Show songs" : "Hide songs";
             }
+            else if (e.PropertyName == nameof(NowPlayingCardModel.HasArt))
+                UpdateLook(reloadArt: false); // the model prepares the new art right after
             else if (e.PropertyName == nameof(NowPlayingCardModel.Banner))
             {
                 // New art fades in rather than popping
                 if (IsVisible)
-                    BannerArt.BeginAnimation(Brush.OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, BannerArtOpacity, TintFade));
+                {
+                    BannerArt.BeginAnimation(Brush.OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, BannerLook.Current.ArtShown, TintFade));
+                    BannerArtSharp.BeginAnimation(Brush.OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, BannerLook.Current.SharpShown, TintFade));
+                }
             }
             else if (e.PropertyName == nameof(NowPlayingCardModel.TintVivid))
             {
                 // Mica-style tint: vivid colour at the top left, the darker one at the bottom right; a short fade
-                FadeTo(TintStopVivid, Darken(_model.TintVivid, 0x8C));
-                FadeTo(TintStopDark, Darken(_model.TintDark, 0xB3));
+                ApplyTint();
             }
             else if (e.PropertyName == nameof(NowPlayingCardModel.IsPlaying))
             {
@@ -200,7 +224,7 @@ namespace UniPlaySong.DeskMediaControl
             }
             else if (e.PropertyName == nameof(NowPlayingCardModel.CalmDownOn))
             {
-                CalmDownButton.Foreground = _model.CalmDownOn ? CalmOnBrush : (Brush)Brushes.White;
+                CalmDownButton.Foreground = _model.CalmDownOn ? CalmOnBrush : CalmOffBrush;
                 CalmDownButton.ToolTip = _model.CalmDownOn ? "Calm Down is on" : "Calm Down";
             }
         }
@@ -219,7 +243,7 @@ namespace UniPlaySong.DeskMediaControl
                 int on = 1, round = DWMWCP_ROUND;
                 DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref on, sizeof(int));
                 DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref round, sizeof(int));
-                glass = Common.DialogHelper.EnableBlurBehind(hwnd, GlassGradient, acrylic: true);
+                glass = _glass = Common.DialogHelper.EnableBlurBehind(hwnd, BannerLook.Current.Glass, acrylic: true);
             }
             catch (DllNotFoundException) { }
             catch (EntryPointNotFoundException) { }
@@ -234,6 +258,18 @@ namespace UniPlaySong.DeskMediaControl
         private void Next_Click(object sender, RoutedEventArgs e) => _host.Next?.Invoke();
         private void Previous_Click(object sender, RoutedEventArgs e) => _host.Previous?.Invoke();
         private void CalmDown_Click(object sender, RoutedEventArgs e) { _host.ToggleCalmDown?.Invoke(); _model.Refresh(); }
+        private void Eq_Click(object sender, RoutedEventArgs e) { _host.ToggleEqualizer?.Invoke(); _model.Refresh(); }
+        private void Fx_Click(object sender, RoutedEventArgs e) { _host.ToggleLiveEffects?.Invoke(); _model.Refresh(); }
+
+        // Live Effects' icon: a decaying wave. Drawn as a line, so it's widened into a filled shape for the icon buttons.
+        private static readonly Geometry WaveIcon = MakeWaveIcon();
+        private static Geometry MakeWaveIcon()
+        {
+            var line = Geometry.Parse("M1,8 C2,8 2.5,2 4,2 C5.5,2 5.5,14 7,14 C8.2,14 8.5,4.5 9.7,4.5 C10.8,4.5 11,11.5 12,11.5 C12.8,11.5 13.2,8 15,8");
+            var wave = line.GetWidenedPathGeometry(new Pen(Brushes.Black, 2.4) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round });
+            wave.Freeze();
+            return wave;
+        }
         private void OpenFolder_Click(object sender, RoutedEventArgs e) => _host.OpenFolder?.Invoke();
 
         // Folding the list shrinks the card from the bottom, leaving the mouse below it: stay open a moment so the
@@ -287,6 +323,66 @@ namespace UniPlaySong.DeskMediaControl
             if (!(TrackList.ItemContainerGenerator.ContainerFromItem(row) is ContentPresenter presenter)) return null;
             if (VisualTreeHelper.GetChildrenCount(presenter) == 0 || !(VisualTreeHelper.GetChild(presenter, 0) is Button button)) return null;
             return button.Template?.FindName("NowIcon", button) as FrameworkElement;
+        }
+
+        // ---- Volume: drag sets it live, release saves it (one settings write, not one per pixel); the wheel steps 5% ----
+        private bool _dragVolume;
+        private int _shownVolume;
+
+        private void ShowVolume(int volume)
+        {
+            _shownVolume = Math.Max(0, Math.Min(100, volume));
+            double travel = Math.Max(0, VolumeTrack.ActualHeight - VolumeThumb.Height);
+            double y = travel * _shownVolume / 100.0;
+            VolumeFill.Height = y + VolumeThumb.Height / 2;
+            VolumeThumb.Margin = new Thickness(0, 0, 0, y);
+            VolumeTrack.ToolTip = $"Volume {_shownVolume}%";
+        }
+
+        private int VolumeAt(System.Windows.Input.MouseEventArgs e)
+        {
+            double travel = VolumeTrack.ActualHeight - VolumeThumb.Height;
+            if (travel <= 0) return _shownVolume;
+            double fromBottom = VolumeTrack.ActualHeight - e.GetPosition(VolumeTrack).Y - VolumeThumb.Height / 2;
+            return (int)Math.Round(Math.Max(0, Math.Min(1, fromBottom / travel)) * 100);
+        }
+
+        private void Volume_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            _dragVolume = true;
+            VolumeTrack.CaptureMouse();
+            ShowVolume(VolumeAt(e));
+            _host.PreviewVolume?.Invoke(_shownVolume);
+            e.Handled = true;
+        }
+
+        private void Volume_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            if (!_dragVolume) return;
+            ShowVolume(VolumeAt(e));
+            _host.PreviewVolume?.Invoke(_shownVolume);
+        }
+
+        private void Volume_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (!_dragVolume) return;
+            _dragVolume = false;
+            VolumeTrack.ReleaseMouseCapture();
+            _host.SaveVolume?.Invoke(_shownVolume);
+        }
+
+        private void Volume_LostCapture(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            if (!_dragVolume) return;
+            _dragVolume = false;
+            _host.SaveVolume?.Invoke(_shownVolume); // keep what the user dragged to
+        }
+
+        private void Volume_Wheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            ShowVolume(_shownVolume + (e.Delta > 0 ? 5 : -5));
+            _host.SaveVolume?.Invoke(_shownVolume);
+            e.Handled = true;
         }
 
         private void Collapse_Click(object sender, RoutedEventArgs e)
@@ -344,12 +440,130 @@ namespace UniPlaySong.DeskMediaControl
         }
 
         private static readonly Duration TintFade = new Duration(TimeSpan.FromMilliseconds(600));
-        private const double BannerArtOpacity = 0.2; // the art shows through the tint, faintly
 
         // The art's colour, toned down so the banner reads as a dark tinted glass rather than a bright swatch
-        private const double TintShade = 0.65;
-        private static Color Darken(Color c, byte alpha) =>
-            Color.FromArgb(alpha, (byte)(c.R * TintShade), (byte)(c.G * TintShade), (byte)(c.B * TintShade));
+        private bool _glass;
+
+        // The banner's own art-coloured shade (looks with BannerTintAlpha): vivid top left, dark bottom right
+        private readonly GradientStop _bannerVivid = new GradientStop(Colors.Transparent, 0);
+        private readonly GradientStop _bannerDark = new GradientStop(Colors.Transparent, 1);
+        private LinearGradientBrush _bannerTint;
+
+        // Scales a colour's brightness, keeping its hue: by a factor, or (value > 0) to that brightness, so every
+        // game's tint lands equally dark however bright its art is
+        private static Color Shade(Color c, byte alpha, double factor, double value)
+        {
+            if (value > 0)
+            {
+                int max = Math.Max(c.R, Math.Max(c.G, c.B));
+                factor = max == 0 ? 0 : value * 255 / max;
+            }
+            return Color.FromArgb(alpha, (byte)Math.Min(255, c.R * factor), (byte)Math.Min(255, c.G * factor), (byte)Math.Min(255, c.B * factor));
+        }
+
+        // Fine monochrome noise, tiled; drawn pixel for pixel
+        private static readonly ImageBrush GrainBrush = MakeGrain();
+        private static ImageBrush MakeGrain()
+        {
+            const int n = 128;
+            var pixels = new byte[n * n * 4];
+            var random = new Random(7);
+            for (int i = 0; i < pixels.Length; i += 4)
+            {
+                byte v = (byte)random.Next(256);
+                pixels[i] = pixels[i + 1] = pixels[i + 2] = v;
+                pixels[i + 3] = 255;
+            }
+            var bitmap = System.Windows.Media.Imaging.BitmapSource.Create(n, n, 96, 96, PixelFormats.Bgra32, null, pixels, n * 4);
+            var brush = new ImageBrush(bitmap)
+            {
+                TileMode = TileMode.Tile, Stretch = Stretch.None,
+                Viewport = new Rect(0, 0, n, n), ViewportUnits = BrushMappingMode.Absolute,
+            };
+            brush.Freeze();
+            return brush;
+        }
+
+        private void SizeBackdrop()
+        {
+            bool whole = BannerLook.Current.WholeCard;
+            Backdrop.VerticalAlignment = whole ? VerticalAlignment.Stretch : VerticalAlignment.Top;
+            Backdrop.Height = whole ? double.NaN : BannerArea.ActualHeight;
+            ListShade.Margin = new Thickness(0, BannerArea.ActualHeight, 0, 0);
+        }
+
+        private void ApplyTint()
+        {
+            var look = BannerLook.Current;
+            FadeTo(TintStopVivid, Shade(_model.TintVivid, look.VividAlpha, look.TintShade, look.TintValue));
+            FadeTo(TintStopDark, Shade(_model.TintDark, look.DarkAlpha, look.TintShade, look.TintDarkValue));
+            if (look.BannerTintAlpha > 0)
+            {
+                FadeTo(_bannerVivid, Shade(_model.TintVivid, look.BannerTintAlpha, 1, look.BannerTintValue));
+                FadeTo(_bannerDark, Shade(_model.TintDark, look.BannerTintAlpha, 1, look.BannerTintDarkValue));
+            }
+        }
+
+        // Everything but the art bitmaps, which the model rebuilds for the look
+        private void ApplyLook()
+        {
+            var look = BannerLook.Current;
+            BannerArt.BeginAnimation(Brush.OpacityProperty, null); // a running fade-in would hold the old value
+            BannerArtSharp.BeginAnimation(Brush.OpacityProperty, null);
+            BannerArt.Opacity = look.ArtShown;
+            BannerArtSharp.Opacity = look.SharpShown;
+            MaskMid.Color = Color.FromArgb(look.MaskMidAlpha, 0, 0, 0);
+            MaskMid.Offset = look.MaskMidOffset;
+            MaskEnd.Offset = look.MaskEndOffset;
+            Veil.Fill = new SolidColorBrush(look.Veil);
+            Frost.Fill = new SolidColorBrush(look.Frost);
+            ListShade.Fill = new SolidColorBrush(look.ListShade);
+            if (_bannerTint == null)
+                _bannerTint = new LinearGradientBrush(new GradientStopCollection { _bannerVivid, _bannerDark }, new Point(0, 0), new Point(1, 1));
+            BannerVeil.Background = look.BannerTintAlpha > 0 ? (Brush)_bannerTint : new SolidColorBrush(look.BannerShade);
+            Grain.Fill = GrainBrush;
+            Grain.Opacity = look.Grain;
+            RimMid.Color = look.RimMid;
+            RimEnd.Color = look.RimEnd;
+            SizeBackdrop();
+            var hwnd = new WindowInteropHelper(this).Handle;
+            if (_glass && hwnd != IntPtr.Zero) Common.DialogHelper.EnableBlurBehind(hwnd, look.Glass, acrylic: true);
+            Vignette.Center = Vignette.GradientOrigin = new Point(0.5, look.VignetteCentreY);
+            Vignette.RadiusX = look.VignetteRadiusX;
+            Vignette.RadiusY = look.VignetteRadiusY;
+            VignetteClear.Offset = look.VignetteClear;
+            VignetteMid.Color = look.VignetteMid;
+            VignetteEdge.Color = look.VignetteEdge;
+            RimTopLeft.Color = look.RimTopLeft;
+            BannerArea.ToolTip = BannerLook.DevIndex == null && !BannerLook.GlassBanner ? null
+                : "Look " + look.Name + (BannerLook.GlassBanner ? ", glass banner" : "");
+        }
+
+        // Art, Glass, or the no-art look, from the setting and the game
+        private void UpdateLook(bool reloadArt)
+        {
+            var look = BannerLook.Pick(_host.CardShowsArt?.Invoke() == true, _model.HasArt);
+            if (look == BannerLook.Current) return;
+            BannerLook.Current = look;
+            ApplyLook();
+            ApplyTint();
+            if (reloadArt) _model.ReloadArt();
+        }
+
+        // Hidden, for the owner's look work (BannerLook.DevIndex): right-click cycles every look, Ctrl+right-click
+        // toggles the glass banner
+        private void Banner_RightClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (System.Windows.Input.Keyboard.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Control))
+                BannerLook.GlassBanner = !BannerLook.GlassBanner;
+            else
+                BannerLook.Next();
+            BannerLook.Current = BannerLook.Pick(_host.CardShowsArt?.Invoke() == true, _model.HasArt);
+            ApplyLook();
+            ApplyTint();
+            _model.ReloadArt();
+            e.Handled = true;
+        }
 
         private void FadeTo(GradientStop stop, Color to)
         {

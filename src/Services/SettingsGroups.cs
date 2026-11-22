@@ -63,6 +63,7 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.HideNowPlayingForDefaultMusic),
                     nameof(UniPlaySongSettings.ScrollNowPlayingTitle),
                     nameof(UniPlaySongSettings.ShowNowPlayingCard),
+                    nameof(UniPlaySongSettings.ShowNowPlayingCardArt),
                     nameof(UniPlaySongSettings.UseLegacyNowPlayingAnimation),
                     nameof(UniPlaySongSettings.ShowDefaultMusicIndicator),
                     nameof(UniPlaySongSettings.ShowCalmDownButton),

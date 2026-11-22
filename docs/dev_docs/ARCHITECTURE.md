@@ -314,6 +314,10 @@ built in `UniPlaySong.cs`; `NowPlayingCardTracks.Build` decides the list (game s
 first, Spotify history read-only, none for default music). Placement: centred on Now Playing, top on the first visible
 element below Playnite's `TopPanel` (hit-test walk; `CardTopEdge`). The playing row's bouncing bars are drawn by
 `CompositionBars` over the row's still WPF bars; `CompositionLayer` is the compositor plumbing the ticker shares.
+`BannerLook` holds the card's looks (art blur and colour, tint, vignette, rim, glass tint), all bitmaps and brushes, no
+WPF effects: Glass (D2) by default, Art (F) with `ShowNowPlayingCardArt`, D when the game has no art; the rest are kept,
+unused, for the pop-out player. Hidden for look work: right-click the banner cycles every look, Ctrl+right-click hides
+the art layers (`DevIndex`, `GlassBanner`, not persisted).
 
 #### Key Features
 

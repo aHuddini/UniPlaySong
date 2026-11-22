@@ -35,6 +35,9 @@
         <Geometry x:Key="IconNowPlaying">M1,9 H4 V15 H1 Z M6.5,3 H9.5 V15 H6.5 Z M12,6 H15 V15 H12 Z</Geometry>
         <Geometry x:Key="IconChevronUp">M2.5,10.5 L8,5 L13.5,10.5 L12.4,11.6 L8,7.2 L3.6,11.6 Z</Geometry>
         <Geometry x:Key="IconChevronDown">M2.5,5.5 L8,11 L13.5,5.5 L12.4,4.4 L8,8.8 L3.6,4.4 Z</Geometry>
+        <Geometry x:Key="IconSpeaker">M1.5,5.5 H4.5 L8.5,2 V14 L4.5,10.5 H1.5 Z M10.5,5.2 A3.6,3.6 0 0 1 10.5,10.8 L11.4,11.8 A5,5 0 0 0 11.4,4.2 Z</Geometry>
+        <!-- Three faders, knobs at different heights (F1: overlapping parts fill rather than cancel) -->
+        <Geometry x:Key="IconEqualizer">F1 M2.4,1 H4.6 V15 H2.4 Z M1,8.6 H6 V11.4 H1 Z M6.9,1 H9.1 V15 H6.9 Z M5.5,3.8 H10.5 V6.6 H5.5 Z M11.4,1 H13.6 V15 H11.4 Z M10,10.2 H15 V13 H10 Z</Geometry>
         <Geometry x:Key="IconFolder">M1.5,3.5 A1,1 0 0 1 2.5,2.5 H6.1 L7.6,4.1 H13.5 A1,1 0 0 1 14.5,5.1 V12.5 A1,1 0 0 1 13.5,13.5 H2.5 A1,1 0 0 1 1.5,12.5 Z</Geometry>
 
         <!-- Round icon button: equal square box, icon centred; Tag carries the geometry -->
@@ -136,26 +139,80 @@
         </Style>
     </Window.Resources>
 
-    <Border x:Name="Frame" CornerRadius="8" BorderBrush="#24FFFFFF" BorderThickness="1" ClipToBounds="True">
-        <StackPanel>
-            <!-- Banner: the art, pre-blurred, under a dark veil. Sized by its content: song centred (title up to two
-                 lines, artist only when there is one), transport row below, then a clear gap above the progress edge -->
-            <!-- Mica-style banner: the art, blurred, showing faintly through the frosted glass, tinted with the art's two
-                 colours (both fade between songs, never snap), under a light veil that keeps white text readable -->
-            <Border>
-                <Border.Background>
-                    <ImageBrush x:Name="BannerArt" ImageSource="{Binding Banner}" Stretch="UniformToFill" Opacity="0.2"/>
-                </Border.Background>
-            <Border>
-                <Border.Background>
+    <!-- Glass edge: a rim that catches the light at the top left and fades around the card, plus a faint inner sheen
+         along the top. Corners stay at Windows' own 8 px, the only radius it draws anti-aliased. -->
+    <Border x:Name="Frame" CornerRadius="8" BorderThickness="1" ClipToBounds="True">
+        <Border.BorderBrush>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop x:Name="RimTopLeft" Color="#14FFFFFF" Offset="0"/>
+                <GradientStop x:Name="RimMid" Color="#05FFFFFF" Offset="0.45"/>
+                <GradientStop x:Name="RimEnd" Color="#0FFFFFFF" Offset="1"/>
+            </LinearGradientBrush>
+        </Border.BorderBrush>
+        <Grid>
+        <!-- Backdrop: the look's layers, bottom to top. A banner look sizes it to the banner; a whole-card look lets it
+             fill the card, so banner and list are one surface. Bitmaps and brushes only, no effects. -->
+        <Grid x:Name="Backdrop" VerticalAlignment="Top" IsHitTestVisible="False" ClipToBounds="True">
+            <!-- Progressive blur: the heavily blurred art everywhere, the lightly blurred art over it fading out towards
+                 the bottom. Both prepared once per game and look. -->
+            <Rectangle>
+                <Rectangle.Fill>
+                    <ImageBrush x:Name="BannerArt" ImageSource="{Binding Banner}" Stretch="UniformToFill"/>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Rectangle>
+                <Rectangle.Fill>
+                    <ImageBrush x:Name="BannerArtSharp" ImageSource="{Binding BannerSharp}" Stretch="UniformToFill"/>
+                </Rectangle.Fill>
+                <Rectangle.OpacityMask>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#FF000000" Offset="0"/>
+                        <GradientStop x:Name="MaskMid" Color="#8A000000" Offset="0.51"/>
+                        <GradientStop x:Name="MaskEnd" Color="#00000000" Offset="0.65"/>
+                    </LinearGradientBrush>
+                </Rectangle.OpacityMask>
+            </Rectangle>
+            <!-- Tint: the art's two colours, vivid top left, dark bottom right; both fade between songs -->
+            <Rectangle>
+                <Rectangle.Fill>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                         <GradientStop x:Name="TintStopVivid" Color="#00000000" Offset="0"/>
                         <GradientStop x:Name="TintStopDark" Color="#00000000" Offset="1"/>
                     </LinearGradientBrush>
-                </Border.Background>
-            <Grid Background="#33000000" ClipToBounds="True">
+                </Rectangle.Fill>
+            </Rectangle>
+            <Rectangle x:Name="Veil"/>
+            <!-- The list alone: starts where the banner ends (whole-card looks) -->
+            <Rectangle x:Name="ListShade"/>
+            <!-- Vignette: edges and corners darkened, the centre left lit -->
+            <Rectangle>
+                <Rectangle.Fill>
+                    <RadialGradientBrush x:Name="Vignette" Center="0.5,0.31" GradientOrigin="0.5,0.31" RadiusX="0.89" RadiusY="0.85">
+                        <GradientStop x:Name="VignetteClear" Color="#00000000" Offset="0.34"/>
+                        <GradientStop x:Name="VignetteMid" Color="#78000000" Offset="0.75"/>
+                        <GradientStop x:Name="VignetteEdge" Color="#69000000" Offset="1"/>
+                    </RadialGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <!-- Frost (a milky layer, so glass reads lighter than what's behind it) and grain (breaks up banding) -->
+            <Rectangle x:Name="Frost"/>
+            <Rectangle x:Name="Grain" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+        </Grid>
+        <StackPanel>
+            <!-- Banner: song centred (title up to two lines, artist only when there is one), transport row below, then a
+                 clear gap above the progress edge. Its backdrop is the Backdrop above. -->
+            <Grid x:Name="BannerArea" Background="Transparent" MouseRightButtonUp="Banner_RightClick">
+            <Grid x:Name="BannerVeil" ClipToBounds="True">
+                <!-- Audio toggles, mirroring Calm Down and the pin: grey off, blue on -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,8,0,0">
+                    <Button x:Name="EqButton" Style="{StaticResource SmallIconButton}" Tag="{StaticResource IconEqualizer}" ToolTip="Equalizer"
+                            Click="Eq_Click" Foreground="#8A8F9A" FontSize="13"/>
+                    <Button x:Name="FxButton" Style="{StaticResource SmallIconButton}" ToolTip="Live Effects"
+                            Click="Fx_Click" Foreground="#8A8F9A" FontSize="13"/>
+                </StackPanel>
+
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0">
-                    <Button x:Name="CalmDownButton" Style="{StaticResource SmallIconButton}" Tag="{StaticResource IconMoon}" ToolTip="Calm Down" Click="CalmDown_Click"/>
+                    <Button x:Name="CalmDownButton" Style="{StaticResource SmallIconButton}" Tag="{StaticResource IconMoon}" ToolTip="Calm Down" Click="CalmDown_Click" Foreground="#8A8F9A"/>
                     <Button Style="{StaticResource SmallIconButton}" Tag="{StaticResource IconPin}" IsEnabled="False" ToolTip="Pop out (coming soon)" ToolTipService.ShowOnDisabled="True"/>
                 </StackPanel>
 
@@ -202,13 +259,38 @@
                     </Grid>
                 </Grid>
             </Grid>
-            </Border>
-            </Border>
+            </Grid>
 
             <!-- Context-aware list -->
             <StackPanel Margin="14,0,14,0" Visibility="{Binding ShowList, Converter={StaticResource Visible}}">
                 <TextBlock Style="{StaticResource CardText}" Text="{Binding ListHeader}" FontSize="10" Opacity="0.6" Margin="0,10,0,4"/>
-                <ScrollViewer x:Name="TrackScroll" MaxHeight="128" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <!-- Volume: a slim vertical slider down the list's left edge (folds away with the list); drag or wheel.
+                         Music Volume, applied live while dragging and saved on release. Hidden while Spotify plays (not
+                         ours to set). -->
+                    <Grid x:Name="VolumeColumn" Width="18" Margin="-6,2,6,2"
+                          Visibility="{Binding CanSetVolume, Converter={StaticResource Visible}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid x:Name="VolumeTrack" Background="Transparent" Cursor="Hand"
+                              MouseLeftButtonDown="Volume_MouseDown" MouseMove="Volume_MouseMove" MouseLeftButtonUp="Volume_MouseUp"
+                              LostMouseCapture="Volume_LostCapture" MouseWheel="Volume_Wheel">
+                            <Border Width="4" CornerRadius="2" Background="#2EFFFFFF" HorizontalAlignment="Center"/>
+                            <Border x:Name="VolumeFill" Width="4" CornerRadius="2" Background="{StaticResource Accent}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Bottom" Height="0"/>
+                            <Ellipse x:Name="VolumeThumb" Width="10" Height="10" Fill="#F2F4F8" HorizontalAlignment="Center"
+                                     VerticalAlignment="Bottom"/>
+                        </Grid>
+                        <Path Grid.Row="1" Data="{StaticResource IconSpeaker}" Fill="#99F2F4F8" Stretch="Uniform" Width="11" Height="11"
+                              Margin="0,5,0,0" HorizontalAlignment="Center"/>
+                    </Grid>
+                <ScrollViewer Grid.Column="1" x:Name="TrackScroll" MaxHeight="128" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
                     <ItemsControl x:Name="TrackList" ItemsSource="{Binding Tracks}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -255,6 +337,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
+                </Grid>
             </StackPanel>
 
             <!-- Footer -->
@@ -297,5 +380,14 @@
             </Border>
             </Grid>
         </StackPanel>
+            <Border CornerRadius="7" BorderThickness="1" IsHitTestVisible="False">
+                <Border.BorderBrush>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#26FFFFFF" Offset="0"/>
+                        <GradientStop Color="#00FFFFFF" Offset="0.35"/>
+                    </LinearGradientBrush>
+                </Border.BorderBrush>
+            </Border>
+        </Grid>
     </Border>
 </Window>
