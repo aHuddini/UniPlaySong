@@ -61,6 +61,7 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.AutoTagOnLibraryUpdate),
                     nameof(UniPlaySongSettings.EnableSongListCache),
                     nameof(UniPlaySongSettings.HideNowPlayingForDefaultMusic),
+                    nameof(UniPlaySongSettings.ScrollNowPlayingTitle),
                     nameof(UniPlaySongSettings.ShowDefaultMusicIndicator),
                     nameof(UniPlaySongSettings.ShowCalmDownButton),
                     nameof(UniPlaySongSettings.ShowDesktopMediaControls),

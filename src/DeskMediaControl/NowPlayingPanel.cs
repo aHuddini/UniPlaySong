@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using UniPlaySong.Services;
@@ -11,8 +10,11 @@ using UniPlaySong.Services;
 namespace UniPlaySong.DeskMediaControl
 {
     // "Now Playing" panel with scrolling text and fade edges for the Desktop top panel bar.
-    // Uses Timeline.DesiredFrameRate=60 to cap WPF's render rate globally, then processes
-    // every CompositionTarget.Rendering callback for smooth, consistent animation.
+    //
+    // A title too long for the panel scrolls back and forth. Where the system compositor is available the scroll runs
+    // there (CompositionTicker): every refresh at the display's own rate, no per-frame work in Playnite (issue #55).
+    // Otherwise it falls back to stepping a transform from CompositionTarget.Rendering. Either way nothing moves while
+    // the music is paused, the panel is hidden, Playnite isn't the active window or the mouse is over the title.
     public class NowPlayingPanel : Grid
     {
         private readonly TextBlock _songText;
@@ -20,13 +22,16 @@ namespace UniPlaySong.DeskMediaControl
         private readonly Rectangle _rightFade;
         private readonly TranslateTransform _textTransform;
         private readonly TranslateTransform _canvasTransform;
+        private readonly Action<string> _log;
 
         private const double PanelMaxWidth = 80;
         private const double ScrollSpeed = 25; // pixels per second
         private const double PauseAtEnds = 1.5; // seconds to pause at each end
-        private const double FadeWidth = 12;
+        internal const double FadeWidth = 12;
         private const double FadeInDuration = 0.4; // seconds for fade-in
         private const double SlideDistance = 12; // pixels to slide from right
+        private const double ScrollEndMargin = 10; // the scroll turns back with the title's end this far inside the edge
+        private static readonly Color EdgeColor = Color.FromArgb(200, 10, 14, 30);
 
         private string _currentText = string.Empty;
         private string _currentBaseText = string.Empty;
@@ -35,7 +40,7 @@ namespace UniPlaySong.DeskMediaControl
 
         // Scroll animation state
         private bool _isScrolling = false;
-        private bool _isScrollPaused = false;
+        private bool _isScrollPaused = false; // mouse over the title
         private double _scrollDistance = 0;
         private double _scrollPosition = 0;
         private int _scrollDirection = -1; // -1 = scrolling left, +1 = scrolling right
@@ -53,6 +58,17 @@ namespace UniPlaySong.DeskMediaControl
         // Rendering subscription state
         private bool _isRenderingSubscribed = false;
         private bool _isAppFocused = true;
+        private bool _isPlaying = true;
+        private bool _scrollEnabled = true;
+
+        // Compositor scroll: created on the first title that scrolls; null where unavailable (WPF fallback)
+        private CompositionTicker _ticker;
+        private bool _tickerTried;
+        private bool _useTicker;
+        private Rect _tickerPlacement = Rect.Empty;
+        private Rect _tickerShown = Rect.Empty;
+        private bool _tickerVisible;
+        private bool _placeQueued;
 
         // Embedded progress bar (BelowNowPlaying mode)
         private Rectangle _embeddedProgressTrack;
@@ -63,18 +79,13 @@ namespace UniPlaySong.DeskMediaControl
         private double _lastEmbeddedFillWidth = -1;
         private DispatcherTimer _embeddedProgressTimer;
 
-        public NowPlayingPanel()
+        public NowPlayingPanel(Action<string> log = null)
         {
+            _log = log;
             Background = Brushes.Transparent;
             ClipToBounds = true;
             Width = PanelMaxWidth;
             Margin = new Thickness(4, 0, 4, 0);
-
-            // Cap WPF's global render rate at 60fps — reduces CompositionTarget.Rendering
-            // frequency on high-Hz displays (e.g. 165Hz → 60Hz), saving GPU
-            Timeline.DesiredFrameRateProperty.OverrideMetadata(
-                typeof(Timeline),
-                new FrameworkPropertyMetadata(60));
 
             // Canvas transform for fade-in slide
             _canvasTransform = new TranslateTransform(0, 0);
@@ -99,6 +110,8 @@ namespace UniPlaySong.DeskMediaControl
                 TextTrimming = TextTrimming.None,
                 RenderTransform = _textTransform
             };
+            // A moving title keeps its shape in Ideal mode; Display mode, which some themes set, blurs it.
+            TextOptions.SetTextFormattingMode(_songText, TextFormattingMode.Ideal);
             Canvas.SetTop(_songText, 0);
             Canvas.SetLeft(_songText, 0);
             _scrollCanvas.Children.Add(_songText);
@@ -109,14 +122,11 @@ namespace UniPlaySong.DeskMediaControl
             Children.Add(_scrollCanvas);
             Children.Add(_rightFade);
 
-            // Mouse events for pause on hover
-            MouseEnter += (s, e) => _isScrollPaused = true;
-            MouseLeave += (s, e) =>
-            {
-                _isScrollPaused = false;
-                if (_isScrolling)
-                    EnsureRenderingSubscribed();
-            };
+            // Mouse over the title pauses the scroll
+            MouseEnter += (s, e) => { _isScrollPaused = true; UpdateMotion(); };
+            MouseLeave += (s, e) => { _isScrollPaused = false; UpdateMotion(); };
+            IsVisibleChanged += (s, e) => UpdateMotion();
+            LayoutUpdated += (s, e) => QueuePlaceTicker();
 
             // Suspend animation when app loses focus to save GPU
             if (Application.Current != null)
@@ -132,18 +142,44 @@ namespace UniPlaySong.DeskMediaControl
         private void OnAppActivated(object sender, EventArgs e)
         {
             _isAppFocused = true;
-            if (_isScrolling || _isFadingIn)
-            {
-                _frameStopwatch.Restart();
-                _lastFrameTicks = 0;
-                EnsureRenderingSubscribed();
-            }
+            UpdateMotion();
         }
 
         private void OnAppDeactivated(object sender, EventArgs e)
         {
             _isAppFocused = false;
-            UnsubscribeRendering();
+            UpdateMotion();
+        }
+
+        // Music playing (UPS or Spotify): from the top panel's icon refresh.
+        public void SetPlaying(bool playing)
+        {
+            if (playing == _isPlaying) return;
+            _isPlaying = playing;
+            UpdateMotion();
+        }
+
+        // "Scroll long song titles": off shows a long title shortened with an ellipsis instead.
+        public void SetScrollEnabled(bool enabled)
+        {
+            if (enabled == _scrollEnabled) return;
+            _scrollEnabled = enabled;
+            if (!string.IsNullOrEmpty(_currentText)) ApplyLayout(_lastTextWidth);
+        }
+
+        private bool MayScroll => _isAppFocused && !_isScrollPaused && _isPlaying && IsVisible;
+
+        // Re-evaluates whether anything should move after a state change.
+        private void UpdateMotion()
+        {
+            if (_useTicker)
+            {
+                _ticker.SetPaused(!MayScroll);
+                PlaceTicker();
+                return;
+            }
+            if (NeedsAnimation()) EnsureRenderingSubscribed();
+            else UnsubscribeRendering();
         }
 
         private Rectangle CreateFadeRectangle()
@@ -160,8 +196,8 @@ namespace UniPlaySong.DeskMediaControl
                 StartPoint = new Point(0, 0),
                 EndPoint = new Point(1, 0)
             };
-            gradient.GradientStops.Add(new GradientStop(Color.FromArgb(0, 10, 14, 30), 0));
-            gradient.GradientStops.Add(new GradientStop(Color.FromArgb(200, 10, 14, 30), 1));
+            gradient.GradientStops.Add(new GradientStop(Color.FromArgb(0, EdgeColor.R, EdgeColor.G, EdgeColor.B), 0));
+            gradient.GradientStops.Add(new GradientStop(EdgeColor, 1));
 
             rect.Fill = gradient;
             return rect;
@@ -192,8 +228,7 @@ namespace UniPlaySong.DeskMediaControl
         {
             if (!_isAppFocused) return false;
             if (_isFadingIn) return true;
-            if (_isScrolling && !_isScrollPaused) return true;
-            return false;
+            return _isScrolling && !_useTicker && MayScroll;
         }
 
         private void OnRendering(object sender, EventArgs e)
@@ -224,8 +259,8 @@ namespace UniPlaySong.DeskMediaControl
                 }
             }
 
-            // Handle scroll animation
-            if (_isScrolling && !_isScrollPaused)
+            // Handle scroll animation (WPF fallback only)
+            if (_isScrolling && !_useTicker && MayScroll)
             {
                 if (_isPausedAtEnd)
                 {
@@ -321,6 +356,8 @@ namespace UniPlaySong.DeskMediaControl
                 _songText.Text = newText;
                 Visibility = Visibility.Visible;
 
+                // Natural width: measured without the ellipsis limit the scroll toggle may have set
+                _songText.MaxWidth = double.PositiveInfinity;
                 _songText.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 double textWidth = _songText.DesiredSize.Width;
 
@@ -328,21 +365,17 @@ namespace UniPlaySong.DeskMediaControl
                 if (!sameBaseText || !_isScrolling || textGotLonger)
                 {
                     _lastTextWidth = textWidth;
-
-                    if (textWidth > PanelMaxWidth)
-                    {
-                        StartScroll(textWidth);
-                    }
-                    else
-                    {
-                        StopScroll();
-                        _rightFade.Visibility = Visibility.Collapsed;
-                    }
+                    ApplyLayout(textWidth);
 
                     if (isNewSong || _scrollCanvas.Opacity < 1)
                     {
                         PlayFadeIn();
                     }
+                }
+                else
+                {
+                    // Same song, text changed (a [Default] tag, say): redraw it where it is
+                    ApplyLayout(_lastTextWidth);
                 }
             }
             finally
@@ -351,8 +384,32 @@ namespace UniPlaySong.DeskMediaControl
             }
         }
 
+        // Scroll a title wider than the panel, or show it whole / shortened with an ellipsis.
+        private void ApplyLayout(double textWidth)
+        {
+            bool scroll = textWidth > PanelMaxWidth && _scrollEnabled;
+            _songText.MaxWidth = scroll ? double.PositiveInfinity : PanelMaxWidth;
+            _songText.TextTrimming = scroll ? TextTrimming.None : TextTrimming.CharacterEllipsis;
+
+            if (scroll)
+            {
+                StartScroll(textWidth);
+            }
+            else
+            {
+                StopScroll();
+                _rightFade.Visibility = Visibility.Collapsed;
+            }
+        }
+
         private void PlayFadeIn()
         {
+            if (_useTicker)
+            {
+                _scrollCanvas.Opacity = 1;
+                _ticker.FadeIn(SlideDistance, TimeSpan.FromSeconds(FadeInDuration), VisualTreeHelper.GetDpi(this).DpiScaleX);
+                return;
+            }
             _isFadingIn = true;
             _fadeElapsed = 0;
             _scrollCanvas.Opacity = 0;
@@ -362,15 +419,42 @@ namespace UniPlaySong.DeskMediaControl
 
         private void StartScroll(double textWidth)
         {
-            _scrollDistance = textWidth - PanelMaxWidth + 10;
+            _scrollDistance = textWidth - PanelMaxWidth + ScrollEndMargin;
             _scrollPosition = 0;
             _scrollDirection = -1;
             _isPausedAtEnd = true;
             _pauseElapsed = 0;
             _isScrolling = true;
             _textTransform.X = 0;
+
+            if (EnsureTicker())
+            {
+                try
+                {
+                    double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
+                    _ticker.SetText(_songText.Text,
+                        new Typeface(_songText.FontFamily, _songText.FontStyle, _songText.FontWeight, _songText.FontStretch),
+                        _songText.FontSize, _songText.Foreground, _scrollCanvas.Height, scale);
+                    _ticker.StartScroll(_scrollDistance, ScrollSpeed, PauseAtEnds, scale);
+                    _useTicker = true;
+                    _songText.Opacity = 0; // the ticker draws the title; this copy keeps the layout and theme styling
+                    _rightFade.Visibility = Visibility.Collapsed;
+                    _tickerPlacement = Rect.Empty;
+                    _tickerShown = Rect.Empty;
+                    _tickerVisible = false;
+                    UpdateMotion();
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    _log?.Invoke($"NowPlaying: compositor ticker failed, using WPF animation ({ex.Message})");
+                    _ticker = null;
+                    LeaveTicker();
+                }
+            }
+
             _rightFade.Visibility = Visibility.Visible;
-            EnsureRenderingSubscribed();
+            UpdateMotion();
         }
 
         private void StopScroll()
@@ -379,8 +463,115 @@ namespace UniPlaySong.DeskMediaControl
             _isPausedAtEnd = false;
             _scrollPosition = 0;
             _textTransform.X = 0;
+            LeaveTicker();
             if (!NeedsAnimation())
                 UnsubscribeRendering();
+        }
+
+        private void LeaveTicker()
+        {
+            if (!_useTicker) return;
+            _useTicker = false;
+            _ticker?.StopScroll();
+            _ticker?.Hide();
+            _tickerVisible = false;
+            _songText.Opacity = 1;
+        }
+
+        private bool EnsureTicker()
+        {
+            if (_ticker != null) return true;
+            if (_tickerTried) return false;
+            var window = Window.GetWindow(this);
+            if (window == null) return false; // not in Playnite's window yet: try again on the next title
+            _tickerTried = true;
+            _ticker = CompositionTicker.TryCreate(window, _log);
+            return _ticker != null;
+        }
+
+        // LayoutUpdated fires for every layout pass in the window: work out the placement once, after the burst.
+        private void QueuePlaceTicker()
+        {
+            if (!_useTicker || _placeQueued) return;
+            _placeQueued = true;
+            Dispatcher.BeginInvoke(new Action(() => { _placeQueued = false; PlaceTicker(); }), DispatcherPriority.Background);
+        }
+
+        // Keeps the compositor layer over exactly the part of the title WPF would show. The layer draws above all WPF
+        // content, so it is trimmed to (1) every clip WPF applies on the way up, the theme's layout clipping included,
+        // and (2) the run of the title strip that hit-tests to this panel: a button the theme draws over the right
+        // end (Playnite's notification bell, say) ends the visible part there. Only talks to the compositor on change.
+        private void PlaceTicker()
+        {
+            if (!_useTicker) return;
+            var window = Window.GetWindow(this);
+            if (window == null) return;
+            bool visible = IsVisible;
+            Rect place = _tickerPlacement, shown = _tickerShown;
+            try
+            {
+                place = _scrollCanvas.TransformToAncestor(window)
+                    .TransformBounds(new Rect(0, 0, _scrollCanvas.ActualWidth, _scrollCanvas.ActualHeight));
+                shown = ShownPart(window, place);
+            }
+            catch (InvalidOperationException)
+            {
+                visible = false; // not connected to the window right now
+            }
+            if (place == _tickerPlacement && shown == _tickerShown && visible == _tickerVisible) return;
+            _tickerPlacement = place;
+            _tickerShown = shown;
+            _tickerVisible = visible;
+            if (place.IsEmpty) return;
+            double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
+            _ticker.SetPlacement(place.TopLeft, shown.IsEmpty ? new Rect() : shown, scale, visible, EdgeColor);
+
+            // Scroll far enough for the title's end to clear the visible part, not the panel's full width: a theme
+            // that trims the panel or draws a button over its end would otherwise turn the scroll back early.
+            double visibleWidth = shown.IsEmpty ? PanelMaxWidth : Math.Max(0, shown.Right - place.Left);
+            double distance = Math.Max(0, _lastTextWidth - visibleWidth + ScrollEndMargin);
+            if (Math.Abs(distance - _scrollDistance) > 0.5)
+            {
+                _scrollDistance = distance;
+                _ticker.StartScroll(distance, ScrollSpeed, PauseAtEnds, scale);
+            }
+        }
+
+        private Rect ShownPart(Window window, Rect place)
+        {
+            var shown = place;
+            for (DependencyObject node = _scrollCanvas; node != null && node != window; node = VisualTreeHelper.GetParent(node))
+            {
+                if (!(node is Visual visual)) continue;
+                var clip = VisualTreeHelper.GetClip(visual); // Clip, ClipToBounds and layout clipping alike
+                if (clip == null) continue;
+                shown.Intersect(visual.TransformToAncestor(window).TransformBounds(clip.Bounds));
+                if (shown.IsEmpty) return shown;
+            }
+
+            // Walk the middle of the strip left to right; the first point owned by something else ends it.
+            double y = shown.Top + shown.Height / 2;
+            for (double x = shown.Left + 1; x < shown.Right; x += 2)
+            {
+                var hit = VisualTreeHelper.HitTest(window, new Point(x, y))?.VisualHit;
+                if (hit != null && hit != this && !IsAncestorOf(hit))
+                {
+                    shown.Width = Math.Max(0, x - 1 - shown.Left);
+                    break;
+                }
+            }
+            return shown;
+        }
+
+        // A move to a monitor with another scale: redraw the title at the new resolution.
+        protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi)
+        {
+            base.OnDpiChanged(oldDpi, newDpi);
+            if (_useTicker)
+            {
+                LeaveTicker();
+                StartScroll(_lastTextWidth);
+            }
         }
 
         public void Clear()

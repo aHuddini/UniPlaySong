@@ -288,7 +288,7 @@ namespace UniPlaySong.DeskMediaControl
         {
             try
             {
-                _nowPlayingPanel = new NowPlayingPanel();
+                _nowPlayingPanel = new NowPlayingPanel(_log);
 
                 // Enable embedded progress bar if BelowNowPlaying mode
                 var progressSettings = _getSettings?.Invoke();
@@ -616,6 +616,7 @@ namespace UniPlaySong.DeskMediaControl
 
         public void UpdateIcons()
         {
+            UpdateNowPlayingMotion();
             if (_playPauseIcon == null || _playPauseItem == null) return;
 
             Application.Current?.Dispatcher?.Invoke(() =>
@@ -714,5 +715,22 @@ namespace UniPlaySong.DeskMediaControl
 
         // Keep old method name for backwards compatibility
         public void UpdateIcon() => UpdateIcons();
+
+        // The Now Playing title scrolls only while music plays (UPS or Spotify) and the user wants it to. Ahead of the
+        // play/pause button's guard in UpdateIcons: the panel shows even when that button is hidden.
+        private void UpdateNowPlayingMotion()
+        {
+            if (_nowPlayingPanel == null) return;
+            Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+            {
+                var playback = _getPlaybackService?.Invoke();
+                var spotify = _getSpotifyService?.Invoke();
+                bool playing = spotify != null && spotify.IsSpotifyActive
+                    ? spotify.IsSpotifyPlaying
+                    : playback?.IsPlaying == true && playback?.IsPaused != true;
+                _nowPlayingPanel.SetPlaying(playing);
+                _nowPlayingPanel.SetScrollEnabled(_getSettings?.Invoke()?.ScrollNowPlayingTitle != false);
+            }));
+        }
     }
 }

@@ -37,6 +37,13 @@
                           />
                 <TextBlock Text="When enabled, shows [Default] prefix in the Now Playing ticker when default/fallback music is playing"
                            Style="{StaticResource UpsHintIndented}"/>
+
+                <CheckBox Style="{StaticResource UpsToggleChild}" Content="Scroll long song titles"
+                          IsChecked="{Binding Settings.ScrollNowPlayingTitle}"
+                          IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
+                          />
+                <TextBlock Text="Long titles slide back and forth while music plays. Turn off to show them shortened instead."
+                           Style="{StaticResource UpsHintIndented}"/>
     
 
             <!-- A card, not a bar: the one block here that is output rather than input, so it

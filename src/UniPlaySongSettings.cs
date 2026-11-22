@@ -425,6 +425,7 @@ namespace UniPlaySong
         private bool focusLossIgnoreBrief = false;
         private bool enableRandomPickerMusic = true;
         private bool enableMediaKeyControl = false;
+        private bool scrollNowPlayingTitle = true;
         private string shortcutPlayPause = "";
         private string shortcutNext = "";
         private string shortcutCalmDown = "";
@@ -1269,6 +1270,13 @@ namespace UniPlaySong
 
         // When enabled, hides the Now Playing panel when the selected game has no downloaded music
         // (i.e. when default/fallback music is playing instead of game-specific music)
+        // Long Now Playing titles scroll back and forth; off shortens them with an ellipsis instead
+        public bool ScrollNowPlayingTitle
+        {
+            get => scrollNowPlayingTitle;
+            set { scrollNowPlayingTitle = value; OnPropertyChanged(); }
+        }
+
         public bool HideNowPlayingForDefaultMusic
         {
             get => hideNowPlayingForDefaultMusic;

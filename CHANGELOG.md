@@ -13,6 +13,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added "Play Next in Radio Queue" while Radio Mode plays game music: one of the game's songs goes to the front of the radio queue; in the UniPlaySong submenu and below Music Info Card in Playnite's game menus
 - Added the theme element `UPS_RadioUpNext` and binding `RadioUpNext`: the next 5 radio songs, kept in `RadioUpNextQueue`, which every radio pick (song end, Next, crossfade) takes from, so the list matches what plays
 - Added General → Keyboard Shortcuts (also under Quick Start): system-wide shortcuts for Play/Pause, Next, Calm Down and Music Volume up/down, any combination including media keys; a combination another app holds is flagged, and changes apply on save (`GlobalHotkeyService`)
+- Added "Scroll long song titles" (`ScrollNowPlayingTitle`, General → Now Playing, default on): off shortens a long Now Playing title with an ellipsis instead of scrolling it
 
 ### Fixed
 
@@ -21,6 +22,8 @@ All notable changes to UniPlaySong will be documented in this file.
 - Fixed manual-pick bulk downloads, broader-search retries and Auto-Add More Songs leaving the song-list cache stale
 - Fixed music status tags getting a dead ID after the tag was deleted in Playnite; the tag is now re-created
 - Fixed Back in bulk download's song picker skipping the game; it now returns to album selection for that game
+- Fixed the top panel's scrolling Now Playing title using constant GPU (#55): the system compositor now animates it (`CompositionTicker`), 6.1% → 1.4% GPU at 120 Hz, and it stops while paused, hidden, unfocused or hovered
+- Fixed UniPlaySong capping every WPF animation in Playnite, themes and add-ons included, at 60 fps: the Now Playing panel overrode `Timeline.DesiredFrameRate` globally
 
 ### Removed
 

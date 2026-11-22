@@ -293,6 +293,17 @@ rule), so toggles apply live:
   - Full opacity and functional when 2+ songs available
   - Updates automatically after downloads/normalization
 
+**NowPlayingPanel.cs / CompositionTicker.cs** (1.9.5+): the Now Playing title. A title wider than the panel scrolls,
+animated by the system compositor (`Windows.UI.Composition`, a topmost `DesktopWindowTarget` on Playnite's window):
+WPF draws the title once into a composition surface and a looping key-frame animation slides it at the display's
+native refresh, with no per-frame work in Playnite (#55: 6.1% → 1.4% GPU at 120 Hz, 0% while paused). Because the
+layer draws above all WPF content, `PlaceTicker` trims it to what WPF would show: every ancestor clip
+(`VisualTreeHelper.GetClip`, layout clipping included) and the run of the strip that hit-tests to the panel, so a
+theme button over its end cuts it there; the scroll distance is measured to that visible edge. Nothing moves while
+the music is paused, the panel is hidden, Playnite is inactive or the title is hovered. Where the compositor is
+unavailable (pre-1809, no D3D) the old `CompositionTarget.Rendering` loop runs instead. The panel no longer
+overrides `Timeline.DesiredFrameRate` globally (that capped every theme's and add-on's animations).
+
 #### Key Features
 
 - **Service Getter Pattern**: Uses `Func<IMusicPlaybackService>` instead of storing service directly, allowing proper resubscription when service is recreated (e.g., Live Effects toggle)
