@@ -25,6 +25,7 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ### Changed
 
+- Changed the top panel Play/Pause tooltip to show the music volume and where game music plays, rebuilt on every settings change
 - Changed the Now Playing title to keep scrolling under the mouse with the compositor ticker (the legacy animation still pauses on hover), and its tooltip to show the full song title and artist
 
 ### Fixed

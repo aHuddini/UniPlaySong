@@ -5,13 +5,13 @@ Packages:
     ReleaseDate: 2026-11-16
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.5/UniPlaySong-1_9_5.pext'
     Changelog:
-      - '[New Feature] Now Playing Desktop Mini Player Hover Card (brand new): hover or click Now Playing for the song, playback controls, seeking, volume, EQ / Live Effects toggles, a pin to keep it open, and the song list (right-click a song to make it the primary song or move it to the Recycle Bin).'
+      - '[New Feature] Now Playing Desktop Mini Player Hover Card (brand new): hover or click the Now Playing Top Panel button text for the song to open it. It shows playback controls, seeking, volume, EQ / Live Effects toggles, a pin to keep it open, and the song list.'
       - '[New Feature] Keyboard Shortcuts (Add-On Settings > General, also in Quick Start): Play/Pause, Next, Calm Down and volume up/down from anywhere in Windows, media keys included; replaces the Experimental media keys option.'
       - '[New Feature] Play Next in Radio Queue: in Radio Mode (game music), open a game''s menu in your Library to play its music next.'
       - '[New Feature] Themes can show the next 5 Radio Mode songs (UPS_RadioUpNext; see the theme integration guide on GitHub).'
       - '[New Feature] Settings -> UI -> Desktop UI / Fullscreen UI: choose which UniPlaySong menu entries and buttons appear in Playnite.'
       - '[New Feature] Music Info Card in Playnite''s game menu: below "Create Desktop Shortcut" (Desktop) and below Play/Install (Fullscreen).'
-      - '[New Feature] Library -> Audio Management -> Diagnostics -> Find Songs Not Normalized: lists songs that haven''t been normalized (such as ones you added yourself) and offers to normalize just those.'
+      - '[New Feature] Settings -> Library -> Audio Management -> Diagnostics -> Find Songs Not Normalized: lists songs that haven''t been normalized (such as ones you added yourself) and offers to normalize just those.'
       - '[New Setting] General -> Now Playing -> Mini Player Hover Card -> Show the game''s art on the card: the game''s artwork at the top of the card instead of tinted glass.'
       - '[New Setting] General -> Now Playing -> Scroll long song titles: turn off to show long titles shortened instead.'
       - '[New Setting] General -> Now Playing -> Use legacy scroll animation: the old Now Playing scrolling, in case a theme doesn''t show the new one properly.'
@@ -21,6 +21,7 @@ Packages:
       - '[Fix] Bulk download: Pressing Back in the song picker returns to the album list instead of skipping the game entirely.'
       - '[Fix] Auto-normalize now also covers Re-download and Auto-Add More Songs in bulk downloads, and a notification says so when FFmpeg isn''t set up.'
       - '[Improved] The Now Playing tooltip shows the full song title and artist, and the title keeps scrolling while you hover it.'
+      - '[Improved] The Play/Pause button''s tooltip shows the music volume and where game music plays.'
   - Version: 1.9.4
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-11-16

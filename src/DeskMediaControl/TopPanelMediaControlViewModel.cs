@@ -853,6 +853,23 @@ namespace UniPlaySong.DeskMediaControl
                 : "UniPlaySong: Skip to Next Song (No additional songs)";
         }
 
+        // The Play/Pause button's tooltip, with the music volume and where game music plays ("Play game music in", worded
+        // as on the Startup page). Rebuilt on every settings change, so a volume set from a shortcut or the card shows here.
+        private static string PlayPauseTitle(bool playing, UniPlaySongSettings settings)
+        {
+            var action = playing ? "UniPlaySong: Pause Music" : "UniPlaySong: Play Music";
+            if (settings == null) return action;
+            string where;
+            switch (settings.MusicState)
+            {
+                case AudioState.Never: where = "Never"; break;
+                case AudioState.Desktop: where = "Desktop only"; break;
+                case AudioState.Fullscreen: where = "Fullscreen only"; break;
+                default: where = "Desktop + Fullscreen"; break;
+            }
+            return $"{action}\nVolume {settings.MusicVolume}% · Game music plays in: {where}";
+        }
+
         public void UpdateIcons()
         {
             UpdateNowPlayingMotion();
@@ -875,11 +892,11 @@ namespace UniPlaySong.DeskMediaControl
                         : isPlaying;
 
                     _playPauseIcon.Text = iconPlaying ? MediaControlIcons.Pause : MediaControlIcons.Play;
-                    _playPauseItem.Title = iconPlaying ? "UniPlaySong: Pause Music" : "UniPlaySong: Play Music";
+                    var settings = _getSettings?.Invoke();
+                    var playPauseTitle = PlayPauseTitle(iconPlaying, settings);
+                    if (_playPauseItem.Title != playPauseTitle) _playPauseItem.Title = playPauseTitle;
 
                     UpdateSkipState(playbackService);
-
-                    var settings = _getSettings?.Invoke();
 
                     // Calm Down can also be toggled from the settings dialog, a theme, or the
                     // Fullscreen menu, so the button reflects the setting rather than trusting its
