@@ -38,13 +38,13 @@
                         <Run Text="What's New in v"/><Run Text="{Binding PluginVersion, Mode=OneWay}"/>
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Added: "Play default music in", separate from game music, and theme styling for the Download Music dialog.
+                        Added: a Now Playing hover card, keyboard shortcuts, and Play Next in Radio Queue.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Fixed: a loud burst when returning to Playnite, and default music or Radio playing where music is set off.
+                        Fixed: the Now Playing title's GPU use, and the 60 fps cap on other add-ons' animations.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsBody}">
-                        Improved: settings open faster and look sharp on Windows 10.
+                        Improved: music tags and auto-normalize after downloads, plus a check for songs not normalized.
                     </TextBlock>
                     <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0">
                         Full History:

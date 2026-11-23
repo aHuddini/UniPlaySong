@@ -2,7 +2,7 @@
 Packages:
   - Version: 1.9.5
     RequiredApiVersion: 6.16.0
-    ReleaseDate: 2026-11-16
+    ReleaseDate: 2026-11-22
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.5/UniPlaySong-1_9_5.pext'
     Changelog:
       - '[New Feature] Now Playing Desktop Mini Player Hover Card (brand new): hover or click the Now Playing Top Panel button text for the song to open it. It shows playback controls, seeking, volume, EQ / Live Effects toggles, a pin to keep it open, and the song list.'

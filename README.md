@@ -20,23 +20,26 @@ Built with the help of Claude Code and Cursor IDE
 
 ---
 
-## What's New - v1.9.4
+## What's New - v1.9.5
 
 ### New
-- Play default music in (Playback -> Startup): choose where default music plays, separately from game music.
-- Theme authors can restyle the Fullscreen Download Music dialog to match their theme (see the theme integration guide).
+- Now Playing hover card: hover or click Now Playing for the song, playback controls, seeking, volume, EQ / Live Effects toggles, a pin to keep it open, and the song list. Right-click a song to make it the primary song or move it to the Recycle Bin.
+- Keyboard shortcuts (General -> Keyboard Shortcuts, also in Quick Start): Play/Pause, Next, Calm Down and volume from anywhere in Windows, media keys included.
+- Play Next in Radio Queue, and themes can show the next 5 Radio Mode songs.
+- Choose which UniPlaySong menu entries and buttons appear (UI -> Desktop UI / Fullscreen UI); Music Info Card in Playnite's own game menu.
+- Find Songs Not Normalized (Library -> Audio Management -> Diagnostics).
 
 ### Fixed
-- No more loud burst of music when coming back to Playnite after minimizing it or leaving it idle ([#102](https://github.com/aHuddini/UniPlaySong/issues/102)).
-- Default music and Radio Mode no longer play in a mode where music is set not to play (e.g. Fullscreen only).
-- Saving settings with game music off no longer stops the default music.
-- Settings text no longer looks blurry on Windows 10, and the Fullscreen Download Music dialog opens centred.
+- The scrolling Now Playing title no longer keeps your GPU busy ([#55](https://github.com/aHuddini/UniPlaySong/issues/55)), and UniPlaySong no longer caps other themes' and add-ons' animations at 60 fps.
+- Music status tags update after library refreshes and downloads.
+- Auto-normalize also covers Re-download and Auto-Add More Songs, and tells you when FFmpeg isn't set up.
+- Bulk download: Back in the song picker returns to the album list.
 
 ### Improved
-- Settings open faster, and the Markdown settings snapshot lists every setting.
+- Play/Pause tooltip shows the volume and where game music plays; the Now Playing tooltip shows the full title and artist.
 
 ### Previous Version
-- **v1.9.3**: a Resume after delay for External Audio pauses, plus fixes for Radio Mode Next, chiptune silence after short tracks, and Play after idle, lock or sleep.
+- **v1.9.4**: Play default music in, theme styling for the Download Music dialog, and no more loud burst when returning to Playnite.
 
 > **Release Availability Notice:** Due to a sudden GitHub account suspension in February 2026, releases prior to v1.3.3 are no longer available for download. Changelog history for all versions is preserved for historical reference.
 
