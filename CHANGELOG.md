@@ -4,6 +4,12 @@ All notable changes to UniPlaySong will be documented in this file.
 
 > **Release Availability Notice:** Due to the GitHub account suspension, release downloads prior to v1.3.3 are no longer available. Full changelog history is preserved below for reference.
 
+## [Unreleased]
+
+### Fixed
+
+- Fixed hint-based album downloads failing silently behind a site's bot check: a page that answers with the check loads through Playnite's offscreen browser (`BrowserPageLoader`), and its clearance cookies serve later requests
+
 ## [1.9.5] - 2026-11-22
 
 ### Added

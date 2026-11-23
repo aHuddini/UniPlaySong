@@ -2979,7 +2979,8 @@ namespace UniPlaySong
 
             _downloadManager = new DownloadManager(
                 _httpClient, _htmlWeb, tempPath,
-                _settings?.YtDlpPath, _settings?.FFmpegPath, _errorHandler, _cacheService, _hintsService, _settings);
+                _settings?.YtDlpPath, _settings?.FFmpegPath, _errorHandler, _cacheService, _hintsService, _settings,
+                new Downloaders.BrowserPageLoader(_api.WebViews, Downloaders.KHInsiderDownloader.BrowserUserAgent));
 
             _downloadDialogService = new DownloadDialogService(
                 _api, _downloadManager, _playbackService, _fileService, _settingsService, _errorHandler);

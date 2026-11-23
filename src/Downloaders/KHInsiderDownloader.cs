@@ -23,9 +23,14 @@ namespace UniPlaySong.Downloaders
         private readonly HttpClient _httpClient;
         private readonly HtmlWeb _htmlWeb;
         private readonly ErrorHandlerService _errorHandler;
+        private string _cookies;                       // the browser's cookies for the site, once it has cleared the check
 
-        public KHInsiderDownloader(HttpClient httpClient, HtmlWeb htmlWeb, ErrorHandlerService errorHandler = null)
+        private readonly BrowserPageLoader _browser;   // for pages behind the site's bot check; null: plain HTTP only
+
+        public KHInsiderDownloader(HttpClient httpClient, HtmlWeb htmlWeb, ErrorHandlerService errorHandler = null,
+            BrowserPageLoader browser = null)
         {
+            _browser = browser;
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _htmlWeb = htmlWeb ?? throw new ArgumentNullException(nameof(htmlWeb));
             _errorHandler = errorHandler;
@@ -41,6 +46,66 @@ namespace UniPlaySong.Downloaders
 
         public Source DownloadSource() => Source.KHInsider;
 
+        // The site sits behind Cloudflare, which answers clients that don't look like a browser with its "Just a moment..."
+        // challenge page (403). Requests go out with ordinary browser headers (request headers win over the shared
+        // client's "UniPlaySong/1.0", so Zophar is unaffected) and, once the offscreen browser has cleared the check, its
+        // cookies. The browser uses this same agent: the clearance cookie is only honoured for the agent that earned it.
+        internal const string BrowserUserAgent =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+
+        private HttpRequestMessage BrowserRequest(string url)
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.TryAddWithoutValidation("User-Agent", BrowserUserAgent);
+            request.Headers.TryAddWithoutValidation("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+            request.Headers.TryAddWithoutValidation("Accept-Language", "en-US,en;q=0.9");
+            // The site's own cookies go only to the site (files can come from another host)
+            if (!string.IsNullOrEmpty(_cookies) && new Uri(url).Host.EndsWith("khinsider.com", StringComparison.OrdinalIgnoreCase))
+                request.Headers.TryAddWithoutValidation("Cookie", _cookies);
+            return request;
+        }
+
+        // A page as HTML: the plain client first (fast), then, if the bot check answers, the offscreen browser, which runs
+        // the check's script. Null when neither gets through (logged, so an empty search isn't mistaken for "no albums").
+        private HtmlDocument LoadPage(string url, CancellationToken cancellationToken)
+        {
+            string html;
+            using (var response = _httpClient.SendAsync(BrowserRequest(url), cancellationToken).GetAwaiter().GetResult())
+            {
+                html = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                if (response.IsSuccessStatusCode && !BrowserPageLoader.IsChallenge(html))
+                    return Parse(html);
+                if (!BrowserPageLoader.IsChallenge(html))
+                {
+                    Logger.Warn($"[KHInsider] HTTP {(int)response.StatusCode} for {url}");
+                    return null;
+                }
+            }
+
+            var browser = _browser;
+            if (browser == null)
+            {
+                Logger.Warn($"[KHInsider] Blocked by the site's bot check for {url}");
+                return null;
+            }
+            html = browser.LoadHtml(url, cancellationToken, out var cookies);
+            if (!string.IsNullOrEmpty(cookies)) _cookies = cookies;
+            if (html == null)
+            {
+                Logger.Warn($"[KHInsider] The site's bot check didn't clear in the browser for {url}");
+                return null;
+            }
+            Logger.DebugIf(LogPrefix, $"Loaded through the browser (bot check cleared): {url}");
+            return Parse(html);
+        }
+
+        private static HtmlDocument Parse(string html)
+        {
+            var doc = new HtmlDocument();
+            doc.LoadHtml(html);
+            return doc;
+        }
+
         public IEnumerable<Album> GetAlbumsForGame(string gameName, CancellationToken cancellationToken, bool auto = false)
         {
             var albums = new List<Album>();
@@ -53,7 +118,7 @@ namespace UniPlaySong.Downloaders
 
                 // Use async properly - but we need to block for IEnumerable return
                 // In a real async scenario, this would return Task<IEnumerable<Album>>
-                var htmlDoc = _htmlWeb.LoadFromWebAsync(searchUrl, cancellationToken).GetAwaiter().GetResult();
+                var htmlDoc = LoadPage(searchUrl, cancellationToken);
 
                 if (htmlDoc == null)
                 {
@@ -106,7 +171,7 @@ namespace UniPlaySong.Downloaders
 
                 var albumUrl = $"{KhInsiderBaseUrl}{album.Id}";
 
-                var htmlDoc = _htmlWeb.LoadFromWebAsync(albumUrl, cancellationToken).GetAwaiter().GetResult();
+                var htmlDoc = LoadPage(albumUrl, cancellationToken);
 
                 if (htmlDoc == null)
                 {
@@ -183,7 +248,7 @@ namespace UniPlaySong.Downloaders
                 // Get the actual download URL from the song page
                 var songUrl = $"{KhInsiderBaseUrl}{song.Id}";
 
-                var htmlDoc = _htmlWeb.LoadFromWebAsync(songUrl, cancellationToken).GetAwaiter().GetResult();
+                var htmlDoc = LoadPage(songUrl, cancellationToken);
                 if (htmlDoc == null)
                 {
                     Logger.Warn($"Failed to load song page: {song.Name}");
@@ -232,7 +297,7 @@ namespace UniPlaySong.Downloaders
 
                 // Download the file
                 // Use SendAsync with HttpRequestMessage to avoid overload ambiguity in .NET Framework 4.6.2
-                var request = new HttpRequestMessage(HttpMethod.Get, fileUrl);
+                var request = BrowserRequest(fileUrl);
                 var response = _httpClient.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken).GetAwaiter().GetResult();
                 response.EnsureSuccessStatusCode();
 

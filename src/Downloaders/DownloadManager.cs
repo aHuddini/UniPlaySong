@@ -37,7 +37,8 @@ namespace UniPlaySong.Downloaders
 
         public DownloadManager(HttpClient httpClient, HtmlAgilityPack.HtmlWeb htmlWeb, string tempPath,
             string ytDlpPath = null, string ffmpegPath = null, ErrorHandlerService errorHandler = null,
-            SearchCacheService cacheService = null, SearchHintsService hintsService = null, UniPlaySongSettings settings = null)
+            SearchCacheService cacheService = null, SearchHintsService hintsService = null, UniPlaySongSettings settings = null,
+            BrowserPageLoader browser = null)
         {
             _tempPath = tempPath ?? throw new ArgumentNullException(nameof(tempPath));
             _errorHandler = errorHandler ?? throw new ArgumentNullException(nameof(errorHandler));
@@ -46,7 +47,7 @@ namespace UniPlaySong.Downloaders
             _settings = settings;
 
             // KHInsider and Zophar: instantiated for hint-based downloads only (search/scrape disabled)
-            _khDownloader = new KHInsiderDownloader(httpClient, htmlWeb, errorHandler);
+            _khDownloader = new KHInsiderDownloader(httpClient, htmlWeb, errorHandler, browser);
             _zopharDownloader = new ZopharDownloader(httpClient, htmlWeb, errorHandler);
             var cookieMode = settings?.CookieMode ?? CookieMode.None;
             var customCookiesPath = settings?.CustomCookiesFilePath ?? string.Empty;
