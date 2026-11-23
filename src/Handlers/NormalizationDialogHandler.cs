@@ -98,6 +98,73 @@ namespace UniPlaySong.Handlers
             }
         }
 
+        // Lists the library's songs UPS hasn't normalized (by name: no normalization suffix), game by game, and offers to
+        // normalize just those. Catches what auto-normalize can't: songs added by hand, or downloaded while it was off.
+        public async void FindSongsNotNormalized()
+        {
+            try
+            {
+                var settings = _settingsProvider();
+                var suffix = settings?.NormalizationSuffix;
+                if (string.IsNullOrEmpty(suffix))
+                {
+                    _playniteApi.Dialogs.ShowMessage(
+                        "Normalized songs have no name suffix in your settings, so they can't be told apart from the others.",
+                        "Songs Not Normalized");
+                    return;
+                }
+
+                var library = _playniteApi.Database.Games
+                    .Select(g => (g.Name ?? "?", (IEnumerable<string>)(_fileService?.GetAvailableSongs(g) ?? new List<string>())))
+                    .ToList();
+                int total = library.Sum(g => g.Item2.Count());
+                var pending = NormalizationScan.Pending(library, suffix);
+                int count = pending.Sum(g => g.Songs.Count);
+
+                if (count == 0)
+                {
+                    _playniteApi.Dialogs.ShowMessage(
+                        total == 0 ? "No music files found in your library." : $"All {total} songs in your library are normalized.",
+                        "Songs Not Normalized");
+                    return;
+                }
+
+                var message = $"{count} of {total} songs in {pending.Count} game{(pending.Count == 1 ? "" : "s")} aren't normalized:\n\n" +
+                              NormalizationScan.Report(pending, ReportLines) +
+                              $"\n\nNormalize these {count} song{(count == 1 ? "" : "s")} now?";
+                if (_playniteApi.Dialogs.ShowMessage(message, "Songs Not Normalized", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+                    return;
+
+                if (!FFmpegReady(settings)) return;
+                await StopPlaybackForProcessingAsync("normalizing songs found by the check");
+                ShowNormalizationProgress(pending.SelectMany(g => g.Songs).ToList(), $"Normalizing {count} Songs");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Error in FindSongsNotNormalized");
+                _playniteApi.Dialogs.ShowErrorMessage($"Error checking for songs that aren't normalized: {ex.Message}", "Normalization Error");
+            }
+        }
+
+        private const int ReportLines = 40; // the dialog stays readable; the rest is counted
+
+        private bool FFmpegReady(UniPlaySongSettings settings)
+        {
+            if (_normalizationService == null)
+            {
+                _playniteApi.Dialogs.ShowErrorMessage("Normalization service not available.", "UniPlaySong");
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(settings?.FFmpegPath) || !_normalizationService.ValidateFFmpegAvailable(settings.FFmpegPath))
+            {
+                _playniteApi.Dialogs.ShowErrorMessage(
+                    "FFmpeg isn't set up or can't be found. Set it in UniPlaySong's settings under Setup → Tools.",
+                    "FFmpeg Not Available");
+                return false;
+            }
+            return true;
+        }
+
         // Normalize music files for a single game (fullscreen menu)
         public void NormalizeSelectedGamesFullscreen(Game game)
         {

@@ -1046,6 +1046,15 @@ namespace UniPlaySong
             );
         });
 
+        public ICommand FindSongsNotNormalizedCommand => new Common.RelayCommand<object>((a) =>
+        {
+            plugin.GetErrorHandlerService()?.Try(
+                () => plugin.FindSongsNotNormalized(),
+                context: "checking for songs that aren't normalized",
+                showUserMessage: true
+            );
+        });
+
         public ICommand TrimAllMusicCommand => new Common.RelayCommand<object>((a) =>
         {
             var errorHandler = plugin.GetErrorHandlerService();

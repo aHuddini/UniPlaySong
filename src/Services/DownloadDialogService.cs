@@ -1450,6 +1450,11 @@ namespace UniPlaySong.Services
             if (string.IsNullOrWhiteSpace(ffmpegPath) || !System.IO.File.Exists(ffmpegPath))
             {
                 Logger.Warn("FFmpeg not configured, skipping auto-normalize");
+                // One notification (same id: shown again it replaces itself), so the user knows why nothing happened
+                _playniteApi.Notifications.Add(new Playnite.SDK.NotificationMessage(
+                    "UniPlaySong_AutoNormalizeNoFFmpeg",
+                    "UniPlaySong: new music wasn't normalized because FFmpeg isn't set up. Set it in UniPlaySong's settings under Setup → Tools.",
+                    Playnite.SDK.NotificationType.Error));
                 return;
             }
 
@@ -1597,7 +1602,7 @@ namespace UniPlaySong.Services
                 // Handle re-download requests during review mode
                 progressDialog.OnGameRedownloadRequested += (item) =>
                 {
-                    HandleRedownloadRequest(item, progressDialog);
+                    HandleRedownloadRequest(item, progressDialog, batchResult.DownloadedFiles);
                 };
 
                 // Handle music pause/play button click
@@ -1620,7 +1625,7 @@ namespace UniPlaySong.Services
                 // Handle Auto-Add More Songs request
                 progressDialog.OnAutoAddSongsRequested += (songCount) =>
                 {
-                    HandleAutoAddMoreSongs(progressDialog, allResults, songCount);
+                    HandleAutoAddMoreSongs(progressDialog, allResults, songCount, batchResult.DownloadedFiles);
                 };
 
                 // Handle window closing - capture results if not already done
@@ -1779,7 +1784,7 @@ namespace UniPlaySong.Services
                 {
                     if (result.Success && !string.IsNullOrEmpty(result.SongPath))
                     {
-                        batchResult.DownloadedFiles.Add(result.SongPath);
+                        lock (batchResult.DownloadedFiles) batchResult.DownloadedFiles.Add(result.SongPath);
                     }
                     else if (!result.Success && !result.WasSkipped)
                     {
@@ -2257,7 +2262,10 @@ namespace UniPlaySong.Services
         }
 
         // Auto-Add More Songs: downloads additional songs as albums are found.
-        private void HandleAutoAddMoreSongs(Views.BatchDownloadProgressDialog progressDialog, List<GameDownloadResult> allResults, int songsPerGame)
+        // downloaded: the bulk result's file list, which is auto-normalized once the dialog closes (locked: songs arrive
+        // from background tasks)
+        private void HandleAutoAddMoreSongs(Views.BatchDownloadProgressDialog progressDialog, List<GameDownloadResult> allResults, int songsPerGame,
+            List<string> downloaded)
         {
             if (allResults == null)
             {
@@ -2492,6 +2500,7 @@ namespace UniPlaySong.Services
                                             songsAdded++;
                                             Interlocked.Increment(ref totalAdded);
                                             existingSongs.Add(safeFileName);
+                                            lock (downloaded) downloaded.Add(downloadPath);
 
                                             bool shouldStartPlayback = false;
                                             lock (downloadedSongsLock)
@@ -2651,7 +2660,8 @@ namespace UniPlaySong.Services
             return Source.All;
         }
 
-        private void HandleRedownloadRequest(BatchDownloadItem item, Views.BatchDownloadProgressDialog progressDialog)
+        // downloaded: as for Auto-Add More Songs, the bulk result's file list
+        private void HandleRedownloadRequest(BatchDownloadItem item, Views.BatchDownloadProgressDialog progressDialog, List<string> downloaded)
         {
             if (item?.Game == null)
             {
@@ -2752,6 +2762,9 @@ namespace UniPlaySong.Services
                     {
                         // Update the progress dialog item
                         progressDialog.UpdateItemAfterRedownload(item, Path.GetFileNameWithoutExtension(audioFiles.First()), "Manual");
+                        // The game's songs, as the manual retry does: ones already normalized are skipped by name
+                        lock (downloaded)
+                            downloaded.AddRange(audioFiles.Where(f => !downloaded.Contains(f, StringComparer.OrdinalIgnoreCase)));
                     }
                 }
             }

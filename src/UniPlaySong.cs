@@ -3664,6 +3664,11 @@ namespace UniPlaySong
             _normalizationDialogHandler?.NormalizeAllMusicFiles();
         }
 
+        public void FindSongsNotNormalized()
+        {
+            _normalizationDialogHandler?.FindSongsNotNormalized();
+        }
+
         public void ConvertAllMusicFiles()
         {
             _conversionDialogHandler?.ConvertAllMusicFiles();

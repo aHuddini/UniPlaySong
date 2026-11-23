@@ -21,6 +21,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added a right-click menu to the Now Playing card's game songs: set or clear the primary song (shown in pink), or move the song to the Recycle Bin (`SongRecycler`; the playing song is skipped first)
 - Added Equalizer and Live Effects toggles to the Now Playing card, opposite Calm Down and the pin; all three show grey when off and blue when on
 - Added "Show the game's art on the card" (`ShowNowPlayingCardArt`, General → Now Playing → Mini Player Hover Card, default off): a progressively blurred art banner instead of tinted glass; games without art get plain glass (`BannerLook`)
+- Added Library → Audio Management → Diagnostics → "Find Songs Not Normalized": lists, by game, songs whose names lack the normalization suffix and offers to normalize just those (`NormalizationScan`)
 
 ### Changed
 
@@ -36,6 +37,9 @@ All notable changes to UniPlaySong will be documented in this file.
 - Fixed the top panel's scrolling Now Playing title using constant GPU (#55): the system compositor now animates it (`CompositionTicker`), 6.1% → 1.4% GPU at 120 Hz, and it stops while paused, hidden, unfocused or hovered
 - Fixed UniPlaySong capping every WPF animation in Playnite, themes and add-ons included, at 60 fps: the Now Playing panel overrode `Timeline.DesiredFrameRate` globally
 - Fixed the compositor-drawn Now Playing title staying bright over Playnite's dim overlay while a dialog is open: what covers it is rechecked twice a second
+- Fixed bulk download's Re-download and Auto-Add More Songs skipping auto-normalize: their files now join the batch's downloaded list, normalized when the dialog closes
+- Fixed auto-normalize failing silently without FFmpeg: a Playnite notification now says why new music wasn't normalized
+- Fixed Audio Management descriptions running off the page and sitting above their buttons' centre: rows wrap and use a margin-free description style
 
 ### Removed
 

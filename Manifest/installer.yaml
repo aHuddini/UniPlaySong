@@ -11,6 +11,7 @@ Packages:
       - '[New Feature] Themes can show the next 5 Radio Mode songs (UPS_RadioUpNext; see the theme integration guide on GitHub).'
       - '[New Feature] Settings -> UI -> Desktop UI / Fullscreen UI: choose which UniPlaySong menu entries and buttons appear in Playnite.'
       - '[New Feature] Music Info Card in Playnite''s game menu: below "Create Desktop Shortcut" (Desktop) and below Play/Install (Fullscreen).'
+      - '[New Feature] Library -> Audio Management -> Diagnostics -> Find Songs Not Normalized: lists songs that haven''t been normalized (such as ones you added yourself) and offers to normalize just those.'
       - '[New Setting] General -> Now Playing -> Mini Player Hover Card -> Show the game''s art on the card: the game''s artwork at the top of the card instead of tinted glass.'
       - '[New Setting] General -> Now Playing -> Scroll long song titles: turn off to show long titles shortened instead.'
       - '[New Setting] General -> Now Playing -> Use legacy scroll animation: the old Now Playing scrolling, in case a theme doesn''t show the new one properly.'
@@ -18,6 +19,7 @@ Packages:
       - '[Fix] The scrolling Now Playing title no longer keeps your GPU busy: Windows'' own compositor now draws it (issue #55), and it stops while music is paused.'
       - '[Fix] Auto-tags ([UPS] Has Music / No Music) now update after a library refresh, bulk download or URL download.'
       - '[Fix] Bulk download: Pressing Back in the song picker returns to the album list instead of skipping the game entirely.'
+      - '[Fix] Auto-normalize now also covers Re-download and Auto-Add More Songs in bulk downloads, and a notification says so when FFmpeg isn''t set up.'
       - '[Improved] The Now Playing tooltip shows the full song title and artist, and the title keeps scrolling while you hover it.'
   - Version: 1.9.4
     RequiredApiVersion: 6.16.0

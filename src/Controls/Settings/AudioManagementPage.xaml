@@ -12,6 +12,30 @@
             <ResourceDictionary.MergedDictionaries>
                 <ups:SharedResourceDictionary Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/SettingsResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <!-- A row: the button on the left, its description filling the rest and wrapping (a horizontal StackPanel
+                 gives text unlimited width, so it never wrapped and ran off the page) -->
+            <Style x:Key="ActionRow" TargetType="DockPanel">
+                <Setter Property="Margin" Value="0,10"/>
+                <Setter Property="LastChildFill" Value="True"/>
+            </Style>
+            <Style x:Key="ActionButton" TargetType="Button" BasedOn="{StaticResource UpsButton}">
+                <Setter Property="Width" Value="220"/>
+                <Setter Property="Margin" Value="0,0,16,0"/>
+                <Setter Property="DockPanel.Dock" Value="Left"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+            <!-- The description beside a button. UpsHint is made for text under a toggle (32 px indent, 12 px gap below),
+                 which here pushed the text above the button's centre and far from it -->
+            <Style x:Key="ActionText" TargetType="TextBlock" BasedOn="{StaticResource UpsHint}">
+                <Setter Property="Margin" Value="0"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+            <Style x:Key="ActionDanger" TargetType="TextBlock" BasedOn="{StaticResource UpsDangerNote}">
+                <Setter Property="Margin" Value="0"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -26,38 +50,26 @@
                     <TextBlock ups:TrackedCaps.Text="Bulk Actions" Style="{StaticResource UpsSectionTitle}"/>
                 </Expander.Header>
                 <StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,5">
-                        <Button Style="{StaticResource UpsButton}" Content="Normalize All Music Files"
-                                Width="220"
-                                Margin="0,0,10,0"
+                    <DockPanel Style="{StaticResource ActionRow}" Margin="0,5,0,10">
+                        <Button Style="{StaticResource ActionButton}" Content="Normalize All Music Files"
                                 Command="{Binding NormalizeAllMusicCommand}"/>
                         <TextBlock Text="Normalize all music in your library to consistent volume. Uses your normalization settings in Audio Editing page."
-                                   VerticalAlignment="Center"
-                                   Style="{StaticResource UpsHint}"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
-    
-                    <StackPanel Orientation="Horizontal" Margin="0,10">
-                        <Button Style="{StaticResource UpsButton}" Content="Trim Silence - All Files"
-                                Width="220"
-                                Margin="0,0,10,0"
+                                   Style="{StaticResource ActionText}"/>
+                    </DockPanel>
+
+                    <DockPanel Style="{StaticResource ActionRow}">
+                        <Button Style="{StaticResource ActionButton}" Content="Trim Silence - All Files"
                                 Command="{Binding TrimAllMusicCommand}"/>
                         <TextBlock Text="Remove leading silence from all music files."
-                                   VerticalAlignment="Center"
-                                   Style="{StaticResource UpsHint}"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
-    
-                    <StackPanel Orientation="Horizontal" Margin="0,10">
-                        <Button Style="{StaticResource UpsButton}" Content="Create Folders for All Games"
-                                Width="220"
-                                Margin="0,0,10,0"
+                                   Style="{StaticResource ActionText}"/>
+                    </DockPanel>
+
+                    <DockPanel Style="{StaticResource ActionRow}">
+                        <Button Style="{StaticResource ActionButton}" Content="Create Folders for All Games"
                                 Command="{Binding CreateMissingMusicFoldersCommand}"/>
                         <TextBlock Text="Create a music folder for every game in your library that doesn't have one yet."
-                                   VerticalAlignment="Center"
-                                   Style="{StaticResource UpsHint}"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
+                                   Style="{StaticResource ActionText}"/>
+                    </DockPanel>
                 </StackPanel>
             </Expander>
 
@@ -66,48 +78,47 @@
                     <TextBlock ups:TrackedCaps.Text="File Management" Style="{StaticResource UpsSectionTitle}"/>
                 </Expander.Header>
                 <StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,5">
-                        <Button Style="{StaticResource UpsButton}" Content="Open Game Index"
-                                Width="220"
-                                Margin="0,0,10,0"
+                    <DockPanel Style="{StaticResource ActionRow}" Margin="0,5,0,10">
+                        <Button Style="{StaticResource ActionButton}" Content="Open Game Index"
                                 Command="{Binding OpenGameIndexCommand}"/>
                         <TextBlock Text="Open the game index listing all games with music folders and their IDs."
-                                   VerticalAlignment="Center"
-                                   Style="{StaticResource UpsHint}"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
-    
-                    <StackPanel Orientation="Horizontal" Margin="0,10">
-                        <Button Style="{StaticResource UpsButton}" Content="Open Preserved Folder"
-                                Width="220"
-                                Margin="0,0,10,0"
+                                   Style="{StaticResource ActionText}"/>
+                    </DockPanel>
+
+                    <DockPanel Style="{StaticResource ActionRow}">
+                        <Button Style="{StaticResource ActionButton}" Content="Open Preserved Folder"
                                 Command="{Binding OpenPreservedOriginalsFolderCommand}"/>
                         <TextBlock Text="Open the folder containing backup copies of original files."
-                                   VerticalAlignment="Center"
-                                   Style="{StaticResource UpsHint}"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
-    
-                    <StackPanel Orientation="Horizontal" Margin="0,10">
-                        <Button Style="{StaticResource UpsButton}" Content="Restore Original Files"
-                                Width="220"
-                                Margin="0,0,10,0"
+                                   Style="{StaticResource ActionText}"/>
+                    </DockPanel>
+
+                    <DockPanel Style="{StaticResource ActionRow}">
+                        <Button Style="{StaticResource ActionButton}" Content="Restore Original Files"
                                 Command="{Binding RestoreNormalizedFilesCommand}"/>
                         <TextBlock Text="Restore originals and delete normalized/trimmed versions."
-                                   VerticalAlignment="Center"
-                                   Style="{StaticResource UpsHint}"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
-    
-                    <StackPanel Orientation="Horizontal" Margin="0,10">
-                        <Button Style="{StaticResource UpsButton}" Content="Delete Preserved Originals"
-                                Width="220"
-                                Margin="0,0,10,0"
+                                   Style="{StaticResource ActionText}"/>
+                    </DockPanel>
+
+                    <DockPanel Style="{StaticResource ActionRow}">
+                        <Button Style="{StaticResource ActionButton}" Content="Delete Preserved Originals"
                                 Command="{Binding DeletePreservedOriginalsCommand}"/>
                         <TextBlock Text="Permanently delete all preserved originals to free disk space."
-                                   Style="{StaticResource UpsDangerNote}"
-                                   VerticalAlignment="Center" Margin="0"/>
-                    </StackPanel>
+                                   Style="{StaticResource ActionDanger}"/>
+                    </DockPanel>
+                </StackPanel>
+            </Expander>
+
+            <Expander Style="{StaticResource UpsSection}">
+                <Expander.Header>
+                    <TextBlock ups:TrackedCaps.Text="Diagnostics" Style="{StaticResource UpsSectionTitle}"/>
+                </Expander.Header>
+                <StackPanel>
+                    <DockPanel Style="{StaticResource ActionRow}" Margin="0,5,0,10">
+                        <Button Style="{StaticResource ActionButton}" Content="Find Songs Not Normalized"
+                                Command="{Binding FindSongsNotNormalizedCommand}"/>
+                        <TextBlock Text="Lists the songs that haven't been normalized yet, such as ones you added yourself, and offers to normalize just those."
+                                   Style="{StaticResource ActionText}"/>
+                    </DockPanel>
                 </StackPanel>
             </Expander>
         </StackPanel>
