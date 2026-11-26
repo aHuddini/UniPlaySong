@@ -40,7 +40,12 @@ namespace UniPlaySong.Tests.Services
             SettingsBackupService.ExportToJson(settings, file);
             var json = JObject.Parse(File.ReadAllText(file));
 
-            foreach (var field in new[] { "RadioCustomFolderPath", "CelebrationSoundPath", "SpotifyExePath", "NostalgiaStatusIds", "GamePropFilterGenreIds" })
+            settings.RadioCustomFolderPaths = new System.Collections.Generic.List<string> { @"C:\Music\Radio" };
+            settings.DefaultMusicFolderPaths = new System.Collections.Generic.List<string> { @"C:\Music\Default" };
+            SettingsBackupService.ExportToJson(settings, file);
+            json = JObject.Parse(File.ReadAllText(file));
+
+            foreach (var field in new[] { "RadioCustomFolderPath", "RadioCustomFolderPaths", "DefaultMusicFolderPaths", "CelebrationSoundPath", "SpotifyExePath", "NostalgiaStatusIds", "GamePropFilterGenreIds" })
                 Assert.IsFalse(json.ContainsKey(field), $"{field} must not travel in an export");
             Assert.IsTrue(json.ContainsKey(nameof(UniPlaySongSettings.DefaultMusicState)), "ordinary settings still export");
         }

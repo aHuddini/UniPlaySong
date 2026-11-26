@@ -340,7 +340,7 @@ namespace UniPlaySong.Services
                 case DefaultMusicSource.CustomFile:
                     return !string.IsNullOrWhiteSpace(s.DefaultMusicPath);
                 case DefaultMusicSource.CustomFolder:
-                    return !string.IsNullOrWhiteSpace(s.DefaultMusicFolderPath);
+                    return s.DefaultMusicFolderPaths != null && s.DefaultMusicFolderPaths.Count > 0;
                 case DefaultMusicSource.CustomRotation:
                     return s.CustomRotationGameIds != null && s.CustomRotationGameIds.Count > 0;
                 case DefaultMusicSource.CompletionStatusPool:

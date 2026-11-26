@@ -775,39 +775,39 @@ namespace UniPlaySong
             );
         });
 
-        public ICommand BrowseForDefaultMusicFolder => new Common.RelayCommand<object>((a) =>
-        {
-            var errorHandler = plugin.GetErrorHandlerService();
-            errorHandler?.Try(
-                () =>
-                {
-                    var selectedFolder = PlayniteApi.Dialogs.SelectFolder();
-                    if (!string.IsNullOrWhiteSpace(selectedFolder))
-                    {
-                        Settings = CreateSettingsWithUpdate(s => s.DefaultMusicFolderPath = selectedFolder);
-                    }
-                },
-                context: "selecting default music folder",
-                showUserMessage: true
-            );
-        });
+        // Custom Folder lists: Add picks a folder and appends it (the setting drops a repeat); Remove takes the row's
+        // folder. Always a new list, so the saved settings compare as changed and the music reloads.
+        public ICommand AddDefaultMusicFolder => new Common.RelayCommand<object>((a) =>
+            AddFolder(s => s.DefaultMusicFolderPaths, (s, v) => s.DefaultMusicFolderPaths = v, "adding a default music folder"));
 
-        public ICommand BrowseForRadioCustomFolder => new Common.RelayCommand<object>((a) =>
+        public ICommand RemoveDefaultMusicFolder => new Common.RelayCommand<object>((a) =>
+            RemoveFolder(a as string, s => s.DefaultMusicFolderPaths, (s, v) => s.DefaultMusicFolderPaths = v), a => a is string);
+
+        public ICommand AddRadioCustomFolder => new Common.RelayCommand<object>((a) =>
+            AddFolder(s => s.RadioCustomFolderPaths, (s, v) => s.RadioCustomFolderPaths = v, "adding a radio custom folder"));
+
+        public ICommand RemoveRadioCustomFolder => new Common.RelayCommand<object>((a) =>
+            RemoveFolder(a as string, s => s.RadioCustomFolderPaths, (s, v) => s.RadioCustomFolderPaths = v), a => a is string);
+
+        private void AddFolder(Func<UniPlaySongSettings, List<string>> get, Action<UniPlaySongSettings, List<string>> set, string context)
         {
-            var errorHandler = plugin.GetErrorHandlerService();
-            errorHandler?.Try(
+            plugin.GetErrorHandlerService()?.Try(
                 () =>
                 {
                     var selectedFolder = PlayniteApi.Dialogs.SelectFolder();
                     if (!string.IsNullOrWhiteSpace(selectedFolder))
-                    {
-                        Settings = CreateSettingsWithUpdate(s => s.RadioCustomFolderPath = selectedFolder);
-                    }
+                        Settings = CreateSettingsWithUpdate(s => set(s, new List<string>(get(s)) { selectedFolder }));
                 },
-                context: "selecting radio custom folder",
+                context: context,
                 showUserMessage: true
             );
-        });
+        }
+
+        private void RemoveFolder(string folder, Func<UniPlaySongSettings, List<string>> get, Action<UniPlaySongSettings, List<string>> set)
+        {
+            if (string.IsNullOrEmpty(folder)) return;
+            Settings = CreateSettingsWithUpdate(s => set(s, get(s).Where(f => !string.Equals(f, folder, StringComparison.OrdinalIgnoreCase)).ToList()));
+        }
 
         public ICommand SelectRotationGames => new Common.RelayCommand<object>((a) =>
         {

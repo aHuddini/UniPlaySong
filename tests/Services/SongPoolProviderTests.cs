@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
 using UniPlaySong;
@@ -45,7 +46,10 @@ namespace UniPlaySong.Tests.Services
             Touch("notes.txt");
             Touch("cover.jpg");
 
-            var settings = new UniPlaySongSettings { DefaultMusicFolderPath = _dir };
+            Directory.CreateDirectory(Path.Combine(_dir, "sub"));
+            File.WriteAllText(Path.Combine(_dir, "sub", "nested.mp3"), "x"); // subfolders aren't scanned
+
+            var settings = new UniPlaySongSettings { DefaultMusicFolderPaths = new List<string> { _dir } };
             var songs = Provider().GetDefaultSongPool(DefaultMusicSource.CustomFolder, settings);
 
             Assert.AreEqual(2, songs.Count);
@@ -57,7 +61,7 @@ namespace UniPlaySong.Tests.Services
         {
             var settings = new UniPlaySongSettings
             {
-                DefaultMusicFolderPath = Path.Combine(_dir, "does-not-exist")
+                DefaultMusicFolderPaths = new List<string> { Path.Combine(_dir, "does-not-exist") }
             };
 
             var songs = Provider().GetDefaultSongPool(DefaultMusicSource.CustomFolder, settings);
@@ -75,8 +79,7 @@ namespace UniPlaySong.Tests.Services
 
             var settings = new UniPlaySongSettings
             {
-                RadioCustomFolderPath = null,
-                DefaultMusicFolderPath = _dir
+                DefaultMusicFolderPaths = new List<string> { _dir }
             };
 
             var songs = Provider().GetRadioSongPool(RadioMusicSource.CustomFolder, settings);
@@ -98,8 +101,8 @@ namespace UniPlaySong.Tests.Services
 
                 var settings = new UniPlaySongSettings
                 {
-                    RadioCustomFolderPath = _dir,
-                    DefaultMusicFolderPath = otherDir
+                    RadioCustomFolderPaths = new List<string> { _dir },
+                    DefaultMusicFolderPaths = new List<string> { otherDir }
                 };
 
                 var songs = Provider().GetRadioSongPool(RadioMusicSource.CustomFolder, settings);
@@ -111,6 +114,34 @@ namespace UniPlaySong.Tests.Services
             {
                 try { Directory.Delete(otherDir, true); } catch { }
             }
+        }
+
+        // Several folders merge into one pool; the same folder written differently counts once (the list setter keeps
+        // one; the pool keeps one even if handed both); a missing folder is skipped, not an error
+        [Test]
+        public void DefaultPool_SeveralFolders_MergedOnceEach_MissingSkipped()
+        {
+            var second = Path.Combine(_dir, "second");
+            Directory.CreateDirectory(second);
+            var a = Touch("a.mp3");
+            var b = Path.Combine(second, "b.ogg");
+            File.WriteAllText(b, "x");
+
+            var settings = new UniPlaySongSettings
+            {
+                DefaultMusicFolderPaths = new List<string> { _dir, second, Path.Combine(_dir, "gone") }
+            };
+            var songs = Provider().GetDefaultSongPool(DefaultMusicSource.CustomFolder, settings);
+
+            CollectionAssert.AreEquivalent(new[] { a, b }, songs);
+        }
+
+        [Test]
+        public void RadioPool_BothListsEmpty_EmptyPool()
+        {
+            var songs = Provider().GetRadioSongPool(RadioMusicSource.CustomFolder, new UniPlaySongSettings());
+            Assert.IsNotNull(songs);
+            Assert.IsEmpty(songs);
         }
 
         // Every source must be handled in BOTH switches (CompletionStatusPool was once easy to add to one and forget

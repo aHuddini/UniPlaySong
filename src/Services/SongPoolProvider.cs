@@ -33,7 +33,7 @@ namespace UniPlaySong.Services
             switch (source)
             {
                 case DefaultMusicSource.CustomFolder:
-                    return SongsInFolder(settings?.DefaultMusicFolderPath, logPrefix: null);
+                    return SongsInFolders(settings?.DefaultMusicFolderPaths, logPrefix: null);
 
                 case DefaultMusicSource.RandomGame:
                     return SongsFromAllGames();
@@ -58,11 +58,11 @@ namespace UniPlaySong.Services
                     return SongsFromAllGames();
 
                 case RadioMusicSource.CustomFolder:
-                    // Radio has its own folder, falling back to the Default Music folder when unset.
-                    var folder = settings?.RadioCustomFolderPath;
-                    if (string.IsNullOrWhiteSpace(folder))
-                        folder = settings?.DefaultMusicFolderPath;
-                    return SongsInFolder(folder, logPrefix: "RadioMode: ");
+                    // Radio has its own folders, falling back to Default Music's when it has none.
+                    var folders = settings?.RadioCustomFolderPaths;
+                    if (folders == null || folders.Count == 0)
+                        folders = settings?.DefaultMusicFolderPaths;
+                    return SongsInFolders(folders, logPrefix: "RadioMode: ");
 
                 case RadioMusicSource.CustomRotation:
                     return SongsFromGameIds(settings?.CustomRotationGameIds);
@@ -75,23 +75,24 @@ namespace UniPlaySong.Services
             }
         }
 
-        private List<string> SongsInFolder(string folder, string logPrefix)
+        // Each folder's top-level audio files (no subfolders), merged. The same folder written differently counts once;
+        // a missing or unreadable folder is skipped, so one unplugged drive doesn't empty the pool.
+        private List<string> SongsInFolders(IEnumerable<string> folders, string logPrefix)
         {
             var songs = new List<string>();
-            if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
-                return songs;
-
-            try
+            foreach (var folder in UniPlaySongSettings.CleanFolderList(folders))
             {
-                songs = Directory.GetFiles(folder)
-                    .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f)))
-                    .ToList();
+                if (!Directory.Exists(folder)) continue;
+                try
+                {
+                    songs.AddRange(Directory.GetFiles(folder)
+                        .Where(f => Constants.SupportedAudioExtensionsLowercase.Contains(Path.GetExtension(f))));
+                }
+                catch (Exception ex)
+                {
+                    _fileLogger?.Warn($"{logPrefix}Error scanning custom folder '{folder}': {ex.Message}");
+                }
             }
-            catch (Exception ex)
-            {
-                _fileLogger?.Warn($"{logPrefix}Error scanning custom folder '{folder}': {ex.Message}");
-            }
-
             return songs;
         }
 

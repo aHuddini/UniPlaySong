@@ -289,12 +289,12 @@ namespace UniPlaySong.Tests.Services
                 foreach (var c in cases)
                 {
                     var s = new UniPlaySongSettings { DefaultMusicSourceOption = c.Source };
-                    if (c.Folder != null) s.DefaultMusicFolderPath = c.Folder;
+                    if (c.Folder != null) s.DefaultMusicFolderPaths = new System.Collections.Generic.List<string> { c.Folder };
 
                     new QuickStartService().Apply(s, P(c.Profile), JukeboxSource.Library, false, false, false);
 
                     Assert.AreEqual(c.Expected, s.DefaultMusicSourceOption, $"{c.Source} (folder: {c.Folder ?? "none"})");
-                    if (c.Folder != null) Assert.AreEqual(c.Folder, s.DefaultMusicFolderPath, "the configured folder survives");
+                    if (c.Folder != null) Assert.AreEqual(new[] { c.Folder }, s.DefaultMusicFolderPaths.ToArray(), "the configured folder survives");
                 }
             });
         }

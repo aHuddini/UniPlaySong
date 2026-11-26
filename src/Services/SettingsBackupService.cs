@@ -34,6 +34,8 @@ namespace UniPlaySong.Services
             nameof(UniPlaySongSettings.DefaultMusicFolderPath),
             nameof(UniPlaySongSettings.BackupCustomMusicPath),
             nameof(UniPlaySongSettings.RadioCustomFolderPath),
+            nameof(UniPlaySongSettings.DefaultMusicFolderPaths),
+            nameof(UniPlaySongSettings.RadioCustomFolderPaths),
             nameof(UniPlaySongSettings.CustomCookiesFilePath),
             nameof(UniPlaySongSettings.CustomHintsDatabasePath),
             nameof(UniPlaySongSettings.AchievementSoundPath),
@@ -260,6 +262,7 @@ namespace UniPlaySong.Services
                     object value = prop.GetValue(settings);
                     if (SensitiveFields.Contains(name)) value = "*****";
                     else if (value is string path && MachineSpecificFields.Contains(name)) value = SanitizePath(path);
+                    else if (value is List<string> paths && MachineSpecificFields.Contains(name)) value = string.Join(", ", paths.Select(SanitizePath));
                     AppendSettingRow(sb, Humanize(name), value);
                 }
                 sb.AppendLine();

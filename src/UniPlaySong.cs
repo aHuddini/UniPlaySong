@@ -1869,8 +1869,8 @@ namespace UniPlaySong
                 bool defaultMusicChanged =
                     e.OldSettings.DefaultMusicSourceOption != e.NewSettings.DefaultMusicSourceOption ||
                     e.OldSettings.DefaultMusicPath != e.NewSettings.DefaultMusicPath ||
-                    e.OldSettings.DefaultMusicFolderPath != e.NewSettings.DefaultMusicFolderPath ||
-                    e.OldSettings.RadioCustomFolderPath != e.NewSettings.RadioCustomFolderPath ||
+                    !FolderListsEqual(e.OldSettings.DefaultMusicFolderPaths, e.NewSettings.DefaultMusicFolderPaths) ||
+                    !FolderListsEqual(e.OldSettings.RadioCustomFolderPaths, e.NewSettings.RadioCustomFolderPaths) ||
                     e.OldSettings.SelectedBundledPreset != e.NewSettings.SelectedBundledPreset ||
                     e.OldSettings.RandomizeBundledTrackOnStartup != e.NewSettings.RandomizeBundledTrackOnStartup ||
                     e.OldSettings.EnableDefaultMusic != e.NewSettings.EnableDefaultMusic ||
@@ -2010,6 +2010,10 @@ namespace UniPlaySong
                 }
             }
         }
+
+        // Same folders in the same order (case ignored, as Windows paths are)
+        private static bool FolderListsEqual(List<string> a, List<string> b) =>
+            (a ?? new List<string>()).SequenceEqual(b ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
 
         private static bool RotationIdsEqual(List<Guid> a, List<Guid> b)
         {

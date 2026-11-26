@@ -8,6 +8,7 @@ Packages:
       - '[New Setting] General -> Now Playing -> Show a song card when hovering the visualizer: the hover card also opens from the visualizer and peak meter, for setups without Now Playing.'
       - '[Fix] Corrected a loading bug in the download manager.'
       - '[Fix] Fullscreen download dialog: pressing Back while a list is still loading no longer shows an "Invalid selection" message.'
+      - '[Improved] Default Music and Radio Mode Custom Folders: add as many folders as you like, shown in a list. Radio Mode settings reordered, with their own game and status pickers.'
   - Version: 1.9.5
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-11-22

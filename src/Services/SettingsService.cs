@@ -281,6 +281,7 @@ namespace UniPlaySong.Services
             changed |= MigrateExternalAudioResumeDelay(settings);
             changed |= MigrateDefaultMusicState(settings);
             changed |= MigrateMediaKeys(settings);
+            changed |= MigrateFolderLists(settings);
 
             if (changed)
             {
@@ -310,6 +311,26 @@ namespace UniPlaySong.Services
             settings.DefaultMusicState = settings.MusicState;
             settings.DefaultMusicStateMigrated = true;
             return true;
+        }
+
+        // Custom Folder became a list of folders (1.9.6): the old single folder of each source moves in once, first, then
+        // is cleared, so a list the user later empties stays empty.
+        internal static bool MigrateFolderLists(UniPlaySongSettings settings)
+        {
+            bool changed = false;
+            if (!string.IsNullOrWhiteSpace(settings.DefaultMusicFolderPath))
+            {
+                settings.DefaultMusicFolderPaths = new[] { settings.DefaultMusicFolderPath }.Concat(settings.DefaultMusicFolderPaths).ToList();
+                settings.DefaultMusicFolderPath = null;
+                changed = true;
+            }
+            if (!string.IsNullOrWhiteSpace(settings.RadioCustomFolderPath))
+            {
+                settings.RadioCustomFolderPaths = new[] { settings.RadioCustomFolderPath }.Concat(settings.RadioCustomFolderPaths).ToList();
+                settings.RadioCustomFolderPath = null;
+                changed = true;
+            }
+            return changed;
         }
 
         // The Experimental media-key toggle became keyboard shortcuts: with it on, media Play/Pause and Next are bound

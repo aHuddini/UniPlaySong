@@ -1700,7 +1700,8 @@ namespace UniPlaySong
         private bool playOnlyOnGameSelect = false; // Fullscreen: only play game music on explicit A-button select, not D-pad hover
         private RadioMusicSource radioMusicSource = RadioMusicSource.FullLibrary; // Which pool Radio Mode draws from
         private RadioMusicSource lastUpsRadioSource = RadioMusicSource.FullLibrary; // Remembers the UPS pool so SwitchRadioMode can toggle back off Spotify
-        private string radioCustomFolderPath = null; // Radio Mode "Custom Folder" source folder path
+        private string radioCustomFolderPath = null; // legacy single folder, moved into radioCustomFolderPaths on load
+        private List<string> radioCustomFolderPaths = new List<string>(); // Radio Mode "Custom Folder" source folders
         private bool radioPlaysThroughGames = false; // Radio Mode keeps playing during a game session instead of pausing
         private List<Guid> gamePropFilterPlatformIds = new List<Guid>();
         private List<Guid> gamePropFilterGenreIds = new List<Guid>();
@@ -1711,7 +1712,8 @@ namespace UniPlaySong
         private bool bundledPresetMigrated = false; // One-time migration flag for the bundled preset feature
         private bool randomizeBundledTrackOnStartup = false; // Pick a random bundled preset once at Playnite startup
         private string lastRandomizedBundledPreset = string.Empty; // Tracks the last session's random pick so the next session can avoid repeating it
-        private string defaultMusicFolderPath = string.Empty; // Directory for CustomFolder source
+        private string defaultMusicFolderPath = string.Empty; // legacy single folder, moved into defaultMusicFolderPaths on load
+        private List<string> defaultMusicFolderPaths = new List<string>(); // Folders for the CustomFolder source
         private List<Guid> customRotationGameIds = new List<Guid>(); // Game IDs for CustomRotation source
         private bool defaultMusicContinueSameSong = true; // Keep playing same song across game switches (default true — most users want a persistent backdrop)
 
@@ -1957,12 +1959,34 @@ namespace UniPlaySong
             set => RadioMusicSource = value ? RadioMusicSource.Spotify : lastUpsRadioSource;
         }
 
-        // Radio Mode "Custom Folder" source. null/empty = fall back to DefaultMusicFolderPath,
-        // so users who never picked a radio folder keep using the default-music folder.
+        // Legacy (before 1.9.6): Radio Mode's single Custom Folder. Read only by SettingsService.MigrateFolderLists,
+        // which moves it into RadioCustomFolderPaths; kept so an older config.json still loads into something.
         public string RadioCustomFolderPath
         {
             get => radioCustomFolderPath;
             set { radioCustomFolderPath = value; OnPropertyChanged(); }
+        }
+
+        // Radio Mode "Custom Folder" source: every listed folder's top-level songs. Empty = Default Music's folders.
+        // Replace: Newtonsoft would otherwise append the stored list onto this one on every load.
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public List<string> RadioCustomFolderPaths
+        {
+            get => radioCustomFolderPaths;
+            set { radioCustomFolderPaths = CleanFolderList(value); OnPropertyChanged(); }
+        }
+
+        // Blank entries dropped; the same folder written differently (case, a trailing slash) kept once, first form wins
+        internal static List<string> CleanFolderList(IEnumerable<string> folders)
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var clean = new List<string>();
+            foreach (var folder in folders ?? Enumerable.Empty<string>())
+            {
+                if (string.IsNullOrWhiteSpace(folder)) continue;
+                if (seen.Add(folder.Trim().TrimEnd('\\', '/'))) clean.Add(folder.Trim());
+            }
+            return clean;
         }
 
         // Radio Mode keeps playing through a game session. Suppresses the game-session pause
@@ -2047,11 +2071,19 @@ namespace UniPlaySong
         [JsonIgnore]
         public bool IsBundledPresetPickerEnabled => enableDefaultMusic && !randomizeBundledTrackOnStartup;
 
-        // Directory path for CustomFolder default music source
+        // Legacy (before 1.9.6): Default Music's single Custom Folder, moved into DefaultMusicFolderPaths on load
         public string DefaultMusicFolderPath
         {
             get => defaultMusicFolderPath;
             set { defaultMusicFolderPath = value ?? string.Empty; OnPropertyChanged(); }
+        }
+
+        // Folders for the CustomFolder default music source: every listed folder's top-level songs
+        [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
+        public List<string> DefaultMusicFolderPaths
+        {
+            get => defaultMusicFolderPaths;
+            set { defaultMusicFolderPaths = CleanFolderList(value); OnPropertyChanged(); }
         }
 
         // Game IDs for CustomRotation default music source

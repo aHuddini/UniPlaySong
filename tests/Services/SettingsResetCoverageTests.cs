@@ -180,8 +180,9 @@ namespace UniPlaySong.Tests.Services
                 new { Name = nameof(UniPlaySongSettings.VizBarCount), Actual = (object)s.VizBarCount, Expected = (object)12 },
                 // Opt-in feature: must default off so existing users see no behaviour change.
                 new { Name = nameof(UniPlaySongSettings.RadioPlaysThroughGames), Actual = (object)s.RadioPlaysThroughGames, Expected = (object)false },
-                // The fallback (null -> DefaultMusicFolderPath) depends on this default being null.
-                new { Name = nameof(UniPlaySongSettings.RadioCustomFolderPath), Actual = (object)s.RadioCustomFolderPath, Expected = (object)null },
+                // Empty, not null: the radio pool falls back to Default Music's folders when it has none.
+                new { Name = nameof(UniPlaySongSettings.RadioCustomFolderPaths), Actual = (object)s.RadioCustomFolderPaths.Count, Expected = (object)0 },
+                new { Name = nameof(UniPlaySongSettings.DefaultMusicFolderPaths), Actual = (object)s.DefaultMusicFolderPaths.Count, Expected = (object)0 },
             };
             Assert.Multiple(() =>
             {

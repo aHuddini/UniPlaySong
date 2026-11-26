@@ -23,7 +23,7 @@ namespace UniPlaySong.Tests.Services
                 EnableDefaultMusic = true,
                 DefaultMusicSourceOption = source,
                 DefaultMusicPath = file,
-                DefaultMusicFolderPath = folder
+                DefaultMusicFolderPaths = folder == null ? new System.Collections.Generic.List<string>() : new System.Collections.Generic.List<string> { folder }
             };
             if (clearLists)
             {

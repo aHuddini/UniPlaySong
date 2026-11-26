@@ -40,7 +40,13 @@ foreach ($pair in ($Set -split ';' | ? { $_.Trim() })) {
     $name = $name.Trim(); $raw = $raw.Trim()
     $prop = $settings.GetType().GetProperty($name)
     if (-not $prop) { throw "No setting named $name" }
+    # List<string> settings take a comma-separated value
     $value = if ($prop.PropertyType.IsEnum) { [Enum]::Parse($prop.PropertyType, [string]$raw) }
+             elseif ($prop.PropertyType -eq [System.Collections.Generic.List[string]]) {
+                 $list = New-Object 'System.Collections.Generic.List[string]'
+                 foreach ($item in ([string]$raw).Split(',')) { $list.Add($item.Trim()) }
+                 , $list
+             }
              else { [Convert]::ChangeType($raw, $prop.PropertyType, [Globalization.CultureInfo]::InvariantCulture) }
     $prop.SetValue($settings, $value)
 }

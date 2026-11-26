@@ -61,47 +61,8 @@
 
                 <RadioButton Content="Full Library (every song you have)"
                              Style="{StaticResource UpsRadio}"
-                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=FullLibrary}"/>
-
-                <RadioButton Content="Custom folder (Curated Playlist)"
-                             Style="{StaticResource UpsRadio}"
-                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFolder}"/>
-                <StackPanel Orientation="Horizontal" Margin="24,2,0,0">
-                    <TextBox Style="{StaticResource UpsTextBox}" Width="330" Margin="0,0,10,0"
-                             Text="{Binding Settings.RadioCustomFolderPath}" IsReadOnly="True"/>
-                    <Button Style="{StaticResource UpsButton}" Content="Browse..." Width="86"
-                            Command="{Binding BrowseForRadioCustomFolder}"/>
-                </StackPanel>
-                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,10"
-                           Text="Shuffles any audio files in that folder. Left empty, it falls back to your Default Music folder."/>
-
-                <RadioButton Content="A handpicked set of games (playlist)"
-                             Style="{StaticResource UpsRadio}"
-                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomRotation}"/>
-                <StackPanel Margin="24,2,0,10">
-                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,2"
-                               Text="Shuffles the games you picked as the rotation pool."/>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding RotationGameCountText}"
-                                   Style="{StaticResource UpsValue}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0" VerticalAlignment="Center"
-                                   Text="&#x2014; choose them under Playback &#x2192; Default Music."/>
-                    </StackPanel>
-                </StackPanel>
-
-                <RadioButton Content="By completion status (nostalgia playlist)"
-                             Style="{StaticResource UpsRadio}"
-                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CompletionStatusPool}"/>
-                <StackPanel Margin="24,2,0,10">
-                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,2"
-                               Text="Shuffles every game marked with the play statuses you picked."/>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding DefaultMusicStatusPoolSummary}"
-                                   Style="{StaticResource UpsValue}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0" VerticalAlignment="Center"
-                                   Text="&#x2014; choose them under Playback &#x2192; Default Music."/>
-                    </StackPanel>
-                </StackPanel>
+                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=FullLibrary}"
+                             Margin="0,0,0,8"/>
 
                 <RadioButton Style="{StaticResource UpsRadio}"
                              IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Spotify}"
@@ -116,17 +77,65 @@
                         <TextBlock Text="Spotify Desktop App" VerticalAlignment="Center" FontSize="12.5"/>
                     </StackPanel>
                 </RadioButton>
-                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,2,0,10">
+                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="24,2,0,10">
                     <Run Text="Uses Spotify as continuous background music instead of a UPS pool. UPS pauses and resumes it on game launch, video, focus loss and lock."/>
                     <Run Text="Restart required for this option to take effect."
                          Foreground="{StaticResource UpsWarn}" FontWeight="SemiBold"/>
                 </TextBlock>
 
+                <RadioButton Content="Handpicked Games (Curated Games Playlist)"
+                             Style="{StaticResource UpsRadio}"
+                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomRotation}"/>
+                <StackPanel Margin="24,2,0,10">
+                    <!-- Picked games by name; the picker adds and removes them -->
+                    <StackPanel Orientation="Horizontal">
+                        <ListBox Style="{StaticResource UpsFolderList}" Tag="No games selected" Width="330" Margin="0,0,10,0"
+                                 ItemsSource="{Binding RotationGameNames}"/>
+                        <StackPanel>
+                            <Button Style="{StaticResource UpsButton}" Content="Select games..." Width="100" Margin="0,0,0,6"
+                                    Command="{Binding SelectRotationGames}"/>
+                            <TextBlock Text="{Binding RotationGameCountText}" Style="{StaticResource UpsValue}"/>
+                        </StackPanel>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0"
+                               Text="Shuffles music from the games you pick."/>
+                </StackPanel>
+
+                <RadioButton Content="Games marked with a Completion Status (Nostalgia Mode Playlist)"
+                             Style="{StaticResource UpsRadio}"
+                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CompletionStatusPool}"/>
+                <StackPanel Margin="24,2,0,10">
+                    <StackPanel Orientation="Horizontal">
+                        <Button Style="{StaticResource UpsButton}" Content="Select statuses..." Width="140"
+                                Command="{Binding SelectDefaultMusicStatusPoolCommand}"/>
+                        <TextBlock Text="{Binding DefaultMusicStatusPoolSummary}"
+                                   Style="{StaticResource UpsValue}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,4,0,0"
+                               Text="Shuffles music from games with the completion statuses you pick, such as &quot;Beaten&quot; or &quot;Completed&quot;."/>
+                </StackPanel>
+
+                <RadioButton Content="Custom Folders (Local PC Playlist)"
+                             Style="{StaticResource UpsRadio}"
+                             IsChecked="{Binding Settings.RadioMusicSource, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=CustomFolder}"/>
+                <StackPanel Margin="24,2,0,0">
+                    <!-- Songs come from each listed folder's top level; Remove takes the selected row -->
+                    <StackPanel Orientation="Horizontal">
+                        <ListBox x:Name="RadioCustomFolderList" Style="{StaticResource UpsFolderList}" Width="330" Margin="0,0,10,0"
+                                 ItemsSource="{Binding Settings.RadioCustomFolderPaths}"/>
+                        <StackPanel>
+                            <Button Style="{StaticResource UpsButton}" Content="Add folder..." Width="100" Margin="0,0,0,6"
+                                    Command="{Binding AddRadioCustomFolder}"/>
+                            <Button Style="{StaticResource UpsButton}" Content="Remove" Width="100"
+                                    Command="{Binding RemoveRadioCustomFolder}"
+                                    CommandParameter="{Binding SelectedItem, ElementName=RadioCustomFolderList}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+                <TextBlock Style="{StaticResource UpsHintFlush}" Margin="24,4,0,10"
+                           Text="Shuffles the audio files in these folders. Left empty, it uses your Default Music folders."/>
+
             </StackPanel>
-
-            <TextBlock Style="{StaticResource UpsHintFlush}" Margin="0,0,0,0"
-                       Text="Radio Mode and Default Music share one rotation and one status set, so editing either on the Default Music page changes both."/>
-
         </StackPanel>
     </ScrollViewer>
 </UserControl>

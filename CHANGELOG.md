@@ -10,6 +10,11 @@ All notable changes to UniPlaySong will be documented in this file.
 
 - Added "Show a song card when hovering the visualizer" (`ShowNowPlayingCardOnVisualizer`, default on, independent of the Now Playing card): the card also opens from the visualizer and peak meter, anchored under the item used
 - Added a picture of the song card beside its settings (`Controls/Settings/Images`, compiled in as a resource)
+- Added several folders to the Custom Folder source of Default Music and Radio Mode (`DefaultMusicFolderPaths`, `RadioCustomFolderPaths`); the old single folder moves in once (`MigrateFolderLists`), and an empty Radio list uses Default Music's folders
+
+### Changed
+
+- Changed the Music Mode page: Spotify moved second and Custom Folders last, with game, status and folder pickers on the page itself; folders and handpicked games show in a fixed-height list box (`UpsFolderList`)
 
 ### Fixed
 

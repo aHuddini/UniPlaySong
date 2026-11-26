@@ -95,7 +95,7 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.BackupCustomMusicPath),
                     nameof(UniPlaySongSettings.CustomRotationGameIds),
                     nameof(UniPlaySongSettings.DefaultMusicContinueSameSong),
-                    nameof(UniPlaySongSettings.DefaultMusicFolderPath),
+                    nameof(UniPlaySongSettings.DefaultMusicFolderPaths),
                     nameof(UniPlaySongSettings.DefaultMusicPath),
                     nameof(UniPlaySongSettings.DefaultMusicSourceOption),
                     nameof(UniPlaySongSettings.DefaultMusicStatusPoolIds),
@@ -116,7 +116,7 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.NostalgiaStatusIds),
                     nameof(UniPlaySongSettings.PlayOnlyOnGameSelect),
                     nameof(UniPlaySongSettings.PreviewDuration),
-                    nameof(UniPlaySongSettings.RadioCustomFolderPath),
+                    nameof(UniPlaySongSettings.RadioCustomFolderPaths),
                     nameof(UniPlaySongSettings.RadioModeEnabled),
                     nameof(UniPlaySongSettings.RadioMusicSource),
                     nameof(UniPlaySongSettings.RandomizeBundledTrackOnStartup),
@@ -417,6 +417,8 @@ namespace UniPlaySong.Services
         internal static readonly HashSet<string> NeverReset = new HashSet<string>
         {
             nameof(UniPlaySongSettings.EnableMediaKeyControl), // legacy, migrated into the Shortcut* settings
+            nameof(UniPlaySongSettings.DefaultMusicFolderPath), // legacy, migrated into DefaultMusicFolderPaths
+            nameof(UniPlaySongSettings.RadioCustomFolderPath),  // legacy, migrated into RadioCustomFolderPaths
             nameof(UniPlaySongSettings.ActiveMediaCanNext),
             nameof(UniPlaySongSettings.ActiveMediaCanPrevious),
             nameof(UniPlaySongSettings.ActiveMediaDurationText),
