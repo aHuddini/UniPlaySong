@@ -102,6 +102,24 @@ namespace UniPlaySong.Tests.Services.ActiveMedia
             Assert.AreEqual("1:40", snap.DurationText);
         }
 
+        // A theme's volume bar shows the level the user set, not the fader's passing value: paused or mid-fade the
+        // player sits at 0, and a bar that copied it stayed down after the music came back. Muted still reads 0.
+        [Test]
+        public void Snapshot_UpsVolume_IsTheSetLevelNotTheFade()
+        {
+            _playback.SetupGet(p => p.IsLoaded).Returns(true);
+            _playback.SetupGet(p => p.IsPlaying).Returns(true);
+            _playback.Setup(p => p.GetVolume()).Returns(0.6);
+            _playback.Setup(p => p.GetInternalVolume()).Returns(0.0);
+            _spotifyControl.Recompute();
+
+            Assert.AreEqual(60.0, _service.GetSnapshot().Volume, 0.001);
+
+            _playback.Setup(p => p.GetInternalVolume()).Returns(0.6);
+            _service.ToggleMute();
+            Assert.AreEqual(0.0, _service.GetSnapshot().Volume, 0.001);
+        }
+
         [Test]
         public void Resolve_NothingLoaded_SnapshotIsNone()
         {

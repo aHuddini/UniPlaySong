@@ -20,6 +20,7 @@ All notable changes to UniPlaySong will be documented in this file.
 
 - Fixed hint-based album downloads failing silently behind a site's bot check: a page that answers with the check loads through Playnite's offscreen browser (`BrowserPageLoader`), and its clearance cookies serve later requests
 - Fixed the Fullscreen download dialog reporting "Invalid … selection" after Back mid-load: a late album or song list replaced the current one; each load now drops its result if navigation moved on (`_loadGeneration`)
+- Fixed a theme's UPS volume bar (`ActiveMediaVolume`) dropping after a pause, fade or Alt+Tab: it showed the player's live level; it now shows the set level, which `ActiveMediaService.SetVolume` also sets
 
 ## [1.9.5] - 2026-11-22
 

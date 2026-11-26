@@ -144,7 +144,9 @@ namespace UniPlaySong.Services.ActiveMedia
                 posText = FormatPosition(cur.Value);
                 durText = SongTitleCleaner.FormatDuration(total.Value);
             }
-            double vol = (_playback?.GetInternalVolume() ?? 0.0) * 100.0;
+            // The level the user set, not the player's: that one rides to 0 on every pause and fade, and a theme's volume
+            // bar that copied it stayed down after the music came back. Muted reads 0 for themes' mute icons.
+            double vol = _upsVolumeBeforeMute >= 0.0 ? 0.0 : (_playback?.GetVolume() ?? 0.0) * 100.0;
             bool canNext = (_playback?.CurrentGameSongCount ?? 0) >= 2
                            || _playback?.IsPlayingPoolBasedDefault == true;
             return new ActiveMediaSnapshot(
@@ -235,7 +237,8 @@ namespace UniPlaySong.Services.ActiveMedia
             if (ResolveSource() == ActiveMediaSourceKind.Ups)
             {
                 double clamped = Math.Max(0.0, Math.Min(100.0, volume0to100));
-                _playback?.SetInternalVolume(clamped / 100.0);
+                // The set level, so a pause or fade comes back to it (the player's own level alone was faded over)
+                _playback?.SetVolume(clamped / 100.0);
                 // An explicit volume set clears any mute memory: the new level IS the level.
                 _upsVolumeBeforeMute = -1.0;
                 RaiseChanged();
