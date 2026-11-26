@@ -2712,9 +2712,8 @@ namespace UniPlaySong
             // basePath is <Config>\ExtraMetadata\UniPlaySong — the cache lives under it.
             _trailerAudioService = new Services.TrailerAudioService(_settings, emlGamesPath, basePath, _fileLogger);
 
-            // Listening history. Owned here rather than by the playback service because that
-            // service is thrown away and rebuilt whenever the backend swaps (Live Effects on or
-            // off) - the totals have to outlive it.
+            // Listening history, owned here and handed to the playback service. (A backend swap no longer rebuilds
+            // that service - ReplacePlayer swaps only its player - but the store still belongs to the plugin.)
             _listeningStore = new Services.ListeningHistoryStore(
                 basePath,
                 enabled: _settings?.EnableListeningHistory ?? true,

@@ -12,7 +12,7 @@ using UniPlaySong.Audio;
 
 namespace UniPlaySong.Controls
 {
-    // PS5-style Now-Playing popup: large art, source, timeline, full transport + volume.
+    // PS5-style Now-Playing popup: large art, source, timeline, full transport (no volume control).
     // With a strip it is UPS_MusicPlayerControlVisual: the strip (a MusicVisualControl) stands on the seek bar, the bar
     // gets a knob, and the card is the album art, blurred, under a dark tint of its colour.
     public partial class MediaControllerOverlay : PluginUserControl
