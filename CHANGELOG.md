@@ -11,6 +11,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added "Show a song card when hovering the visualizer" (`ShowNowPlayingCardOnVisualizer`, default on, independent of the Now Playing card): the card also opens from the visualizer and peak meter, anchored under the item used
 - Added a picture of the song card beside its settings (`Controls/Settings/Images`, compiled in as a resource)
 - Added several folders to the Custom Folder source of Default Music and Radio Mode (`DefaultMusicFolderPaths`, `RadioCustomFolderPaths`); the old single folder moves in once (`MigrateFolderLists`), and an empty Radio list uses Default Music's folders
+- Added Recently played thumbnails that survive a restart (`RecentTrackArtCache`): a song's 96 px picture is saved as a PNG when it plays, game songs and other music in separate caches, pruned to the listed songs
 
 ### Changed
 

@@ -2011,6 +2011,20 @@ namespace UniPlaySong
             }
         }
 
+        // The Recently played rows' pictures from the last session, read off the UI thread and set in one go on it
+        private static void LoadRecentTrackArt(Services.RecentTrackArtCache cache)
+        {
+            var keys = Services.RecentTracks.Games.Items.Select(t => t.Key).ToList();
+            var dispatcher = Application.Current?.Dispatcher;
+            if (keys.Count == 0 || dispatcher == null) return;
+            System.Threading.Tasks.Task.Run(() =>
+            {
+                var art = keys.Select(k => new KeyValuePair<string, System.Windows.Media.ImageSource>(k, cache.Load(k)))
+                              .Where(a => a.Value != null).ToList();
+                if (art.Count > 0) dispatcher.BeginInvoke((Action)(() => Services.RecentTracks.Games.SetArt(art)));
+            });
+        }
+
         // Same folders in the same order (case ignored, as Windows paths are)
         private static bool FolderListsEqual(List<string> a, List<string> b) =>
             (a ?? new List<string>()).SequenceEqual(b ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
@@ -2881,6 +2895,8 @@ namespace UniPlaySong
             { IsBackground = true, Priority = System.Threading.ThreadPriority.BelowNormal, Name = "UPS art sweep" }.Start();
             Services.RecentTracks.Spotify.Load(basePath, _fileLogger);
             Services.RecentTracks.Games.Load(basePath, _fileLogger);
+            var recentArt = new Services.RecentTrackArtCache(basePath, _fileLogger);
+            LoadRecentTrackArt(recentArt);
             _publisherMetadata = new Services.SongMetadataService(_playbackService, _fileLogger, () => _settings);
             _nowPlayingPublisher = new Services.NowPlayingPublisher(
                 _publisherMetadata,
@@ -2890,7 +2906,8 @@ namespace UniPlaySong
                 () => _settings,
                 _fileLogger,
                 ResolveGameCoverPathForTrack, // cover fallback: track's owning game, else selected game
-                getGameName: path => (ResolveOwningGameFromPath(path) ?? _playbackService?.CurrentGame)?.Name);
+                getGameName: path => (ResolveOwningGameFromPath(path) ?? _playbackService?.CurrentGame)?.Name,
+                recentArt: recentArt);
             _nowPlayingPublisher.Refresh(); // publish initial state
 
             // ActiveMediaService: resolves the single audible active source (UPS or Spotify)

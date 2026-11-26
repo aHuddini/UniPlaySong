@@ -106,6 +106,19 @@ namespace UniPlaySong.Services
             }
         }
 
+        // Pictures found after Load (RecentTrackArtCache): a row that has none takes its song's
+        public void SetArt(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, ImageSource>> art)
+        {
+            var byKey = new System.Collections.Generic.Dictionary<string, ImageSource>(StringComparer.OrdinalIgnoreCase);
+            foreach (var a in art) byKey[a.Key] = a.Value;   // a song can be in the list more than once
+            for (int i = 0; i < Items.Count; i++)
+            {
+                var t = Items[i];
+                if (t.Art == null && byKey.TryGetValue(t.Key, out var picture))
+                    Items[i] = new RecentTrack(t.Title, t.Artist, t.Album, t.PlayedAt, t.Key, picture);
+            }
+        }
+
         private static string Clean(string s) => (s ?? string.Empty).Replace('\t', ' ').Replace('\r', ' ').Replace('\n', ' ');
 
         // Small and frozen, held in memory: no file to lock or be swept away. Either is fine off the UI thread.

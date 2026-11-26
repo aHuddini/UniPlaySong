@@ -129,6 +129,9 @@ namespace UniPlaySong.Common
         // Folder (under ExtraMetadata\UniPlaySong) holding the current-track album art written by
         // NowPlayingPublisher and exposed to themes via UniPlaySongSettings.NowPlayingAlbumArtPath.
         public const string NowPlayingArtFolderName = "NowPlayingArt";
+        // Recently played list thumbnails (RecentTrackArtCache): Games\ for game songs, OtherMusic\ for the rest
+        public const string RecentTrackArtFolderName = "RecentTrackArt";
+        public const string RecentTrackArtOtherFolderName = "OtherMusic";
 
         // Naming of the art files earlier versions wrote straight into ExtraMetadata\UniPlaySong
         // (nowplaying_art_<n>.png). Only used to find and delete them.

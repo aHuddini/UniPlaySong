@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -23,6 +24,7 @@ namespace UniPlaySong.Services
         private readonly Func<UniPlaySongSettings> _getSettings;
         private readonly Func<string, string> _getGameCoverArtPath;
         private readonly Func<string, string> _getGameName;   // a track's file path to its game's name, for the recent tracks
+        private readonly RecentTrackArtCache _recentArt;        // the recent tracks' thumbnails, kept across restarts
         private readonly FileLogger _fileLogger;
         private readonly object _publishLock = new object();
         private bool _disposed;
@@ -74,9 +76,11 @@ namespace UniPlaySong.Services
             Func<string, string> getGameCoverArtPath = null,
             Action<Action> runInBackground = null,
             Action<Action> runOnUi = null,
-            Func<string, string> getGameName = null)
+            Func<string, string> getGameName = null,
+            RecentTrackArtCache recentArt = null)
         {
             _getGameName = getGameName;
+            _recentArt = recentArt;
             _runInBackground = runInBackground ?? (work => Task.Run(work));
             _runOnUi = runOnUi ?? OnUi;
             _metadata = metadata;
@@ -230,10 +234,21 @@ namespace UniPlaySong.Services
                 // Game music's recent tracks: the game's name as the album, the cover thumbnail made here, off the UI thread
                 var game = _getGameName?.Invoke(song.FilePath) ?? string.Empty;
                 var thumb = RecentTracks.Thumb(artPath);
+
+                // Kept for the list after a restart: a game song's picture, and other music's own embedded art only -
+                // its fallback is the selected game's cover, which is not its own
+                bool embedded = !string.IsNullOrEmpty(artPath) && _artWriter != null
+                    && artPath.StartsWith(_artWriter.ArtDirectory, StringComparison.OrdinalIgnoreCase);
+                if (thumb != null && (embedded || RecentTrackArtCache.IsGameSong(song.FilePath)))
+                    _recentArt?.Save(song.FilePath, thumb);
+
                 _runOnUi(() =>
                 {
                     if (_disposed || generation != Volatile.Read(ref _publishGeneration)) return;
                     RecentTracks.Games.Add(song.Title, song.Artist, game, song.FilePath, thumb);
+                    if (_recentArt == null) return;
+                    var inList = RecentTracks.Games.Items.Select(t => t.Key).ToList();
+                    _runInBackground(() => _recentArt.Prune(inList));
                 });
 
                 _artWriter?.Sweep();
