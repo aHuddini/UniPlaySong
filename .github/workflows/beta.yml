@@ -72,7 +72,8 @@ jobs:
           version="$(tr -d '\r\n ' < version.txt)"
           # Highest existing N across releases (drafts included) and tags; a bare "-beta" counts as 1.
           existing="$( { gh release list --limit 200 --json tagName -q '.[].tagName'; git tag -l; } \
-            | grep -E "^${version//./\\.}-beta[0-9]*$" | sed -E "s/^.*-beta//; s/^$/1/" | sort -n | tail -1)"
+            | { grep -E "^${version//./\\.}-beta[0-9]*$" || true; } | sed -E "s/^.*-beta//; s/^$/1/" | sort -n | tail -1)"
+          # (grep exits 1 when nothing matches - a version's first beta - and pipefail would fail the step)
           n=$(( ${existing:-0} + 1 ))
           if [ "$n" -eq 1 ]; then tag="${version}-beta"; else tag="${version}-beta${n}"; fi
           asset="UniPlaySong-${version//./_}-beta$([ "$n" -eq 1 ] || echo "$n").pext"
