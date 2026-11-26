@@ -36,6 +36,11 @@ namespace UniPlaySong.Views
         private IDownloadManager _downloadManager;
         private GameMusicFileService _fileService;
         private DialogStep _currentStep = DialogStep.SourceSelection;
+
+        // Bumped by every navigation; a background album or song load drops its result if it changed meanwhile.
+        // Otherwise pressing Back mid-load let the late list replace the current one, and A on it reported an
+        // "Invalid ... selection" (the items were of the step you'd left).
+        private int _loadGeneration;
         private Source? _selectedSource;
         private Album _selectedAlbum;
         private List<DownloadItemViewModel> _cachedAlbumResults; // Cached album search results for back navigation
@@ -370,6 +375,7 @@ namespace UniPlaySong.Views
             try
             {
                 Logger.DebugIf(LogPrefix, $"HandleCancelAction called - Current step: {_currentStep}");
+                _loadGeneration++; // anything still loading belongs to the step being left
                 
                 switch (_currentStep)
                 {
@@ -984,6 +990,7 @@ namespace UniPlaySong.Views
             try
             {
                 _currentStep = DialogStep.AlbumSelection;
+                var load = ++_loadGeneration;
                 _lastAlbumSource = source;
                 _lastSearchVariant = searchVariant;
 
@@ -1061,6 +1068,7 @@ namespace UniPlaySong.Views
                         // Update UI on main thread
                         Dispatcher.BeginInvoke(new Action(() =>
                         {
+                            if (load != _loadGeneration) return; // you moved on while this was loading
                             try
                             {
                                 if (albumViewModels.Count > 0)
@@ -1097,6 +1105,7 @@ namespace UniPlaySong.Views
                         Logger.Error(ex, "Error searching for albums");
                         Dispatcher.BeginInvoke(new Action(() =>
                         {
+                            if (load != _loadGeneration) return; // you moved on while this was loading
                             try
                             {
                                 // Show error but don't close dialog - allow user to go back
@@ -1160,6 +1169,7 @@ namespace UniPlaySong.Views
             try
             {
                 _currentStep = DialogStep.SongSelection;
+                var load = ++_loadGeneration;
                 HideSearchVariantPanel();
                 UpdateInputFeedback($"🎵 Loading songs from: {album.Name}...");
                 
@@ -1189,6 +1199,7 @@ namespace UniPlaySong.Views
                         // Update UI on main thread
                         Dispatcher.BeginInvoke(new Action(() =>
                         {
+                            if (load != _loadGeneration) return; // you moved on while this was loading
                             try
                             {
                                 if (songViewModels.Count > 0)
@@ -1224,6 +1235,7 @@ namespace UniPlaySong.Views
                         Logger.Error(ex, "Error loading songs from album");
                         Dispatcher.BeginInvoke(new Action(() =>
                         {
+                            if (load != _loadGeneration) return; // you moved on while this was loading
                             try
                             {
                                 // Show error but don't close dialog - allow user to go back
