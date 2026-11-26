@@ -5,7 +5,9 @@ Packages:
     ReleaseDate: 2026-11-25
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.6/UniPlaySong-1_9_6.pext'
     Changelog:
-      - '[Fix] Downloads from the built-in game music suggestions work again; a site''s new bot check had made them find nothing.'
+      - '[New Setting] General -> Now Playing -> Show a song card when hovering the visualizer: the hover card also opens from the visualizer and peak meter, for setups without Now Playing.'
+      - '[Fix] Corrected a loading bug in the download manager.'
+      - '[Fix] Fullscreen download dialog: pressing Back while a list is still loading no longer shows an "Invalid selection" message.'
   - Version: 1.9.5
     RequiredApiVersion: 6.16.0
     ReleaseDate: 2026-11-22

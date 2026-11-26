@@ -229,8 +229,9 @@ namespace UniPlaySong.DeskMediaControl
                 _spectrumItem = new TopPanelItem
                 {
                     Icon = _spectrumVisualizer,
-                    Title = "UniPlaySong: Spectrum Visualizer",
-                    Visible = true
+                    Title = SpectrumTitle,
+                    Visible = true,
+                    Activated = () => OnCardItemActivated(_spectrumVisualizer)
                 };
                 _log?.Invoke("TopPanel: Spectrum visualizer initialized");
             }
@@ -249,8 +250,9 @@ namespace UniPlaySong.DeskMediaControl
                 _peakMeterItem = new TopPanelItem
                 {
                     Icon = _peakMeter,
-                    Title = "UniPlaySong: Peak Meter",
-                    Visible = true
+                    Title = PeakMeterTitle,
+                    Visible = true,
+                    Activated = () => OnCardItemActivated(_peakMeter)
                 };
                 _log?.Invoke("TopPanel: Peak meter initialized");
             }
@@ -286,6 +288,8 @@ namespace UniPlaySong.DeskMediaControl
         }
 
         private const string NowPlayingIdleTitle = "UniPlaySong: Now Playing (click to open music folder)";
+        private const string SpectrumTitle = "UniPlaySong: Spectrum Visualizer";
+        private const string PeakMeterTitle = "UniPlaySong: Peak Meter";
 
         // The song the panel shows changed: the tooltip and an open card follow it; an emptied panel closes the card.
         private void OnNowPlayingSongShown(SongInfo song)
@@ -311,6 +315,12 @@ namespace UniPlaySong.DeskMediaControl
                 title = lines + "\n\nClick to open the music folder";
             }
             if (_nowPlayingItem.Title != title) _nowPlayingItem.Title = title;
+
+            // The visualizer and peak meter open the card too, so they lose their tooltips while it's on
+            var spectrumTitle = CardOnVisualizer ? null : SpectrumTitle;
+            if (_spectrumItem != null && _spectrumItem.Title != spectrumTitle) _spectrumItem.Title = spectrumTitle;
+            var peakTitle = CardOnVisualizer ? null : PeakMeterTitle;
+            if (_peakMeterItem != null && _peakMeterItem.Title != peakTitle) _peakMeterItem.Title = peakTitle;
         }
 
         // ---- Now Playing card: hover opens it after a moment, leaving the panel and the card closes it ----
@@ -322,7 +332,10 @@ namespace UniPlaySong.DeskMediaControl
         private static readonly TimeSpan CardOpenDelay = TimeSpan.FromMilliseconds(400);
         private static readonly TimeSpan CardCloseDelay = TimeSpan.FromMilliseconds(350);
 
+        // Two independent settings: the card from Now Playing, and the card from the visualizer and peak meter
         private bool CardEnabled => _cardHost != null && _getSettings?.Invoke()?.ShowNowPlayingCard != false;
+        private bool CardOnVisualizer => _cardHost != null && _getSettings?.Invoke()?.ShowNowPlayingCardOnVisualizer != false;
+        private bool CardOpensFrom(FrameworkElement anchor) => anchor == _nowPlayingPanel ? CardEnabled : CardOnVisualizer;
 
         // Called once by the plugin with what the card may read and do. Open folder stays this view model's.
         internal void AttachCard(NowPlayingCardHost host)
@@ -345,14 +358,17 @@ namespace UniPlaySong.DeskMediaControl
                 else _card?.HideCard();
             };
 
-            if (_nowPlayingPanel != null)
+            // The card opens from Now Playing, the visualizer and the peak meter (for setups that hide Now Playing)
+            foreach (var item in new FrameworkElement[] { _nowPlayingPanel, _spectrumVisualizer, _peakMeter })
             {
-                // The whole top-panel button reacts, not just the text inside it: its padding counts as Now Playing.
-                // Found once the panel is in the bar; the panel itself until then.
-                _nowPlayingPanel.MouseEnter += (s, e) => { if (_cardHoverTarget == null) OnCardHoverEnter(); };
-                _nowPlayingPanel.MouseLeave += (s, e) => { if (_cardHoverTarget == null) OnCardHoverLeave(); };
-                _nowPlayingPanel.Loaded += (s, e) => AttachCardHoverTarget();
-                AttachCardHoverTarget();
+                if (item == null) continue;
+                var anchor = item;
+                // The whole top-panel button reacts, not just the item inside it: its padding counts as the item.
+                // Found once the item is in the bar; the item itself until then.
+                anchor.MouseEnter += (s, e) => { if (!_cardHoverTargets.ContainsKey(anchor)) OnCardHoverEnter(anchor); };
+                anchor.MouseLeave += (s, e) => { if (!_cardHoverTargets.ContainsKey(anchor)) OnCardHoverLeave(); };
+                anchor.Loaded += (s, e) => AttachCardHoverTarget(anchor);
+                AttachCardHoverTarget(anchor);
             }
             UpdateNowPlayingTooltip();
         }
@@ -425,21 +441,34 @@ namespace UniPlaySong.DeskMediaControl
             return fallback;
         }
 
-        private FrameworkElement _cardHoverTarget;
+        // Each item the card opens from, and the top-panel button holding it (what the mouse actually enters)
+        private readonly Dictionary<FrameworkElement, FrameworkElement> _cardHoverTargets = new Dictionary<FrameworkElement, FrameworkElement>();
+        // The item the card hangs from: the one last hovered or clicked (Now Playing until then)
+        private FrameworkElement _cardAnchor;
+        private FrameworkElement CardAnchor => _cardAnchor ?? _nowPlayingPanel;
 
-        private void AttachCardHoverTarget()
+        private void AttachCardHoverTarget(FrameworkElement anchor)
         {
-            if (_cardHoverTarget != null || _nowPlayingPanel == null) return;
-            for (var node = VisualTreeHelper.GetParent(_nowPlayingPanel); node != null && !(node is Window); node = VisualTreeHelper.GetParent(node))
+            if (_cardHoverTargets.ContainsKey(anchor)) return;
+            for (var node = VisualTreeHelper.GetParent(anchor); node != null && !(node is Window); node = VisualTreeHelper.GetParent(node))
             {
                 if (node is System.Windows.Controls.Primitives.ButtonBase button)
                 {
-                    _cardHoverTarget = button;
-                    button.MouseEnter += (s, e) => OnCardHoverEnter();
+                    _cardHoverTargets[anchor] = button;
+                    button.MouseEnter += (s, e) => OnCardHoverEnter(anchor);
                     button.MouseLeave += (s, e) => OnCardHoverLeave();
                     return;
                 }
             }
+        }
+
+        // Click on the visualizer or peak meter: the card at once when it's on (they did nothing on click before)
+        private void OnCardItemActivated(FrameworkElement anchor)
+        {
+            if (!CardOpensFrom(anchor)) return;
+            _cardOpenTimer?.Stop();
+            _cardAnchor = anchor;
+            OpenCard();
         }
 
         // The button, the card and the corridor between them, in screen pixels: crossing the gap to the card
@@ -447,7 +476,8 @@ namespace UniPlaySong.DeskMediaControl
         private bool MouseInCardZone()
         {
             if (_card?.IsOpen != true || !GetCursorPos(out var cursor)) return false;
-            var target = _cardHoverTarget ?? _nowPlayingPanel;
+            var anchor = CardAnchor;
+            var target = anchor != null && _cardHoverTargets.TryGetValue(anchor, out var button) ? button : anchor;
             if (target == null || !target.IsVisible) return false;
             var a = target.PointToScreen(new Point(0, 0));
             var b = target.PointToScreen(new Point(target.ActualWidth, target.ActualHeight));
@@ -460,10 +490,11 @@ namespace UniPlaySong.DeskMediaControl
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern bool GetCursorPos(out NativePoint point);
 
-        private void OnCardHoverEnter()
+        private void OnCardHoverEnter(FrameworkElement anchor)
         {
             _cardCloseTimer?.Stop();
-            if (!CardEnabled || _card?.IsOpen == true) return;
+            if (!CardOpensFrom(anchor) || _card?.IsOpen == true) return;
+            _cardAnchor = anchor;
             _cardOpenTimer?.Start();
             // Get the window and its data ready during the wait, so the card's first frame isn't held up by them
             EnsureCard()?.Prepare();
@@ -477,14 +508,15 @@ namespace UniPlaySong.DeskMediaControl
 
         private void OpenCard()
         {
-            if (!CardEnabled || _nowPlayingPanel == null || !_nowPlayingPanel.IsVisible || _shownSong == null) return;
+            var anchor = CardAnchor;
+            if (anchor == null || !CardOpensFrom(anchor) || !anchor.IsVisible || _shownSong == null) return;
             try
             {
                 if (EnsureCard() == null) return;
-                // Centred on Now Playing, its top on the line where the top bar ends and the game view begins
-                var topLeft = _nowPlayingPanel.PointToScreen(new Point(0, 0));
-                var right = _nowPlayingPanel.PointToScreen(new Point(_nowPlayingPanel.ActualWidth, 0)).X;
-                var edge = CardTopEdge(_nowPlayingPanel, out var source);
+                // Centred on the item it opened from, its top on the line where the top bar ends and the game view begins
+                var topLeft = anchor.PointToScreen(new Point(0, 0));
+                var right = anchor.PointToScreen(new Point(anchor.ActualWidth, 0)).X;
+                var edge = CardTopEdge(anchor, out var source);
                 _log?.Invoke($"TopPanel: card top at {edge:F0}px ({source}), panel top {topLeft.Y:F0}px");
                 _card.ShowUnder(new Rect(topLeft, new Point(right, Math.Max(edge, topLeft.Y))));
             }
@@ -497,7 +529,7 @@ namespace UniPlaySong.DeskMediaControl
         private NowPlayingCard EnsureCard()
         {
             if (_card != null) return _card;
-            var owner = _nowPlayingPanel == null ? null : Window.GetWindow(_nowPlayingPanel);
+            var owner = CardAnchor == null ? null : Window.GetWindow(CardAnchor);
             if (owner == null || _cardHost == null) return null;
             _card = new NowPlayingCard(owner, _cardHost);
             _card.MouseEnter += (s, e) => _cardCloseTimer?.Stop();
@@ -989,7 +1021,7 @@ namespace UniPlaySong.DeskMediaControl
                 _nowPlayingPanel.SetScrollEnabled(settings?.ScrollNowPlayingTitle != false);
                 _nowPlayingPanel.SetLegacyAnimation(settings?.UseLegacyNowPlayingAnimation == true);
                 UpdateNowPlayingTooltip();        // the card setting may have changed
-                if (!CardEnabled) _card?.HideCard();
+                if (CardAnchor == null || !CardOpensFrom(CardAnchor)) _card?.HideCard(); // its item's setting went off
                 _cardHost?.RaiseChanged();        // play state, Calm Down
             }));
         }

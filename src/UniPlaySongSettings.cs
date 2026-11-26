@@ -429,6 +429,7 @@ namespace UniPlaySong
         private bool useLegacyNowPlayingAnimation = false;
         private bool showNowPlayingCard = true;
         private bool showNowPlayingCardArt = false;
+        private bool showNowPlayingCardOnVisualizer = true;
         private string shortcutPlayPause = "";
         private string shortcutNext = "";
         private string shortcutCalmDown = "";
@@ -1300,6 +1301,13 @@ namespace UniPlaySong
         {
             get => showNowPlayingCardArt;
             set { showNowPlayingCardArt = value; OnPropertyChanged(); }
+        }
+
+        // The card also opens from the top panel's visualizer and peak meter (for setups without Now Playing)
+        public bool ShowNowPlayingCardOnVisualizer
+        {
+            get => showNowPlayingCardOnVisualizer;
+            set { showNowPlayingCardOnVisualizer = value; OnPropertyChanged(); }
         }
 
         public bool HideNowPlayingForDefaultMusic

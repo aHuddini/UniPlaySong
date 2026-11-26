@@ -6,9 +6,15 @@ All notable changes to UniPlaySong will be documented in this file.
 
 ## [1.9.6] - Unreleased
 
+### Added
+
+- Added "Show a song card when hovering the visualizer" (`ShowNowPlayingCardOnVisualizer`, default on, independent of the Now Playing card): the card also opens from the visualizer and peak meter, anchored under the item used
+- Added a picture of the song card beside its settings (`Controls/Settings/Images`, compiled in as a resource)
+
 ### Fixed
 
 - Fixed hint-based album downloads failing silently behind a site's bot check: a page that answers with the check loads through Playnite's offscreen browser (`BrowserPageLoader`), and its clearance cookies serve later requests
+- Fixed the Fullscreen download dialog reporting "Invalid … selection" after Back mid-load: a late album or song list replaced the current one; each load now drops its result if navigation moved on (`_loadGeneration`)
 
 ## [1.9.5] - 2026-11-22
 

@@ -39,6 +39,11 @@
     </ItemGroup>
     
     <ItemGroup>
+        <!-- Pictures shown in the settings pages, compiled in (pack://application:,,,/UniPlaySong;component/...) -->
+        <Resource Include="Controls\Settings\Images\*.png" />
+    </ItemGroup>
+
+    <ItemGroup>
         <None Include="..\extension.yaml">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>

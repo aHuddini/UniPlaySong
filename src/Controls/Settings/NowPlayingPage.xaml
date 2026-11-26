@@ -97,19 +97,35 @@
             <Border Style="{StaticResource UpsSectionBar}">
                 <TextBlock ups:TrackedCaps.Text="Now Playing Mini Player Hover Card" Style="{StaticResource UpsSectionTitle}"/>
             </Border>
-                <CheckBox Style="{StaticResource UpsToggle}" Content="Show a song card when hovering Now Playing"
-                          IsChecked="{Binding Settings.ShowNowPlayingCard}"
-                          IsEnabled="{Binding Settings.ShowNowPlayingInTopPanel}"
-                          />
-                <TextBlock Text="Pops in under Now Playing with playback controls, the song list and the music folder. Clicking Now Playing opens it too. Turn off to keep a tooltip and open the folder on click."
-                           Style="{StaticResource UpsHint}"/>
+            <!-- The toggles beside a picture of the card, so the setting shows what it turns on -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <CheckBox Style="{StaticResource UpsToggle}" Content="Show a song card when hovering Now Playing"
+                              IsChecked="{Binding Settings.ShowNowPlayingCard}"
+                              />
+                    <TextBlock Text="Pops in under Now Playing with playback controls, the song list and the music folder. Clicking Now Playing opens it too. Turn off to keep a tooltip and open the folder on click."
+                               Style="{StaticResource UpsHint}"/>
 
-                <CheckBox Style="{StaticResource UpsToggleChild}" Content="Show the game's art on the card"
-                          IsChecked="{Binding Settings.ShowNowPlayingCardArt}"
-                          IsEnabled="{Binding Settings.ShowNowPlayingCard}"
-                          />
-                <TextBlock Text="The top of the card shows the playing game's artwork. Turn off for tinted glass in the art's colours."
-                           Style="{StaticResource UpsHintIndented}"/>
+                    <CheckBox Style="{StaticResource UpsToggle}" Content="Show a song card when hovering the visualizer"
+                              IsChecked="{Binding Settings.ShowNowPlayingCardOnVisualizer}"
+                              />
+                    <TextBlock Text="The same card from the visualizer and the peak meter, on hover or click. Handy when Now Playing isn't shown on the panel."
+                               Style="{StaticResource UpsHint}"/>
+
+                    <CheckBox Style="{StaticResource UpsToggle}" Content="Show the game's art on the card"
+                              IsChecked="{Binding Settings.ShowNowPlayingCardArt}"
+                              />
+                    <TextBlock Text="The top of the card shows the playing game's artwork. Turn off for tinted glass in the art's colours."
+                               Style="{StaticResource UpsHint}"/>
+                </StackPanel>
+                <Image Grid.Column="1" Source="pack://application:,,,/UniPlaySong;component/Controls/Settings/Images/NowPlayingCardPreview.png"
+                       Width="240" Margin="20,4,0,8" VerticalAlignment="Top" RenderOptions.BitmapScalingMode="HighQuality"
+                       ToolTip="The song card"/>
+            </Grid>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
