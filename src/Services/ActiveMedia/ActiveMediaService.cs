@@ -25,10 +25,6 @@ namespace UniPlaySong.Services.ActiveMedia
         private DateTime _spotifySeekAt;
         private static readonly TimeSpan SpotifyCatchUp = TimeSpan.FromSeconds(1.5);
 
-        // Player volume captured when UPS music was muted, so unmute restores that exact level
-        // (which already includes MusicVolume + Calm Down attenuation). -1 = not currently muted.
-        private double _upsVolumeBeforeMute = -1.0;
-
         public event Action Changed;
 
         public ActiveMediaService(
@@ -146,7 +142,7 @@ namespace UniPlaySong.Services.ActiveMedia
             }
             // The level the user set, not the player's: that one rides to 0 on every pause and fade, and a theme's volume
             // bar that copied it stayed down after the music came back. Muted reads 0 for themes' mute icons.
-            double vol = _upsVolumeBeforeMute >= 0.0 ? 0.0 : (_playback?.GetVolume() ?? 0.0) * 100.0;
+            double vol = _playback?.IsMuted == true ? 0.0 : (_playback?.GetVolume() ?? 0.0) * 100.0;
             bool canNext = (_playback?.CurrentGameSongCount ?? 0) >= 2
                            || _playback?.IsPlayingPoolBasedDefault == true;
             return new ActiveMediaSnapshot(
@@ -160,7 +156,7 @@ namespace UniPlaySong.Services.ActiveMedia
                 isPlaying: (_playback?.IsPlaying ?? false) && !(_playback?.IsPaused ?? false),
                 // Explicit mute state (set in ToggleMute), NOT vol<=0 — volume also rides to 0
                 // during fades/pauses, which would otherwise flash the theme's mute icon.
-                isMuted: _upsVolumeBeforeMute >= 0.0,
+                isMuted: _playback?.IsMuted == true,
                 progress: progress,
                 positionText: posText,
                 durationText: durText,
@@ -206,29 +202,10 @@ namespace UniPlaySong.Services.ActiveMedia
                 return;
             }
 
-            // UPS: mute UPS's own radio/game music via the internal player volume.
-            if (ResolveSource() != ActiveMediaSourceKind.Ups) return;
-
-            double v = _playback?.GetInternalVolume() ?? 0.0;
-            if (v > 0.0)
-            {
-                // Muting: remember the exact live level (bakes in MusicVolume + Calm Down), silence.
-                _upsVolumeBeforeMute = v;
-                _playback?.SetInternalVolume(0.0);
-            }
-            else
-            {
-                // Unmuting: restore the saved level. Fall back to the target volume (GetVolume,
-                // = _targetVolume) if we have no saved value — NEVER a hardcoded 1.0, which would
-                // play far louder and wipe Calm Down. First press when already silent also
-                // lands here and restores a sane level instead of blasting to 100%.
-                double restore = _upsVolumeBeforeMute > 0.0
-                    ? _upsVolumeBeforeMute
-                    : (_playback?.GetVolume() ?? 0.0);
-                _playback?.SetInternalVolume(restore);
-                _upsVolumeBeforeMute = -1.0;
-            }
-            _fileLogger?.Debug($"[ActiveMedia] ToggleMute: {(v > 0.0 ? "muted" : "unmuted")} (was={v:F3}, saved={_upsVolumeBeforeMute:F3})");
+            // UPS: the playback service's mute, which every fade and resume respects
+            if (ResolveSource() != ActiveMediaSourceKind.Ups || _playback == null) return;
+            _playback.IsMuted = !_playback.IsMuted;
+            _fileLogger?.Debug($"[ActiveMedia] ToggleMute: {(_playback.IsMuted ? "muted" : "unmuted")}");
             RaiseChanged();
         }
 
@@ -239,8 +216,8 @@ namespace UniPlaySong.Services.ActiveMedia
                 double clamped = Math.Max(0.0, Math.Min(100.0, volume0to100));
                 // The set level, so a pause or fade comes back to it (the player's own level alone was faded over)
                 _playback?.SetVolume(clamped / 100.0);
-                // An explicit volume set clears any mute memory: the new level IS the level.
-                _upsVolumeBeforeMute = -1.0;
+                // Setting a level is asking to hear it
+                if (_playback != null) _playback.IsMuted = false;
                 RaiseChanged();
             }
             // Spotify app volume not settable via the SMTC client contract — ignored.

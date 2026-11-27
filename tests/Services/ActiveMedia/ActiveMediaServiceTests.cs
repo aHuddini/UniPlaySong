@@ -111,13 +111,16 @@ namespace UniPlaySong.Tests.Services.ActiveMedia
             _playback.SetupGet(p => p.IsPlaying).Returns(true);
             _playback.Setup(p => p.GetVolume()).Returns(0.6);
             _playback.Setup(p => p.GetInternalVolume()).Returns(0.0);
+            _playback.SetupProperty(p => p.IsMuted);
             _spotifyControl.Recompute();
 
             Assert.AreEqual(60.0, _service.GetSnapshot().Volume, 0.001);
 
-            _playback.Setup(p => p.GetInternalVolume()).Returns(0.6);
             _service.ToggleMute();
+            Assert.IsTrue(_service.GetSnapshot().IsMuted);
             Assert.AreEqual(0.0, _service.GetSnapshot().Volume, 0.001);
+            _service.ToggleMute();
+            Assert.AreEqual(60.0, _service.GetSnapshot().Volume, 0.001);
         }
 
         [Test]

@@ -29,6 +29,28 @@ namespace UniPlaySong.Tests.Services
         // External Audio pauses instantly; the play buttons resume through the faded path. That path only restarted
         // the player when the fader was paused, and an instant pause left it unpaused - so play ramped the volume of a
         // paused player: silence, and after an idle/lock device release the play button did nothing at all.
+        // Mute is a factor in every volume UPS sets, not a zeroed player level the next fade or volume write overwrote
+        // (Aniki's and the hover card's mute came back on their own)
+        [Test]
+        public void Mute_HoldsThroughVolumeChanges_AndUnmuteRestoresTheLevel()
+        {
+            var player = new Mock<IMusicPlayer>();
+            player.SetupProperty(p => p.Volume);
+            player.SetupGet(p => p.IsLoaded).Returns(true);
+            player.SetupGet(p => p.IsActive).Returns(true);
+            var service = CreateService(player.Object);
+            service.SetVolume(0.6);
+
+            service.IsMuted = true;
+            Assert.AreEqual(0.0, player.Object.Volume, 1e-9);
+
+            service.SetVolume(0.8);
+            Assert.AreEqual(0.0, player.Object.Volume, 1e-9, "a volume change unmuted the sound");
+
+            service.IsMuted = false;
+            Assert.AreEqual(0.8, player.Object.Volume, 1e-9);
+        }
+
         [Test]
         public void AnInstantPause_IsResumedByTheFadedPath()
         {

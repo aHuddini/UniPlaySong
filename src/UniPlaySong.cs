@@ -3122,7 +3122,11 @@ namespace UniPlaySong
                     CanSeek = () => _activeMediaService?.CanSeek == true,
                     MusicVolume = () => _settings?.MusicVolume ?? 0,
                     CanSetVolume = () => !IsSpotifyTheActiveMediaSource(),
-                    PreviewVolume = v => _playbackService?.SetVolume(v / Constants.VolumeDivisor),
+                    // Moving the level is asking to hear it: unmutes
+                    PreviewVolume = v => { if (_playbackService == null) return; _playbackService.IsMuted = false; _playbackService.SetVolume(v / Constants.VolumeDivisor); },
+                    // Spotify's read live, not from its 1 s cache: the card asks right after its own click
+                    Muted = () => IsSpotifyTheActiveMediaSource() ? Common.SpotifyAudioSession.IsMuted() : _playbackService?.IsMuted == true,
+                    ToggleMute = () => _activeMediaService?.ToggleMute(),
                     SaveVolume = v => UpdateSettingsFromMenu(s => s.MusicVolume = v, "NowPlayingCard"),
                     SeekTo = percent => _activeMediaService?.SeekTo(percent),
                     SongLength = path =>

@@ -33,6 +33,7 @@ namespace UniPlaySong.DeskMediaControl
         private static readonly Brush SolidTint = Frozen(Color.FromArgb(0xF0, 0x16, 0x1A, 0x24));   // no acrylic
         private static readonly Brush CalmOnBrush = Frozen(Color.FromRgb(0x4C, 0xC2, 0xFF));   // Calm Down on: blue
         private static readonly Brush CalmOffBrush = Frozen(Color.FromRgb(0x8A, 0x8F, 0x9A));  // off: grey
+        private static readonly Brush MuteOffBrush = Frozen(Color.FromArgb(0x99, 0xF2, 0xF4, 0xF8)); // the speaker as it was drawn
         private static readonly Brush SpotifyOnBrush = Frozen(Color.FromRgb(0x1D, 0xB9, 0x54)); // Spotify's own green, not recoloured
 
         private readonly Window _owner;
@@ -60,6 +61,13 @@ namespace UniPlaySong.DeskMediaControl
             TrackScroll.ScrollChanged += (s, e) => UpdateBars();
             SeekStrip.MouseEnter += (s, e) => { if (_model.CanSeek) SeekLine.Height = 5; };
             VolumeTrack.SizeChanged += (s, e) => ShowVolume(_shownVolume);
+            // Hidden (Spotify plays) it has no height, so a volume refreshed meanwhile was drawn at the bottom: redraw once
+            // it shows again and layout has given it its height back
+            VolumeTrack.IsVisibleChanged += (s, e) =>
+            {
+                if (VolumeTrack.IsVisible)
+                    Dispatcher.BeginInvoke(new Action(() => { if (!_dragVolume) ShowVolume(_model.Volume); }), DispatcherPriority.Loaded);
+            };
             BannerArea.SizeChanged += (s, e) => SizeBackdrop();
             BannerLook.Current = BannerLook.Pick(_host.CardShowsArt?.Invoke() == true, _model.HasArt);
             ApplyLook();
@@ -261,6 +269,13 @@ namespace UniPlaySong.DeskMediaControl
                         : "\nNeeds the Spotify desktop app open (or turn on \"Open Spotify automatically\" in settings)";
                 SpotifyButton.ToolTip = tip;
             }
+            else if (e.PropertyName == nameof(NowPlayingCardModel.Muted))
+            {
+                MuteButton.Tag = FindResource(_model.Muted ? "IconSpeakerMuted" : "IconSpeaker");
+                MuteButton.Foreground = _model.Muted ? CalmOnBrush : MuteOffBrush;
+                MuteButton.ToolTip = _model.Muted ? "Unmute" : "Mute";
+                VolumeFill.Opacity = _model.Muted ? 0.35 : 1.0;
+            }
             else if (e.PropertyName == nameof(NowPlayingCardModel.CalmDownOn))
             {
                 CalmDownButton.Foreground = _model.CalmDownOn ? CalmOnBrush : CalmOffBrush;
@@ -297,6 +312,7 @@ namespace UniPlaySong.DeskMediaControl
         private void Next_Click(object sender, RoutedEventArgs e) => _host.Next?.Invoke();
         private void Previous_Click(object sender, RoutedEventArgs e) => _host.Previous?.Invoke();
         private void CalmDown_Click(object sender, RoutedEventArgs e) { _host.ToggleCalmDown?.Invoke(); _model.Refresh(); }
+        private void Mute_Click(object sender, RoutedEventArgs e) { _host.ToggleMute?.Invoke(); _model.Refresh(); }
         private void Radio_Click(object sender, RoutedEventArgs e) { _host.ToggleRadio?.Invoke(); _model.Refresh(); }
         private void Spotify_Click(object sender, RoutedEventArgs e) { _host.ToggleSpotifySource?.Invoke(); _model.Refresh(); }
         private void Eq_Click(object sender, RoutedEventArgs e) { _host.ToggleEqualizer?.Invoke(); _model.Refresh(); }

@@ -6,12 +6,14 @@ Packages:
     PackageUrl: 'https://github.com/aHuddini/UniPlaySong/releases/download/1.9.6/UniPlaySong-1_9_6.pext'
     Changelog:
       - '[New Setting] General -> Now Playing -> Show a song card when hovering the visualizer: the hover card also opens from the visualizer and peak meter, for setups without Now Playing.'
-      - '[New] Desktop hover card: Radio Mode and Spotify buttons. One click on Spotify plays it as your radio.'
+      - '[New] Desktop hover card: Radio Mode and Spotify buttons added. One click on Spotify plays it as your radio.'
+      - '[New] Desktop hover card: click the speaker icon to mute or unmute, Spotify included.'
       - '[Fix] Corrected a loading bug in the download manager.'
       - '[Fix] Fullscreen download dialog: pressing Back while a list is still loading no longer shows an "Invalid selection" message.'
       - '[Fix] Fullscreen theme music players: the volume bar no longer drops back after pausing, resuming or Alt+Tab.'
-      - '[Fix] Leaving Spotify radio: your game music now comes back right away.'
-      - '[Fix] Spotify radio: "Open Spotify automatically" now opens and starts Spotify whenever you switch to it, and Play opens it if it was closed.'
+      - '[Fix] Desktop Hover Card: Leaving Spotify radio: your game music now comes back right away.'
+      - '[Fix] Desktop Hover Card: Spotify radio: "Open Spotify automatically" now opens and starts Spotify whenever you switch to it, and Play opens it if it was closed.'
+      - '[Fix] Mute now stays muted through pauses, fades and song changes.'
       - '[Improved] Default Music and Radio Mode Custom Folders Playlists: add as many folders as you like instead of one folder, shown in a list. Radio Mode settings reordered, with their own game and status pickers independent from Default Music.'
       - '[Improved] Recently played list in themes: song pictures now show after a restart, including songs from your own folders.'
   - Version: 1.9.5

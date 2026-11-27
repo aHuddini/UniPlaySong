@@ -73,6 +73,7 @@ namespace DashboardTestApp
         public List<string> GetAvailableSongs(Game game) => new List<string>();
         public void SetVolume(double volume) { }
         public double GetVolume() => 0.5;
+        public bool IsMuted { get; set; }
         public void SetVolumeMultiplier(double multiplier) { }
         public void SetIdleVolumeMultiplier(double multiplier) { }
         public void SetDefaultSongPoolProvider(Func<global::UniPlaySong.DefaultMusicSource, global::UniPlaySong.UniPlaySongSettings, List<string>> provider) { }

@@ -107,6 +107,24 @@ namespace UniPlaySong.Services
         private MusicFader _fader;
         private double _targetVolume = Constants.DefaultTargetVolume;
         private double _volumeMultiplier = 1.0;
+        private bool _muted;
+
+        // Mute: a factor in every volume UPS sets (fades, resumes, song changes, Calm Down), so nothing brings the sound
+        // back while it is on - zeroing the player's live volume instead was undone by the next fade. Session only.
+        public bool IsMuted
+        {
+            get => _muted;
+            set
+            {
+                if (_muted == value) return;
+                _muted = value;
+                if (_musicPlayer != null && !_isPaused && _musicPlayer.IsActive)
+                    _musicPlayer.Volume = _targetVolume * _volumeMultiplier * _idleVolumeMultiplier * Audible;
+                OnPlaybackStateChanged?.Invoke();
+            }
+        }
+
+        private double Audible => _muted ? 0.0 : 1.0;
         private double _idleVolumeMultiplier = 1.0;
         private double _fadeInDuration = Constants.DefaultFadeInDuration;
         private double _fadeOutDuration = Constants.DefaultFadeOutDuration;
@@ -324,7 +342,7 @@ namespace UniPlaySong.Services
         {
             _fader = new MusicFader(
                 _musicPlayer,
-                () => _targetVolume * _volumeMultiplier * _idleVolumeMultiplier,
+                () => _targetVolume * _volumeMultiplier * _idleVolumeMultiplier * Audible,
                 () => _fadeInDuration,
                 () => _fadeOutDuration,
                 _errorHandler,
@@ -485,13 +503,13 @@ namespace UniPlaySong.Services
                     // doesn't later report a stale HasPendingPlayAction (we resume without it here).
                     _fader?.CancelFade();
                     _musicPlayer.Resume();
-                    _musicPlayer.Volume = _targetVolume * _volumeMultiplier;
+                    _musicPlayer.Volume = _targetVolume * _volumeMultiplier * Audible;
                     OnPlaybackStateChanged?.Invoke();
                 }
                 else if (_musicPlayer?.IsLoaded == true && !_musicPlayer.IsActive)
                 {
                     _fileLogger?.Debug($"Resume (instant): {source} removed, starting loaded song");
-                    _musicPlayer.Volume = _targetVolume * _volumeMultiplier;
+                    _musicPlayer.Volume = _targetVolume * _volumeMultiplier * Audible;
                     _musicPlayer.Play();
                     MarkSongStart();
                     OnPlaybackStateChanged?.Invoke();
@@ -1895,7 +1913,7 @@ namespace UniPlaySong.Services
                 if (!_isPaused)
                 {
                     _musicPlayer.Resume();
-                    _musicPlayer.Volume = _targetVolume * _volumeMultiplier;
+                    _musicPlayer.Volume = _targetVolume * _volumeMultiplier * Audible;
                 }
             }
         }
@@ -2103,7 +2121,7 @@ namespace UniPlaySong.Services
 
             if (_musicPlayer != null && !_isPaused && _musicPlayer.IsActive)
             {
-                _musicPlayer.Volume = _targetVolume * _volumeMultiplier * _idleVolumeMultiplier;
+                _musicPlayer.Volume = _targetVolume * _volumeMultiplier * _idleVolumeMultiplier * Audible;
             }
         }
 
@@ -2122,7 +2140,7 @@ namespace UniPlaySong.Services
 
             if (_musicPlayer != null && !_isPaused && _musicPlayer.IsActive)
             {
-                _musicPlayer.Volume = _targetVolume * _volumeMultiplier * _idleVolumeMultiplier;
+                _musicPlayer.Volume = _targetVolume * _volumeMultiplier * _idleVolumeMultiplier * Audible;
             }
         }
 
@@ -2132,7 +2150,7 @@ namespace UniPlaySong.Services
 
             if (_musicPlayer != null && !_isPaused && _musicPlayer.IsActive)
             {
-                _musicPlayer.Volume = _targetVolume * _volumeMultiplier * _idleVolumeMultiplier;
+                _musicPlayer.Volume = _targetVolume * _volumeMultiplier * _idleVolumeMultiplier * Audible;
             }
         }
 

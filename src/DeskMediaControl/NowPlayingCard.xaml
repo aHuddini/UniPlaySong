@@ -41,6 +41,7 @@
         <Geometry x:Key="IconNowPlaying">M1,9 H4 V15 H1 Z M6.5,3 H9.5 V15 H6.5 Z M12,6 H15 V15 H12 Z</Geometry>
         <Geometry x:Key="IconChevronUp">M2.5,10.5 L8,5 L13.5,10.5 L12.4,11.6 L8,7.2 L3.6,11.6 Z</Geometry>
         <Geometry x:Key="IconChevronDown">M2.5,5.5 L8,11 L13.5,5.5 L12.4,4.4 L8,8.8 L3.6,4.4 Z</Geometry>
+        <Geometry x:Key="IconSpeakerMuted">M1.5,5.5 H4.5 L8.5,2 V14 L4.5,10.5 H1.5 Z M10.6,6.85 L11.45,6 L14.9,9.45 L14.05,10.3 Z M14.05,6 L14.9,6.85 L11.45,10.3 L10.6,9.45 Z</Geometry>
         <Geometry x:Key="IconSpeaker">M1.5,5.5 H4.5 L8.5,2 V14 L4.5,10.5 H1.5 Z M10.5,5.2 A3.6,3.6 0 0 1 10.5,10.8 L11.4,11.8 A5,5 0 0 0 11.4,4.2 Z</Geometry>
         <!-- Three faders, knobs at different heights (F1: overlapping parts fill rather than cancel) -->
         <Geometry x:Key="IconEqualizer">F1 M2.4,1 H4.6 V15 H2.4 Z M1,8.6 H6 V11.4 H1 Z M6.9,1 H9.1 V15 H6.9 Z M5.5,3.8 H10.5 V6.6 H5.5 Z M11.4,1 H13.6 V15 H11.4 Z M10,10.2 H15 V13 H10 Z</Geometry>
@@ -318,15 +319,15 @@
                     </Grid.ColumnDefinitions>
                     <!-- Volume: a slim vertical slider down the list's left edge (folds away with the list); drag or wheel.
                          At least 96 px tall, so a one-song list still gets a usable track.
-                         Music Volume, applied live while dragging and saved on release. Hidden while Spotify plays (not
-                         ours to set). -->
-                    <Grid x:Name="VolumeColumn" Width="18" Margin="-6,2,6,2" MinHeight="96"
-                          Visibility="{Binding CanSetVolume, Converter={StaticResource Visible}}">
+                         Music Volume, applied live while dragging and saved on release. The slider hides while Spotify
+                         plays (its volume isn't ours to set); the mute below it stays, muting Spotify's own audio. -->
+                    <Grid x:Name="VolumeColumn" Width="18" Margin="-6,2,6,2" MinHeight="96">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
                         <Grid x:Name="VolumeTrack" Background="Transparent" Cursor="Hand"
+                              Visibility="{Binding CanSetVolume, Converter={StaticResource Visible}}"
                               MouseLeftButtonDown="Volume_MouseDown" MouseMove="Volume_MouseMove" MouseLeftButtonUp="Volume_MouseUp"
                               LostMouseCapture="Volume_LostCapture" MouseWheel="Volume_Wheel">
                             <Border Width="4" CornerRadius="2" Background="#2EFFFFFF" HorizontalAlignment="Center"/>
@@ -335,8 +336,26 @@
                             <Ellipse x:Name="VolumeThumb" Width="10" Height="10" Fill="#F2F4F8" HorizontalAlignment="Center"
                                      VerticalAlignment="Bottom"/>
                         </Grid>
-                        <Path Grid.Row="1" Data="{StaticResource IconSpeaker}" Fill="#99F2F4F8" Stretch="Uniform" Width="11" Height="11"
-                              Margin="0,5,0,0" HorizontalAlignment="Center"/>
+                        <!-- Mute toggle: blue speaker-with-X while muted. Under the slider; centred in the column when the
+                             slider is hidden (Spotify) -->
+                        <Button x:Name="MuteButton" Tag="{StaticResource IconSpeaker}"
+                                Width="18" Height="18" FontSize="11" HorizontalAlignment="Center"
+                                Foreground="#99F2F4F8" ToolTip="Mute" Click="Mute_Click">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource SmallIconButton}">
+                                    <Setter Property="Grid.Row" Value="1"/>
+                                    <Setter Property="Margin" Value="0,2,0,0"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CanSetVolume}" Value="False">
+                                            <Setter Property="Grid.Row" Value="0"/>
+                                            <Setter Property="Grid.RowSpan" Value="2"/>
+                                            <Setter Property="Margin" Value="0"/>
+                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
                     </Grid>
                 <ScrollViewer Grid.Column="1" x:Name="TrackScroll" MaxHeight="128" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
                     <ItemsControl x:Name="TrackList" ItemsSource="{Binding Tracks}">

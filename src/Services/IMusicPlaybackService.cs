@@ -51,6 +51,7 @@ namespace UniPlaySong.Services
         List<string> GetAvailableSongs(Game game);
         void SetVolume(double volume);
         double GetVolume();
+        bool IsMuted { get; set; }   // a factor in every volume UPS sets; session only
 
         // Sets a volume multiplier on top of base volume (for Playnite fullscreen BackgroundVolume)
         void SetVolumeMultiplier(double multiplier);

@@ -23,7 +23,9 @@ namespace UniPlaySong.DeskMediaControl
         public Action ToggleEqualizer, ToggleLiveEffects;
         public Func<bool> RadioOn, SpotifySourceOn;        // Radio Mode; Radio playing Spotify
         public Action ToggleRadio, ToggleSpotifySource;
-        public Func<bool> SpotifyAppRunning, SpotifyAutoOpens;  // the desktop app is open; UniPlaySong opens it when needed
+        public Func<bool> SpotifyAppRunning, SpotifyAutoOpens;
+        public Func<bool> Muted;                          // UPS's music muted
+        public Action ToggleMute;  // the desktop app is open; UniPlaySong opens it when needed
         public Action<NowPlayingCardTrack> PlayTrack;
         public Action<string> SetPrimarySong;               // a song of the playing game
         public Action ClearPrimarySong;
@@ -101,6 +103,7 @@ namespace UniPlaySong.DeskMediaControl
         public bool RadioOn { get; private set; }
         public bool SpotifySourceOn { get; private set; }
         public bool SpotifyAppRunning { get; private set; }
+        public bool Muted { get; private set; }
         public bool SpotifyAutoOpens { get; private set; }
         public bool CanSetVolume { get; private set; }
 
@@ -177,6 +180,8 @@ namespace UniPlaySong.DeskMediaControl
             SpotifySourceOn = _host.SpotifySourceOn?.Invoke() == true;
             SpotifyAppRunning = _host.SpotifyAppRunning?.Invoke() == true;
             SpotifyAutoOpens = _host.SpotifyAutoOpens?.Invoke() == true;
+            Muted = _host.Muted?.Invoke() == true;
+            Set(nameof(Muted));
             Set(nameof(RadioOn)); Set(nameof(SpotifyAppRunning)); Set(nameof(SpotifyAutoOpens)); Set(nameof(SpotifySourceOn));
             Volume = _host.MusicVolume?.Invoke() ?? 0;
             CanSetVolume = _host.CanSetVolume?.Invoke() == true;
