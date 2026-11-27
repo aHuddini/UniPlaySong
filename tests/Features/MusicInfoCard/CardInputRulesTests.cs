@@ -115,6 +115,33 @@ namespace UniPlaySong.Tests.Features.MusicInfoCard
             Assert.IsFalse(r.RightStickJogs);
         }
 
+        // Mouse: a click puts the matching cursor on what was clicked and makes it live, as a D-pad move would
+        [Test]
+        public void Select_PutsTheCursorThere_AndMakesItLive()
+        {
+            var r = new CardInputRules(5, 0);
+            r.SelectControl(CardControl.CalmDown);
+            Assert.AreEqual(CardCursor.Controls, r.Live);
+            Assert.AreEqual(CardControl.CalmDown, r.Control);
+            r.SelectSong(3);
+            Assert.AreEqual(CardCursor.Songs, r.Live);
+            Assert.AreEqual(3, r.SongIndex);
+            r.SelectSong(99);
+            Assert.AreEqual(4, r.SongIndex);   // clamped
+            r.SelectPage(CardPage.Details);
+            Assert.AreEqual(CardPage.Details, r.Page);
+        }
+
+        [Test]
+        public void SelectSong_WithNoSongs_ChangesNothing()
+        {
+            var r = new CardInputRules(0, 0);
+            r.SelectControl(CardControl.Next);
+            r.SelectSong(2);
+            Assert.AreEqual(CardCursor.Controls, r.Live);
+            Assert.AreEqual(0, r.SongIndex);
+        }
+
         [Test]
         public void NoSongs_SongCursorStays_AStillPressesControls()
         {

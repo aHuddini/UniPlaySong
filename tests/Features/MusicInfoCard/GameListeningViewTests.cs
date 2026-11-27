@@ -34,13 +34,31 @@ namespace UniPlaySong.Tests.Features.MusicInfoCard
                 }
             };
 
-            var v = GameListeningView.Build(snap, "g1", @"C:\games\g1", new DateTime(2026, 11, 27, 0, 0, 0, DateTimeKind.Utc));
+            var v = GameListeningView.Build(snap, "g1", @"C:\games\g1", new DateTime(2026, 11, 27, 0, 0, 0, DateTimeKind.Utc), TimeZoneInfo.Utc);
 
             Assert.IsTrue(v.HasHistory);
             Assert.AreEqual(TimeSpan.FromSeconds(22320), v.Listened);
             Assert.AreEqual(143, v.Plays);
             Assert.AreEqual(2, v.DaysSinceLastPlayed);
             CollectionAssert.AreEqual(new[] { ("Sequoia", 31), ("Painting", 24), ("Overpass", 17) }, v.MostPlayed);
+        }
+
+        // Days count in the user's own calendar: played at 9 am and looked at 11 am the same local day is "today", even
+        // where the UTC date changed in between
+        [Test]
+        public void DaysSinceLastPlayed_UsesLocalDays()
+        {
+            var zone = TimeZoneInfo.CreateCustomTimeZone("UTC+10", TimeSpan.FromHours(10), "UTC+10", "UTC+10");
+            var snap = new ListeningSnapshot
+            {
+                Games = new List<GameListeningRecord>
+                {
+                    new GameListeningRecord { GameId = "g1", TotalSeconds = 60, PlayCount = 1,
+                        LastPlayedUtc = new DateTime(2026, 11, 26, 23, 0, 0, DateTimeKind.Utc) }
+                }
+            };
+            var v = GameListeningView.Build(snap, "g1", @"C:\games\g1", new DateTime(2026, 11, 27, 1, 0, 0, DateTimeKind.Utc), zone);
+            Assert.AreEqual(0, v.DaysSinceLastPlayed);
         }
 
         [Test]

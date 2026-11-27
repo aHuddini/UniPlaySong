@@ -17,8 +17,11 @@ namespace UniPlaySong.Features.MusicInfoCard.Player
         public int? DaysSinceLastPlayed { get; private set; }
         public IReadOnlyList<(string Title, int Plays)> MostPlayed { get; private set; } = new (string, int)[0];
 
-        public static GameListeningView Build(ListeningSnapshot snapshot, string gameId, string gameMusicFolder, DateTime nowUtc)
+        // zone: whose calendar "days" are counted in; the user's own (Local) unless given
+        public static GameListeningView Build(ListeningSnapshot snapshot, string gameId, string gameMusicFolder, DateTime nowUtc,
+            TimeZoneInfo zone = null)
         {
+            zone = zone ?? TimeZoneInfo.Local;
             var view = new GameListeningView();
             var game = ListeningInsights.ForGame(snapshot, gameId);
             if (game == null) return view;
@@ -27,7 +30,8 @@ namespace UniPlaySong.Features.MusicInfoCard.Player
             view.Listened = TimeSpan.FromSeconds(game.TotalSeconds);
             view.Plays = game.PlayCount;
             if (game.LastPlayedUtc != default(DateTime))
-                view.DaysSinceLastPlayed = Math.Max(0, (int)(nowUtc.Date - game.LastPlayedUtc.Date).TotalDays);
+                view.DaysSinceLastPlayed = Math.Max(0, (int)(TimeZoneInfo.ConvertTimeFromUtc(nowUtc, zone).Date
+                    - TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(game.LastPlayedUtc, DateTimeKind.Utc), zone).Date).TotalDays);
 
             if (!string.IsNullOrEmpty(gameMusicFolder) && snapshot.Tracks != null)
             {

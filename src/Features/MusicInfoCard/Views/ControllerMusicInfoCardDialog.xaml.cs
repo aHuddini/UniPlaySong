@@ -62,6 +62,14 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         private double? _jogAngle;
         private RelativeSeeker _jogSeeker;
         private int _playingIndex = -1;
+        private string _primaryPath;                     // read once per open: the lookup touches the disk
+        private readonly HeldSeek _held = new HeldSeek();
+        private bool _closed;                            // set first on Unloaded; late events and timers stand down
+        private bool _statsShown;                        // the loader never appears once the pages are filled
+        private Point? _ringDown;                        // mouse pressed on Play/Pause: a click, or a drag that turns the knob
+        private double? _ringDragAngle;
+        private const double RingDragSlopPixels = 4;
+        private Window _window;                          // keys are read at window level, wherever focus sits
         private readonly SeekRing Ring = new SeekRing { Width = 64, Height = 64 };
 
         private string _imagePath;
@@ -87,6 +95,8 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             {
                 Focus();
                 Keyboard.Focus(this);
+                _window = Window.GetWindow(this);
+                if (_window != null) { _window.PreviewKeyDown += OnKeyDown; _window.PreviewKeyUp += OnKeyUp; }
                 GlassTiles.Attach(BlurredBackdrop, PagesRoot, DetailsScroll, _frost);
                 StartStickScroll();
                 ShowPage();
@@ -101,6 +111,8 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             Unloaded += (s, e) =>
             {
                 // Nothing keeps seeking, scrolling or refreshing after the card closes (Review Focus 5)
+                _closed = true;
+                if (_window != null) { _window.PreviewKeyDown -= OnKeyDown; _window.PreviewKeyUp -= OnKeyUp; }
                 _stickPoll?.Stop();
                 StopStickFrames();
                 _refresh?.Stop();
@@ -115,7 +127,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 }
             };
 
-            PreviewKeyDown += OnKeyDown;
+            HookMouse();
         }
 
         internal void Initialize(
@@ -198,7 +210,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 if (token.IsCancellationRequested) return;
                 _ = Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    if (LoadingPanel != null && PagesRoot.Opacity < 0.5) LoadingPanel.Visibility = Visibility.Visible;
+                    if (!_statsShown && !_closed) LoadingPanel.Visibility = Visibility.Visible;
                 }));
             });
 
@@ -214,6 +226,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 Logger.Error(ex, "ControllerMusicInfoCardDialog: stats computation failed");
                 _ = Dispatcher.BeginInvoke(new Action(() =>
                 {
+                    _statsShown = true;
                     LoadingPanel.Visibility = Visibility.Collapsed;
                     EmptyStateText.Text = "Failed to read music metadata.";
                     EmptyStateText.Visibility = Visibility.Visible;
@@ -224,11 +237,16 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
 
         private void RenderStats(MusicStats stats)
         {
+            if (_closed) return;
+            _statsShown = true;
             LoadingPanel.Visibility = Visibility.Collapsed;
 
             if (stats == null || stats.FileCount == 0)
             {
                 EmptyStateText.Visibility = Visibility.Visible;
+                // No songs left, but the history and the notes (unreadable files, playlists) still apply
+                RenderListening();
+                if (stats != null) RenderNotes(stats);
                 StartPlayer(new List<SongEntry>());
                 FadeInPages();
                 return;
@@ -274,6 +292,11 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             if (stats.ShortestTrack.HasValue)
                 SetLengthLine(ShortestText, Purple, "Shortest: ", stats.ShortestTrack.Value.Title, stats.ShortestTrack.Value.Duration);
 
+            RenderNotes(stats);
+        }
+
+        private void RenderNotes(MusicStats stats)
+        {
             if (stats.PlaylistFileCount > 0)
             {
                 PlaylistInfoText.Text =
@@ -339,6 +362,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
 
         private void StartPlayer(IReadOnlyList<SongEntry> songs)
         {
+            _primaryPath = _host?.PrimaryPath?.Invoke(_game);
             _rows.Clear();
             foreach (var s in songs)
                 _rows.Add(new SongRow { Title = s.Title, Path = s.FilePath, DurationText = s.Duration > TimeSpan.Zero ? FormatDuration(s.Duration) : string.Empty });
@@ -353,8 +377,8 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             ScrollSongIntoView();
 
             _refresh = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Constants.MusicInfoCardPositionRefreshMs) };
-            _refresh.Tick += (s, e) => RefreshPlayback();
-            _refresh.Start();
+            _refresh.Tick += (s, e) => { if (!_closed) RefreshPlayback(); };
+            if (!_closed) _refresh.Start();
         }
 
         // What plays right now: the ring, the play/pause glyph, the toggles, the playing row and the line under the songs
@@ -391,6 +415,13 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             }
         }
 
+        // Just the knob, while it's being turned: the seeker lands the audio every 120 ms, the 250 ms refresh lagged behind it
+        private void RefreshRing()
+        {
+            var snap = _host?.Snapshot?.Invoke();
+            Ring.Progress = snap?.HasActiveMedia == true ? snap.Progress / 100.0 : 0;
+        }
+
         // Cursor states: the live cursor glows, the other keeps its place, faint
         private void Redraw()
         {
@@ -418,7 +449,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             {
                 var row = _rows[i];
                 bool isPlaying = _playingIndex >= 0 && CardPlayback.IsPlayingRow(row.Path, _rows[_playingIndex].Path);
-                bool isPrimary = _host != null && CardPlayback.IsPlayingRow(row.Path, _host.PrimaryPath?.Invoke(_game));
+                bool isPrimary = CardPlayback.IsPlayingRow(row.Path, _primaryPath);
                 bool cursor = _rules != null && _rules.SongIndex == i;
                 bool live = cursor && _rules.Live == CardCursor.Songs;
 
@@ -481,36 +512,37 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
 
         // ---- Input ----
 
-        public void OnControllerButtonPressed(ControllerInput button)
-            => Dispatcher.BeginInvoke(new Action(() => HandleInput(button)));
+        // The router already calls on the UI thread; queueing again let a press land after the card had closed
+        public void OnControllerButtonPressed(ControllerInput button) => HandleInput(button);
 
         public void OnControllerButtonReleased(ControllerInput button)
         {
-            if (button == ControllerInput.TriggerLeft || button == ControllerInput.TriggerRight)
-                Dispatcher.BeginInvoke(new Action(() => _seekRepeat?.Stop()));
+            if (button == ControllerInput.TriggerLeft || button == ControllerInput.TriggerRight) EndSeek();
         }
 
+        // Keyboard (CardKeyMap): arrows, Enter, Esc, Q/E pages, [ ] seek, Space plays/pauses
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
-            ControllerInput input;
-            switch (e.Key)
+            if (e.Key == Key.Space)
             {
-                case Key.Escape: input = ControllerInput.B; break;
-                case Key.Up: input = ControllerInput.DPadUp; break;
-                case Key.Down: input = ControllerInput.DPadDown; break;
-                case Key.Left: input = ControllerInput.DPadLeft; break;
-                case Key.Right: input = ControllerInput.DPadRight; break;
-                case Key.Enter: input = ControllerInput.A; break;
-                case Key.PageUp: input = ControllerInput.LeftShoulder; break;
-                case Key.PageDown: input = ControllerInput.RightShoulder; break;
-                default: return;
+                e.Handled = true;
+                if (!_closed && _rules != null && !e.IsRepeat) PressControl(CardControl.PlayPause);
+                return;
             }
+            var input = CardKeyMap.ToInput(e.Key);
+            if (input == null) return;
             e.Handled = true; // the card drives scrolling, not the ScrollViewers' own key handling
-            HandleInput(input);
+            HandleInput(input.Value);
+        }
+
+        private void OnKeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.OemOpenBrackets || e.Key == Key.OemCloseBrackets) EndSeek();
         }
 
         private void HandleInput(ControllerInput button)
         {
+            if (_closed) return;
             if (button == ControllerInput.B || button == ControllerInput.Back) { CloseDialog(); return; }
             if (_rules == null) return; // the songs aren't known yet
 
@@ -537,8 +569,12 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                     PressControl(command.Control);
                     break;
                 case CardCommandKind.Seek:
-                    Seek(command.SeekSeconds);
-                    StartSeekRepeat(command.SeekSeconds);
+                    // A held trigger is resent by Playnite (and a held key by Windows); the card's own repeat paces it
+                    if (_held.Begin(command.SeekSeconds))
+                    {
+                        Seek(command.SeekSeconds);
+                        StartSeekRepeat(command.SeekSeconds);
+                    }
                     break;
                 case CardCommandKind.Close:
                     CloseDialog();
@@ -568,7 +604,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 case CardControl.PlayPause:
                     // Nothing playing: Play starts this game's music, the primary song first
                     if (_host.Snapshot?.Invoke()?.HasActiveMedia != true)
-                        PlaySong(CardPlayback.StartSong(_rows.Select(r => r.Path).ToList(), _host.PrimaryPath?.Invoke(_game)));
+                        PlaySong(CardPlayback.StartSong(_rows.Select(r => r.Path).ToList(), _primaryPath));
                     else
                         _host.PlayPause?.Invoke();
                     break;
@@ -588,12 +624,14 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         // LT/RT held: one more step every MusicInfoCardSeekRepeatMs, after a short first wait, until released
         private void StartSeekRepeat(double seconds)
         {
+            if (_closed) return;
             _repeatSeconds = seconds;
             if (_seekRepeat == null)
             {
                 _seekRepeat = new DispatcherTimer();
                 _seekRepeat.Tick += (s, e) =>
                 {
+                    if (_closed) { _seekRepeat.Stop(); return; }
                     _seekRepeat.Interval = TimeSpan.FromMilliseconds(Constants.MusicInfoCardSeekRepeatMs);
                     Seek(_repeatSeconds);
                 };
@@ -601,6 +639,101 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             _seekRepeat.Stop();
             _seekRepeat.Interval = TimeSpan.FromMilliseconds(Constants.MusicInfoCardSeekRepeatMs * 2.5);
             _seekRepeat.Start();
+        }
+
+        private void EndSeek()
+        {
+            _held.End();
+            _seekRepeat?.Stop();
+        }
+
+        // ---- Mouse: a click selects what it hits and acts, as the D-pad and A would ----
+
+        private void HookMouse()
+        {
+            SongList.Cursor = Cursors.Hand;
+            SongList.MouseLeftButtonUp += (s, e) =>
+            {
+                if (_closed || _rules == null) return;
+                var container = ItemsControl.ContainerFromElement(SongList, e.OriginalSource as DependencyObject);
+                int index = container == null ? -1 : SongList.ItemContainerGenerator.IndexFromContainer(container);
+                if (index < 0 || index >= _rows.Count) return;
+                _rules.SelectSong(index);
+                Redraw();
+                PlaySong(_rows[index].Path);
+            };
+
+            HookDockClick(PrevButton, CardControl.Previous);
+            HookDockClick(NextButton, CardControl.Next);
+            HookDockClick(CalmButton, CardControl.CalmDown);
+            HookDockClick(FxButton, CardControl.LiveEffects);
+            HookTab(PlayerTab, CardPage.Player);
+            HookTab(DetailsTab, CardPage.Details);
+
+            // Play/Pause: a click presses it; a drag around the ring turns the knob, like the right stick
+            RingSlot.Cursor = Cursors.Hand;
+            RingSlot.Background = Transparent; // hit-testable across the whole ring, not just the drawn parts
+            RingSlot.MouseLeftButtonDown += (s, e) =>
+            {
+                if (_closed || _rules == null) return;
+                _rules.SelectControl(CardControl.PlayPause);
+                Redraw();
+                _ringDown = e.GetPosition(RingSlot);
+                _ringDragAngle = null;
+                RingSlot.CaptureMouse();
+                e.Handled = true;
+            };
+            RingSlot.MouseMove += (s, e) =>
+            {
+                if (_ringDown == null || !RingSlot.IsMouseCaptured) return;
+                var p = e.GetPosition(RingSlot);
+                // A drag starts once the pointer has moved off its press point, so a click's jitter isn't a seek
+                if (_ringDragAngle == null && (p - _ringDown.Value).Length < RingDragSlopPixels) return;
+                double angle = RingAngle(p);
+                if (_ringDragAngle != null && _jogSeeker != null && _jogSeeker.CanSeek)
+                {
+                    double degrees = SeekDiscMath.WrapDegrees(angle - _ringDragAngle.Value);
+                    if (degrees != 0) { _jogSeeker.Add(SeekDiscMath.SecondsForDegrees(degrees)); RefreshRing(); }
+                }
+                _ringDragAngle = angle;
+            };
+            RingSlot.MouseLeftButtonUp += (s, e) =>
+            {
+                if (_ringDown == null) return;
+                bool dragged = _ringDragAngle != null;
+                _ringDown = null;
+                _ringDragAngle = null;
+                RingSlot.ReleaseMouseCapture();
+                if (dragged) { _jogSeeker?.Flush(); RefreshPlayback(); }
+                else if (!_closed) PressControl(CardControl.PlayPause);
+            };
+        }
+
+        private double RingAngle(Point p) => SeekDiscMath.AngleDegrees(p.X - RingSlot.ActualWidth / 2, p.Y - RingSlot.ActualHeight / 2);
+
+        // The whole column (button, icon and label) is the click target
+        private void HookDockClick(System.Windows.Shapes.Ellipse button, CardControl control)
+        {
+            var column = ((FrameworkElement)button.Parent).Parent as FrameworkElement ?? button;
+            column.Cursor = Cursors.Hand;
+            column.MouseLeftButtonUp += (s, e) =>
+            {
+                if (_closed || _rules == null) return;
+                _rules.SelectControl(control);
+                PressControl(control);
+            };
+        }
+
+        private void HookTab(Border tab, CardPage page)
+        {
+            tab.Cursor = Cursors.Hand;
+            tab.MouseLeftButtonUp += (s, e) =>
+            {
+                if (_closed || _rules == null || _rules.Page == page) return;
+                _rules.SelectPage(page);
+                ShowPage();
+                Redraw();
+            };
         }
 
         // ---- Right stick: jog wheel on Play/Pause, scrolling everywhere else ----
@@ -630,7 +763,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             if (_jogAngle != null)
             {
                 double degrees = SeekDiscMath.WrapDegrees(angle - _jogAngle.Value);
-                if (degrees != 0 && _jogSeeker.CanSeek) _jogSeeker.Add(SeekDiscMath.SecondsForDegrees(degrees));
+                if (degrees != 0 && _jogSeeker.CanSeek) { _jogSeeker.Add(SeekDiscMath.SecondsForDegrees(degrees)); RefreshRing(); }
             }
             _jogAngle = angle;
         }

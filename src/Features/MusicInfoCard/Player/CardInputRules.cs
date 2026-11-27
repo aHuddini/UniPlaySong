@@ -92,6 +92,22 @@ namespace UniPlaySong.Features.MusicInfoCard.Player
             }
         }
 
+        // Mouse: a click puts the matching cursor on what was clicked and makes it live, as a D-pad move would
+        public void SelectSong(int index)
+        {
+            if (_songCount == 0) return;
+            Live = CardCursor.Songs;
+            SongIndex = Math.Max(0, Math.Min(_songCount - 1, index));
+        }
+
+        public void SelectControl(CardControl control)
+        {
+            Live = CardCursor.Controls;
+            Control = control;
+        }
+
+        public void SelectPage(CardPage page) => Page = page;
+
         private CardCommand SetPage(CardPage page)
         {
             if (Page == page) return CardCommand.None;
