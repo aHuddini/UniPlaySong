@@ -2035,6 +2035,28 @@ namespace UniPlaySong
             });
         }
 
+        // The Fullscreen Music Info Card's player controls. Read live: services and the settings object are replaced over a
+        // session, so nothing here is captured.
+        private Features.MusicInfoCard.Player.MusicInfoCardPlayerHost BuildMusicInfoCardPlayerHost()
+            => new Features.MusicInfoCard.Player.MusicInfoCardPlayerHost
+            {
+                Snapshot = () => _activeMediaService?.GetSnapshot(),
+                PlayingPath = () => IsSpotifyTheActiveMediaSource() ? null : _playbackService?.CurrentSongPath,
+                NowPlaying = () => (_settings?.NowPlayingTitle, _settings?.NowPlayingArtist),
+                PrimaryPath = game => game == null ? null : _fileService?.GetPrimarySong(game),
+                PlayPause = () => _activeMediaService?.PlayPause(),
+                Next = () => _activeMediaService?.Next(),
+                Previous = () => _activeMediaService?.Previous(),
+                SeekBy = seconds => _activeMediaService?.SeekBy(seconds),
+                PlaySong = (game, path) => _playbackService?.PlaySong(game, path),
+                CalmDownOn = () => _settings?.CalmDownModeEnabled == true,
+                LiveEffectsOn = () => _settings?.LiveEffectsEnabled == true,
+                ToggleCalmDown = () => UpdateSettingsFromMenu(s => s.CalmDownModeEnabled = !s.CalmDownModeEnabled, "MusicInfoCard"),
+                ToggleLiveEffects = () => UpdateSettingsFromMenu(s => s.LiveEffectsEnabled = !s.LiveEffectsEnabled, "MusicInfoCard"),
+                Listening = () => _listeningStore?.Snapshot(),
+                GameMusicFolder = game => game == null ? null : _fileService?.GetGameMusicDirectory(game),
+            };
+
         // Same folders in the same order (case ignored, as Windows paths are)
         private static bool FolderListsEqual(List<string> a, List<string> b) =>
             (a ?? new List<string>()).SequenceEqual(b ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
@@ -3241,7 +3263,7 @@ namespace UniPlaySong
             // constructor + the GetGameMenuItems wire-up reference it from
             // the plugin core. See src/Features/MusicInfoCard/ for the rest.
             _musicInfoCardHandler = new Features.MusicInfoCard.MusicInfoCardHandler(
-                _api, _fileService, IsFullscreen, _playbackService);
+                _api, _fileService, IsFullscreen, _playbackService, BuildMusicInfoCardPlayerHost());
             Features.MusicInfoCard.MusicInfoCardMenuEntries.Attach(
                 _api, game => _fileService.HasMusic(game), game => _musicInfoCardHandler.Show(game), IsFullscreen,
                 () => _settings, PlayNextInRadioQueue);

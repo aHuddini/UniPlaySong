@@ -31,16 +31,18 @@ namespace UniPlaySong.Features.MusicInfoCard
         private readonly IconColorExtractor _colorExtractor;
         private readonly bool _isFullscreen;
         private readonly IMusicPlaybackService _playbackService; // plays a clicked song row
-        private readonly Controls.RightStick _rightStick; // Fullscreen: scrolls the card
+        private readonly Controls.RightStick _rightStick; // Fullscreen: scrolls the card, or jogs on play/pause
+        private readonly Player.MusicInfoCardPlayerHost _playerHost; // Fullscreen: the card's player controls; null = stats only
 
         [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
-        public MusicInfoCardHandler(
+        internal MusicInfoCardHandler(
             IPlayniteAPI playniteApi,
             GameMusicFileService fileService,
             bool isFullscreen,
-            IMusicPlaybackService playbackService)
+            IMusicPlaybackService playbackService,
+            Player.MusicInfoCardPlayerHost playerHost = null)
         {
             _playniteApi = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
             if (fileService == null) throw new ArgumentNullException(nameof(fileService));
@@ -48,6 +50,7 @@ namespace UniPlaySong.Features.MusicInfoCard
             _colorExtractor = new IconColorExtractor();
             _isFullscreen = isFullscreen;
             _playbackService = playbackService;
+            _playerHost = playerHost;
             if (isFullscreen) _rightStick = Controls.RightStick.TryCreate(playniteApi, out _); // null on older Playnite
         }
 
@@ -84,10 +87,12 @@ namespace UniPlaySong.Features.MusicInfoCard
                     var dialog = new ControllerMusicInfoCardDialog();
                     dialog.Initialize(game, _statsProvider, imagePath, _colorExtractor, backdrop,
                         path => _playbackService?.PlaySong(game, path), frost,
-                        _rightStick == null ? (Func<double>)null : () => _rightStick.TryRead(out _, out var y) ? y : 0);
+                        _rightStick == null ? (Func<(double X, double Y)>)null : () => _rightStick.TryRead(out var x, out var y) ? (x, y) : (0, 0),
+                        _playerHost);
                     dialogContent = dialog;
                     width = 720;
-                    height = 600;
+                    // Taller than the old 600 so the songs and the pinned controls fit without scrolling past the stats
+                    height = Math.Min(SystemParameters.PrimaryScreenHeight * Constants.MusicInfoCardHeightFraction, Constants.MusicInfoCardMaxHeight);
                 }
                 else
                 {

@@ -38,7 +38,8 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         private BitmapSource _frost; // the glass tiles' extra-blurred backdrop (GlassTiles)
 
         // Right stick scrolls the card: vertical tilt, -1..1 (down positive); null on a Playnite without analog input.
-        private Func<double> _stickY;
+        private Func<(double X, double Y)> _stick;       // the right stick, both axes
+        private Player.MusicInfoCardPlayerHost _host;   // the player controls; null = stats only
         private System.Windows.Threading.DispatcherTimer _stickPoll; // slow idle check for a tilt
         private bool _stickScrolling;      // frame-synced scrolling hooked while the stick is tilted
         private TimeSpan _lastFrameTime;
@@ -91,7 +92,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             PreviewKeyDown += OnKeyDown;
         }
 
-        public void Initialize(
+        internal void Initialize(
             Game game,
             IMusicStatsProvider statsProvider,
             string imagePath,
@@ -99,12 +100,14 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             BitmapSource backdropSnapshot,
             Action<string> playSong = null,
             BitmapSource frost = null,
-            Func<double> stickY = null)
+            Func<(double X, double Y)> stick = null,
+            Player.MusicInfoCardPlayerHost host = null)
         {
             _game = game;
             _playSong = playSong;
             _frost = frost;
-            _stickY = stickY;
+            _stick = stick;
+            _host = host;
             _statsProvider = statsProvider;
             _imagePath = imagePath;
             _colorExtractor = colorExtractor;
@@ -435,11 +438,11 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         // against the frames and read as stutter. Squared response: a light tilt creeps, a full tilt flies.
         private void StartStickScroll()
         {
-            if (_stickY == null) return;
+            if (_stick == null) return;
             _stickPoll = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
             _stickPoll.Tick += (s, e) =>
             {
-                if (!_stickScrolling && Math.Abs(_stickY()) >= StickDeadzone) StartStickFrames();
+                if (!_stickScrolling && Math.Abs(_stick().Y) >= StickDeadzone) StartStickFrames();
             };
             _stickPoll.Start();
         }
@@ -467,7 +470,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             double dt = _lastFrameTime == TimeSpan.Zero ? 1.0 / 60 : Math.Min(0.1, (frameTime - _lastFrameTime).TotalSeconds);
             _lastFrameTime = frameTime;
 
-            double y = _stickY();
+            double y = _stick().Y;
             double a = Math.Abs(y);
             double target = 0;
             if (a >= StickDeadzone)
