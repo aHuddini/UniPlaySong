@@ -105,20 +105,7 @@ namespace UniPlaySong.Services
             // gate reads live in TargetExternalVolume(). An overlay-heavy theme would then re-strand one of them true on
             // the new object and mute the effected Spotify output until a Playnite restart. Copied while newSettings has no
             // PropertyChanged subscribers yet, so it fires no spurious notifications.
-            if (oldSettings != null)
-            {
-                foreach (var prop in typeof(UniPlaySongSettings).GetProperties())
-                {
-                    if (!prop.CanRead || !prop.CanWrite) continue;
-                    bool isJsonIgnore = false;
-                    foreach (var attr in prop.GetCustomAttributes(true))
-                        if (attr.GetType().Name == "JsonIgnoreAttribute") { isJsonIgnore = true; break; }
-                    if (isJsonIgnore)
-                    {
-                        try { prop.SetValue(newSettings, prop.GetValue(oldSettings)); } catch { }
-                    }
-                }
-            }
+            if (oldSettings != null) CarryRuntimeState(oldSettings, newSettings);
 
             _currentSettings = newSettings;
 
@@ -130,6 +117,23 @@ namespace UniPlaySong.Services
             
             _logger.Debug($"SettingsService: Settings updated (source: {source})");
             _fileLogger?.Info($"SettingsService: Settings updated from {source}");
+        }
+
+        // Copies the runtime-only ([JsonIgnore]) properties a save would otherwise reset onto the new object. Not a
+        // [DerivedSetting]: that is a view of saved settings, and copying the old view back would undo the save.
+        internal static void CarryRuntimeState(UniPlaySongSettings oldSettings, UniPlaySongSettings newSettings)
+        {
+            foreach (var prop in typeof(UniPlaySongSettings).GetProperties())
+            {
+                if (!prop.CanRead || !prop.CanWrite || prop.IsDefined(typeof(DerivedSettingAttribute), true)) continue;
+                bool isJsonIgnore = false;
+                foreach (var attr in prop.GetCustomAttributes(true))
+                    if (attr.GetType().Name == "JsonIgnoreAttribute") { isJsonIgnore = true; break; }
+                if (isJsonIgnore)
+                {
+                    try { prop.SetValue(newSettings, prop.GetValue(oldSettings)); } catch { }
+                }
+            }
         }
 
         public List<string> ValidateSettings(UniPlaySongSettings settings)

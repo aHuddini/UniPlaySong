@@ -159,6 +159,11 @@ namespace UniPlaySong
         Spotify               // Spotify is the radio source (continuous Spotify, not a UPS pool)
     }
 
+    // A runtime property that is only a view of saved settings (it reads and writes them). A save must not carry it
+    // onto the new settings object as live state: the old view written back would undo the save (SettingsService).
+    [AttributeUsage(AttributeTargets.Property)]
+    public sealed class DerivedSettingAttribute : Attribute { }
+
     public enum CookieMode
     {
         None,       // No cookies
@@ -726,7 +731,7 @@ namespace UniPlaySong
         }
 
         // Backward compat: old UseFirefoxCookies migrates to CookieMode.Firefox on load
-        [JsonIgnore]
+        [JsonIgnore, DerivedSetting]
         public bool UseFirefoxCookies
         {
             get => cookieMode == CookieMode.Firefox;
@@ -1952,7 +1957,7 @@ namespace UniPlaySong
         // source — it does not turn Radio Mode on/off (the live re-route in UniPlaySong.cs applies the
         // change only when Radio Mode is already on; otherwise it's stored for the next time it turns on).
         // Bind: IsChecked="{PluginSettings Plugin=UniPlaySong, Path=SwitchRadioMode}".
-        [JsonIgnore]
+        [JsonIgnore, DerivedSetting]
         public bool SwitchRadioMode
         {
             get => RadioMusicSource == RadioMusicSource.Spotify;
