@@ -7,8 +7,8 @@ namespace UniPlaySong.Services.Spotify
 {
     // "Launch Spotify on startup": starts the desktop app when Spotify is the music source, engages it once its
     // media session registers, and minimizes its window. Called from OnApplicationStarted, then each time Spotify
-    // becomes the radio source (a theme, the hover card, the settings) - never on unrelated changes, so a Spotify the
-    // user closed stays closed. The client, control service and window handle are read live (Func) because the worker
+    // becomes the radio or Default Music source (a theme, the hover card, the settings) - never on unrelated changes,
+    // so a Spotify the user closed stays closed. The client, control service and window handle are read live (Func) because the worker
     // outlives the call and the handle is assigned after it starts.
     public class SpotifyAutoLauncher
     {

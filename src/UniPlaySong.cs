@@ -1884,6 +1884,10 @@ namespace UniPlaySong
                 if (defaultMusicChanged && _playbackService != null)
                 {
                     _fileLogger?.Debug($"Default music settings changed (source: {e.OldSettings.DefaultMusicSourceOption} → {e.NewSettings.DefaultMusicSourceOption}), reloading");
+                    // Spotify just became the default source: open the app if that's on, as switching Radio to it does
+                    if (e.NewSettings.DefaultMusicSourceOption == DefaultMusicSource.Spotify
+                        && e.OldSettings.DefaultMusicSourceOption != DefaultMusicSource.Spotify)
+                        _spotifyAutoLauncher?.TryAutoLaunchSpotify();
                     // If the randomize flag changed, clear the session pick so a fresh
                     // roll happens on the next GetEffectivePresetFilename call. Without this,
                     // toggling OFF then ON would re-use the stale cached random pick.

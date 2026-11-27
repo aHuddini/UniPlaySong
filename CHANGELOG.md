@@ -27,6 +27,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Fixed a settings save reverting a Radio switch to Spotify or a cookie-mode change: views of saved settings (`[DerivedSetting]`) are no longer copied onto the new object as runtime state
 - Fixed a ~2 s gap before game music returned on leaving Spotify radio: Spotify's fading sound was taken for external audio; it stays excluded for 3 s after UPS stops conducting it
 - Fixed "Open Spotify automatically" acting only at startup: it now opens Spotify when Radio switches to it, Play opens a closed Spotify, and a cold-started app gets Play re-sent until it plays (`ReassertRadioStart`)
+- Fixed "Open Spotify automatically" ignoring a mid-session switch of Default Music to Spotify; it now opens the app as switching Radio does
 - Fixed the top-panel controls and hover card vanishing while Spotify is the radio but not up: Now Playing reads "Spotify isn't open", and an emptied panel closes the card only after 2 s
 - Fixed UPS mute coming undone on the next fade, resume or song: it zeroed the player's live volume; mute is now a factor in every volume UPS sets (`MusicPlaybackService.IsMuted`)
 

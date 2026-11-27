@@ -46,7 +46,7 @@
             <CheckBox Style="{StaticResource UpsToggle}" Content="Open Spotify automatically if it is not running"
                       IsChecked="{Binding Settings.AutoLaunchSpotifyOnStartup}"/>
             <TextBlock Style="{StaticResource UpsHint}" TextWrapping="Wrap"
-                       Text="When Playnite starts with Spotify as your Radio Mode or Default Music source, or when you switch Radio Mode to Spotify, so music can start without opening it yourself."/>
+                       Text="When Playnite starts with Spotify as your Radio Mode or Default Music source, or when you switch either one to Spotify, so music can start without opening it yourself."/>
 
             <StackPanel Orientation="Horizontal" Margin="20,6,0,0"
                         IsEnabled="{Binding Settings.AutoLaunchSpotifyOnStartup}">
