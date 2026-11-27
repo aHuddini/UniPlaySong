@@ -282,54 +282,109 @@
                                 <Setter Property="MinWidth" Value="6"/>
                             </Style>
                         </ScrollViewer.Resources>
+                        <!-- A stack of tiles, so new stats can join later without reworking the page -->
                         <StackPanel x:Name="DetailsPanel">
-                            <!-- Longest / shortest -->
+                            <!-- Listening: this game's history -->
                             <Border Tag="Glass" Background="#17FFFFFF" BorderBrush="{StaticResource GlassEdge}" BorderThickness="1"
                                     CornerRadius="10" Padding="22,14" Margin="0,0,0,12">
                                 <StackPanel>
-                                    <Grid Margin="0,0,0,10">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="100"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="Longest:" FontSize="16" Foreground="#888888"/>
-                                        <TextBlock Grid.Column="1" x:Name="LongestTitleText" Text="—" FontSize="16" Foreground="#FFFFFF" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Grid.Column="2" x:Name="LongestDurationText" Text="" FontSize="16" Foreground="#03DAC5" Margin="12,0,0,0"/>
-                                    </Grid>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="100"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="Shortest:" FontSize="16" Foreground="#888888"/>
-                                        <TextBlock Grid.Column="1" x:Name="ShortestTitleText" Text="—" FontSize="16" Foreground="#FFFFFF" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Grid.Column="2" x:Name="ShortestDurationText" Text="" FontSize="16" Foreground="#03DAC5" Margin="12,0,0,0"/>
-                                    </Grid>
+                                    <TextBlock Text="Listening" FontWeight="SemiBold" FontSize="18" Foreground="#FFFFFF" Margin="0,0,0,8"/>
+                                    <TextBlock x:Name="NoHistoryText" Text="No listening recorded for this game yet" FontSize="15"
+                                               Foreground="#A9A29D" Visibility="Collapsed"/>
+                                    <StackPanel x:Name="HistoryPanel">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                                                <TextBlock x:Name="ListenedText" FontSize="28" FontWeight="Bold" Foreground="#1FD8C1" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="time listened" FontSize="12" Foreground="#A9A29D" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                                                <TextBlock x:Name="PlaysText" FontSize="28" FontWeight="Bold" Foreground="#FFB347" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="plays" FontSize="12" Foreground="#A9A29D" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                                <TextBlock x:Name="LastPlayedText" FontSize="28" FontWeight="Bold" Foreground="#B98BF5" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="since last played" FontSize="12" Foreground="#A9A29D" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <TextBlock x:Name="MostPlayedLabel" Text="MOST PLAYED" FontSize="12" Foreground="#A9A29D" Margin="0,12,0,4"/>
+                                        <ItemsControl x:Name="MostPlayedList">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Margin="0,2,0,6">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Text="{Binding Rank}" FontSize="15" FontWeight="Bold" Foreground="{Binding Accent}" Margin="0,0,8,0"/>
+                                                            <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="15" Foreground="#FFFFFF" TextTrimming="CharacterEllipsis"/>
+                                                            <TextBlock Grid.Column="2" Text="{Binding Plays}" FontSize="15" Foreground="#FFB347" Margin="8,0,0,0"/>
+                                                        </Grid>
+                                                        <Grid Height="6" Margin="0,3,0,0">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="{Binding Fill}"/>
+                                                                <ColumnDefinition Width="{Binding Rest}"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <Border Grid.ColumnSpan="2" CornerRadius="3" Background="#14FFFFFF"/>
+                                                            <Border CornerRadius="3" Background="{Binding Bar}"/>
+                                                        </Grid>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
                                 </StackPanel>
                             </Border>
-                            <!-- Format breakdown -->
+                            <!-- Formats: a donut and its legend -->
+                            <Border Tag="Glass" Background="#17FFFFFF" BorderBrush="{StaticResource GlassEdge}" BorderThickness="1"
+                                    CornerRadius="10" Padding="22,14" Margin="0,0,0,12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ContentControl x:Name="FormatDonutHost" Margin="0,0,20,0" Focusable="False"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="Formats" FontWeight="SemiBold" FontSize="18" Foreground="#FFFFFF" Margin="0,0,0,6"/>
+                                        <ItemsControl x:Name="FormatLegend">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Margin="0,2">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <Border Width="11" Height="11" CornerRadius="3" Background="{Binding Swatch}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Extension}" FontSize="15" Foreground="#FFFFFF"/>
+                                                        <TextBlock Grid.Column="2" Text="{Binding Share}" FontSize="15" Foreground="#CCCCCC"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            <!-- Song lengths: a bar per song, longest teal, shortest purple -->
                             <Border Tag="Glass" Background="#17FFFFFF" BorderBrush="{StaticResource GlassEdge}" BorderThickness="1"
                                     CornerRadius="10" Padding="22,14" Margin="0,0,0,12">
                                 <StackPanel>
-                                    <TextBlock Text="Format Breakdown" FontWeight="SemiBold" FontSize="18" Foreground="#FFFFFF" Margin="0,0,0,8"/>
-                                    <ItemsControl x:Name="FormatList">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Grid Margin="0,4">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="100"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <TextBlock Grid.Column="0" Text="{Binding Extension}" FontSize="16" Foreground="#BB86FC" FontFamily="Consolas"/>
-                                                    <TextBlock Grid.Column="1" Text="{Binding Percentage}" FontSize="16" Foreground="#CCCCCC"/>
-                                                    <TextBlock Grid.Column="2" Text="{Binding Count}" FontSize="16" Foreground="#FFFFFF" FontWeight="SemiBold"/>
-                                                </Grid>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                    <TextBlock Text="Song lengths" FontWeight="SemiBold" FontSize="18" Foreground="#FFFFFF" Margin="0,0,0,8"/>
+                                    <ContentControl x:Name="LengthBarsHost" Focusable="False"/>
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="LongestText" FontSize="14" Foreground="#FFFFFF" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="1" x:Name="ShortestText" FontSize="14" Foreground="#FFFFFF" Margin="12,0,0,0"/>
+                                    </Grid>
                                 </StackPanel>
                             </Border>
                             <!-- Playlist info (only when playlists are present) -->

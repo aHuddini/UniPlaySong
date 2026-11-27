@@ -243,9 +243,37 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             FadeInPages();
         }
 
-        // Details page (Task 5 replaces these tiles with charts)
+        // ---- Details page: Listening, Formats, Song lengths, then the playlist / unreadable notes ----
+
+        private static readonly SolidColorBrush Purple = CreateFrozenBrush(Color.FromRgb(0xB9, 0x8B, 0xF5));
+        private static readonly SolidColorBrush Orange = CreateFrozenBrush(Color.FromRgb(0xFF, 0xB3, 0x47));
+        private static readonly SolidColorBrush Sky = CreateFrozenBrush(Color.FromRgb(0x5C, 0xC8, 0xFF));
+        private static readonly SolidColorBrush[] FormatPalette = { Purple, Teal, Orange, PrimaryPink, Sky };
+
         private void RenderDetails(MusicStats stats)
         {
+            RenderListening();
+
+            // Formats: the donut's slices in the legend's order and colours
+            var formats = stats.FormatBreakdown.OrderByDescending(kv => kv.Value).ToList();
+            int total = Math.Max(1, stats.FileCount);
+            var slices = formats.Select((kv, i) => ((double)kv.Value, (Brush)FormatPalette[i % FormatPalette.Length])).ToList();
+            FormatDonutHost.Content = CardCharts.Donut(slices, stats.FileCount.ToString(), 76);
+            FormatLegend.ItemsSource = formats.Select((kv, i) => new
+            {
+                Swatch = FormatPalette[i % FormatPalette.Length],
+                Extension = kv.Key,
+                Share = $"{kv.Value} · {(int)Math.Round(kv.Value * 100.0 / total)}%"
+            }).ToList();
+
+            // Song lengths
+            var lengths = (stats.Songs ?? new List<SongEntry>()).Where(x => x.Duration > TimeSpan.Zero).Select(x => x.Duration).ToList();
+            LengthBarsHost.Content = CardCharts.LengthBars(lengths, WithOpacity(Teal, 0.35), Teal, Purple, 62);
+            if (stats.LongestTrack.HasValue)
+                SetLengthLine(LongestText, Teal, "Longest: ", stats.LongestTrack.Value.Title, stats.LongestTrack.Value.Duration);
+            if (stats.ShortestTrack.HasValue)
+                SetLengthLine(ShortestText, Purple, "Shortest: ", stats.ShortestTrack.Value.Title, stats.ShortestTrack.Value.Duration);
+
             if (stats.PlaylistFileCount > 0)
             {
                 PlaylistInfoText.Text =
@@ -253,31 +281,58 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                     $" containing {stats.PlaylistTrackCount} track" + (stats.PlaylistTrackCount == 1 ? "" : "s") + ".";
                 PlaylistPanel.Visibility = Visibility.Visible;
             }
-            if (stats.LongestTrack.HasValue)
-            {
-                LongestTitleText.Text = stats.LongestTrack.Value.Title;
-                LongestDurationText.Text = FormatDuration(stats.LongestTrack.Value.Duration);
-            }
-            if (stats.ShortestTrack.HasValue)
-            {
-                ShortestTitleText.Text = stats.ShortestTrack.Value.Title;
-                ShortestDurationText.Text = FormatDuration(stats.ShortestTrack.Value.Duration);
-            }
-            var totalFiles = stats.FileCount;
-            FormatList.ItemsSource = stats.FormatBreakdown
-                .OrderByDescending(kv => kv.Value)
-                .Select(kv => new
-                {
-                    Extension = kv.Key,
-                    Count = kv.Value,
-                    Percentage = totalFiles > 0 ? $"({(int)(kv.Value * 100.0 / totalFiles)}%)" : string.Empty
-                })
-                .ToList();
             if (stats.UnreadableCount > 0)
             {
                 UnreadableText.Text = $"⚠ {stats.UnreadableCount} file" + (stats.UnreadableCount == 1 ? "" : "s") + " could not be read.";
                 UnreadablePanel.Visibility = Visibility.Visible;
             }
+        }
+
+        private static void SetLengthLine(TextBlock text, Brush swatch, string label, string title, TimeSpan duration)
+        {
+            text.Inlines.Clear();
+            text.Inlines.Add(new Run("■ ") { Foreground = swatch });
+            text.Inlines.Add(new Run(label) { Foreground = LabelGrey });
+            text.Inlines.Add(new Run(title + " "));
+            text.Inlines.Add(new Run(FormatDuration(duration)) { Foreground = swatch });
+        }
+
+        // This game's listening history: totals, then the top 3 with bars sized by plays
+        private void RenderListening()
+        {
+            var snapshot = _host?.Listening?.Invoke();
+            var view = snapshot == null || _game == null
+                ? new GameListeningView()
+                : GameListeningView.Build(snapshot, _game.Id.ToString(), _host.GameMusicFolder?.Invoke(_game), DateTime.UtcNow);
+            NoHistoryText.Visibility = view.HasHistory ? Visibility.Collapsed : Visibility.Visible;
+            HistoryPanel.Visibility = view.HasHistory ? Visibility.Visible : Visibility.Collapsed;
+            if (!view.HasHistory) return;
+
+            ListenedText.Text = FormatListened(view.Listened);
+            PlaysText.Text = view.Plays.ToString();
+            LastPlayedText.Text = view.DaysSinceLastPlayed == null ? "—"
+                : view.DaysSinceLastPlayed == 0 ? "today"
+                : view.DaysSinceLastPlayed == 1 ? "1 day" : $"{view.DaysSinceLastPlayed} days";
+
+            int top = view.MostPlayed.Count > 0 ? Math.Max(1, view.MostPlayed[0].Plays) : 1;
+            MostPlayedLabel.Visibility = view.MostPlayed.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            MostPlayedList.ItemsSource = view.MostPlayed.Select((t, i) => new
+            {
+                Rank = (i + 1).ToString(),
+                t.Title,
+                Plays = t.Plays.ToString(),
+                Accent = _accentBrush,
+                Bar = Orange,
+                Fill = new GridLength(t.Plays, GridUnitType.Star),
+                Rest = new GridLength(Math.Max(0, top - t.Plays), GridUnitType.Star)
+            }).ToList();
+        }
+
+        private static string FormatListened(TimeSpan t)
+        {
+            if (t.TotalHours >= 1) return $"{(int)t.TotalHours}h {t.Minutes}m";
+            if (t.TotalMinutes >= 1) return $"{t.Minutes}m";
+            return $"{t.Seconds}s";
         }
 
         // ---- Player page ----
