@@ -296,7 +296,20 @@ namespace UniPlaySong.DeskMediaControl
         {
             _shownSong = song;
             UpdateNowPlayingTooltip();
-            if (song == null) _card?.HideCard();
+            if (song == null)
+            {
+                if (_card?.IsOpen == true)
+                {
+                    if (_cardEmptyTimer == null)
+                    {
+                        _cardEmptyTimer = new DispatcherTimer(DispatcherPriority.Normal) { Interval = CardEmptyGrace };
+                        _cardEmptyTimer.Tick += (s, e) => { _cardEmptyTimer.Stop(); if (_shownSong == null) _card?.HideCard(); };
+                    }
+                    _cardEmptyTimer.Stop();
+                    _cardEmptyTimer.Start();
+                }
+            }
+            else _cardEmptyTimer?.Stop();
             _cardHost?.RaiseChanged();
         }
 
@@ -328,8 +341,11 @@ namespace UniPlaySong.DeskMediaControl
         private NowPlayingCardHost _cardHost;
         private NowPlayingCard _card;
         private SongInfo _shownSong;
-        private DispatcherTimer _cardOpenTimer, _cardCloseTimer;
+        private DispatcherTimer _cardOpenTimer, _cardCloseTimer, _cardEmptyTimer;
         private static readonly TimeSpan CardOpenDelay = TimeSpan.FromMilliseconds(400);
+        // An emptied panel closes the card only if it stays empty this long: a source switch (Spotify off, game music
+        // back) empties it for a moment, and the card the switch was made from must not vanish under the pointer
+        private static readonly TimeSpan CardEmptyGrace = TimeSpan.FromSeconds(2);
         private static readonly TimeSpan CardCloseDelay = TimeSpan.FromMilliseconds(350);
 
         // Two independent settings: the card from Now Playing, and the card from the visualizer and peak meter
@@ -648,7 +664,7 @@ namespace UniPlaySong.DeskMediaControl
                 return;
             }
 
-            _nowPlayingPanel?.UpdateSongInfo(songInfo);
+            _nowPlayingPanel?.UpdateSongInfo(SpotifyClosedSong() ?? songInfo);
 
             // Reset progress bar on song change so it doesn't show stale position during crossfade
             _progressBar?.Reset();
@@ -709,8 +725,21 @@ namespace UniPlaySong.DeskMediaControl
             // the next Spotify activation always refreshes).
             _lastSpotifyPanelKey = null;
             var upsSong = _metadataService?.CurrentSongInfo ?? SongInfo.Empty;
-            _nowPlayingPanel?.UpdateSongInfo(upsSong);
+            _nowPlayingPanel?.UpdateSongInfo(SpotifyClosedSong() ?? upsSong);
         }
+
+        // Spotify is the radio but not up (not yet opened, or quit): a line saying so, so the panel - and the hover card
+        // with its Radio/Spotify buttons - stays reachable instead of collapsing. Null otherwise.
+        private SongInfo SpotifyClosedSong()
+        {
+            if (_getSettings?.Invoke()?.SpotifyRadioMode != true) return null;
+            bool starting = SpotifyLauncher.IsSpotifyRunning();
+            return new SongInfo(string.Empty, starting ? Constants.SpotifyStartingTitle : Constants.SpotifyClosedTitle,
+                starting ? string.Empty : Constants.SpotifyClosedHint, TimeSpan.Zero);
+        }
+
+        // Play while Spotify is the radio but closed: the plugin opens it (and plays it once up). Set by the plugin.
+        internal Func<bool> OpenSpotifyForPlay;
 
         private void SubscribeToEvents(IMusicPlaybackService playbackService)
         {
@@ -776,6 +805,12 @@ namespace UniPlaySong.DeskMediaControl
                 // When Spotify is the active source (Radio Mode), the play/pause button controls SPOTIFY via SMTC — not UPS's
                 // own (silent) player. Same path as the "SPOTIFY: PAUSE/PLAY" menu. Pausing here is a user pause the two-flag
                 // radio logic respects (it won't auto-resume); playing clears it. Both react off the UI thread via the worker.
+                if (OpenSpotifyForPlay?.Invoke() == true)
+                {
+                    UpdateIcons();
+                    return;
+                }
+
                 var spotify = _getSpotifyService?.Invoke();
                 if (spotify != null && spotify.IsSpotifyActive)
                 {
@@ -983,8 +1018,10 @@ namespace UniPlaySong.DeskMediaControl
         private PanelVisibility ApplyVisibility(UniPlaySongSettings settings, IMusicPlaybackService playbackService)
         {
             var spotify = _getSpotifyService?.Invoke();
+            // Spotify chosen as the radio counts before its app is up: launching it takes seconds with UPS's music
+            // already stopped, and auto-hide would pull the controls (and the open card) away meanwhile
             bool musicLoaded = playbackService?.IsLoaded == true || playbackService?.IsPlaying == true
-                || (spotify != null && spotify.IsSpotifyActive);
+                || (spotify != null && spotify.IsSpotifyActive) || settings?.SpotifyRadioMode == true;
             bool hideForDefault = settings?.HideNowPlayingForDefaultMusic == true
                 && playbackService?.IsPlayingDefaultMusic == true
                 && playbackService?.IsPlayingPoolBasedDefault != true;

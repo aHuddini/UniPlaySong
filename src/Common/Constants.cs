@@ -32,6 +32,11 @@ namespace UniPlaySong.Common
         public const double DefaultTargetVolume = 0.5;
 
         public const double VolumeDivisor = 100.0; // percentage (0-100) to decimal (0.0-1.0)
+        // Now Playing while Spotify is the radio source but its app isn't up: shown instead of a blank, which would hide
+        // the panel, the hover card on it and the hint that Play opens Spotify
+        public const string SpotifyClosedTitle = "Spotify isn't open";
+        public const string SpotifyStartingTitle = "Starting Spotify…";
+        public const string SpotifyClosedHint = "Press Play to open it";
         public const int SpotifyReleaseGraceMs = 3000; // after UPS stops conducting Spotify, its fading sound isn't "external audio" this long
         public const int VolumeShortcutStep = 5; // Music Volume change per Volume up/down keyboard shortcut press
 

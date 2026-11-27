@@ -124,6 +124,8 @@ namespace UniPlaySong
         private Services.ActiveMedia.ActiveMediaService _activeMediaService;
         private Controls.ActiveMediaViewModel _activeMediaViewModel;
         private System.Windows.Threading.DispatcherTimer _activeMediaPollTimer;
+        // Opens the Spotify app at startup, and whenever Spotify then becomes the radio source, when that option is on
+        private Services.Spotify.SpotifyAutoLauncher _spotifyAutoLauncher;
         private Services.Controller.ControllerEventRouter _controllerEventRouter;
         private Services.ExternalControlService _externalControlService;
         private IMusicPlayer _currentMusicPlayer;
@@ -832,8 +834,9 @@ namespace UniPlaySong
             // startup window before the overlay/login pause registers -> pause/play/pause churn.
             _appStarted = true;
             _spotifyControlService?.Recompute();
-            new Services.Spotify.SpotifyAutoLauncher(_api, _fileLogger, () => _settings, () => _spotifyClient,
-                () => _spotifyControlService, () => IsFullscreen, () => _mainWindowHandle).TryAutoLaunchSpotify();
+            _spotifyAutoLauncher = new Services.Spotify.SpotifyAutoLauncher(_api, _fileLogger, () => _settings, () => _spotifyClient,
+                () => _spotifyControlService, () => IsFullscreen, () => _mainWindowHandle);
+            _spotifyAutoLauncher.TryAutoLaunchSpotify();
 
             // Establish the Spotify effects state once at startup (Spotify may already be the active source with
             // effects/visualizer on). Idempotent — safe if nothing applies. Armed here (not earlier): settings-load
@@ -1584,6 +1587,7 @@ namespace UniPlaySong
                             else _playbackService.Stop(); // no game context — just silence UPS
                             _playbackService.DropSourcesNowSuppressed(_settings); // turned on mid-game (#93)
                             _spotifyControlService?.Recompute(); // engage Spotify now, not on the next poll
+                            _spotifyAutoLauncher?.TryAutoLaunchSpotify(); // just became the source: open the app if that's on
                         }
                         else
                         {
@@ -1623,6 +1627,7 @@ namespace UniPlaySong
                     if (game != null) _playbackService.PlayGameMusic(game, _settings);
                     else _playbackService.Stop();
                     _spotifyControlService?.Recompute();
+                    _spotifyAutoLauncher?.TryAutoLaunchSpotify(); // just became the source: open the app if that's on
                 }
                 else
                 {
@@ -1938,6 +1943,7 @@ namespace UniPlaySong
                                 else _playbackService.Stop();
                                 _playbackService.DropSourcesNowSuppressed(e.NewSettings); // turned on mid-game (#93)
                                 _spotifyControlService?.Recompute(); // engage now, not on the next poll
+                                _spotifyAutoLauncher?.TryAutoLaunchSpotify(); // just became the source: open the app if that's on
                             }
                             else
                             {
@@ -2434,8 +2440,24 @@ namespace UniPlaySong
         // Same signal ActiveMediaService.ResolveSource() uses, and it's a cached, non-blocking read.
         private bool IsSpotifyTheActiveMediaSource() => _spotifyControlService?.IsSpotifyActive == true;
 
+        // Spotify is the radio but its app is closed (never opened, or quit mid-session): Play opens it, and the launcher
+        // plays it once it's up. Asked for, so it doesn't wait on "Open Spotify automatically". True when handled.
+        private bool OpenSpotifyForPlay()
+        {
+            if (_settings?.SpotifyRadioMode != true || IsSpotifyTheActiveMediaSource()) return false;
+            _fileLogger?.Debug("Play: Spotify is the radio source but not open — opening it");
+            _spotifyAutoLauncher?.TryAutoLaunchSpotify(userAsked: true);
+            return true;
+        }
+
         private void OnMediaKeyPlayPause()
         {
+            if (OpenSpotifyForPlay())
+            {
+                _topPanelMediaControl?.UpdateIcons();
+                return;
+            }
+
             if (IsSpotifyTheActiveMediaSource())
             {
                 // Spotify owns the audio here; UPS's player is suppressed but still loaded, so driving _playbackService started
@@ -3064,6 +3086,7 @@ namespace UniPlaySong
                     () => _spotifyControlService,
                     mutate => UpdateSettingsFromMenu(mutate, "DesktopTopPanel")
                 );
+                _topPanelMediaControl.OpenSpotifyForPlay = OpenSpotifyForPlay;
                 _topPanelMediaControl.AttachCard(new DeskMediaControl.NowPlayingCardHost
                 {
                     Song = () => (_settings?.NowPlayingTitle, _settings?.NowPlayingArtist, NowPlayingCardArt()),
@@ -3079,6 +3102,19 @@ namespace UniPlaySong
                     CardShowsArt = () => _settings?.ShowNowPlayingCardArt == true,
                     ToggleEqualizer = () => UpdateSettingsFromMenu(s => s.EqualizerEnabled = !s.EqualizerEnabled, "NowPlayingCard"),
                     ToggleLiveEffects = () => UpdateSettingsFromMenu(s => s.LiveEffectsEnabled = !s.LiveEffectsEnabled, "NowPlayingCard"),
+                    // The same two settings Aniki ReMake's music player binds, so the card and a theme stay in step
+                    RadioOn = () => _settings?.RadioModeEnabled == true,
+                    SpotifySourceOn = () => _settings?.SpotifyRadioMode == true,   // lit only while Spotify is what Radio plays
+                    ToggleRadio = () => UpdateSettingsFromMenu(s => s.RadioModeEnabled = !s.RadioModeEnabled, "NowPlayingCard"),
+                    // One click = play Spotify: with Radio off it turns Radio on with Spotify (the source alone would only be
+                    // stored for later); while Spotify plays as the radio it switches back to the user's music, Radio kept on
+                    ToggleSpotifySource = () => UpdateSettingsFromMenu(s =>
+                    {
+                        if (s.SpotifyRadioMode) s.SwitchRadioMode = false;
+                        else { s.RadioModeEnabled = true; s.SwitchRadioMode = true; }
+                    }, "NowPlayingCard"),
+                    SpotifyAppRunning = Common.SpotifyLauncher.IsSpotifyRunning,
+                    SpotifyAutoOpens = () => _settings?.AutoLaunchSpotifyOnStartup == true,
                     PlayTrack = PlayNowPlayingCardTrack,
                     SetPrimarySong = path => { var g = _playbackService?.CurrentGame; if (g != null) _fileService?.SetPrimarySong(g, path); },
                     ClearPrimarySong = () => { var g = _playbackService?.CurrentGame; if (g != null) _fileService?.ClearPrimarySong(g); },

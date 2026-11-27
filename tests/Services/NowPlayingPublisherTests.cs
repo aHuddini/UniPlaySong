@@ -70,6 +70,23 @@ namespace UniPlaySong.Tests.Services
             return path;
         }
 
+        // Spotify is the radio but its app is gone: Now Playing says so instead of going blank, which collapsed the
+        // panel and with it the hover card and its Radio/Spotify buttons
+        [Test]
+        public void SpotifyRadioWithTheAppGone_SaysSoInsteadOfBlank()
+        {
+            _client.SetupGet(c => c.IsAvailable).Returns(false);
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
+            var (pub, spotify, meta, pb) = BuildPublisher();
+            spotify.Recompute();
+
+            pub.Refresh();
+
+            CollectionAssert.Contains(new[] { global::UniPlaySong.Common.Constants.SpotifyClosedTitle, global::UniPlaySong.Common.Constants.SpotifyStartingTitle },
+                _settings.NowPlayingTitle);
+        }
+
         // The art step (TagLib + write) must not run on the caller's thread - Refresh is called on the UI
         // thread - and nothing is published until it lands, so title and art never disagree on screen.
         [Test]

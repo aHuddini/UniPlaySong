@@ -194,6 +194,17 @@ namespace UniPlaySong.Services
                     // activation always publishes fresh.
                     _lastSpotifyTrackKey = null;
 
+                    // Spotify is the radio but its app isn't up (not yet opened, or quit mid-session): say so. UPS's own
+                    // song is suppressed and stale, and a blank title would hide what Play now does.
+                    if (s.SpotifyRadioMode)
+                    {
+                        _artWriter?.Clear();
+                        bool starting = Common.SpotifyLauncher.IsSpotifyRunning();
+                        Publish(starting ? Constants.SpotifyStartingTitle : Constants.SpotifyClosedTitle,
+                            starting ? string.Empty : Constants.SpotifyClosedHint, string.Empty);
+                        return;
+                    }
+
                     var song = _metadata?.CurrentSongInfo;
                     if (song != null && !song.IsEmpty)
                     {

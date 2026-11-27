@@ -12,6 +12,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added a picture of the song card beside its settings (`Controls/Settings/Images`, compiled in as a resource)
 - Added several folders to the Custom Folder source of Default Music and Radio Mode (`DefaultMusicFolderPaths`, `RadioCustomFolderPaths`); the old single folder moves in once (`MigrateFolderLists`), and an empty Radio list uses Default Music's folders
 - Added Recently played thumbnails that survive a restart (`RecentTrackArtCache`): a song's 96 px picture is saved as a PNG when it plays, game songs and other music in separate caches, pruned to the listed songs
+- Added Radio Mode and Spotify buttons to the Desktop hover card (340 px wide; modes left, audio and pin right); one click on Spotify plays it as the radio, turning Radio on
 
 ### Changed
 
@@ -24,6 +25,8 @@ All notable changes to UniPlaySong will be documented in this file.
 - Fixed a theme's UPS volume bar (`ActiveMediaVolume`) dropping after a pause, fade or Alt+Tab: it showed the player's live level; it now shows the set level, which `ActiveMediaService.SetVolume` also sets
 - Fixed a settings save reverting a Radio switch to Spotify or a cookie-mode change: views of saved settings (`[DerivedSetting]`) are no longer copied onto the new object as runtime state
 - Fixed a ~2 s gap before game music returned on leaving Spotify radio: Spotify's fading sound was taken for external audio; it stays excluded for 3 s after UPS stops conducting it
+- Fixed "Open Spotify automatically" acting only at startup: it now opens Spotify when Radio switches to it, Play opens a closed Spotify, and a cold-started app gets Play re-sent until it plays (`ReassertRadioStart`)
+- Fixed the top-panel controls and hover card vanishing while Spotify is the radio but not up: Now Playing reads "Spotify isn't open", and an emptied panel closes the card only after 2 s
 
 ## [1.9.5] - 2026-11-22
 

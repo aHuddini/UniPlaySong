@@ -33,6 +33,7 @@ namespace UniPlaySong.DeskMediaControl
         private static readonly Brush SolidTint = Frozen(Color.FromArgb(0xF0, 0x16, 0x1A, 0x24));   // no acrylic
         private static readonly Brush CalmOnBrush = Frozen(Color.FromRgb(0x4C, 0xC2, 0xFF));   // Calm Down on: blue
         private static readonly Brush CalmOffBrush = Frozen(Color.FromRgb(0x8A, 0x8F, 0x9A));  // off: grey
+        private static readonly Brush SpotifyOnBrush = Frozen(Color.FromRgb(0x1D, 0xB9, 0x54)); // Spotify's own green, not recoloured
 
         private readonly Window _owner;
         private readonly NowPlayingCardHost _host;
@@ -244,6 +245,22 @@ namespace UniPlaySong.DeskMediaControl
                 PlayPauseButton.Tag = FindResource(_model.IsPlaying ? "IconPause" : "IconPlay");
                 PlayPauseButton.ToolTip = _model.IsPlaying ? "Pause" : "Play";
             }
+            else if (e.PropertyName == nameof(NowPlayingCardModel.RadioOn))
+            {
+                RadioModeButton.Foreground = _model.RadioOn ? CalmOnBrush : CalmOffBrush;
+                RadioModeButton.ToolTip = _model.RadioOn ? "Radio Mode is on" : "Radio Mode";
+            }
+            else if (e.PropertyName == nameof(NowPlayingCardModel.SpotifySourceOn))
+            {
+                SpotifyButton.Foreground = _model.SpotifySourceOn ? SpotifyOnBrush : CalmOffBrush;
+                // Spotify plays only through its desktop app: say so while it's closed, unless UniPlaySong will open it
+                var tip = _model.SpotifySourceOn ? "Radio plays Spotify: click for your music" : "Play Spotify as the radio";
+                if (!_model.SpotifyAppRunning)
+                    tip += _model.SpotifyAutoOpens
+                        ? "\nThe Spotify app is closed: UniPlaySong opens it when Radio plays Spotify"
+                        : "\nNeeds the Spotify desktop app open (or turn on \"Open Spotify automatically\" in settings)";
+                SpotifyButton.ToolTip = tip;
+            }
             else if (e.PropertyName == nameof(NowPlayingCardModel.CalmDownOn))
             {
                 CalmDownButton.Foreground = _model.CalmDownOn ? CalmOnBrush : CalmOffBrush;
@@ -280,6 +297,8 @@ namespace UniPlaySong.DeskMediaControl
         private void Next_Click(object sender, RoutedEventArgs e) => _host.Next?.Invoke();
         private void Previous_Click(object sender, RoutedEventArgs e) => _host.Previous?.Invoke();
         private void CalmDown_Click(object sender, RoutedEventArgs e) { _host.ToggleCalmDown?.Invoke(); _model.Refresh(); }
+        private void Radio_Click(object sender, RoutedEventArgs e) { _host.ToggleRadio?.Invoke(); _model.Refresh(); }
+        private void Spotify_Click(object sender, RoutedEventArgs e) { _host.ToggleSpotifySource?.Invoke(); _model.Refresh(); }
         private void Eq_Click(object sender, RoutedEventArgs e) { _host.ToggleEqualizer?.Invoke(); _model.Refresh(); }
         private void Fx_Click(object sender, RoutedEventArgs e) { _host.ToggleLiveEffects?.Invoke(); _model.Refresh(); }
 

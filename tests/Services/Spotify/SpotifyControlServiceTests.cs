@@ -33,6 +33,28 @@ namespace UniPlaySong.Tests.Services.Spotify
             _service = new SpotifyControlService(_playback.Object, _client.Object, () => _settings, null);
         }
 
+        // A just-launched Spotify ignores the engage's Play while it loads, and a plain recompute then reads "not playing"
+        // as the user's pause and stays hands-off. ReassertRadioStart (the launcher, until Spotify plays) sends Play
+        // again; once Spotify plays it does nothing, so a later pause is left alone.
+        [Test]
+        public void ReassertRadioStart_SendsPlayAgainUntilSpotifyPlays()
+        {
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
+
+            _service.Recompute();                       // engage: the one Play, ignored by the loading app
+            _service.Recompute();                       // still silent: treated as the user's pause
+            _client.Verify(c => c.TryResume(), Times.Once);
+
+            _service.ReassertRadioStart();
+            _client.Verify(c => c.TryResume(), Times.Exactly(2));
+
+            _client.SetupGet(c => c.IsPlaying).Returns(true);
+            _service.ReassertRadioStart();
+            _client.Verify(c => c.TryResume(), Times.Exactly(2));
+        }
+
         // Spotify is the active music when Spotify radio is on (SpotifyRadioMode is derived: radio on + Spotify source),
         // or when it is the default source and the engine is in a default-music gap. Radio wins without a gap; an
         // unavailable Spotify is never active. Settings.SpotifyActive mirrors the result for themes.

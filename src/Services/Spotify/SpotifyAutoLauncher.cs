@@ -6,9 +6,10 @@ using UniPlaySong.Common;
 namespace UniPlaySong.Services.Spotify
 {
     // "Launch Spotify on startup": starts the desktop app when Spotify is the music source, engages it once its
-    // media session registers, and minimizes its window. Used once, from OnApplicationStarted. The client, control
-    // service and window handle are read live (Func) because the worker outlives the call and the handle is assigned
-    // after it starts.
+    // media session registers, and minimizes its window. Called from OnApplicationStarted, then each time Spotify
+    // becomes the radio source (a theme, the hover card, the settings) - never on unrelated changes, so a Spotify the
+    // user closed stays closed. The client, control service and window handle are read live (Func) because the worker
+    // outlives the call and the handle is assigned after it starts.
     public class SpotifyAutoLauncher
     {
         private readonly IPlayniteAPI _api;
@@ -51,10 +52,11 @@ namespace UniPlaySong.Services.Spotify
         // renders on a cold start. All blocking work (Process.Start + watch loop) runs on the Spotify worker thread —
         // NEVER the UI thread or under the recompute lock (issue: 8e1f2e4 launch-freeze deadlock). Called once from
         // OnApplicationStarted, after _appStarted (avoids premature-engage churn, b849240).
-        public void TryAutoLaunchSpotify()
+        // userAsked: a Play pressed while Spotify is the radio and closed - opens it whatever "Open Spotify automatically" says
+        public void TryAutoLaunchSpotify(bool userAsked = false)
         {
             var settings = _getSettings();
-            if (settings?.AutoLaunchSpotifyOnStartup != true) return;   // feature off
+            if (!userAsked && settings?.AutoLaunchSpotifyOnStartup != true) return;   // feature off
             if (!SpotifyIsActiveSource(settings)) return;               // Spotify not the source
             if (Common.SpotifyLauncher.IsSpotifyRunning()) return;      // already running (process check, not SMTC)
 
@@ -93,6 +95,8 @@ namespace UniPlaySong.Services.Spotify
                     bool restoreForeground = _isFullscreen();
                     bool minimized = false;
                     bool engaged = false;
+                    int engagedAt = 0;
+                    bool playing = false;
                     bool toasted = false;
                     bool foregroundSettled = false;
 
@@ -125,9 +129,24 @@ namespace UniPlaySong.Services.Spotify
                         if (!engaged && _getSpotifyClient()?.IsAvailable == true)
                         {
                             engaged = true;
+                            engagedAt = i;
                             _fileLogger?.Debug($"[AutoLaunch] t={i}s Spotify session available — engaging.");
                             Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                                 _getSpotifyControlService()?.Recompute()));
+                        }
+
+                        // 3. PLAY (radio): the just-launched app ignores the engage's Play while it loads. Until it is heard
+                        //    playing, take the start back every 2s so the radio sends Play again; once it plays, stop - a
+                        //    pause after that is the user's to keep.
+                        if (engaged && !playing)
+                        {
+                            playing = _getSpotifyClient()?.IsPlaying == true || _getSettings()?.SpotifyRadioMode != true;
+                            if (!playing && i > engagedAt && (i - engagedAt) % 2 == 0)
+                            {
+                                _fileLogger?.Debug($"[AutoLaunch] t={i}s Spotify not playing yet — sending Play again.");
+                                Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
+                                    _getSpotifyControlService()?.ReassertRadioStart()));
+                            }
                         }
 
                         if (!engaged && !toasted && i == 10)
@@ -140,11 +159,11 @@ namespace UniPlaySong.Services.Spotify
                         // All goals met. In Fullscreen, don't exit on foreground-settled before ~8s — the theme intro keeps stealing
                         // focus for ~15-20s, so an early exit would stop re-asserting and lose to a later steal. After the churn
                         // window, exit once Playnite is confirmed foreground.
-                        if (engaged && minimized && (!restoreForeground || (foregroundSettled && i >= 8)))
+                        if (engaged && playing && minimized && (!restoreForeground || (foregroundSettled && i >= 8)))
                             return;
                     }
 
-                    _fileLogger?.Debug($"[AutoLaunch] watch ended (engaged={engaged}, minimized={minimized}, fgSettled={foregroundSettled}).");
+                    _fileLogger?.Debug($"[AutoLaunch] watch ended (engaged={engaged}, playing={playing}, minimized={minimized}, fgSettled={foregroundSettled}).");
                 }
                 catch (Exception ex)
                 {

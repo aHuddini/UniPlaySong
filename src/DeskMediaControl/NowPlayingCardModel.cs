@@ -21,6 +21,9 @@ namespace UniPlaySong.DeskMediaControl
         public Func<bool> EqualizerOn, LiveEffectsOn;
         public Func<bool> CardShowsArt;                    // the Art look over the Glass one
         public Action ToggleEqualizer, ToggleLiveEffects;
+        public Func<bool> RadioOn, SpotifySourceOn;        // Radio Mode; Radio playing Spotify
+        public Action ToggleRadio, ToggleSpotifySource;
+        public Func<bool> SpotifyAppRunning, SpotifyAutoOpens;  // the desktop app is open; UniPlaySong opens it when needed
         public Action<NowPlayingCardTrack> PlayTrack;
         public Action<string> SetPrimarySong;               // a song of the playing game
         public Action ClearPrimarySong;
@@ -95,6 +98,10 @@ namespace UniPlaySong.DeskMediaControl
         public int Volume { get; private set; }
         public bool EqualizerOn { get; private set; }
         public bool LiveEffectsOn { get; private set; }
+        public bool RadioOn { get; private set; }
+        public bool SpotifySourceOn { get; private set; }
+        public bool SpotifyAppRunning { get; private set; }
+        public bool SpotifyAutoOpens { get; private set; }
         public bool CanSetVolume { get; private set; }
 
         // The card is on screen: only then may the playing row's bars bounce
@@ -166,6 +173,11 @@ namespace UniPlaySong.DeskMediaControl
             EqualizerOn = _host.EqualizerOn?.Invoke() == true;
             LiveEffectsOn = _host.LiveEffectsOn?.Invoke() == true;
             Set(nameof(EqualizerOn)); Set(nameof(LiveEffectsOn));
+            RadioOn = _host.RadioOn?.Invoke() == true;
+            SpotifySourceOn = _host.SpotifySourceOn?.Invoke() == true;
+            SpotifyAppRunning = _host.SpotifyAppRunning?.Invoke() == true;
+            SpotifyAutoOpens = _host.SpotifyAutoOpens?.Invoke() == true;
+            Set(nameof(RadioOn)); Set(nameof(SpotifyAppRunning)); Set(nameof(SpotifyAutoOpens)); Set(nameof(SpotifySourceOn));
             Volume = _host.MusicVolume?.Invoke() ?? 0;
             CanSetVolume = _host.CanSetVolume?.Invoke() == true;
             Set(nameof(Volume)); Set(nameof(CanSetVolume));

@@ -123,6 +123,22 @@ namespace UniPlaySong.Services.Spotify
             if (raiseNowPlaying) NowPlayingChanged?.Invoke();
         }
 
+        // A freshly launched Spotify registers its media session before it can play, and ignores the engage's single
+        // Play; Decide then reads "not playing, not UPS's pause" as the user's pause and never sends another. The launcher
+        // calls this until Spotify is heard playing: UPS takes the start back, as at the engage edge, so the next Decide
+        // sends Play again. Not while a manual pause is held, or once Spotify plays.
+        public void ReassertRadioStart()
+        {
+            if (_disposed) return;
+            lock (_recomputeLock)
+            {
+                var s = _getSettings?.Invoke();
+                if (s == null || !s.SpotifyRadioMode || !_radioWasOn || _manualPauseHold || _client?.IsPlaying == true) return;
+                _radioState = new SpotifyRadioState { LifecyclePausedByUps = true, UserPausedExternally = false };
+            }
+            Recompute();
+        }
+
         // The Recompute body. Runs under _recomputeLock and returns whether NowPlayingChanged
         // should be raised — by Recompute, AFTER the lock is released. Never raise events here.
         private bool RecomputeCore()
