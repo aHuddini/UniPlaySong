@@ -9,6 +9,7 @@ Packages:
       - '[Fix] Corrected a loading bug in the download manager.'
       - '[Fix] Fullscreen download dialog: pressing Back while a list is still loading no longer shows an "Invalid selection" message.'
       - '[Fix] Fullscreen theme music players: the volume bar no longer drops back after pausing, resuming or Alt+Tab.'
+      - '[Fix] Leaving Spotify radio: your game music now comes back right away.'
       - '[Improved] Default Music and Radio Mode Custom Folders Playlists: add as many folders as you like instead of one folder, shown in a list. Radio Mode settings reordered, with their own game and status pickers independent from Default Music.'
       - '[Improved] Recently played list in themes: song pictures now show after a restart, including songs from your own folders.'
   - Version: 1.9.5

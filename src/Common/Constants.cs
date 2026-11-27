@@ -32,6 +32,7 @@ namespace UniPlaySong.Common
         public const double DefaultTargetVolume = 0.5;
 
         public const double VolumeDivisor = 100.0; // percentage (0-100) to decimal (0.0-1.0)
+        public const int SpotifyReleaseGraceMs = 3000; // after UPS stops conducting Spotify, its fading sound isn't "external audio" this long
         public const int VolumeShortcutStep = 5; // Music Volume change per Volume up/down keyboard shortcut press
 
         public const int DefaultMusicVolume = 50;

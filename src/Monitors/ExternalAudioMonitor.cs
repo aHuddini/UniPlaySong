@@ -33,6 +33,7 @@ namespace UniPlaySong.Monitors
         private HashSet<string> _externalAudioExcludedPids = new HashSet<string>(); // Cached excluded process names (lowercase)
         // Same set + "spotify" — used while UPS conducts Spotify so its own audio can't self-trigger the pause.
         private HashSet<string> _externalAudioExcludedPidsWithSpotify = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "spotify" };
+        private DateTime _lastConductedSpotifyUtc = DateTime.MinValue;   // last poll UPS was conducting Spotify
         private string _externalAudioExcludedAppsRaw = ""; // Tracks setting value to know when to rebuild cache
         private bool IsExternalAudioInstantMode => _settings?.ExternalAudioInstantPause == true || (_settings?.ExternalAudioDebounceSeconds ?? 3) == 0;
         private double ExternalAudioPollIntervalMs => IsExternalAudioInstantMode ? 500.0 : 1000.0;
@@ -129,7 +130,14 @@ namespace UniPlaySong.Monitors
                 // standard pause path pauses Spotify via the lifecycle machinery.
                 bool spotifyIsAudible = _settings?.SpotifyActive == true
                     && (_playbackService?.IsPlayingDefaultMusic == true || _settings?.SpotifyRadioMode == true);
-                var exclusions = spotifyIsAudible && _externalAudioExcludedPidsWithSpotify != null
+                // ...and for a moment after: leaving Spotify radio, UPS pauses Spotify while its own music starts, and
+                // Spotify's last fraction of a second of sound otherwise read as another app's audio and paused UPS's
+                // returning music for the whole resume wait
+                var now = DateTime.UtcNow;
+                if (spotifyIsAudible) _lastConductedSpotifyUtc = now;
+                bool excludeSpotify = spotifyIsAudible
+                    || (now - _lastConductedSpotifyUtc).TotalMilliseconds < Constants.SpotifyReleaseGraceMs;
+                var exclusions = excludeSpotify && _externalAudioExcludedPidsWithSpotify != null
                     ? _externalAudioExcludedPidsWithSpotify
                     : _externalAudioExcludedPids;
 

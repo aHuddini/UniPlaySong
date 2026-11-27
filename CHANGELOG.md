@@ -23,6 +23,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Fixed the Fullscreen download dialog reporting "Invalid … selection" after Back mid-load: a late album or song list replaced the current one; each load now drops its result if navigation moved on (`_loadGeneration`)
 - Fixed a theme's UPS volume bar (`ActiveMediaVolume`) dropping after a pause, fade or Alt+Tab: it showed the player's live level; it now shows the set level, which `ActiveMediaService.SetVolume` also sets
 - Fixed a settings save reverting a Radio switch to Spotify or a cookie-mode change: views of saved settings (`[DerivedSetting]`) are no longer copied onto the new object as runtime state
+- Fixed a ~2 s gap before game music returned on leaving Spotify radio: Spotify's fading sound was taken for external audio; it stays excluded for 3 s after UPS stops conducting it
 
 ## [1.9.5] - 2026-11-22
 
