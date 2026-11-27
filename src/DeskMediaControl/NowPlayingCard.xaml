@@ -249,7 +249,7 @@
                 <!-- Toggles, grey off and blue on: modes on the left (as Aniki ReMake groups them), audio and the pin on the right -->
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,8,0,0">
                     <Button x:Name="RadioModeButton" Style="{StaticResource SmallIconButton}" Tag="{StaticResource IconRadio}" ToolTip="Radio Mode"
-                            Click="Radio_Click" Foreground="#8A8F9A"/>
+                            Click="Radio_Click" Foreground="#8A8F9A" FontSize="15"/>
                     <Button x:Name="SpotifyButton" Style="{StaticResource SmallIconButton}" Tag="{StaticResource IconSpotify}" ToolTip="Radio plays Spotify"
                             Click="Spotify_Click" Foreground="#8A8F9A" FontSize="13"/>
                     <Button x:Name="CalmDownButton" Style="{StaticResource SmallIconButton}" Tag="{StaticResource IconMoon}" ToolTip="Calm Down" Click="CalmDown_Click" Foreground="#8A8F9A"/>
