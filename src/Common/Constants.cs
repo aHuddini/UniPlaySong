@@ -172,6 +172,17 @@ namespace UniPlaySong.Common
         public const string TagNoMusic = "[UPS] No Music";
 
         #endregion
+
+        #region Music Info Card
+
+        // The Fullscreen card as a player (Features/MusicInfoCard/Player)
+        public const double MusicInfoCardSeekStepSeconds = 10.0; // LT/RT seek step
+        public const int MusicInfoCardSeekRepeatMs = 180;        // LT/RT held: one more step this often
+        public const double MusicInfoCardHeightFraction = 0.85;  // window height, of the screen's
+        public const double MusicInfoCardMaxHeight = 1000;       // ...capped so tall screens don't stretch it
+        public const int MusicInfoCardPositionRefreshMs = 250;   // ring, line and toggles refresh while open
+
+        #endregion
     }
 
 }
