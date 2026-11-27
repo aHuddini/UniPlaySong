@@ -1,31 +1,36 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Events;
 using Playnite.SDK.Models;
+using UniPlaySong.Common;
+using UniPlaySong.Controls;
 using UniPlaySong.Features.MusicInfoCard.Models;
+using UniPlaySong.Features.MusicInfoCard.Player;
 using UniPlaySong.Features.MusicInfoCard.Services;
+using UniPlaySong.Models;
 using UniPlaySong.IconGlow;
+using UniPlaySong.Services.ActiveMedia;
 using UniPlaySong.Services.Controller;
 
 namespace UniPlaySong.Features.MusicInfoCard.Views
 {
-    // Fullscreen / controller-friendly Music Info Card. Same data as the
-    // Desktop version but with larger fonts, focused-on-load StatsScroll
-    // for D-pad scrolling, and B-button-to-close via ControllerEventRouter.
-    //
-    // Read-only — no inner navigation logic. The ScrollViewer accepts
-    // D-pad scrolling natively, so the only controller input we handle
-    // explicitly is the close button (B / Back / Escape).
+    // The Fullscreen Music Info Card: a small player for one game's music. Player page: the stats, the game's songs (the
+    // playing one tinted, the primary one pink) and a pinned dock - Previous, Play/Pause in its seek ring, Next, Calm Down,
+    // Live Effects. Details page: the other stats. The controller's rules live in CardInputRules; this class draws and
+    // carries the commands out through the host.
     public partial class ControllerMusicInfoCardDialog : UserControl, IControllerInputReceiver
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
@@ -34,41 +39,57 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         private CancellationTokenSource _cts;
         private Game _game;
         private IMusicStatsProvider _statsProvider;
-        private Action<string> _playSong; // set by the handler; A on a highlighted song row plays that file
+        private Action<string> _playSong; // without a host: A on a song plays it
         private BitmapSource _frost; // the glass tiles' extra-blurred backdrop (GlassTiles)
 
-        // Right stick scrolls the card: vertical tilt, -1..1 (down positive); null on a Playnite without analog input.
-        private Func<(double X, double Y)> _stick;       // the right stick, both axes
-        private Player.MusicInfoCardPlayerHost _host;   // the player controls; null = stats only
-        private System.Windows.Threading.DispatcherTimer _stickPoll; // slow idle check for a tilt
-        private bool _stickScrolling;      // frame-synced scrolling hooked while the stick is tilted
+        private Func<(double X, double Y)> _stick;       // the right stick, both axes; null on a Playnite without analog input
+        private MusicInfoCardPlayerHost _host;          // the player controls; null = stats only
+        private DispatcherTimer _stickPoll;              // slow idle check for a tilt
+        private bool _stickScrolling;                    // frame-synced scrolling hooked while the stick is tilted
         private TimeSpan _lastFrameTime;
-        private double _stickVelocity;     // px/s, eased toward the stick so reading noise doesn't jolt
+        private double _stickVelocity;                   // px/s, eased toward the stick so reading noise doesn't jolt
         private const double StickDeadzone = 0.25;
         private const double StickPixelsPerSecond = 1400; // at full tilt
 
-        // Song-row highlight for the controller. -1 = none (the stats above the list are in view).
-        private int _selectedRow = -1;
-        private DateTime _lastDpadNavigationTime;
-        private const int DpadDebounceMs = 150; // a D-pad press arrives twice: controller event + arrow key
-        private static readonly SolidColorBrush RowBrush = CreateFrozenBrush(Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF));
-        private static readonly SolidColorBrush SelectedRowBrush = CreateFrozenBrush(Color.FromArgb(0x38, 0xFF, 0xFF, 0xFF));
+        private CardInputRules _rules;                   // null until the songs are known
+        private readonly List<SongRow> _rows = new List<SongRow>();
+        private DateTime _lastDirectionTime;
+        private const int DirectionDebounceMs = 150;     // a D-pad press arrives twice: controller event + arrow key
+        private DispatcherTimer _refresh;                // ring, glyph, toggles, playing row, line
+        private DispatcherTimer _seekRepeat;             // LT/RT held
+        private double _repeatSeconds;
+        private DispatcherTimer _jogPoll;                // right stick as a jog wheel while Play/Pause is live
+        private double? _jogAngle;
+        private RelativeSeeker _jogSeeker;
+        private int _playingIndex = -1;
+        private readonly SeekRing Ring = new SeekRing { Width = 64, Height = 64 };
+
         private string _imagePath;
         private IconColorExtractor _colorExtractor;
-        private SolidColorBrush _accentBrush;
+        private SolidColorBrush _accentBrush = CreateFrozenBrush(Color.FromRgb(0x7E, 0x57, 0xC2));
+
+        private static readonly SolidColorBrush White = CreateFrozenBrush(Colors.White);
+        private static readonly SolidColorBrush Transparent = CreateFrozenBrush(Colors.Transparent);
+        private static readonly SolidColorBrush PrimaryPink = CreateFrozenBrush(Color.FromRgb(0xE9, 0xA8, 0xF2));
+        private static readonly SolidColorBrush Teal = CreateFrozenBrush(Color.FromRgb(0x1F, 0xD8, 0xC1));
+        private static readonly SolidColorBrush SpotifyGreen = CreateFrozenBrush(Color.FromRgb(0x1D, 0xB9, 0x54));
+        private static readonly SolidColorBrush LabelGrey = CreateFrozenBrush(Color.FromRgb(0xA9, 0xA2, 0x9D));
+        private static readonly SolidColorBrush DockFill = CreateFrozenBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF));
+        private static readonly SolidColorBrush DockRim = CreateFrozenBrush(Color.FromArgb(0x24, 0xFF, 0xFF, 0xFF));
+        private static readonly SolidColorBrush TabIdle = CreateFrozenBrush(Color.FromArgb(0x0D, 0xFF, 0xFF, 0xFF));
 
         public ControllerMusicInfoCardDialog()
         {
             InitializeComponent();
+            RingSlot.Children.Insert(0, Ring);
 
             Loaded += (s, e) =>
             {
-                // Focus the scroll viewer so D-pad up/down scrolls the content
-                // when stats overflow the visible area.
-                StatsScroll.Focus();
-                Keyboard.Focus(StatsScroll);
-                GlassTiles.Attach(BlurredBackdrop, StatsPanel, StatsScroll, _frost);
+                Focus();
+                Keyboard.Focus(this);
+                GlassTiles.Attach(BlurredBackdrop, PagesRoot, DetailsScroll, _frost);
                 StartStickScroll();
+                ShowPage();
 
                 if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
                 {
@@ -79,8 +100,13 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
 
             Unloaded += (s, e) =>
             {
+                // Nothing keeps seeking, scrolling or refreshing after the card closes (Review Focus 5)
                 _stickPoll?.Stop();
                 StopStickFrames();
+                _refresh?.Stop();
+                _seekRepeat?.Stop();
+                _jogPoll?.Stop();
+                _jogSeeker?.Flush();
                 try { _cts?.Cancel(); } catch { /* best effort */ }
                 if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
                 {
@@ -101,7 +127,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             Action<string> playSong = null,
             BitmapSource frost = null,
             Func<(double X, double Y)> stick = null,
-            Player.MusicInfoCardPlayerHost host = null)
+            MusicInfoCardPlayerHost host = null)
         {
             _game = game;
             _playSong = playSong;
@@ -112,15 +138,14 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             _imagePath = imagePath;
             _colorExtractor = colorExtractor;
             GameNameText.Text = game?.Name ?? "Unknown Game";
+            if (_host?.SeekBy != null)
+                _jogSeeker = new RelativeSeeker(() => _host.Snapshot?.Invoke()?.HasActiveMedia == true, _host.SeekBy);
 
             // See MusicInfoCardDialog for the snapshot pattern.
-            if (backdropSnapshot != null)
-            {
-                BlurredBackdrop.Source = backdropSnapshot;
-            }
+            if (backdropSnapshot != null) BlurredBackdrop.Source = backdropSnapshot;
 
             TryApplyGameIconAndAccent();
-
+            Ring.Accent = _accentBrush;
             Loaded += OnDialogLoadedOnce;
         }
 
@@ -128,11 +153,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         {
             try
             {
-                if (string.IsNullOrEmpty(_imagePath) || !File.Exists(_imagePath))
-                    return;
+                if (string.IsNullOrEmpty(_imagePath) || !File.Exists(_imagePath)) return;
 
                 var bitmap = MusicInfoCardHandler.LoadUnlockedBitmap(_imagePath);
-
                 GameIconImage.Source = bitmap;
                 GameIconImage.Visibility = Visibility.Visible;
                 IconPlaceholderBorder.Visibility = Visibility.Collapsed;
@@ -151,18 +174,11 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
 
         private void ApplyAccentColor(Color color)
         {
-            _accentBrush = new SolidColorBrush(color);
-            _accentBrush.Freeze();
+            _accentBrush = CreateFrozenBrush(color);
             AccentStrip.Background = _accentBrush;
             HeaderSubtitle.Foreground = _accentBrush;
             IconGlowEffect.Color = color;
-
-            // Whole-card tint at ~5% alpha — see Desktop dialog.
-            // Bumped to pick up the slack from the dimmer backdrop.
-            var tintColor = Color.FromArgb(13, color.R, color.G, color.B);
-            var tintBrush = new SolidColorBrush(tintColor);
-            tintBrush.Freeze();
-            CardTintLayer.Background = tintBrush;
+            CardTintLayer.Background = CreateFrozenBrush(Color.FromArgb(13, color.R, color.G, color.B)); // ~5% whole-card tint
         }
 
         private async void OnDialogLoadedOnce(object sender, RoutedEventArgs e)
@@ -182,8 +198,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 if (token.IsCancellationRequested) return;
                 _ = Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    if (LoadingPanel != null && StatsPanel?.IsVisible == false)
-                        LoadingPanel.Visibility = Visibility.Visible;
+                    if (LoadingPanel != null && PagesRoot.Opacity < 0.5) LoadingPanel.Visibility = Visibility.Visible;
                 }));
             });
 
@@ -202,6 +217,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                     LoadingPanel.Visibility = Visibility.Collapsed;
                     EmptyStateText.Text = "Failed to read music metadata.";
                     EmptyStateText.Visibility = Visibility.Visible;
+                    FadeInPages();
                 }));
             }
         }
@@ -213,6 +229,8 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             if (stats == null || stats.FileCount == 0)
             {
                 EmptyStateText.Visibility = Visibility.Visible;
+                StartPlayer(new List<SongEntry>());
+                FadeInPages();
                 return;
             }
 
@@ -220,228 +238,358 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             TotalDurationText.Text = FormatDuration(stats.TotalDuration);
             TotalSizeText.Text = FormatSize(stats.TotalSizeBytes);
 
+            RenderDetails(stats);
+            StartPlayer(stats.Songs ?? new List<SongEntry>());
+            FadeInPages();
+        }
+
+        // Details page (Task 5 replaces these tiles with charts)
+        private void RenderDetails(MusicStats stats)
+        {
             if (stats.PlaylistFileCount > 0)
             {
                 PlaylistInfoText.Text =
-                    $"{stats.PlaylistFileCount} playlist file" +
-                    (stats.PlaylistFileCount == 1 ? "" : "s") +
-                    $" containing {stats.PlaylistTrackCount} track" +
-                    (stats.PlaylistTrackCount == 1 ? "" : "s") + ".";
+                    $"{stats.PlaylistFileCount} playlist file" + (stats.PlaylistFileCount == 1 ? "" : "s") +
+                    $" containing {stats.PlaylistTrackCount} track" + (stats.PlaylistTrackCount == 1 ? "" : "s") + ".";
                 PlaylistPanel.Visibility = Visibility.Visible;
             }
-
             if (stats.LongestTrack.HasValue)
             {
                 LongestTitleText.Text = stats.LongestTrack.Value.Title;
                 LongestDurationText.Text = FormatDuration(stats.LongestTrack.Value.Duration);
             }
-
             if (stats.ShortestTrack.HasValue)
             {
                 ShortestTitleText.Text = stats.ShortestTrack.Value.Title;
                 ShortestDurationText.Text = FormatDuration(stats.ShortestTrack.Value.Duration);
             }
-
             var totalFiles = stats.FileCount;
-            var rows = stats.FormatBreakdown
+            FormatList.ItemsSource = stats.FormatBreakdown
                 .OrderByDescending(kv => kv.Value)
                 .Select(kv => new
                 {
                     Extension = kv.Key,
                     Count = kv.Value,
-                    Percentage = totalFiles > 0
-                        ? $"({(int)(kv.Value * 100.0 / totalFiles)}%)"
-                        : string.Empty
+                    Percentage = totalFiles > 0 ? $"({(int)(kv.Value * 100.0 / totalFiles)}%)" : string.Empty
                 })
                 .ToList();
-            FormatList.ItemsSource = rows;
-
             if (stats.UnreadableCount > 0)
             {
-                UnreadableText.Text =
-                    $"⚠ {stats.UnreadableCount} file" +
-                    (stats.UnreadableCount == 1 ? "" : "s") +
-                    " could not be read.";
+                UnreadableText.Text = $"⚠ {stats.UnreadableCount} file" + (stats.UnreadableCount == 1 ? "" : "s") + " could not be read.";
                 UnreadablePanel.Visibility = Visibility.Visible;
             }
-
-            RenderSongList(stats);
-
-            FadeInStatsPanel();
         }
 
-        // Playlist tracks always use the fixed amber chip so they remain visually distinguishable regardless of
-        // per-game accent color. Standard files use the icon-derived accent when set, else the fallback purple.
-        private static readonly SolidColorBrush PlaylistChipBrush =
-            CreateFrozenBrush(0xFF, 0xB7, 0x4D);
-        private static readonly SolidColorBrush DefaultStandardChipBrush =
-            CreateFrozenBrush(0x7E, 0x57, 0xC2);
+        // ---- Player page ----
 
-        private static SolidColorBrush CreateFrozenBrush(byte r, byte g, byte b) => CreateFrozenBrush(Color.FromRgb(r, g, b));
-
-        private static SolidColorBrush CreateFrozenBrush(Color color)
+        private void StartPlayer(IReadOnlyList<SongEntry> songs)
         {
-            var brush = new SolidColorBrush(color);
-            brush.Freeze();
-            return brush;
+            _rows.Clear();
+            foreach (var s in songs)
+                _rows.Add(new SongRow { Title = s.Title, Path = s.FilePath, DurationText = s.Duration > TimeSpan.Zero ? FormatDuration(s.Duration) : string.Empty });
+            SongList.ItemsSource = _rows;
+            SongListCountText.Text = _rows.Count > 0 ? $"({_rows.Count})" : string.Empty;
+
+            _playingIndex = CardPlayback.PlayingIndex(_rows.Select(r => r.Path).ToList(), _host?.PlayingPath?.Invoke());
+            _rules = new CardInputRules(_rows.Count, Math.Max(0, _playingIndex));
+
+            RefreshPlayback();
+            Redraw();
+            ScrollSongIntoView();
+
+            _refresh = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(Constants.MusicInfoCardPositionRefreshMs) };
+            _refresh.Tick += (s, e) => RefreshPlayback();
+            _refresh.Start();
         }
 
-        // Same projection as the Desktop dialog. Kept duplicated rather than shared because the row anonymous types are
-        // dialog-private and the chip backgrounds differ by font size only — extracting them into a shared helper
-        // would force a real ViewModel type and isn't worth the indirection for two short methods.
-        private void RenderSongList(MusicStats stats)
+        // What plays right now: the ring, the play/pause glyph, the toggles, the playing row and the line under the songs
+        private void RefreshPlayback()
         {
-            if (stats.Songs == null || stats.Songs.Count == 0) return;
+            if (_host == null) { NowPlayingLine.Text = string.Empty; return; }
+            var snap = _host.Snapshot?.Invoke();
+            bool hasMedia = snap?.HasActiveMedia == true;
+            bool playing = snap?.IsPlaying == true;
 
-            var standardBrush = _accentBrush ?? DefaultStandardChipBrush;
+            Ring.Progress = hasMedia ? (snap.Progress / 100.0) : 0;
+            PlayGlyph.Data = (Geometry)FindResource(playing ? "IconPause" : "IconPlay");
+            PlayLabel.Text = playing ? "Pause" : "Play";
+            StyleToggle(CalmButton, _host.CalmDownOn?.Invoke() == true);
+            StyleToggle(FxButton, _host.LiveEffectsOn?.Invoke() == true);
 
-            var rows = stats.Songs.Select(s => new
+            int playingIndex = CardPlayback.PlayingIndex(_rows.Select(r => r.Path).ToList(), _host.PlayingPath?.Invoke());
+            if (playingIndex != _playingIndex) { _playingIndex = playingIndex; RestyleRows(); }
+
+            var (title, artist) = _host.NowPlaying?.Invoke() ?? (null, null);
+            bool spotify = snap?.SourceKind == ActiveMediaSourceKind.Spotify;
+            var line = CardPlayback.NowPlayingLine(hasMedia, spotify, title, artist, snap?.PositionText, snap?.DurationText);
+            NowPlayingLine.Inlines.Clear();
+            if (!hasMedia) NowPlayingLine.Inlines.Add(new Run(line) { Foreground = LabelGrey });
+            else if (spotify && line.StartsWith("Spotify"))
             {
-                Title = s.Title,
-                FilePath = s.FilePath,
-                ChipText = s.IsPlaylistTrack
-                    ? "TRACK"
-                    : (s.Extension ?? string.Empty).TrimStart('.').ToUpperInvariant(),
-                ChipBackground = s.IsPlaylistTrack ? PlaylistChipBrush : standardBrush,
-                SizeText = FormatSize(s.FileSizeBytes),
-                BitrateText = s.BitrateKbps > 0 ? $"{s.BitrateKbps} kbps" : string.Empty,
-                DurationText = s.Duration > TimeSpan.Zero
-                    ? FormatDuration(s.Duration)
-                    : string.Empty
-            }).ToList();
-
-            SongList.ItemsSource = rows;
-            SongListCountText.Text = $"({stats.Songs.Count})";
-            SongListPanel.Visibility = Visibility.Visible;
-        }
-
-        // Fades the populated stats in. StatsPanel sits at Opacity 0.01, not 0: WPF skips drawing fully transparent
-        // content, so from 0 the fade's first frame had to draw every row at once. At 0.01 the rows are drawn,
-        // invisibly, as soon as they are filled in, and the fade starts two frames later. (Smooth only because the
-        // card's window is opaque; see MusicInfoCardHandler.Show.)
-        private void FadeInStatsPanel()
-        {
-            int frames = 0;
-            EventHandler onFrame = null;
-            onFrame = (s, e) =>
+                NowPlayingLine.Inlines.Add(new Run("Spotify") { Foreground = SpotifyGreen });
+                NowPlayingLine.Inlines.Add(new Run(line.Substring("Spotify".Length)) { Foreground = Teal });
+            }
+            else
             {
-                if (++frames < 2) return;
-                CompositionTarget.Rendering -= onFrame;
-                var anim = new DoubleAnimation
-                {
-                    From = 0.01,
-                    To = 1,
-                    Duration = TimeSpan.FromMilliseconds(300),
-                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-                };
-                StatsPanel.BeginAnimation(OpacityProperty, anim);
-            };
-            CompositionTarget.Rendering += onFrame;
+                if (_playingIndex >= 0) NowPlayingLine.Inlines.Add(new Run("▶ ") { Foreground = _accentBrush });
+                NowPlayingLine.Inlines.Add(new Run(line) { Foreground = Teal });
+            }
         }
+
+        // Cursor states: the live cursor glows, the other keeps its place, faint
+        private void Redraw()
+        {
+            RestyleRows();
+            bool controlsLive = _rules?.Live == CardCursor.Controls;
+            var control = _rules?.Control ?? CardControl.PlayPause;
+            StyleDockButton(PrevButton, PrevLabel, control == CardControl.Previous, controlsLive);
+            StyleDockButton(NextButton, NextLabel, control == CardControl.Next, controlsLive);
+            StyleDockButton(CalmButton, CalmLabel, control == CardControl.CalmDown, controlsLive, keepFill: true);
+            StyleDockButton(FxButton, FxLabel, control == CardControl.LiveEffects, controlsLive, keepFill: true);
+
+            bool playLive = control == CardControl.PlayPause;
+            Ring.Live = playLive && controlsLive;
+            PlayButton.Stroke = playLive && !controlsLive ? WithOpacity(_accentBrush, 0.45) : CreateFrozenBrush(Color.FromArgb(0x6B, 0xFF, 0xFF, 0xFF));
+            PlayLabel.Foreground = playLive && controlsLive ? White : LabelGrey;
+            JogHint.Foreground = _accentBrush;
+            // Hidden, not collapsed: its line stays reserved, so the songs don't jump when it appears
+            JogHint.Visibility = _rules?.RightStickJogs == true && _stick != null ? Visibility.Visible : Visibility.Hidden;
+            UpdateJogPoll();
+        }
+
+        private void RestyleRows()
+        {
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                var row = _rows[i];
+                bool isPlaying = _playingIndex >= 0 && CardPlayback.IsPlayingRow(row.Path, _rows[_playingIndex].Path);
+                bool isPrimary = _host != null && CardPlayback.IsPlayingRow(row.Path, _host.PrimaryPath?.Invoke(_game));
+                bool cursor = _rules != null && _rules.SongIndex == i;
+                bool live = cursor && _rules.Live == CardCursor.Songs;
+
+                row.Background = isPlaying ? WithOpacity(_accentBrush, 0.18) : CreateFrozenBrush(Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF));
+                row.Outline = live ? _accentBrush : cursor ? WithOpacity(_accentBrush, 0.45) : isPlaying ? WithOpacity(_accentBrush, 0.45) : Transparent;
+                row.OutlineThickness = new Thickness(live ? 2 : 1);
+                row.TitleBrush = isPrimary ? PrimaryPink : White;
+                row.Mark = isPlaying ? "▶  " : string.Empty;
+                row.MarkBrush = _accentBrush;
+                row.Changed();
+            }
+        }
+
+        private void StyleDockButton(System.Windows.Shapes.Ellipse button, TextBlock label, bool cursor, bool controlsLive, bool keepFill = false)
+        {
+            bool live = cursor && controlsLive;
+            button.Stroke = live ? _accentBrush : cursor ? WithOpacity(_accentBrush, 0.45) : (keepFill ? button.Stroke : DockRim);
+            button.StrokeThickness = live ? 2 : 1;
+            label.Foreground = live ? White : LabelGrey;
+            if (!cursor && keepFill) StyleToggle(button, button == CalmButton ? _host?.CalmDownOn?.Invoke() == true : _host?.LiveEffectsOn?.Invoke() == true);
+        }
+
+        // A toggle that's on is tinted in the accent colour
+        private void StyleToggle(System.Windows.Shapes.Ellipse button, bool on)
+        {
+            button.Fill = on ? WithOpacity(_accentBrush, 0.25) : DockFill;
+            bool cursor = (_rules?.Control == CardControl.CalmDown && button == CalmButton) || (_rules?.Control == CardControl.LiveEffects && button == FxButton);
+            if (!cursor) button.Stroke = on ? WithOpacity(_accentBrush, 0.7) : DockRim;
+        }
+
+        private void ScrollSongIntoView()
+        {
+            if (_rules == null || _rows.Count == 0) return;
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                var container = SongList.ItemContainerGenerator.ContainerFromIndex(_rules.SongIndex) as FrameworkElement;
+                container?.BringIntoView();
+            }), DispatcherPriority.Loaded);
+        }
+
+        // ---- Pages ----
+
+        private void ShowPage()
+        {
+            bool details = _rules?.Page == CardPage.Details;
+            PlayerPage.Visibility = details ? Visibility.Collapsed : Visibility.Visible;
+            DetailsScroll.Visibility = details ? Visibility.Visible : Visibility.Collapsed;
+            PlayerFooter.Visibility = details ? Visibility.Collapsed : Visibility.Visible;
+            DetailsFooter.Visibility = details ? Visibility.Visible : Visibility.Collapsed;
+            StyleTab(PlayerTab, PlayerTabText, !details);
+            StyleTab(DetailsTab, DetailsTabText, details);
+        }
+
+        private void StyleTab(Border tab, TextBlock text, bool on)
+        {
+            tab.Background = on ? WithOpacity(_accentBrush, 0.25) : TabIdle;
+            tab.BorderBrush = on ? WithOpacity(_accentBrush, 0.6) : Transparent;
+            text.Foreground = on ? White : LabelGrey;
+        }
+
+        // ---- Input ----
 
         public void OnControllerButtonPressed(ControllerInput button)
-        {
-            // B = Cancel/Back on Xbox-style layout; Back is the dedicated
-            // back button on most controllers. Both close the dialog.
-            if (button == ControllerInput.B || button == ControllerInput.Back)
-            {
-                Dispatcher.BeginInvoke(new Action(CloseDialog));
-            }
-            else if (button == ControllerInput.DPadUp || button == ControllerInput.DPadDown)
-            {
-                var step = button == ControllerInput.DPadDown ? 1 : -1;
-                Dispatcher.BeginInvoke(new Action(() => MoveSelection(step)));
-            }
-            else if (button == ControllerInput.A)
-            {
-                Dispatcher.BeginInvoke(new Action(PlaySelected));
-            }
-        }
+            => Dispatcher.BeginInvoke(new Action(() => HandleInput(button)));
 
         public void OnControllerButtonReleased(ControllerInput button)
         {
-            // Read-only dialog — no release-edge logic needed.
+            if (button == ControllerInput.TriggerLeft || button == ControllerInput.TriggerRight)
+                Dispatcher.BeginInvoke(new Action(() => _seekRepeat?.Stop()));
         }
 
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
-            // Escape mirrors the controller B-button so keyboard users in
-            // Fullscreen mode can dismiss without picking up a controller.
-            if (e.Key == Key.Escape)
+            ControllerInput input;
+            switch (e.Key)
             {
-                CloseDialog();
-                e.Handled = true;
+                case Key.Escape: input = ControllerInput.B; break;
+                case Key.Up: input = ControllerInput.DPadUp; break;
+                case Key.Down: input = ControllerInput.DPadDown; break;
+                case Key.Left: input = ControllerInput.DPadLeft; break;
+                case Key.Right: input = ControllerInput.DPadRight; break;
+                case Key.Enter: input = ControllerInput.A; break;
+                case Key.PageUp: input = ControllerInput.LeftShoulder; break;
+                case Key.PageDown: input = ControllerInput.RightShoulder; break;
+                default: return;
             }
-            else if (e.Key == Key.Up || e.Key == Key.Down)
+            e.Handled = true; // the card drives scrolling, not the ScrollViewers' own key handling
+            HandleInput(input);
+        }
+
+        private void HandleInput(ControllerInput button)
+        {
+            if (button == ControllerInput.B || button == ControllerInput.Back) { CloseDialog(); return; }
+            if (_rules == null) return; // the songs aren't known yet
+
+            if (IsDirection(button))
             {
-                MoveSelection(e.Key == Key.Down ? 1 : -1);
-                e.Handled = true; // the rows drive scrolling now, not the ScrollViewer's own arrow handling
+                var now = DateTime.Now;
+                if ((now - _lastDirectionTime).TotalMilliseconds < DirectionDebounceMs) return;
+                _lastDirectionTime = now;
             }
-            else if (e.Key == Key.Enter)
+
+            var pageBefore = _rules.Page;
+            var command = _rules.Press(button);
+            switch (command.Kind)
             {
-                PlaySelected();
-                e.Handled = true;
+                case CardCommandKind.Redraw:
+                    if (_rules.Page != pageBefore) ShowPage();
+                    Redraw();
+                    if (_rules.Live == CardCursor.Songs) ScrollSongIntoView();
+                    break;
+                case CardCommandKind.PlaySong:
+                    PlaySong(_rows[command.SongIndex].Path);
+                    break;
+                case CardCommandKind.Press:
+                    PressControl(command.Control);
+                    break;
+                case CardCommandKind.Seek:
+                    Seek(command.SeekSeconds);
+                    StartSeekRepeat(command.SeekSeconds);
+                    break;
+                case CardCommandKind.Close:
+                    CloseDialog();
+                    break;
             }
         }
 
-        // Moves the song-row highlight. Up from the first row clears it and returns to the top, so the stats above
-        // the list stay reachable; the highlighted row is scrolled into view.
-        private void MoveSelection(int step)
+        private static bool IsDirection(ControllerInput b) =>
+            b == ControllerInput.DPadUp || b == ControllerInput.DPadDown || b == ControllerInput.DPadLeft || b == ControllerInput.DPadRight ||
+            b == ControllerInput.LeftStickUp || b == ControllerInput.LeftStickDown || b == ControllerInput.LeftStickLeft || b == ControllerInput.LeftStickRight;
+
+        private void PlaySong(string path)
         {
-            var now = DateTime.Now;
-            if ((now - _lastDpadNavigationTime).TotalMilliseconds < DpadDebounceMs) return;
-            _lastDpadNavigationTime = now;
+            if (string.IsNullOrEmpty(path)) return;
+            if (_host?.PlaySong != null) _host.PlaySong(_game, path);
+            else _playSong?.Invoke(path);
+            RefreshPlayback();
+        }
 
-            var count = SongList.Items.Count;
-            if (count == 0) return;
-
-            var next = Math.Max(-1, Math.Min(count - 1, _selectedRow + step));
-            if (next == _selectedRow) return;
-
-            SetRowHighlight(_selectedRow, false);
-            _selectedRow = next;
-            if (_selectedRow < 0)
+        private void PressControl(CardControl control)
+        {
+            if (_host == null) return;
+            switch (control)
             {
-                StatsScroll.ScrollToTop();
+                case CardControl.Previous: _host.Previous?.Invoke(); break;
+                case CardControl.Next: _host.Next?.Invoke(); break;
+                case CardControl.PlayPause:
+                    // Nothing playing: Play starts this game's music, the primary song first
+                    if (_host.Snapshot?.Invoke()?.HasActiveMedia != true)
+                        PlaySong(CardPlayback.StartSong(_rows.Select(r => r.Path).ToList(), _host.PrimaryPath?.Invoke(_game)));
+                    else
+                        _host.PlayPause?.Invoke();
+                    break;
+                case CardControl.CalmDown: _host.ToggleCalmDown?.Invoke(); break;
+                case CardControl.LiveEffects: _host.ToggleLiveEffects?.Invoke(); break;
+            }
+            RefreshPlayback();
+            Redraw();
+        }
+
+        private void Seek(double seconds)
+        {
+            _host?.SeekBy?.Invoke(seconds);
+            RefreshPlayback();
+        }
+
+        // LT/RT held: one more step every MusicInfoCardSeekRepeatMs, after a short first wait, until released
+        private void StartSeekRepeat(double seconds)
+        {
+            _repeatSeconds = seconds;
+            if (_seekRepeat == null)
+            {
+                _seekRepeat = new DispatcherTimer();
+                _seekRepeat.Tick += (s, e) =>
+                {
+                    _seekRepeat.Interval = TimeSpan.FromMilliseconds(Constants.MusicInfoCardSeekRepeatMs);
+                    Seek(_repeatSeconds);
+                };
+            }
+            _seekRepeat.Stop();
+            _seekRepeat.Interval = TimeSpan.FromMilliseconds(Constants.MusicInfoCardSeekRepeatMs * 2.5);
+            _seekRepeat.Start();
+        }
+
+        // ---- Right stick: jog wheel on Play/Pause, scrolling everywhere else ----
+
+        private void UpdateJogPoll()
+        {
+            bool jog = _rules?.RightStickJogs == true && _stick != null && _jogSeeker != null;
+            if (jog && _jogPoll == null)
+            {
+                _jogPoll = new DispatcherTimer(DispatcherPriority.Input) { Interval = TimeSpan.FromMilliseconds(16) };
+                _jogPoll.Tick += (s, e) => PollJog();
+            }
+            if (jog) { StopStickFrames(); _jogPoll.Start(); }
+            else if (_jogPoll != null) { _jogPoll.Stop(); _jogAngle = null; _jogSeeker?.Flush(); }
+        }
+
+        // As SeekDisc: circling the stick turns the knob; clockwise is forward; near the centre the angle is noise
+        private void PollJog()
+        {
+            var (x, y) = _stick();
+            if (Math.Sqrt(x * x + y * y) < SeekDiscMath.StickDeadzone)
+            {
+                if (_jogAngle != null) { _jogAngle = null; _jogSeeker.Flush(); RefreshPlayback(); }
                 return;
             }
-            var row = SetRowHighlight(_selectedRow, true);
-            row?.BringIntoView();
+            double angle = SeekDiscMath.AngleDegrees(x, y);
+            if (_jogAngle != null)
+            {
+                double degrees = SeekDiscMath.WrapDegrees(angle - _jogAngle.Value);
+                if (degrees != 0 && _jogSeeker.CanSeek) _jogSeeker.Add(SeekDiscMath.SecondsForDegrees(degrees));
+            }
+            _jogAngle = angle;
         }
 
-        private void PlaySelected()
-        {
-            if (_selectedRow < 0) return;
-            var row = RowBorder(_selectedRow);
-            if (row?.Tag is string path) _playSong?.Invoke(path);
-        }
-
-        private Border SetRowHighlight(int index, bool on)
-        {
-            var row = RowBorder(index);
-            if (row != null) row.Background = on ? SelectedRowBrush : RowBrush;
-            return row;
-        }
-
-        // The row template's root Border for an item (null while not generated).
-        private Border RowBorder(int index)
-        {
-            if (index < 0) return null;
-            var container = SongList.ItemContainerGenerator.ContainerFromIndex(index) as DependencyObject;
-            return container != null && VisualTreeHelper.GetChildrenCount(container) > 0
-                ? VisualTreeHelper.GetChild(container, 0) as Border
-                : null;
-        }
-
-        // Right-stick scrolling. A slow check (50 ms) waits for a tilt; while tilted, scrolling runs on WPF's frame
-        // clock (CompositionTarget.Rendering) so it moves once per drawn frame - a free-running timer stepped unevenly
-        // against the frames and read as stutter. Squared response: a light tilt creeps, a full tilt flies.
+        // Right-stick scrolling (the song list on Player, the page on Details). A slow check (50 ms) waits for a tilt; while
+        // tilted, scrolling runs on WPF's frame clock so it moves once per drawn frame. Squared response: a light tilt
+        // creeps, a full tilt flies. Stands down while the stick is the jog wheel.
         private void StartStickScroll()
         {
             if (_stick == null) return;
-            _stickPoll = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+            _stickPoll = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
             _stickPoll.Tick += (s, e) =>
             {
+                if (_rules?.RightStickJogs == true) return;
                 if (!_stickScrolling && Math.Abs(_stick().Y) >= StickDeadzone) StartStickFrames();
             };
             _stickPoll.Start();
@@ -480,15 +628,44 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             }
             _stickVelocity += (target - _stickVelocity) * Math.Min(1, dt * 12);
 
-            // Back at rest and coasted to a stop: hand back to the idle check.
             if (target == 0 && Math.Abs(_stickVelocity) < 5) { StopStickFrames(); return; }
-            StatsScroll.ScrollToVerticalOffset(StatsScroll.VerticalOffset + _stickVelocity * dt);
+            var scroll = _rules?.Page == CardPage.Details ? DetailsScroll : SongScroll;
+            scroll.ScrollToVerticalOffset(scroll.VerticalOffset + _stickVelocity * dt);
         }
 
-        private void CloseDialog()
+        // ---- Helpers ----
+
+        // Fades the populated pages in. PagesRoot sits at Opacity 0.01, not 0: WPF skips drawing fully transparent
+        // content, so from 0 the fade's first frame had to draw every row at once. (Smooth only because the card's window
+        // is opaque; see MusicInfoCardHandler.Show.)
+        private void FadeInPages()
         {
-            Window.GetWindow(this)?.Close();
+            int frames = 0;
+            EventHandler onFrame = null;
+            onFrame = (s, e) =>
+            {
+                if (++frames < 2) return;
+                CompositionTarget.Rendering -= onFrame;
+                PagesRoot.BeginAnimation(OpacityProperty, new DoubleAnimation
+                {
+                    From = 0.01, To = 1, Duration = TimeSpan.FromMilliseconds(300),
+                    EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                });
+            };
+            CompositionTarget.Rendering += onFrame;
         }
+
+        private void CloseDialog() => Window.GetWindow(this)?.Close();
+
+        private static SolidColorBrush CreateFrozenBrush(Color color)
+        {
+            var brush = new SolidColorBrush(color);
+            brush.Freeze();
+            return brush;
+        }
+
+        private static SolidColorBrush WithOpacity(SolidColorBrush brush, double opacity)
+            => CreateFrozenBrush(Color.FromArgb((byte)(opacity * 255), brush.Color.R, brush.Color.G, brush.Color.B));
 
         private static string FormatDuration(TimeSpan duration)
         {
@@ -503,6 +680,23 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
             if (bytes < 1024L * 1024 * 1024) return $"{bytes / (1024.0 * 1024):F1} MB";
             return $"{bytes / (1024.0 * 1024 * 1024):F2} GB";
+        }
+
+        // One song row's look, set from code (see RestyleRows)
+        public sealed class SongRow : INotifyPropertyChanged
+        {
+            public string Title { get; set; }
+            public string Path { get; set; }
+            public string DurationText { get; set; }
+            public Brush Background { get; set; }
+            public Brush Outline { get; set; }
+            public Thickness OutlineThickness { get; set; }
+            public Brush TitleBrush { get; set; }
+            public string Mark { get; set; }
+            public Brush MarkBrush { get; set; }
+
+            public event PropertyChangedEventHandler PropertyChanged;
+            public void Changed() => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(string.Empty));
         }
     }
 }

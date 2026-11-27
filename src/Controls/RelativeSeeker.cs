@@ -10,16 +10,22 @@ namespace UniPlaySong.Controls
     {
         private static readonly TimeSpan Interval = TimeSpan.FromMilliseconds(120);
 
-        private readonly IActiveMediaService _activeMedia;
+        private readonly Func<bool> _canSeek;
+        private readonly Action<double> _seekBy;
         private double _pendingSeconds;
         private DateTime _lastSeek;
 
         public RelativeSeeker(IActiveMediaService activeMedia)
+            : this(() => activeMedia?.CanSeek == true, seconds => activeMedia?.SeekBy(seconds)) { }
+
+        // For a caller that reaches the transport through delegates (the Music Info Card's host)
+        public RelativeSeeker(Func<bool> canSeek, Action<double> seekBy)
         {
-            _activeMedia = activeMedia;
+            _canSeek = canSeek;
+            _seekBy = seekBy;
         }
 
-        public bool CanSeek => _activeMedia?.CanSeek == true;
+        public bool CanSeek => _canSeek?.Invoke() == true;
 
         public void Add(double seconds)
         {
@@ -30,7 +36,7 @@ namespace UniPlaySong.Controls
         public void Flush()
         {
             if (_pendingSeconds == 0) return;
-            _activeMedia?.SeekBy(_pendingSeconds);
+            _seekBy?.Invoke(_pendingSeconds);
             _pendingSeconds = 0;
             _lastSeek = DateTime.UtcNow;
         }

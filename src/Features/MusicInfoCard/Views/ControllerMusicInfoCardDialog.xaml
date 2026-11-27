@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              mc:Ignorable="d"
-             d:DesignHeight="640" d:DesignWidth="760"
+             d:DesignHeight="900" d:DesignWidth="720"
              Focusable="True">
     <UserControl.Resources>
         <ResourceDictionary>
@@ -18,34 +18,49 @@
                 <GradientStop Color="#40FFFFFF" Offset="0"/>
                 <GradientStop Color="#0AFFFFFF" Offset="1"/>
             </LinearGradientBrush>
+            <!-- Control icons on a 16 x 16 grid, as on the Desktop hover card -->
+            <Geometry x:Key="IconPrev">M2,2 H4.2 V14 H2 Z M14,2.6 V13.4 L5.4,8 Z</Geometry>
+            <Geometry x:Key="IconNext">M11.8,2 H14 V14 H11.8 Z M2,2.6 V13.4 L10.6,8 Z</Geometry>
+            <Geometry x:Key="IconPause">M3,2 H6.6 V14 H3 Z M9.4,2 H13 V14 H9.4 Z</Geometry>
+            <Geometry x:Key="IconPlay">M4.5,2 L14,8 L4.5,14 Z</Geometry>
+            <Geometry x:Key="IconMoon">M10.6,1.4 A6.8,6.8 0 1 0 14.6,11 A5.6,5.6 0 0 1 10.6,1.4 Z</Geometry>
+            <Geometry x:Key="IconWave">M1,8 C2,8 2.5,2 4,2 C5.5,2 5.5,14 7,14 C8.2,14 8.5,4.5 9.7,4.5 C10.8,4.5 11,11.5 12,11.5 C12.8,11.5 13.2,8 15,8</Geometry>
+            <Style x:Key="DockLabel" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="Foreground" Value="#A9A29D"/>
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="Margin" Value="0,2,0,0"/>
+            </Style>
+            <Style x:Key="DockButton" TargetType="Ellipse">
+                <Setter Property="Width" Value="42"/>
+                <Setter Property="Height" Value="42"/>
+                <Setter Property="Fill" Value="#14FFFFFF"/>
+                <Setter Property="Stroke" Value="#24FFFFFF"/>
+                <Setter Property="StrokeThickness" Value="1"/>
+            </Style>
+            <Style x:Key="TabPill" TargetType="Border">
+                <Setter Property="CornerRadius" Value="12"/>
+                <Setter Property="Padding" Value="12,3"/>
+                <Setter Property="Margin" Value="3,0"/>
+                <Setter Property="BorderThickness" Value="1"/>
+            </Style>
+            <Style x:Key="Badge" TargetType="Border">
+                <Setter Property="CornerRadius" Value="5"/>
+                <Setter Property="Padding" Value="5,1"/>
+                <Setter Property="Background" Value="#3A3F4B"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <!-- Outer card. Same backdrop+veil+tint stack as Desktop dialog.
-         Larger CornerRadius matches the Fullscreen visual scale.
-         Window is transparent + chromeless (raw WPF Window), so the
-         only background pixels seen come from this Border. -->
-    <Border x:Name="OuterCardBorder"
-            Background="#1C0F22"
-            BorderThickness="0"
-            CornerRadius="14"
-            Margin="0">
+    <!-- Outer card. Same backdrop+veil+tint stack as Desktop dialog. Larger CornerRadius matches the Fullscreen visual
+         scale. The window is opaque (see MusicInfoCardHandler.Show). -->
+    <Border x:Name="OuterCardBorder" Background="#1C0F22" BorderThickness="0" CornerRadius="14" Margin="0">
         <Grid ClipToBounds="True">
-            <Image x:Name="BlurredBackdrop"
-                   RenderOptions.BitmapScalingMode="HighQuality"
-                   Stretch="UniformToFill"
-                   StretchDirection="Both"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   IsHitTestVisible="False"
-                   Opacity="1">
-            </Image>
-
-            <!-- Dark veil ~80% black (was 60% / 0x99). Same readability
-                 upgrade as the Desktop dialog. -->
+            <Image x:Name="BlurredBackdrop" RenderOptions.BitmapScalingMode="HighQuality" Stretch="UniformToFill"
+                   StretchDirection="Both" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"/>
             <Border Background="#BF000000" IsHitTestVisible="False"/>
-            <!-- Subtle vignette: the backdrop darkens a little toward the edges and corners, for depth and
-                 readability at the rim. Clear in the middle, at most ~25% darker at the corners. -->
+            <!-- Subtle vignette: the backdrop darkens a little toward the edges and corners -->
             <Border IsHitTestVisible="False">
                 <Border.Background>
                     <RadialGradientBrush RadiusX="0.75" RadiusY="0.75">
@@ -54,399 +69,322 @@
                     </RadialGradientBrush>
                 </Border.Background>
             </Border>
+            <Border x:Name="CardTintLayer" Background="Transparent" IsHitTestVisible="False"/>
+            <Border x:Name="AccentStrip" Height="4" VerticalAlignment="Top" CornerRadius="14,14,0,0" Background="#7E57C2"/>
 
-            <Border x:Name="CardTintLayer"
-                    Background="Transparent"
-                    IsHitTestVisible="False"/>
-
-            <!-- Accent strip across the top -->
-            <Border x:Name="AccentStrip"
-                    Height="4"
-                    VerticalAlignment="Top"
-                    CornerRadius="14,14,0,0"
-                    Background="#7E57C2"/>
-
-            <Grid Margin="28">
+            <Grid Margin="28,22,28,10">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>  <!-- Header (icon + title) -->
+                    <RowDefinition Height="Auto"/>  <!-- Page tabs -->
                     <RowDefinition Height="Auto"/>  <!-- Loader -->
-                    <RowDefinition Height="*"/>     <!-- Stats body -->
-                    <RowDefinition Height="Auto"/>  <!-- Footer hint -->
+                    <RowDefinition Height="*"/>     <!-- Pages -->
+                    <RowDefinition Height="Auto"/>  <!-- Footer -->
                 </Grid.RowDefinitions>
 
                 <!-- Header: icon + title -->
-                <Grid Grid.Row="0" Margin="0,8,0,20">
+                <Grid Grid.Row="0" Margin="0,6,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-
-                    <!-- Icon container — DropShadowEffect on the Image element
-                         directly so the glow follows icon transparency rather
-                         than the opaque Border background. See Desktop dialog
-                         XAML for the full reasoning. -->
-                    <Grid Grid.Column="0"
-                          Width="110"
-                          Height="110"
-                          Margin="0,0,22,0">
-                        <Border x:Name="IconPlaceholderBorder"
-                                CornerRadius="14"
-                                Background="#0A0A0A"
-                                Visibility="Visible">
-                            <TextBlock x:Name="IconPlaceholder"
-                                       Text="♪"
-                                       FontSize="70"
-                                       Foreground="#666666"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"/>
+                    <!-- DropShadowEffect on the Image so the glow follows the icon's transparency (see Desktop dialog) -->
+                    <Grid Grid.Column="0" Width="88" Height="88" Margin="0,0,20,0">
+                        <Border x:Name="IconPlaceholderBorder" CornerRadius="14" Background="#0A0A0A" Visibility="Visible">
+                            <TextBlock x:Name="IconPlaceholder" Text="♪" FontSize="56" Foreground="#666666"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
-
-                        <Image x:Name="GameIconImage"
-                               Stretch="Uniform"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               Visibility="Collapsed">
+                        <Image x:Name="GameIconImage" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed">
                             <Image.Effect>
-                                <DropShadowEffect x:Name="IconGlowEffect"
-                                                  Color="#7E57C2"
-                                                  BlurRadius="28"
-                                                  ShadowDepth="0"
-                                                  Opacity="0.75"
-                                                  RenderingBias="Performance"/>
+                                <DropShadowEffect x:Name="IconGlowEffect" Color="#7E57C2" BlurRadius="28" ShadowDepth="0"
+                                                  Opacity="0.75" RenderingBias="Performance"/>
                             </Image.Effect>
                             <Image.CacheMode>
-                                <BitmapCache EnableClearType="False"
-                                             SnapsToDevicePixels="True"/>
+                                <BitmapCache EnableClearType="False" SnapsToDevicePixels="True"/>
                             </Image.CacheMode>
                         </Image>
                     </Grid>
-
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock x:Name="HeaderSubtitle"
-                                   Text="🎵 Music Info Card"
-                                   FontSize="18"
-                                   FontWeight="Medium"
-                                   Foreground="#BB86FC"
-                                   Margin="0,0,0,6"
-                                   TextTrimming="CharacterEllipsis"/>
-                        <TextBlock x:Name="GameNameText"
-                                   Text="..."
-                                   FontSize="32"
-                                   FontWeight="Bold"
-                                   Foreground="#FFFFFF"
+                        <TextBlock x:Name="HeaderSubtitle" Text="🎵 Music Info Card" FontSize="17" FontWeight="Medium"
+                                   Foreground="#BB86FC" Margin="0,0,0,4" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock x:Name="GameNameText" Text="..." FontSize="30" FontWeight="Bold" Foreground="#FFFFFF"
                                    TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
                 </Grid>
 
-                <!-- Loader -->
-                <StackPanel x:Name="LoadingPanel"
-                            Grid.Row="1"
-                            Orientation="Vertical"
-                            HorizontalAlignment="Center"
-                            Margin="0,12,0,12"
-                            Visibility="Collapsed">
-                    <ProgressBar IsIndeterminate="True" Width="320" Height="6"/>
-                    <TextBlock Text="Reading metadata..."
-                               FontSize="16"
-                               Foreground="#888888"
-                               HorizontalAlignment="Center"
-                               Margin="0,8,0,0"/>
+                <!-- Page tabs: their own row right above the stats, right-aligned. LB / RB switch. -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,8">
+                    <Border Style="{StaticResource Badge}"><TextBlock Text="LB" FontSize="11" FontWeight="Bold" Foreground="White"/></Border>
+                    <Border x:Name="PlayerTab" Style="{StaticResource TabPill}"><TextBlock x:Name="PlayerTabText" Text="Player" FontSize="13"/></Border>
+                    <Border x:Name="DetailsTab" Style="{StaticResource TabPill}"><TextBlock x:Name="DetailsTabText" Text="Details" FontSize="13"/></Border>
+                    <Border Style="{StaticResource Badge}"><TextBlock Text="RB" FontSize="11" FontWeight="Bold" Foreground="White"/></Border>
                 </StackPanel>
 
-                <!-- Stats body -->
-                <ScrollViewer x:Name="StatsScroll"
-                              Grid.Row="2"
-                              VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled"
-                              Margin="0,4,0,12">
-                    <ScrollViewer.Resources>
-                        <!-- Thinner than the Material Design default (10 px). -->
-                        <Style TargetType="ScrollBar" BasedOn="{StaticResource {x:Type ScrollBar}}">
-                            <Setter Property="Width" Value="10"/>
-                            <Setter Property="MinWidth" Value="10"/>
-                        </Style>
-                    </ScrollViewer.Resources>
-                    <StackPanel x:Name="StatsPanel" Opacity="0.01">
-                        <!-- Headline -->
-                        <Border Tag="Glass"
-                                Background="#17FFFFFF"
-                                BorderBrush="{StaticResource GlassEdge}"
-                                BorderThickness="1"
-                                CornerRadius="10"
-                                Padding="22,16"
-                                Margin="0,0,0,14">
+                <!-- Loader -->
+                <StackPanel x:Name="LoadingPanel" Grid.Row="2" HorizontalAlignment="Center" Margin="0,12" Visibility="Collapsed">
+                    <ProgressBar IsIndeterminate="True" Width="320" Height="6"/>
+                    <TextBlock Text="Reading metadata..." FontSize="16" Foreground="#888888" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                </StackPanel>
+
+                <!-- Both pages. Opacity 0.01 until the stats arrive (FadeInPages). -->
+                <Grid x:Name="PagesRoot" Grid.Row="3" Opacity="0.01">
+
+                    <!-- ===== Player page ===== -->
+                    <Grid x:Name="PlayerPage">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>  <!-- Stats -->
+                            <RowDefinition Height="*"/>     <!-- Songs (the only part that scrolls) -->
+                            <RowDefinition Height="Auto"/>  <!-- Control dock, pinned -->
+                        </Grid.RowDefinitions>
+
+                        <!-- Stats -->
+                        <Border Grid.Row="0" Tag="Glass" Background="#17FFFFFF" BorderBrush="{StaticResource GlassEdge}"
+                                BorderThickness="1" CornerRadius="10" Padding="22,12" Margin="0,0,0,12">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-
                                 <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                                    <TextBlock x:Name="FileCountText"
-                                               Text="—"
-                                               FontSize="42"
-                                               FontWeight="Bold"
-                                               Foreground="#BB86FC"
-                                               HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Files"
-                                               FontSize="14"
-                                               Foreground="#888888"
-                                               HorizontalAlignment="Center"
-                                               Margin="0,4,0,0"/>
+                                    <TextBlock x:Name="FileCountText" Text="—" FontSize="36" FontWeight="Bold" Foreground="#BB86FC" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Files" FontSize="13" Foreground="#888888" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                                 </StackPanel>
-
-                                <Rectangle Grid.Column="0"
-                                           Width="1"
-                                           Fill="#3A3A3A"
-                                           HorizontalAlignment="Right"
-                                           Margin="0,8"/>
-
+                                <Rectangle Grid.Column="0" Width="1" Fill="#3A3A3A" HorizontalAlignment="Right" Margin="0,8"/>
                                 <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                                    <TextBlock x:Name="TotalDurationText"
-                                               Text="—"
-                                               FontSize="42"
-                                               FontWeight="Bold"
-                                               Foreground="#03DAC5"
-                                               HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Total Duration"
-                                               FontSize="14"
-                                               Foreground="#888888"
-                                               HorizontalAlignment="Center"
-                                               Margin="0,4,0,0"/>
+                                    <TextBlock x:Name="TotalDurationText" Text="—" FontSize="36" FontWeight="Bold" Foreground="#03DAC5" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Total Duration" FontSize="13" Foreground="#888888" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                                 </StackPanel>
-
-                                <Rectangle Grid.Column="1"
-                                           Width="1"
-                                           Fill="#3A3A3A"
-                                           HorizontalAlignment="Right"
-                                           Margin="0,8"/>
-
+                                <Rectangle Grid.Column="1" Width="1" Fill="#3A3A3A" HorizontalAlignment="Right" Margin="0,8"/>
                                 <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                                    <TextBlock x:Name="TotalSizeText"
-                                               Text="—"
-                                               FontSize="42"
-                                               FontWeight="Bold"
-                                               Foreground="#FFB74D"
-                                               HorizontalAlignment="Center"/>
-                                    <TextBlock Text="On Disk"
-                                               FontSize="14"
-                                               Foreground="#888888"
-                                               HorizontalAlignment="Center"
-                                               Margin="0,4,0,0"/>
+                                    <TextBlock x:Name="TotalSizeText" Text="—" FontSize="36" FontWeight="Bold" Foreground="#FFB74D" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="On Disk" FontSize="13" Foreground="#888888" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
 
-                        <!-- Playlist info -->
-                        <Border x:Name="PlaylistPanel"
-                                Tag="Glass"
-                                Background="#17FFFFFF"
-                                BorderBrush="{StaticResource GlassEdge}"
-                                BorderThickness="1"
-                                CornerRadius="10"
-                                Padding="22,14"
-                                Margin="0,0,0,12"
-                                Visibility="Collapsed">
-                            <StackPanel>
-                                <TextBlock Text="🎼 Playlists"
-                                           FontWeight="SemiBold"
-                                           FontSize="18"
-                                           Foreground="#FFFFFF"
-                                           Margin="0,0,0,6"/>
-                                <TextBlock x:Name="PlaylistInfoText"
-                                           Foreground="#CCCCCC"
-                                           FontSize="16"
-                                           TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Longest / shortest -->
-                        <Border Tag="Glass"
-                                Background="#17FFFFFF"
-                                BorderBrush="{StaticResource GlassEdge}"
-                                BorderThickness="1"
-                                CornerRadius="10"
-                                Padding="22,14"
-                                Margin="0,0,0,12">
-                            <StackPanel>
-                                <Grid Margin="0,0,0,10">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="100"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="Longest:" FontSize="16" Foreground="#888888"/>
-                                    <TextBlock Grid.Column="1" x:Name="LongestTitleText" Text="—" FontSize="16" Foreground="#FFFFFF" TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock Grid.Column="2" x:Name="LongestDurationText" Text="" FontSize="16" Foreground="#03DAC5" Margin="12,0,0,0"/>
-                                </Grid>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="100"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="Shortest:" FontSize="16" Foreground="#888888"/>
-                                    <TextBlock Grid.Column="1" x:Name="ShortestTitleText" Text="—" FontSize="16" Foreground="#FFFFFF" TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock Grid.Column="2" x:Name="ShortestDurationText" Text="" FontSize="16" Foreground="#03DAC5" Margin="12,0,0,0"/>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Format breakdown -->
-                        <Border Tag="Glass"
-                                Background="#17FFFFFF"
-                                BorderBrush="{StaticResource GlassEdge}"
-                                BorderThickness="1"
-                                CornerRadius="10"
-                                Padding="22,14"
-                                Margin="0,0,0,12">
-                            <StackPanel>
-                                <TextBlock Text="Format Breakdown"
-                                           FontWeight="SemiBold"
-                                           FontSize="18"
-                                           Foreground="#FFFFFF"
-                                           Margin="0,0,0,8"/>
-                                <ItemsControl x:Name="FormatList">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="0,4">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="100"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0" Text="{Binding Extension}" FontSize="16" Foreground="#BB86FC" FontFamily="Consolas"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding Percentage}" FontSize="16" Foreground="#CCCCCC"/>
-                                                <TextBlock Grid.Column="2" Text="{Binding Count}" FontSize="16" Foreground="#FFFFFF" FontWeight="SemiBold"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Unreadable -->
-                        <Border x:Name="UnreadablePanel"
-                                Background="#3A2222"
-                                CornerRadius="10"
-                                Padding="22,12"
-                                Margin="0,0,0,12"
-                                Visibility="Collapsed">
-                            <TextBlock x:Name="UnreadableText"
-                                       Foreground="#FFA8A8"
-                                       FontSize="14"/>
-                        </Border>
-
-                        <!-- Song list -->
-                        <Border x:Name="SongListPanel"
-                                Tag="Glass"
-                                Background="#17FFFFFF"
-                                BorderBrush="{StaticResource GlassEdge}"
-                                BorderThickness="1"
-                                CornerRadius="10"
-                                Padding="22,14"
-                                Margin="0,0,0,12"
-                                Visibility="Collapsed">
-                            <StackPanel>
-                                <Grid Margin="0,0,0,10">
+                        <!-- Songs: header, the scrolling list, the now-playing line anchored at the bottom -->
+                        <Border x:Name="SongListPanel" Grid.Row="1" Tag="Glass" Background="#17FFFFFF" BorderBrush="{StaticResource GlassEdge}"
+                                BorderThickness="1" CornerRadius="10" Padding="18,12,18,8">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0" Margin="0,0,0,6">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0"
-                                               Text="Songs"
-                                               FontWeight="SemiBold"
-                                               FontSize="18"
-                                               Foreground="#FFFFFF"/>
-                                    <TextBlock Grid.Column="1"
-                                               x:Name="SongListCountText"
-                                               Foreground="#888888"
-                                               FontSize="14"/>
+                                    <TextBlock Text="Songs" FontWeight="SemiBold" FontSize="18" Foreground="#FFFFFF"/>
+                                    <TextBlock Grid.Column="1" x:Name="SongListCountText" Foreground="#888888" FontSize="14"/>
                                 </Grid>
-                                <ItemsControl x:Name="SongList">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <!-- D-pad highlights a row, A plays it (code-behind sets the highlight). -->
-                                            <Border Background="#0FFFFFFF"
-                                                    CornerRadius="6"
-                                                    Padding="14,10"
-                                                    Margin="0,3"
-                                                    Tag="{Binding FilePath}">
-                                                <Grid>
+                                <ScrollViewer x:Name="SongScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                              HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                                    <ScrollViewer.Resources>
+                                        <Style TargetType="ScrollBar" BasedOn="{StaticResource {x:Type ScrollBar}}">
+                                            <Setter Property="Width" Value="6"/>
+                                            <Setter Property="MinWidth" Value="6"/>
+                                        </Style>
+                                    </ScrollViewer.Resources>
+                                    <StackPanel>
+                                        <ItemsControl x:Name="SongList">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <!-- Row look is set from code: playing (accent tint + mark), primary (pink title),
+                                                         song cursor (accent outline: bright when live, faint when not) -->
+                                                    <Border Background="{Binding Background}" BorderBrush="{Binding Outline}"
+                                                            BorderThickness="{Binding OutlineThickness}" CornerRadius="8"
+                                                            Padding="12,7" Margin="0,2,6,2">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock FontSize="16" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                                                       Foreground="{Binding TitleBrush}">
+                                                                <Run Text="{Binding Mark, Mode=OneWay}" Foreground="{Binding MarkBrush, Mode=OneWay}"/><Run Text="{Binding Title, Mode=OneWay}"/>
+                                                            </TextBlock>
+                                                            <TextBlock Grid.Column="1" Text="{Binding DurationText}" Foreground="#1FD8C1"
+                                                                       FontSize="15" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <TextBlock x:Name="EmptyStateText" Text="No music files found for this game." Foreground="#888888"
+                                                   FontStyle="Italic" FontSize="17" HorizontalAlignment="Center" Margin="0,24"
+                                                   Visibility="Collapsed"/>
+                                    </StackPanel>
+                                </ScrollViewer>
+                                <Border Grid.Row="2" BorderBrush="#1AFFFFFF" BorderThickness="0,1,0,0" Margin="0,6,0,0" Padding="0,6,0,0">
+                                    <TextBlock x:Name="NowPlayingLine" FontSize="14" Foreground="#1FD8C1" HorizontalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis"/>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <!-- Control dock, pinned: five controls and a separator centred on one line, labels on one baseline -->
+                        <StackPanel Grid.Row="2" Margin="0,10,0,0">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <StackPanel Width="88">
+                                    <Grid Height="64">
+                                        <Ellipse x:Name="PrevButton" Style="{StaticResource DockButton}"/>
+                                        <Path Data="{StaticResource IconPrev}" Fill="White" Width="15" Height="15" Stretch="Uniform"/>
+                                    </Grid>
+                                    <TextBlock x:Name="PrevLabel" Text="Previous" Style="{StaticResource DockLabel}"/>
+                                </StackPanel>
+                                <StackPanel Width="88">
+                                    <Grid x:Name="RingSlot" Height="64">
+                                        <!-- the SeekRing goes in here, from code: a named custom control's generated field
+                                             would be typed UniPlaySong.Features..., and UniPlaySong is the plugin class -->
+                                        <Ellipse x:Name="PlayButton" Width="44" Height="44" Fill="#57FFFFFF" Stroke="#6BFFFFFF" StrokeThickness="1"/>
+                                        <Path x:Name="PlayGlyph" Data="{StaticResource IconPause}" Fill="White" Width="16" Height="16" Stretch="Uniform"/>
+                                    </Grid>
+                                    <TextBlock x:Name="PlayLabel" Text="Pause" Style="{StaticResource DockLabel}"/>
+                                </StackPanel>
+                                <StackPanel Width="88">
+                                    <Grid Height="64">
+                                        <Ellipse x:Name="NextButton" Style="{StaticResource DockButton}"/>
+                                        <Path Data="{StaticResource IconNext}" Fill="White" Width="15" Height="15" Stretch="Uniform"/>
+                                    </Grid>
+                                    <TextBlock x:Name="NextLabel" Text="Next" Style="{StaticResource DockLabel}"/>
+                                </StackPanel>
+                                <Grid Width="24" Height="64" VerticalAlignment="Top">
+                                    <Rectangle Width="1" Height="34" Fill="#1FFFFFFF" VerticalAlignment="Center"/>
+                                </Grid>
+                                <StackPanel Width="96">
+                                    <Grid Height="64">
+                                        <Ellipse x:Name="CalmButton" Style="{StaticResource DockButton}"/>
+                                        <Path Data="{StaticResource IconMoon}" Fill="White" Width="15" Height="15" Stretch="Uniform"/>
+                                    </Grid>
+                                    <TextBlock x:Name="CalmLabel" Text="Calm Down" Style="{StaticResource DockLabel}"/>
+                                </StackPanel>
+                                <StackPanel Width="96">
+                                    <Grid Height="64">
+                                        <Ellipse x:Name="FxButton" Style="{StaticResource DockButton}"/>
+                                        <Path Data="{StaticResource IconWave}" Stroke="White" StrokeThickness="1.6" Width="16" Height="16" Stretch="Uniform"/>
+                                    </Grid>
+                                    <TextBlock x:Name="FxLabel" Text="Live Effects" Style="{StaticResource DockLabel}"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <TextBlock x:Name="JogHint" Text="↻ Right stick: turn the knob to seek" FontSize="13" HorizontalAlignment="Center"
+                                       Margin="0,2,0,0" Visibility="Hidden"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- ===== Details page ===== -->
+                    <ScrollViewer x:Name="DetailsScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                  Focusable="False" Visibility="Collapsed">
+                        <ScrollViewer.Resources>
+                            <Style TargetType="ScrollBar" BasedOn="{StaticResource {x:Type ScrollBar}}">
+                                <Setter Property="Width" Value="6"/>
+                                <Setter Property="MinWidth" Value="6"/>
+                            </Style>
+                        </ScrollViewer.Resources>
+                        <StackPanel x:Name="DetailsPanel">
+                            <!-- Longest / shortest -->
+                            <Border Tag="Glass" Background="#17FFFFFF" BorderBrush="{StaticResource GlassEdge}" BorderThickness="1"
+                                    CornerRadius="10" Padding="22,14" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,10">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Longest:" FontSize="16" Foreground="#888888"/>
+                                        <TextBlock Grid.Column="1" x:Name="LongestTitleText" Text="—" FontSize="16" Foreground="#FFFFFF" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="2" x:Name="LongestDurationText" Text="" FontSize="16" Foreground="#03DAC5" Margin="12,0,0,0"/>
+                                    </Grid>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Shortest:" FontSize="16" Foreground="#888888"/>
+                                        <TextBlock Grid.Column="1" x:Name="ShortestTitleText" Text="—" FontSize="16" Foreground="#FFFFFF" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="2" x:Name="ShortestDurationText" Text="" FontSize="16" Foreground="#03DAC5" Margin="12,0,0,0"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            <!-- Format breakdown -->
+                            <Border Tag="Glass" Background="#17FFFFFF" BorderBrush="{StaticResource GlassEdge}" BorderThickness="1"
+                                    CornerRadius="10" Padding="22,14" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Text="Format Breakdown" FontWeight="SemiBold" FontSize="18" Foreground="#FFFFFF" Margin="0,0,0,8"/>
+                                    <ItemsControl x:Name="FormatList">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,4">
                                                     <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="100"/>
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="Auto"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                        <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
-
-                                                    <Border Grid.Column="0"
-                                                            Background="{Binding ChipBackground}"
-                                                            CornerRadius="4"
-                                                            Padding="8,3"
-                                                            Margin="0,0,12,0">
-                                                        <TextBlock Text="{Binding ChipText}"
-                                                                   FontFamily="Consolas"
-                                                                   FontSize="13"
-                                                                   Foreground="#FFFFFF"/>
-                                                    </Border>
-
-                                                    <TextBlock Grid.Column="1"
-                                                               Text="{Binding Title}"
-                                                               FontSize="15"
-                                                               Foreground="#FFFFFF"
-                                                               TextTrimming="CharacterEllipsis"
-                                                               VerticalAlignment="Center"/>
-
-                                                    <TextBlock Grid.Column="2"
-                                                               Text="{Binding BitrateText}"
-                                                               Foreground="#888888"
-                                                               FontSize="14"
-                                                               Margin="12,0,0,0"
-                                                               VerticalAlignment="Center"/>
-
-                                                    <TextBlock Grid.Column="3"
-                                                               Text="{Binding SizeText}"
-                                                               Foreground="#888888"
-                                                               FontSize="14"
-                                                               Margin="10,0,0,0"
-                                                               VerticalAlignment="Center"/>
-
-                                                    <TextBlock Grid.Column="4"
-                                                               Text="{Binding DurationText}"
-                                                               Foreground="#03DAC5"
-                                                               FontSize="15"
-                                                               Margin="14,0,0,0"
-                                                               VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="0" Text="{Binding Extension}" FontSize="16" Foreground="#BB86FC" FontFamily="Consolas"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Percentage}" FontSize="16" Foreground="#CCCCCC"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Count}" FontSize="16" Foreground="#FFFFFF" FontWeight="SemiBold"/>
                                                 </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                            <!-- Playlist info (only when playlists are present) -->
+                            <Border x:Name="PlaylistPanel" Tag="Glass" Background="#17FFFFFF" BorderBrush="{StaticResource GlassEdge}"
+                                    BorderThickness="1" CornerRadius="10" Padding="22,14" Margin="0,0,0,12" Visibility="Collapsed">
+                                <StackPanel>
+                                    <TextBlock Text="🎼 Playlists" FontWeight="SemiBold" FontSize="18" Foreground="#FFFFFF" Margin="0,0,0,6"/>
+                                    <TextBlock x:Name="PlaylistInfoText" Foreground="#CCCCCC" FontSize="16" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                            <!-- Unreadable files (only when some are) -->
+                            <Border x:Name="UnreadablePanel" Background="#3A2222" CornerRadius="10" Padding="22,12" Margin="0,0,0,12" Visibility="Collapsed">
+                                <TextBlock x:Name="UnreadableText" Foreground="#FFA8A8" FontSize="14"/>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
 
-                        <!-- Empty state -->
-                        <TextBlock x:Name="EmptyStateText"
-                                   Text="No music files found for this game."
-                                   Foreground="#888888"
-                                   FontStyle="Italic"
-                                   FontSize="18"
-                                   HorizontalAlignment="Center"
-                                   Margin="0,30"
-                                   Visibility="Collapsed"/>
+                <!-- Footer: subtle. D-pad icons drawn with four separate arms; the lit arms are what they move. -->
+                <Grid Grid.Row="4" Margin="0,8,0,0">
+                    <StackPanel x:Name="PlayerFooter" Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Canvas Width="17" Height="17" VerticalAlignment="Center" Margin="0,0,5,0">
+                            <Rectangle Canvas.Left="6" Canvas.Top="0" Width="5" Height="5.5" RadiusX="1" RadiusY="1" Fill="White"/>
+                            <Rectangle Canvas.Left="6" Canvas.Top="11.5" Width="5" Height="5.5" RadiusX="1" RadiusY="1" Fill="White"/>
+                            <Rectangle Canvas.Left="0" Canvas.Top="6" Width="5.5" Height="5" RadiusX="1" RadiusY="1" Fill="#38FFFFFF"/>
+                            <Rectangle Canvas.Left="11.5" Canvas.Top="6" Width="5.5" Height="5" RadiusX="1" RadiusY="1" Fill="#38FFFFFF"/>
+                        </Canvas>
+                        <TextBlock Text="Songs" FontSize="14" Foreground="#A9A29D" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                        <Canvas Width="17" Height="17" VerticalAlignment="Center" Margin="0,0,5,0">
+                            <Rectangle Canvas.Left="6" Canvas.Top="0" Width="5" Height="5.5" RadiusX="1" RadiusY="1" Fill="#38FFFFFF"/>
+                            <Rectangle Canvas.Left="6" Canvas.Top="11.5" Width="5" Height="5.5" RadiusX="1" RadiusY="1" Fill="#38FFFFFF"/>
+                            <Rectangle Canvas.Left="0" Canvas.Top="6" Width="5.5" Height="5" RadiusX="1" RadiusY="1" Fill="White"/>
+                            <Rectangle Canvas.Left="11.5" Canvas.Top="6" Width="5.5" Height="5" RadiusX="1" RadiusY="1" Fill="White"/>
+                        </Canvas>
+                        <TextBlock Text="Controls" FontSize="14" Foreground="#A9A29D" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                        <Grid Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,5,0">
+                            <Ellipse Fill="#3FAE49"/>
+                            <TextBlock Text="A" FontSize="10.5" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <TextBlock Text="Select" FontSize="14" Foreground="#A9A29D" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                        <Grid Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,5,0">
+                            <Ellipse Fill="#D9463C"/>
+                            <TextBlock Text="B" FontSize="10.5" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <TextBlock Text="Close" FontSize="14" Foreground="#A9A29D" VerticalAlignment="Center"/>
                     </StackPanel>
-                </ScrollViewer>
-
-                <!-- Footer hint -->
-                <TextBlock Grid.Row="3"
-                           Text="🎮 D-pad: pick a song   A: play   Right stick: scroll   B: close"
-                           FontSize="14"
-                           Foreground="#888888"
-                           HorizontalAlignment="Center"
-                           Margin="0,8,0,0"/>
+                    <StackPanel x:Name="DetailsFooter" Orientation="Horizontal" HorizontalAlignment="Center" Visibility="Collapsed">
+                        <TextBlock Text="Right stick: Scroll" FontSize="14" Foreground="#A9A29D" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                        <Grid Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,5,0">
+                            <Ellipse Fill="#D9463C"/>
+                            <TextBlock Text="B" FontSize="10.5" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                        <TextBlock Text="Close" FontSize="14" Foreground="#A9A29D" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
             </Grid>
         </Grid>
     </Border>
