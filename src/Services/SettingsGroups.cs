@@ -119,6 +119,7 @@ namespace UniPlaySong.Services
                     nameof(UniPlaySongSettings.RadioCustomFolderPaths),
                     nameof(UniPlaySongSettings.RadioModeEnabled),
                     nameof(UniPlaySongSettings.RadioMusicSource),
+                    nameof(UniPlaySongSettings.RadioRediscoverGames),
                     nameof(UniPlaySongSettings.RandomizeBundledTrackOnStartup),
                     nameof(UniPlaySongSettings.RandomizeDefaultMusicOnEnd),
                     nameof(UniPlaySongSettings.RandomizeOnEverySelect),

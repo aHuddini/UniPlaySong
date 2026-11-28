@@ -173,6 +173,14 @@ namespace UniPlaySong.Common
 
         #endregion
 
+        #region Radio Mode
+
+        // "Favour games you haven't played in a while"
+        public const int RadioRediscoverMonths = 6;   // a game last played this long ago (or never) is favoured
+        public const int RadioRediscoverWeight = 3;   // its songs come up about this many times as often
+
+        #endregion
+
         #region Music Info Card
 
         // The Fullscreen card as a player (Features/MusicInfoCard/Player)

@@ -277,6 +277,17 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
+                    <!-- Radio favouring games not played in a while: which one this song is from, and how long ago -->
+                    <TextBlock Text="{Binding Rediscover}" Opacity="0.6" FontSize="11" TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis" Margin="40,3,40,0">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource CardText}">
+                                <Style.Triggers>
+                                    <Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed"/></Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                     <Grid Margin="0,10,0,0" Height="30">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>

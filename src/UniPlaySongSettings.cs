@@ -1704,6 +1704,7 @@ namespace UniPlaySong
         private string spotifyExePath = string.Empty;    // Optional user path to Spotify.exe or a .lnk shortcut (auto-scan fallback)
         private bool playOnlyOnGameSelect = false; // Fullscreen: only play game music on explicit A-button select, not D-pad hover
         private RadioMusicSource radioMusicSource = RadioMusicSource.FullLibrary; // Which pool Radio Mode draws from
+        private bool radioRediscoverGames = false; // Radio favours games not played in 6+ months, or never
         private RadioMusicSource lastUpsRadioSource = RadioMusicSource.FullLibrary; // Remembers the UPS pool so SwitchRadioMode can toggle back off Spotify
         private string radioCustomFolderPath = null; // legacy single folder, moved into radioCustomFolderPaths on load
         private List<string> radioCustomFolderPaths = new List<string>(); // Radio Mode "Custom Folder" source folders
@@ -1929,6 +1930,12 @@ namespace UniPlaySong
         }
 
         // Which pool Radio Mode draws from when RadioModeEnabled is true.
+        public bool RadioRediscoverGames
+        {
+            get => radioRediscoverGames;
+            set { radioRediscoverGames = value; OnPropertyChanged(); }
+        }
+
         public RadioMusicSource RadioMusicSource
         {
             get => radioMusicSource;

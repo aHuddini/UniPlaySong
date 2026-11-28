@@ -456,8 +456,10 @@ namespace UniPlaySong
         // (e.g. Splash Screen blocks in OnGameStarting, delaying other plugins' hooks).
         private void OnGameItemUpdated(object sender, ItemUpdatedEventArgs<Game> args)
         {
-            // A completion status change moves the game in or out of the radio's status pool
-            if (args.UpdatedItems.Any(u => u.OldData?.CompletionStatusId != u.NewData?.CompletionStatusId))
+            // A completion status change moves the game in or out of the radio's status pool; playing it (last activity)
+            // moves it out of "not played in a while"
+            if (args.UpdatedItems.Any(u => u.OldData?.CompletionStatusId != u.NewData?.CompletionStatusId
+                                           || u.OldData?.LastActivity != u.NewData?.LastActivity))
                 _songPoolProvider?.InvalidateRadioPool();
             foreach (var update in args.UpdatedItems)
             {
@@ -2063,6 +2065,12 @@ namespace UniPlaySong
                 ToggleLiveEffects = () => UpdateSettingsFromMenu(s => s.LiveEffectsEnabled = !s.LiveEffectsEnabled, "MusicInfoCard"),
                 Listening = () => _listeningStore?.Snapshot(),
                 GameMusicFolder = game => game == null ? null : _fileService?.GetGameMusicDirectory(game),
+                Rediscover = game =>
+                {
+                    if (RediscoverLine(game) == null) return null;
+                    var age = Services.RadioRediscover.Age(game.LastActivity, DateTime.Now);
+                    return char.ToUpper(age[0]) + age.Substring(1);
+                },
             };
 
         // Same folders in the same order (case ignored, as Windows paths are)
@@ -3125,6 +3133,7 @@ namespace UniPlaySong
                 _topPanelMediaControl.AttachCard(new DeskMediaControl.NowPlayingCardHost
                 {
                     Song = () => (_settings?.NowPlayingTitle, _settings?.NowPlayingArtist, NowPlayingCardArt()),
+                    Rediscover = () => RediscoverLine(_playbackService?.IsInRadioMode == true ? ResolveOwningGameFromPath(_playbackService.CurrentSongPath) : null),
                     Snapshot = () => _activeMediaService?.GetSnapshot(),
                     CalmDownOn = () => _settings?.CalmDownModeEnabled == true,
                     Tracks = BuildNowPlayingCardTracks,
@@ -3236,6 +3245,15 @@ namespace UniPlaySong
 
         // Extracts the owning game from a UPS music path (...\UniPlaySong\Games\{GameId}\track.mp3).
         // Returns null for non-game-owned paths (custom folder, default music, Spotify/no path).
+        // The cards' "From X · not played in 2 years" line: only with "Favour games you haven't played in a while" on, and
+        // only for a game that is favoured; null otherwise
+        private string RediscoverLine(Game game)
+        {
+            if (game == null || _settings?.RadioRediscoverGames != true || !Services.RadioRediscover.IsFavoured(game.LastActivity, DateTime.Now))
+                return null;
+            return Services.RadioRediscover.Line(game.Name, game.LastActivity, DateTime.Now);
+        }
+
         private Game ResolveOwningGameFromPath(string songFilePath)
         {
             if (string.IsNullOrWhiteSpace(songFilePath)) return null;

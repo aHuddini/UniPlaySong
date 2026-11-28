@@ -108,6 +108,9 @@
                                    Foreground="#BB86FC" Margin="0,0,0,4" TextTrimming="CharacterEllipsis"/>
                         <TextBlock x:Name="GameNameText" Text="..." FontSize="30" FontWeight="Bold" Foreground="#FFFFFF"
                                    TextTrimming="CharacterEllipsis"/>
+                        <!-- Radio favouring games not played in a while: "Not played in 2 years" -->
+                        <TextBlock x:Name="RediscoverText" FontSize="13" Foreground="#A9A29D" Margin="0,2,0,0"
+                                   Visibility="Collapsed"/>
                     </StackPanel>
                 </Grid>
 

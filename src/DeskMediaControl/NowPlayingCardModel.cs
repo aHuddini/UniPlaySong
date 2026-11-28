@@ -13,6 +13,7 @@ namespace UniPlaySong.DeskMediaControl
     internal sealed class NowPlayingCardHost
     {
         public Func<(string Title, string Artist, string ArtPath)> Song;
+        public Func<string> Rediscover;                    // radio favouring a game not played in a while: the line, or null
         public Func<ActiveMediaSnapshot> Snapshot;
         public Func<bool> CalmDownOn;
         public Func<(NowPlayingCardContext Context, IReadOnlyList<NowPlayingCardTrack> Rows)> Tracks;
@@ -82,6 +83,7 @@ namespace UniPlaySong.DeskMediaControl
 
         public string Title { get; private set; }
         public string Artist { get; private set; }
+        public string Rediscover { get; private set; }        // "From X · not played in 2 years", or empty
         public ImageSource Banner { get; private set; }       // the art, heavily blurred
         public ImageSource BannerSharp { get; private set; }  // the art, lightly blurred, for the top of the progressive blur
         public Color TintDark { get; private set; }
@@ -138,6 +140,7 @@ namespace UniPlaySong.DeskMediaControl
             var song = _host.Song?.Invoke() ?? default;
             Set(nameof(Title), Title = song.Title ?? string.Empty);
             Set(nameof(Artist), Artist = song.Artist ?? string.Empty);
+            Set(nameof(Rediscover), Rediscover = _host.Rediscover?.Invoke() ?? string.Empty);
             // One picture drives the banner: the art faintly, and the tint from its two colours. The host hands the
             // game's own art for game music, so the banner changes with the game, not with each track.
             if (!string.Equals(song.ArtPath, _artPath, StringComparison.OrdinalIgnoreCase))

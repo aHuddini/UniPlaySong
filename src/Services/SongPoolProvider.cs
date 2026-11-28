@@ -53,10 +53,11 @@ namespace UniPlaySong.Services
         // Radio Mode pool — plays continuously across game selections.
         public List<string> GetRadioSongPool(RadioMusicSource source, UniPlaySongSettings settings)
         {
+            bool favour = settings?.RadioRediscoverGames == true; // games not played in a while come up more often
             switch (source)
             {
                 case RadioMusicSource.FullLibrary:
-                    return CachedRadioPool(source, null, SongsFromAllGames);
+                    return CachedRadioPool(source, null, favour, () => SongsFromAllGames(favour));
 
                 case RadioMusicSource.CustomFolder:
                     // Radio has its own folders, falling back to Default Music's when it has none.
@@ -66,12 +67,12 @@ namespace UniPlaySong.Services
                     return SongsInFolders(folders, logPrefix: "RadioMode: ");
 
                 case RadioMusicSource.CustomRotation:
-                    return CachedRadioPool(source, settings?.CustomRotationGameIds,
-                        () => SongsFromGameIds(settings?.CustomRotationGameIds));
+                    return CachedRadioPool(source, settings?.CustomRotationGameIds, favour,
+                        () => SongsFromGameIds(settings?.CustomRotationGameIds, favour));
 
                 case RadioMusicSource.CompletionStatusPool:
-                    return CachedRadioPool(source, settings?.DefaultMusicStatusPoolIds,
-                        () => SongsFromCompletionStatuses(settings?.DefaultMusicStatusPoolIds));
+                    return CachedRadioPool(source, settings?.DefaultMusicStatusPoolIds, favour,
+                        () => SongsFromCompletionStatuses(settings?.DefaultMusicStatusPoolIds, favour));
 
                 default:
                     return new List<string>();
@@ -82,10 +83,12 @@ namespace UniPlaySong.Services
         // the UI thread. It is rebuilt when its source or game/status list changes, when UPS changes any music file
         // (MusicVersion), and when the library changes (InvalidateRadioPool). Custom folders stay live: a few folder
         // listings are cheap. ponytail: a file added or deleted in Explorer shows up only after one of those.
-        private List<string> CachedRadioPool(RadioMusicSource source, IEnumerable<Guid> ids, Func<List<string>> build)
+        private List<string> CachedRadioPool(RadioMusicSource source, IEnumerable<Guid> ids, bool favour, Func<List<string>> build)
         {
             var files = _fileService();
+            // With favouring on, the day is in the key: a game crosses the months-since-played line as days pass
             var key = $"{source}|{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(files)}|{files?.MusicVersion}|"
+                + (favour ? DateTime.Today.ToString("yyyyMMdd") : "-") + "|"
                 + string.Join(",", ids ?? Enumerable.Empty<Guid>());
             return _radioPool.Get(key, build);
         }
@@ -114,19 +117,19 @@ namespace UniPlaySong.Services
             return songs;
         }
 
-        private List<string> SongsFromAllGames()
+        private List<string> SongsFromAllGames(bool favour = false)
         {
             var songs = new List<string>();
             var games = _api?.Database?.Games;
             if (games == null) return songs;
 
             foreach (var game in games)
-                AddSongsFor(game, songs);
+                AddSongsFor(game, songs, favour);
 
             return songs;
         }
 
-        private List<string> SongsFromGameIds(IEnumerable<Guid> gameIds)
+        private List<string> SongsFromGameIds(IEnumerable<Guid> gameIds, bool favour = false)
         {
             var songs = new List<string>();
             if (gameIds == null || _api?.Database?.Games == null) return songs;
@@ -135,13 +138,13 @@ namespace UniPlaySong.Services
             {
                 var game = _api.Database.Games[gameId];
                 if (game != null)
-                    AddSongsFor(game, songs);
+                    AddSongsFor(game, songs, favour);
             }
 
             return songs;
         }
 
-        private List<string> SongsFromCompletionStatuses(ICollection<Guid> statusIds)
+        private List<string> SongsFromCompletionStatuses(ICollection<Guid> statusIds, bool favour = false)
         {
             var songs = new List<string>();
             if (statusIds == null || statusIds.Count == 0 || _api?.Database?.Games == null) return songs;
@@ -150,17 +153,20 @@ namespace UniPlaySong.Services
             foreach (var game in _api.Database.Games)
             {
                 if (wanted.Contains(game.CompletionStatusId))
-                    AddSongsFor(game, songs);
+                    AddSongsFor(game, songs, favour);
             }
 
             return songs;
         }
 
-        private void AddSongsFor(Playnite.SDK.Models.Game game, List<string> songs)
+        // favour (radio only): a game not played in a while is listed RadioRediscoverWeight times, so picks, which draw
+        // evenly from the list, land on it that much more often
+        private void AddSongsFor(Playnite.SDK.Models.Game game, List<string> songs, bool favour = false)
         {
             var gameSongs = _fileService()?.GetAvailableSongs(game);
-            if (gameSongs != null && gameSongs.Count > 0)
-                songs.AddRange(gameSongs);
+            if (gameSongs == null || gameSongs.Count == 0) return;
+            int copies = favour && RadioRediscover.IsFavoured(game.LastActivity, DateTime.Now) ? Constants.RadioRediscoverWeight : 1;
+            for (int i = 0; i < copies; i++) songs.AddRange(gameSongs);
         }
     }
 }

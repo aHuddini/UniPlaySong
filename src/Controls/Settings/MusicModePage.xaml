@@ -135,6 +135,12 @@
                 <TextBlock Style="{StaticResource UpsHintFlush}" Margin="24,4,0,10"
                            Text="Shuffles the audio files in these folders. Left empty, it uses your Default Music folders."/>
 
+                <CheckBox Content="Favour games you haven't played in a while"
+                          Style="{StaticResource UpsToggle}" Margin="0,6,0,0"
+                          IsChecked="{Binding Settings.RadioRediscoverGames}"/>
+                <TextBlock Style="{StaticResource UpsHint}"
+                           Text="Games you haven't played for six months or more, or never, come up about three times as often. Every game still plays. Not used with Spotify or Custom Folders."/>
+
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

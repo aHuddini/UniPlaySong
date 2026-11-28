@@ -22,5 +22,6 @@ namespace UniPlaySong.Features.MusicInfoCard.Player
         public Action ToggleCalmDown, ToggleLiveEffects;
         public Func<ListeningSnapshot> Listening;
         public Func<Game, string> GameMusicFolder;
+        public Func<Game, string> Rediscover;                      // "Not played in 2 years" while radio favours the game; else null
     }
 }

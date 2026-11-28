@@ -156,6 +156,8 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             _imagePath = imagePath;
             _colorExtractor = colorExtractor;
             GameNameText.Text = game?.Name ?? "Unknown Game";
+            var rediscover = game == null ? null : host?.Rediscover?.Invoke(game);
+            if (!string.IsNullOrEmpty(rediscover)) { RediscoverText.Text = rediscover; RediscoverText.Visibility = Visibility.Visible; }
             if (_host?.SeekBy != null)
                 _jogSeeker = new RelativeSeeker(() => _host.Snapshot?.Invoke()?.HasActiveMedia == true, _host.SeekBy);
 
