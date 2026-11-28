@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using Moq;
 using NUnit.Framework;
+using UniPlaySong.Models;
 using UniPlaySong;
 using UniPlaySong.Services;
 using UniPlaySong.Services.Spotify;
@@ -53,6 +54,28 @@ namespace UniPlaySong.Tests.Services.Spotify
             _client.SetupGet(c => c.IsPlaying).Returns(true);
             _service.ReassertRadioStart();
             _client.Verify(c => c.TryResume(), Times.Exactly(2));
+        }
+
+        // "Where music plays" covers Spotify radio too: in a mode where neither game nor default music is allowed, UPS
+        // pauses Spotify (its own pause), and moving back to an allowed mode resumes it.
+        [Test]
+        public void SpotifyRadio_PausesWhereNoMusicIsAllowed_ResumesWhereItIs()
+        {
+            bool fullscreen = true;
+            _settings.RadioModeEnabled = true;
+            _settings.RadioMusicSource = RadioMusicSource.Spotify;
+            _settings.MusicState = AudioState.Desktop;
+            _settings.DefaultMusicState = AudioState.Desktop;
+            var service = new SpotifyControlService(_playback.Object, _client.Object, () => _settings, null, isFullscreen: () => fullscreen);
+
+            service.Recompute();
+            _client.Verify(c => c.TryPause(), Times.Once);
+            _client.Verify(c => c.TryResume(), Times.Never);
+
+            _client.SetupGet(c => c.IsPlaying).Returns(false);
+            fullscreen = false;
+            service.Recompute();
+            _client.Verify(c => c.TryResume(), Times.Once);
         }
 
         // Spotify is the active music when Spotify radio is on (SpotifyRadioMode is derived: radio on + Spotify source),

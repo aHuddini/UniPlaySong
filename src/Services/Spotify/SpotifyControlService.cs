@@ -46,6 +46,9 @@ namespace UniPlaySong.Services.Spotify
 
         public bool IsSpotifyActive => _isActive;
 
+        // Which mode Playnite runs in, for "Where music plays" (null = not gated: tests)
+        private readonly Func<bool> _isFullscreen;
+
         // Cached, non-blocking: is Spotify currently playing (per SMTC)? Used by the Top Panel to show
         // the correct play/pause icon while Spotify is the active source. Reads the client's cached
         // volatile state — never a blocking SMTC round-trip.
@@ -63,13 +66,15 @@ namespace UniPlaySong.Services.Spotify
             ISpotifyClient spotifyClient,
             Func<UniPlaySongSettings> getSettings,
             FileLogger fileLogger,
-            Func<bool> isAppReady = null)
+            Func<bool> isAppReady = null,
+            Func<bool> isFullscreen = null)
         {
             _playback = playbackService;
             _client = spotifyClient;
             _getSettings = getSettings;
             _fileLogger = fileLogger;
             _isAppReady = isAppReady;
+            _isFullscreen = isFullscreen;
 
             if (_playback != null) _playback.OnPlaybackStateChanged += Recompute;
             if (_client != null) _client.AvailabilityChanged += Recompute;
@@ -190,8 +195,12 @@ namespace UniPlaySong.Services.Spotify
                         // UPS owns this pause Decide issues the Resume automatically on List return. Uses the EXPLICIT yield flag,
                         // never IsPlaying — IsPlaying maps to IMusicPlayer.IsActive, which counts a paused-mid-playback song as
                         // active, so a stale loaded song would hold Spotify paused indefinitely.
+                        // "Where music plays" covers Spotify radio as it covers UPS's own radio (StartRadioPlayback):
+                        // where neither game nor default music is allowed, UPS holds Spotify paused, and owning that
+                        // pause, resumes it in a mode where music is allowed.
                         bool lifecyclePaused = _playback?.IsPaused == true || _isAppReady?.Invoke() == false
-                                               || _playback?.IsRadioYieldedToGameMusic == true;
+                                               || _playback?.IsRadioYieldedToGameMusic == true
+                                               || (_isFullscreen != null && !s.AllowsAnyMusicInMode(_isFullscreen()));
                         bool spotifyPlaying = _client.IsPlaying;
                         var (action, next) = SpotifyRadioDecision.Decide(
                             radioOn: true, lifecyclePaused: lifecyclePaused,

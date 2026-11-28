@@ -2903,7 +2903,8 @@ namespace UniPlaySong
                 _spotifyClient,
                 () => _settings,
                 _fileLogger,
-                () => _appStarted);
+                () => _appStarted,
+                () => IsFullscreen);
             _spotifyControlService.Recompute(); // establish initial SpotifyActive state (non-blocking — all SMTC posts to the worker)
 
             // Spotify live-effects host: owns THE SAFETY INVARIANT (Spotify muted iff we produce effected output). Feeds
