@@ -71,6 +71,36 @@ namespace UniPlaySong.Tests.Services.ActiveMedia
             Assert.AreEqual("Spotify", snap.SourceName);
         }
 
+        // Spotify Radio yielded to a game track (Details view, or a song picked on the Music Info Card): the game track is
+        // what plays, so the snapshot and Play/Pause follow it - pausing used to pause the ducked Spotify instead
+        [Test]
+        public void Resolve_RadioYieldedToGameMusic_UpsIsTheSource()
+        {
+            ArmSpotifyAsActiveSource();
+            _playback.SetupGet(p => p.IsRadioYieldedToGameMusic).Returns(true);
+            _playback.SetupGet(p => p.IsLoaded).Returns(true);
+            _playback.SetupGet(p => p.IsPlaying).Returns(true);
+
+            Assert.AreEqual(ActiveMediaSourceKind.Ups, _service.GetSnapshot().SourceKind);
+            _service.PlayPause();
+            _client.Verify(c => c.TryTogglePlayPause(), Times.Never);
+        }
+
+        [Test]
+        public void SeekBy_RadioYieldedToGameMusic_SeeksTheGameTrack()
+        {
+            ArrangeSeekableSpotify();
+            ArmSpotifyAsActiveSource();
+            _playback.SetupGet(p => p.IsRadioYieldedToGameMusic).Returns(true);
+            _playback.SetupGet(p => p.IsLoaded).Returns(true);
+            _playback.SetupGet(p => p.CanSeek).Returns(true);
+            _playback.SetupGet(p => p.CurrentTime).Returns(TimeSpan.FromSeconds(30));
+
+            _service.SeekBy(5);
+
+            _playback.Verify(p => p.Seek(TimeSpan.FromSeconds(35)), Times.Once);
+        }
+
         [Test]
         public void Resolve_UpsPlaying_SnapshotIsUps()
         {

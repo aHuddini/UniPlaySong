@@ -14,6 +14,10 @@ All notable changes to UniPlaySong will be documented in this file.
 - Added Recently played thumbnails that survive a restart (`RecentTrackArtCache`): a song's 96 px picture is saved as a PNG when it plays, game songs and other music in separate caches, pruned to the listed songs
 - Added Radio Mode and Spotify buttons to the Desktop hover card (340 px wide; modes left, audio and pin right); one click on Spotify plays it as the radio, turning Radio on
 - Added a mute toggle to the hover card's speaker icon; with Spotify playing it mutes Spotify, centred where the hidden volume slider was
+- Added a Player page to the Fullscreen Music Info Card: the game's songs (playing one tinted, primary one pink) and a dock of Previous, Play/Pause in a seek ring, Next, Calm Down and Live Effects; LT/RT and the right stick seek
+- Added a Details page to the Music Info Card (LB/RB): this game's listening time, plays and most-played songs, a format donut and song-length bars
+- Added keyboard and mouse control to the Music Info Card: arrows, Enter, Esc, Q/E pages, [ ] seek, Space play/pause; clicking songs, buttons and tabs, and dragging the ring to seek
+- Added a Radio Mode hand-off: a song picked on the Music Info Card plays (Spotify pauses) until the card closes, then the radio returns (`MusicInfoCardPlayerHost.LeavePlayer`)
 
 ### Changed
 
@@ -30,6 +34,7 @@ All notable changes to UniPlaySong will be documented in this file.
 - Fixed "Open Spotify automatically" ignoring a mid-session switch of Default Music to Spotify; it now opens the app as switching Radio does
 - Fixed the top-panel controls and hover card vanishing while Spotify is the radio but not up: Now Playing reads "Spotify isn't open", and an emptied panel closes the card only after 2 s
 - Fixed UPS mute coming undone on the next fade, resume or song: it zeroed the player's live volume; mute is now a factor in every volume UPS sets (`MusicPlaybackService.IsMuted`)
+- Fixed play/pause and seeking reaching a paused Spotify while Spotify Radio yields to a game track; `ActiveMediaService` now resolves the source with the yield
 
 ## [1.9.5] - 2026-11-22
 

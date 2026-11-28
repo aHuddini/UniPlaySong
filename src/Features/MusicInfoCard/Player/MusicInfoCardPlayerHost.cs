@@ -15,7 +15,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Player
         public Func<Game, string> PrimaryPath;                     // the game's primary song, or null
         public Action PlayPause, Next, Previous;
         public Action<double> SeekBy;                              // seconds, relative
+        public Action<double> SeekTo;                              // percent of the song, 0-100
         public Action<Game, string> PlaySong;
+        public Action<Game> LeavePlayer;                           // the card closes after playing a song: Radio Mode takes back over
         public Func<bool> CalmDownOn, LiveEffectsOn;
         public Action ToggleCalmDown, ToggleLiveEffects;
         public Func<ListeningSnapshot> Listening;

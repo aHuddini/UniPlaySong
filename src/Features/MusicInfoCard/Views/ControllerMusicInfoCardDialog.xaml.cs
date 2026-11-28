@@ -66,9 +66,14 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         private readonly HeldSeek _held = new HeldSeek();
         private bool _closed;                            // set first on Unloaded; late events and timers stand down
         private bool _statsShown;                        // the loader never appears once the pages are filled
-        private Point? _ringDown;                        // mouse pressed on Play/Pause: a click, or a drag that turns the knob
-        private double? _ringDragAngle;
-        private const double RingDragSlopPixels = 4;
+        private bool _playedSong;                        // the card started a song; on close the host may hand back (Spotify Radio)
+        private bool _ringButtonDown;                    // mouse pressed on the Play/Pause button itself: a click
+        private double? _ringScrub;                      // mouse on the ring band: the song fraction the knob is held at
+        private DateTime _lastScrubSeek;
+        private DateTime _ringHoldUntil;                 // after a scrub, the audio catches up before the refresh moves the knob
+        private bool _ringHover;
+        private const int ScrubSeekMs = 150;
+        private const int ScrubSettleMs = 800;
         private Window _window;                          // keys are read at window level, wherever focus sits
         private readonly SeekRing Ring = new SeekRing { Width = 64, Height = 64 };
 
@@ -119,6 +124,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 _seekRepeat?.Stop();
                 _jogPoll?.Stop();
                 _jogSeeker?.Flush();
+                if (_playedSong) _host?.LeavePlayer?.Invoke(_game);
                 try { _cts?.Cancel(); } catch { /* best effort */ }
                 if (Application.Current?.Properties?.Contains("UniPlaySongPlugin") == true)
                 {
@@ -389,7 +395,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             bool hasMedia = snap?.HasActiveMedia == true;
             bool playing = snap?.IsPlaying == true;
 
-            Ring.Progress = hasMedia ? (snap.Progress / 100.0) : 0;
+            if (!RingHeld) Ring.Progress = hasMedia ? (snap.Progress / 100.0) : 0;
             PlayGlyph.Data = (Geometry)FindResource(playing ? "IconPause" : "IconPlay");
             PlayLabel.Text = playing ? "Pause" : "Play";
             StyleToggle(CalmButton, _host.CalmDownOn?.Invoke() == true);
@@ -418,9 +424,12 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         // Just the knob, while it's being turned: the seeker lands the audio every 120 ms, the 250 ms refresh lagged behind it
         private void RefreshRing()
         {
+            if (RingHeld) return;
             var snap = _host?.Snapshot?.Invoke();
             Ring.Progress = snap?.HasActiveMedia == true ? snap.Progress / 100.0 : 0;
         }
+
+        private bool RingHeld => _ringScrub != null || DateTime.UtcNow < _ringHoldUntil;
 
         // Cursor states: the live cursor glows, the other keeps its place, faint
         private void Redraw()
@@ -434,7 +443,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             StyleDockButton(FxButton, FxLabel, control == CardControl.LiveEffects, controlsLive, keepFill: true);
 
             bool playLive = control == CardControl.PlayPause;
-            Ring.Live = playLive && controlsLive;
+            Ring.Live = (playLive && controlsLive) || _ringHover || _ringScrub != null;
             PlayButton.Stroke = playLive && !controlsLive ? WithOpacity(_accentBrush, 0.45) : CreateFrozenBrush(Color.FromArgb(0x6B, 0xFF, 0xFF, 0xFF));
             PlayLabel.Foreground = playLive && controlsLive ? White : LabelGrey;
             JogHint.Foreground = _accentBrush;
@@ -589,6 +598,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         private void PlaySong(string path)
         {
             if (string.IsNullOrEmpty(path)) return;
+            _playedSong = true;
             if (_host?.PlaySong != null) _host.PlaySong(_game, path);
             else _playSong?.Invoke(path);
             RefreshPlayback();
@@ -670,46 +680,58 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             HookTab(PlayerTab, CardPage.Player);
             HookTab(DetailsTab, CardPage.Details);
 
-            // Play/Pause: a click presses it; a drag around the ring turns the knob, like the right stick
+            // Play/Pause: the button in the middle plays/pauses; the ring around it is the song - press or drag on it and
+            // the knob goes where the pointer is (RingSeek). Hovering shows the knob.
             RingSlot.Cursor = Cursors.Hand;
             RingSlot.Background = Transparent; // hit-testable across the whole ring, not just the drawn parts
+            RingSlot.MouseEnter += (s, e) => { _ringHover = true; Redraw(); };
+            RingSlot.MouseLeave += (s, e) => { _ringHover = false; Redraw(); };
             RingSlot.MouseLeftButtonDown += (s, e) =>
             {
                 if (_closed || _rules == null) return;
                 _rules.SelectControl(CardControl.PlayPause);
+                var (x, y) = FromRingCentre(e.GetPosition(RingSlot));
+                if (Math.Sqrt(x * x + y * y) <= PlayButton.ActualWidth / 2) _ringButtonDown = true;
+                else if (_host?.SeekTo != null && _host.Snapshot?.Invoke()?.HasActiveMedia == true) ScrubTo(RingSeek.FractionAt(x, y, null), force: true);
+                else return;
                 Redraw();
-                _ringDown = e.GetPosition(RingSlot);
-                _ringDragAngle = null;
                 RingSlot.CaptureMouse();
                 e.Handled = true;
             };
             RingSlot.MouseMove += (s, e) =>
             {
-                if (_ringDown == null || !RingSlot.IsMouseCaptured) return;
-                var p = e.GetPosition(RingSlot);
-                // A drag starts once the pointer has moved off its press point, so a click's jitter isn't a seek
-                if (_ringDragAngle == null && (p - _ringDown.Value).Length < RingDragSlopPixels) return;
-                double angle = RingAngle(p);
-                if (_ringDragAngle != null && _jogSeeker != null && _jogSeeker.CanSeek)
-                {
-                    double degrees = SeekDiscMath.WrapDegrees(angle - _ringDragAngle.Value);
-                    if (degrees != 0) { _jogSeeker.Add(SeekDiscMath.SecondsForDegrees(degrees)); RefreshRing(); }
-                }
-                _ringDragAngle = angle;
+                if (_ringScrub == null || !RingSlot.IsMouseCaptured) return;
+                var (x, y) = FromRingCentre(e.GetPosition(RingSlot));
+                ScrubTo(RingSeek.FractionAt(x, y, _ringScrub), force: false);
             };
             RingSlot.MouseLeftButtonUp += (s, e) =>
             {
-                if (_ringDown == null) return;
-                bool dragged = _ringDragAngle != null;
-                _ringDown = null;
-                _ringDragAngle = null;
+                bool pressed = _ringButtonDown;
+                _ringButtonDown = false;
+                if (_ringScrub != null)
+                {
+                    ScrubTo(_ringScrub.Value, force: true); // land exactly where the knob was let go
+                    _ringScrub = null;
+                    _ringHoldUntil = DateTime.UtcNow.AddMilliseconds(ScrubSettleMs);
+                    Redraw();
+                }
                 RingSlot.ReleaseMouseCapture();
-                if (dragged) { _jogSeeker?.Flush(); RefreshPlayback(); }
-                else if (!_closed) PressControl(CardControl.PlayPause);
+                if (pressed && !_closed) PressControl(CardControl.PlayPause);
             };
         }
 
-        private double RingAngle(Point p) => SeekDiscMath.AngleDegrees(p.X - RingSlot.ActualWidth / 2, p.Y - RingSlot.ActualHeight / 2);
+        private (double X, double Y) FromRingCentre(Point p) => (p.X - RingSlot.ActualWidth / 2, p.Y - RingSlot.ActualHeight / 2);
+
+        // The knob follows the hand at once; the audio follows at most every ScrubSeekMs, and exactly on release
+        private void ScrubTo(double fraction, bool force)
+        {
+            _ringScrub = fraction;
+            Ring.Progress = fraction;
+            var now = DateTime.UtcNow;
+            if (!force && (now - _lastScrubSeek).TotalMilliseconds < ScrubSeekMs) return;
+            _lastScrubSeek = now;
+            _host?.SeekTo?.Invoke(fraction * 100);
+        }
 
         // The whole column (button, icon and label) is the click target
         private void HookDockClick(System.Windows.Shapes.Ellipse button, CardControl control)

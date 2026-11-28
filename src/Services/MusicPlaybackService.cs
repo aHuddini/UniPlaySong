@@ -953,11 +953,14 @@ namespace UniPlaySong.Services
                     ? _fileService.GetAvailableSongs(game).Count   // only pay for the lookup when it can matter
                     : 0,
                 settings: settings);
-            _radioYieldedToGameMusic = radioYieldsToSelectedGame;
+            // A song picked by name (the Music Info Card) yields too: Spotify Radio ducks while it plays
+            _radioYieldedToGameMusic = radioYieldsToSelectedGame || _requestedSong != null;
 
             if (settings?.SpotifyRadioMode == true)
             {
-                if (radioYieldsToSelectedGame)
+                // A song picked by name (the Music Info Card) also yields: the user asked for that track. The card hands
+                // back to Spotify when it closes (MusicInfoCardPlayerHost.LeavePlayer).
+                if (_radioYieldedToGameMusic)
                 {
                     // Fall through to normal playback. UPS starting its own audio flips IsPlaying true,
                     // which SpotifyControlService reads as a lifecycle pause and pauses Spotify — it

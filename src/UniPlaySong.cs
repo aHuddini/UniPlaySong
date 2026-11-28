@@ -2048,7 +2048,11 @@ namespace UniPlaySong
                 Next = () => _activeMediaService?.Next(),
                 Previous = () => _activeMediaService?.Previous(),
                 SeekBy = seconds => _activeMediaService?.SeekBy(seconds),
+                SeekTo = percent => _activeMediaService?.SeekTo(percent),
                 PlaySong = (game, path) => _playbackService?.PlaySong(game, path),
+                // Radio Mode (local or Spotify) yielded to the picked song until the card closes; the normal path then puts
+                // the radio back (a fresh radio pick, or Spotify resuming)
+                LeavePlayer = game => { if (game != null && _settings?.RadioModeEnabled == true) _playbackService?.PlayGameMusic(game, _settings); },
                 CalmDownOn = () => _settings?.CalmDownModeEnabled == true,
                 LiveEffectsOn = () => _settings?.LiveEffectsEnabled == true,
                 ToggleCalmDown = () => UpdateSettingsFromMenu(s => s.CalmDownModeEnabled = !s.CalmDownModeEnabled, "MusicInfoCard"),

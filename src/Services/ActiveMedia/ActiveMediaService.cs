@@ -67,7 +67,9 @@ namespace UniPlaySong.Services.ActiveMedia
         // The resolution seam. Spotify-only external source for now.
         private ActiveMediaSourceKind ResolveSource()
         {
-            if (_spotifyControl?.IsSpotifyActive == true) return ActiveMediaSourceKind.Spotify;
+            // Spotify Radio that has yielded to a game track is ducked: the game track is what plays and what to control
+            if (_spotifyControl?.IsSpotifyActive == true && SeekPlayback?.IsRadioYieldedToGameMusic != true)
+                return ActiveMediaSourceKind.Spotify;
             if (_playback?.IsLoaded == true) return ActiveMediaSourceKind.Ups;
             return ActiveMediaSourceKind.None;
         }
@@ -224,7 +226,7 @@ namespace UniPlaySong.Services.ActiveMedia
         }
 
         private IMusicPlaybackService SeekPlayback => _currentPlayback?.Invoke() ?? _playback;
-        private bool SpotifyIsSource => _spotifyControl?.IsSpotifyActive == true;
+        private bool SpotifyIsSource => ResolveSource() == ActiveMediaSourceKind.Spotify;
 
         public bool CanSeek => SpotifyIsSource ? _spotifyClient?.CanSeek == true : SeekPlayback?.CanSeek == true;
 
