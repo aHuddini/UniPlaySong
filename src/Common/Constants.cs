@@ -181,6 +181,12 @@ namespace UniPlaySong.Common
         public const double MusicInfoCardHeightFraction = 0.85;  // window height, of the screen's
         public const double MusicInfoCardMaxHeight = 1000;       // ...capped so tall screens don't stretch it
         public const int MusicInfoCardPositionRefreshMs = 250;   // ring, line and toggles refresh while open
+        public const int MusicInfoCardLoaderGraceMs = 200;       // "Reading metadata" shows only if reading takes longer
+        public const int MusicInfoCardDirectionDebounceMs = 150; // a D-pad press arrives twice: controller event + arrow key
+        public const double MusicInfoCardStickDeadzone = 0.25;   // right-stick tilt before it scrolls
+        public const double MusicInfoCardStickPixelsPerSecond = 1400; // scroll speed at full tilt
+        public const int MusicInfoCardScrubSeekMs = 150;         // mouse drag on the ring: the audio follows this often
+        public const int MusicInfoCardScrubSettleMs = 800;       // after letting go, the knob holds while the audio catches up
 
         #endregion
     }

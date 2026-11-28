@@ -34,7 +34,6 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
     public partial class ControllerMusicInfoCardDialog : UserControl, IControllerInputReceiver
     {
         private static readonly ILogger Logger = global::UniPlaySong.Common.GatedLogger.Get();
-        private const int LoaderGraceMs = 200;
 
         private CancellationTokenSource _cts;
         private Game _game;
@@ -48,13 +47,11 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         private bool _stickScrolling;                    // frame-synced scrolling hooked while the stick is tilted
         private TimeSpan _lastFrameTime;
         private double _stickVelocity;                   // px/s, eased toward the stick so reading noise doesn't jolt
-        private const double StickDeadzone = 0.25;
-        private const double StickPixelsPerSecond = 1400; // at full tilt
 
         private CardInputRules _rules;                   // null until the songs are known
         private readonly List<SongRow> _rows = new List<SongRow>();
+        private List<string> _rowPaths = new List<string>();   // the rows' files, for the playing-row lookup
         private DateTime _lastDirectionTime;
-        private const int DirectionDebounceMs = 150;     // a D-pad press arrives twice: controller event + arrow key
         private DispatcherTimer _refresh;                // ring, glyph, toggles, playing row, line
         private DispatcherTimer _seekRepeat;             // LT/RT held
         private double _repeatSeconds;
@@ -62,6 +59,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         private double? _jogAngle;
         private RelativeSeeker _jogSeeker;
         private int _playingIndex = -1;
+        private string _shownLine;                       // the now-playing line as last drawn; redrawn only on a change
         private string _primaryPath;                     // read once per open: the lookup touches the disk
         private readonly HeldSeek _held = new HeldSeek();
         private bool _closed;                            // set first on Unloaded; late events and timers stand down
@@ -72,14 +70,13 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         private DateTime _lastScrubSeek;
         private DateTime _ringHoldUntil;                 // after a scrub, the audio catches up before the refresh moves the knob
         private bool _ringHover;
-        private const int ScrubSeekMs = 150;
-        private const int ScrubSettleMs = 800;
         private Window _window;                          // keys are read at window level, wherever focus sits
         private readonly SeekRing Ring = new SeekRing { Width = 64, Height = 64 };
 
         private string _imagePath;
         private IconColorExtractor _colorExtractor;
-        private SolidColorBrush _accentBrush = CreateFrozenBrush(Color.FromRgb(0x7E, 0x57, 0xC2));
+        private SolidColorBrush _accentBrush;
+        private AccentTints _tints;                      // the accent's see-through shades, made once per accent colour
 
         private static readonly SolidColorBrush White = CreateFrozenBrush(Colors.White);
         private static readonly SolidColorBrush Transparent = CreateFrozenBrush(Colors.Transparent);
@@ -90,11 +87,14 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         private static readonly SolidColorBrush DockFill = CreateFrozenBrush(Color.FromArgb(0x14, 0xFF, 0xFF, 0xFF));
         private static readonly SolidColorBrush DockRim = CreateFrozenBrush(Color.FromArgb(0x24, 0xFF, 0xFF, 0xFF));
         private static readonly SolidColorBrush TabIdle = CreateFrozenBrush(Color.FromArgb(0x0D, 0xFF, 0xFF, 0xFF));
+        private static readonly SolidColorBrush RowFill = CreateFrozenBrush(Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF));
+        private static readonly SolidColorBrush PlayRim = CreateFrozenBrush(Color.FromArgb(0x6B, 0xFF, 0xFF, 0xFF));
 
         public ControllerMusicInfoCardDialog()
         {
             InitializeComponent();
             RingSlot.Children.Insert(0, Ring);
+            SetAccent(Color.FromRgb(0x7E, 0x57, 0xC2));
 
             Loaded += (s, e) =>
             {
@@ -190,9 +190,15 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             }
         }
 
-        private void ApplyAccentColor(Color color)
+        private void SetAccent(Color color)
         {
             _accentBrush = CreateFrozenBrush(color);
+            _tints = new AccentTints(_accentBrush);
+        }
+
+        private void ApplyAccentColor(Color color)
+        {
+            SetAccent(color);
             AccentStrip.Background = _accentBrush;
             HeaderSubtitle.Foreground = _accentBrush;
             IconGlowEffect.Color = color;
@@ -212,7 +218,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
 
             _ = System.Threading.Tasks.Task.Run(async () =>
             {
-                await System.Threading.Tasks.Task.Delay(LoaderGraceMs).ConfigureAwait(false);
+                await System.Threading.Tasks.Task.Delay(Constants.MusicInfoCardLoaderGraceMs).ConfigureAwait(false);
                 if (token.IsCancellationRequested) return;
                 _ = Dispatcher.BeginInvoke(new Action(() =>
                 {
@@ -373,9 +379,10 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             foreach (var s in songs)
                 _rows.Add(new SongRow { Title = s.Title, Path = s.FilePath, DurationText = s.Duration > TimeSpan.Zero ? FormatDuration(s.Duration) : string.Empty });
             SongList.ItemsSource = _rows;
+            _rowPaths = _rows.Select(r => r.Path).ToList();
             SongListCountText.Text = _rows.Count > 0 ? $"({_rows.Count})" : string.Empty;
 
-            _playingIndex = CardPlayback.PlayingIndex(_rows.Select(r => r.Path).ToList(), _host?.PlayingPath?.Invoke());
+            _playingIndex = CardPlayback.PlayingIndex(_rowPaths, _host?.PlayingPath?.Invoke());
             _rules = new CardInputRules(_rows.Count, Math.Max(0, _playingIndex));
 
             RefreshPlayback();
@@ -401,12 +408,15 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             StyleToggle(CalmButton, _host.CalmDownOn?.Invoke() == true);
             StyleToggle(FxButton, _host.LiveEffectsOn?.Invoke() == true);
 
-            int playingIndex = CardPlayback.PlayingIndex(_rows.Select(r => r.Path).ToList(), _host.PlayingPath?.Invoke());
+            int playingIndex = CardPlayback.PlayingIndex(_rowPaths, _host.PlayingPath?.Invoke());
             if (playingIndex != _playingIndex) { _playingIndex = playingIndex; RestyleRows(); }
 
             var (title, artist) = _host.NowPlaying?.Invoke() ?? (null, null);
             bool spotify = snap?.SourceKind == ActiveMediaSourceKind.Spotify;
             var line = CardPlayback.NowPlayingLine(hasMedia, spotify, title, artist, snap?.PositionText, snap?.DurationText);
+            var shown = $"{hasMedia}|{spotify}|{_playingIndex >= 0}|{line}";
+            if (shown == _shownLine) return;
+            _shownLine = shown;
             NowPlayingLine.Inlines.Clear();
             if (!hasMedia) NowPlayingLine.Inlines.Add(new Run(line) { Foreground = LabelGrey });
             else if (spotify && line.StartsWith("Spotify"))
@@ -444,7 +454,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
 
             bool playLive = control == CardControl.PlayPause;
             Ring.Live = (playLive && controlsLive) || _ringHover || _ringScrub != null;
-            PlayButton.Stroke = playLive && !controlsLive ? WithOpacity(_accentBrush, 0.45) : CreateFrozenBrush(Color.FromArgb(0x6B, 0xFF, 0xFF, 0xFF));
+            PlayButton.Stroke = playLive && !controlsLive ? _tints.Cursor : PlayRim;
             PlayLabel.Foreground = playLive && controlsLive ? White : LabelGrey;
             JogHint.Foreground = _accentBrush;
             // Hidden, not collapsed: its line stays reserved, so the songs don't jump when it appears
@@ -462,8 +472,8 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 bool cursor = _rules != null && _rules.SongIndex == i;
                 bool live = cursor && _rules.Live == CardCursor.Songs;
 
-                row.Background = isPlaying ? WithOpacity(_accentBrush, 0.18) : CreateFrozenBrush(Color.FromArgb(0x0F, 0xFF, 0xFF, 0xFF));
-                row.Outline = live ? _accentBrush : cursor ? WithOpacity(_accentBrush, 0.45) : isPlaying ? WithOpacity(_accentBrush, 0.45) : Transparent;
+                row.Background = isPlaying ? _tints.Playing : RowFill;
+                row.Outline = live ? _accentBrush : cursor || isPlaying ? _tints.Cursor : Transparent;
                 row.OutlineThickness = new Thickness(live ? 2 : 1);
                 row.TitleBrush = isPrimary ? PrimaryPink : White;
                 row.Mark = isPlaying ? "▶  " : string.Empty;
@@ -475,7 +485,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         private void StyleDockButton(System.Windows.Shapes.Ellipse button, TextBlock label, bool cursor, bool controlsLive, bool keepFill = false)
         {
             bool live = cursor && controlsLive;
-            button.Stroke = live ? _accentBrush : cursor ? WithOpacity(_accentBrush, 0.45) : (keepFill ? button.Stroke : DockRim);
+            button.Stroke = live ? _accentBrush : cursor ? _tints.Cursor : (keepFill ? button.Stroke : DockRim);
             button.StrokeThickness = live ? 2 : 1;
             label.Foreground = live ? White : LabelGrey;
             if (!cursor && keepFill) StyleToggle(button, button == CalmButton ? _host?.CalmDownOn?.Invoke() == true : _host?.LiveEffectsOn?.Invoke() == true);
@@ -484,9 +494,9 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
         // A toggle that's on is tinted in the accent colour
         private void StyleToggle(System.Windows.Shapes.Ellipse button, bool on)
         {
-            button.Fill = on ? WithOpacity(_accentBrush, 0.25) : DockFill;
+            button.Fill = on ? _tints.Fill : DockFill;
             bool cursor = (_rules?.Control == CardControl.CalmDown && button == CalmButton) || (_rules?.Control == CardControl.LiveEffects && button == FxButton);
-            if (!cursor) button.Stroke = on ? WithOpacity(_accentBrush, 0.7) : DockRim;
+            if (!cursor) button.Stroke = on ? _tints.ToggleRim : DockRim;
         }
 
         private void ScrollSongIntoView()
@@ -514,8 +524,8 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
 
         private void StyleTab(Border tab, TextBlock text, bool on)
         {
-            tab.Background = on ? WithOpacity(_accentBrush, 0.25) : TabIdle;
-            tab.BorderBrush = on ? WithOpacity(_accentBrush, 0.6) : Transparent;
+            tab.Background = on ? _tints.Fill : TabIdle;
+            tab.BorderBrush = on ? _tints.TabRim : Transparent;
             text.Foreground = on ? White : LabelGrey;
         }
 
@@ -558,7 +568,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             if (IsDirection(button))
             {
                 var now = DateTime.Now;
-                if ((now - _lastDirectionTime).TotalMilliseconds < DirectionDebounceMs) return;
+                if ((now - _lastDirectionTime).TotalMilliseconds < Constants.MusicInfoCardDirectionDebounceMs) return;
                 _lastDirectionTime = now;
             }
 
@@ -614,7 +624,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 case CardControl.PlayPause:
                     // Nothing playing: Play starts this game's music, the primary song first
                     if (_host.Snapshot?.Invoke()?.HasActiveMedia != true)
-                        PlaySong(CardPlayback.StartSong(_rows.Select(r => r.Path).ToList(), _primaryPath));
+                        PlaySong(CardPlayback.StartSong(_rowPaths, _primaryPath));
                     else
                         _host.PlayPause?.Invoke();
                     break;
@@ -712,7 +722,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
                 {
                     ScrubTo(_ringScrub.Value, force: true); // land exactly where the knob was let go
                     _ringScrub = null;
-                    _ringHoldUntil = DateTime.UtcNow.AddMilliseconds(ScrubSettleMs);
+                    _ringHoldUntil = DateTime.UtcNow.AddMilliseconds(Constants.MusicInfoCardScrubSettleMs);
                     Redraw();
                 }
                 RingSlot.ReleaseMouseCapture();
@@ -722,13 +732,13 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
 
         private (double X, double Y) FromRingCentre(Point p) => (p.X - RingSlot.ActualWidth / 2, p.Y - RingSlot.ActualHeight / 2);
 
-        // The knob follows the hand at once; the audio follows at most every ScrubSeekMs, and exactly on release
+        // The knob follows the hand at once; the audio follows at most every MusicInfoCardScrubSeekMs, and exactly on release
         private void ScrubTo(double fraction, bool force)
         {
             _ringScrub = fraction;
             Ring.Progress = fraction;
             var now = DateTime.UtcNow;
-            if (!force && (now - _lastScrubSeek).TotalMilliseconds < ScrubSeekMs) return;
+            if (!force && (now - _lastScrubSeek).TotalMilliseconds < Constants.MusicInfoCardScrubSeekMs) return;
             _lastScrubSeek = now;
             _host?.SeekTo?.Invoke(fraction * 100);
         }
@@ -800,7 +810,7 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             _stickPoll.Tick += (s, e) =>
             {
                 if (_rules?.RightStickJogs == true) return;
-                if (!_stickScrolling && Math.Abs(_stick().Y) >= StickDeadzone) StartStickFrames();
+                if (!_stickScrolling && Math.Abs(_stick().Y) >= Constants.MusicInfoCardStickDeadzone) StartStickFrames();
             };
             _stickPoll.Start();
         }
@@ -831,10 +841,10 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             double y = _stick().Y;
             double a = Math.Abs(y);
             double target = 0;
-            if (a >= StickDeadzone)
+            if (a >= Constants.MusicInfoCardStickDeadzone)
             {
-                double t = (a - StickDeadzone) / (1 - StickDeadzone);
-                target = Math.Sign(y) * t * t * StickPixelsPerSecond;
+                double t = (a - Constants.MusicInfoCardStickDeadzone) / (1 - Constants.MusicInfoCardStickDeadzone);
+                target = Math.Sign(y) * t * t * Constants.MusicInfoCardStickPixelsPerSecond;
             }
             _stickVelocity += (target - _stickVelocity) * Math.Min(1, dt * 12);
 
@@ -890,6 +900,21 @@ namespace UniPlaySong.Features.MusicInfoCard.Views
             if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
             if (bytes < 1024L * 1024 * 1024) return $"{bytes / (1024.0 * 1024):F1} MB";
             return $"{bytes / (1024.0 * 1024 * 1024):F2} GB";
+        }
+
+        // The accent colour's see-through shades, by what they colour
+        private sealed class AccentTints
+        {
+            public readonly SolidColorBrush Playing, Fill, Cursor, TabRim, ToggleRim;
+
+            public AccentTints(SolidColorBrush accent)
+            {
+                Playing = WithOpacity(accent, 0.18);   // the playing row
+                Fill = WithOpacity(accent, 0.25);      // a toggle that's on, the current tab
+                Cursor = WithOpacity(accent, 0.45);    // a cursor that isn't live; the playing row's outline
+                TabRim = WithOpacity(accent, 0.6);
+                ToggleRim = WithOpacity(accent, 0.7);
+            }
         }
 
         // One song row's look, set from code (see RestyleRows)
