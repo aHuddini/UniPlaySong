@@ -44,6 +44,29 @@ namespace UniPlaySong.Tests.Services
 
         private string HistoryFile => Path.Combine(_dir, "listening-history.json");
 
+        // Skips and full listens are counted per song and per game, and survive a reload (data for a music dashboard;
+        // nothing about what plays next depends on them)
+        [Test]
+        public void SkipsAndFullListens_AreCountedPerSongAndGame()
+        {
+            var store = new ListeningHistoryStore(_dir, enabled: true);
+            var skipped = Span("song.mp3", 5, play: false, gameId: "g1");
+            skipped.Skipped = true;
+            var full = Span("song.mp3", 200, play: true, gameId: "g1");
+            full.Completed = true;
+            store.Record(skipped);
+            store.Record(full);
+            store.Flush();
+
+            var reloaded = new ListeningHistoryStore(_dir, enabled: true).Snapshot();
+            var track = reloaded.Tracks.Single();
+            var game = reloaded.Games.Single();
+            Assert.AreEqual(1, track.SkipCount);
+            Assert.AreEqual(1, track.CompletedCount);
+            Assert.AreEqual(1, game.SkipCount);
+            Assert.AreEqual(1, game.CompletedCount);
+        }
+
         [Test]
         public void TotalsAccumulateAcrossSpans()
         {

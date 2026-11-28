@@ -105,6 +105,8 @@ namespace UniPlaySong.Services
                     track.PlayCount++;
                     _data.TotalPlays++;
                 }
+                if (span.Skipped) track.SkipCount++;
+                if (span.Completed) track.CompletedCount++;
 
                 // Default and radio music has no meaningful game. Attributing it to whichever game
                 // happened to be under the cursor would invent a figure rather than record one.
@@ -129,6 +131,8 @@ namespace UniPlaySong.Services
                     {
                         game.PlayCount++;
                     }
+                    if (span.Skipped) game.SkipCount++;
+                    if (span.Completed) game.CompletedCount++;
                 }
 
                 _dirty = true;

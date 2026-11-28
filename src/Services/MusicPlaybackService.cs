@@ -1969,6 +1969,7 @@ namespace UniPlaySong.Services
 
         public void SkipToNextSong()
         {
+            _listening?.Skip(); // banked before the next song starts (Begin would otherwise bank it as an ordinary change)
             _crossfadeCoordinator?.Cancel();
 
             // Also tear down any in-flight crossfade on the player side. The coordinator cancel above only stops polling;

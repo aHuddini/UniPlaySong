@@ -31,6 +31,14 @@ namespace UniPlaySong.Models
 
         [JsonProperty("last_played_utc")]
         public DateTime LastPlayedUtc { get; set; }
+
+        // Next pressed before the song counted as a play, and songs heard to their end. Recorded for a music dashboard;
+        // radio picks never read them (owner: a skip bias would make games less discoverable).
+        [JsonProperty("skip_count")]
+        public int SkipCount { get; set; }
+
+        [JsonProperty("completed_count")]
+        public int CompletedCount { get; set; }
     }
 
     // One game's running totals, summed across every track in its folder.
@@ -50,6 +58,14 @@ namespace UniPlaySong.Models
 
         [JsonProperty("last_played_utc")]
         public DateTime LastPlayedUtc { get; set; }
+
+        // Next pressed before the song counted as a play, and songs heard to their end. Recorded for a music dashboard;
+        // radio picks never read them (owner: a skip bias would make games less discoverable).
+        [JsonProperty("skip_count")]
+        public int SkipCount { get; set; }
+
+        [JsonProperty("completed_count")]
+        public int CompletedCount { get; set; }
     }
 
     // The root document.
@@ -95,6 +111,8 @@ namespace UniPlaySong.Models
         public string GameName { get; set; }
         public double Seconds { get; set; }
         public bool CountsAsPlay { get; set; }
+        public bool Skipped { get; set; }     // Next pressed before it counted as a play
+        public bool Completed { get; set; }   // reached its end on its own
     }
 
     // The raw records, copied out of the store so nothing downstream holds its lock or mutates it.

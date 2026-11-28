@@ -96,7 +96,13 @@ namespace UniPlaySong.Services
             Flush(endedNaturally: false);
         }
 
-        private void Flush(bool endedNaturally)
+        // The user pressed Next. Counted as a skip only if the track hadn't yet counted as a play.
+        public void Skip()
+        {
+            Flush(endedNaturally: false, skipped: true);
+        }
+
+        private void Flush(bool endedNaturally, bool skipped = false)
         {
             if (!IsTracking)
             {
@@ -113,7 +119,9 @@ namespace UniPlaySong.Services
                 GameId = _gameId,
                 GameName = _gameName,
                 Seconds = seconds,
-                CountsAsPlay = endedNaturally || seconds >= MinimumSecondsForPlay
+                CountsAsPlay = endedNaturally || seconds >= MinimumSecondsForPlay,
+                Skipped = skipped && seconds < MinimumSecondsForPlay,
+                Completed = endedNaturally
             };
 
             _path = null;
