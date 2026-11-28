@@ -19,6 +19,7 @@ namespace UniPlaySong.Services
         // music path changes, so a captured reference would go stale.
         private readonly Func<GameMusicFileService> _fileService;
         private readonly FileLogger _fileLogger;
+        private readonly PoolCache _radioPool = new PoolCache();
 
         public SongPoolProvider(IPlayniteAPI api, Func<GameMusicFileService> fileService, FileLogger fileLogger)
         {
@@ -55,7 +56,7 @@ namespace UniPlaySong.Services
             switch (source)
             {
                 case RadioMusicSource.FullLibrary:
-                    return SongsFromAllGames();
+                    return CachedRadioPool(source, null, SongsFromAllGames);
 
                 case RadioMusicSource.CustomFolder:
                     // Radio has its own folders, falling back to Default Music's when it has none.
@@ -65,15 +66,32 @@ namespace UniPlaySong.Services
                     return SongsInFolders(folders, logPrefix: "RadioMode: ");
 
                 case RadioMusicSource.CustomRotation:
-                    return SongsFromGameIds(settings?.CustomRotationGameIds);
+                    return CachedRadioPool(source, settings?.CustomRotationGameIds,
+                        () => SongsFromGameIds(settings?.CustomRotationGameIds));
 
                 case RadioMusicSource.CompletionStatusPool:
-                    return SongsFromCompletionStatuses(settings?.DefaultMusicStatusPoolIds);
+                    return CachedRadioPool(source, settings?.DefaultMusicStatusPoolIds,
+                        () => SongsFromCompletionStatuses(settings?.DefaultMusicStatusPoolIds));
 
                 default:
                     return new List<string>();
             }
         }
+
+        // Radio picks (every song end, Next, crossfade) reuse the pool from the library walk instead of repeating it on
+        // the UI thread. It is rebuilt when its source or game/status list changes, when UPS changes any music file
+        // (MusicVersion), and when the library changes (InvalidateRadioPool). Custom folders stay live: a few folder
+        // listings are cheap. ponytail: a file added or deleted in Explorer shows up only after one of those.
+        private List<string> CachedRadioPool(RadioMusicSource source, IEnumerable<Guid> ids, Func<List<string>> build)
+        {
+            var files = _fileService();
+            var key = $"{source}|{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(files)}|{files?.MusicVersion}|"
+                + string.Join(",", ids ?? Enumerable.Empty<Guid>());
+            return _radioPool.Get(key, build);
+        }
+
+        // A game was added, removed or changed (its completion status, for one)
+        public void InvalidateRadioPool() => _radioPool.Invalidate();
 
         // Each folder's top-level audio files (no subfolders), merged. The same folder written differently counts once;
         // a missing or unreadable folder is skipped, so one unplugged drive doesn't empty the pool.

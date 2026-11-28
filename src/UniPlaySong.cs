@@ -456,6 +456,9 @@ namespace UniPlaySong
         // (e.g. Splash Screen blocks in OnGameStarting, delaying other plugins' hooks).
         private void OnGameItemUpdated(object sender, ItemUpdatedEventArgs<Game> args)
         {
+            // A completion status change moves the game in or out of the radio's status pool
+            if (args.UpdatedItems.Any(u => u.OldData?.CompletionStatusId != u.NewData?.CompletionStatusId))
+                _songPoolProvider?.InvalidateRadioPool();
             foreach (var update in args.UpdatedItems)
             {
                 if (update.NewData.IsLaunching && !update.OldData.IsLaunching)
@@ -1386,6 +1389,7 @@ namespace UniPlaySong
         // music directories if the setting is enabled.
         private void OnGamesCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> args)
         {
+            _songPoolProvider?.InvalidateRadioPool(); // games came or went: the library-wide pools change
             if (_settings?.AutoDeleteMusicOnGameRemoval != true)
             {
                 return;

@@ -264,11 +264,17 @@ namespace UniPlaySong.Services
         // Raised after any change to a game's music files, so its music tag follows every path that adds or removes them.
         public event Action<Game> GameMusicChanged;
 
+        // Bumped by every invalidation (any music file added, removed, renamed or rewritten through UPS), so a pool built
+        // from these files can tell it is out of date (SongPoolProvider's radio pool keys on it)
+        private int _musicVersion;
+        public int MusicVersion => System.Threading.Volatile.Read(ref _musicVersion);
+
         public void InvalidateCacheForGame(Game game)
         {
             var directory = GetGameMusicDirectory(game);
             if (!string.IsNullOrWhiteSpace(directory))
             {
+                System.Threading.Interlocked.Increment(ref _musicVersion);
                 _songCache.Remove(directory);
                 GameMusicChanged?.Invoke(game);
             }
@@ -278,6 +284,7 @@ namespace UniPlaySong.Services
         {
             if (!string.IsNullOrWhiteSpace(directory))
             {
+                System.Threading.Interlocked.Increment(ref _musicVersion);
                 _songCache.Remove(directory);
             }
         }

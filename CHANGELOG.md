@@ -22,9 +22,11 @@ All notable changes to UniPlaySong will be documented in this file.
 ### Changed
 
 - Changed the Music Mode page: Spotify moved second and Custom Folders last, with game, status and folder pickers on the page itself; folders and handpicked games show in a fixed-height list box (`UpsFolderList`)
+- Changed Radio Mode to keep its Full Library, Handpicked and Completion Status pool between picks (`PoolCache`), rebuilt when its source, music files (`MusicVersion`) or library change, instead of walking the library on every song
 
 ### Fixed
 
+- Fixed Spotify radio ignoring "Where music plays"; `SpotifyControlService` now holds Spotify paused in a mode where neither game nor default music is allowed, and resumes it elsewhere
 - Fixed hint-based album downloads failing silently behind a site's bot check: a page that answers with the check loads through Playnite's offscreen browser (`BrowserPageLoader`), and its clearance cookies serve later requests
 - Fixed the Fullscreen download dialog reporting "Invalid … selection" after Back mid-load: a late album or song list replaced the current one; each load now drops its result if navigation moved on (`_loadGeneration`)
 - Fixed a theme's UPS volume bar (`ActiveMediaVolume`) dropping after a pause, fade or Alt+Tab: it showed the player's live level; it now shows the set level, which `ActiveMediaService.SetVolume` also sets
